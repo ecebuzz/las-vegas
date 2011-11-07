@@ -43,7 +43,8 @@ public class SortTblFile {
      * ddl.append("lo_shipmode CHAR(10) NOT NULL");//16 ddl.append(")");
      */
     private static int SORT_COL = 5;
-    private static int SORT_BUCKET = 1; // >1 to bucket each sorted run (2-level sorting).
+    private static int SORT_BUCKET = 1; // >1 to bucket each sorted run (2-level
+                                        // sorting).
     private static File ORG_FILE = new File("/home/hkimura/samba/lineorder.tbl");
     private static File SORT_TMP_DIR = new File("/media/datavol/sort-tmp");
     private static File OUT_FILE = new File(SORT_TMP_DIR, "lineorder_sorted_" + SORT_COL + ".tbl");
@@ -96,12 +97,12 @@ public class SortTblFile {
                 LOG.info("merged " + block.key);
             }
         }
-        hdfsBlock.finalFlushBlock (out);
+        hdfsBlock.finalFlushBlock(out);
         out.flush();
         out.close();
         LOG.info("merging all done!.");
     }
-    
+
     private static SortedMap<Integer, TmpBlock> outputBucketFiles(File inFile) throws IOException {
         BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(inFile), "UTF-8"), 1 << 24);
         LOG.info("Bucketing the input file...");
@@ -109,7 +110,9 @@ public class SortTblFile {
         int cnt = 0, next_cnt = 100000;
         for (String line = reader.readLine(); line != null; line = reader.readLine()) {
             if (line.endsWith("|")) {
-                line = line.substring(0, line.length() - 1); // trim the last | (seen in TPCH, not SSB)
+                line = line.substring(0, line.length() - 1); // trim the last |
+                                                             // (seen in TPCH,
+                                                             // not SSB)
             }
             String[] data = line.split("\\|");
             int key = Integer.parseInt(data[SORT_COL]) / SORT_BUCKET;
@@ -132,6 +135,7 @@ public class SortTblFile {
         LOG.info("written " + blocks.size() + " temp files.");
         return blocks;
     }
+
     private static void sortBucketFile(TmpBlock block) throws IOException {
         BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(block.file), "UTF-8"), 1 << 24);
         SortedMap<Integer, ArrayList<String>> sorted = new TreeMap<Integer, ArrayList<String>>();
@@ -191,8 +195,8 @@ public class SortTblFile {
             min_key = Math.min(min_key, new_key);
             ++count;
         }
-        
-        private void append (String line, int key) {
+
+        private void append(String line, int key) {
             if (cur_bytes != 0) {
                 System.arraycopy(LF, 0, buffer, cur_bytes, LF_BYTES);
                 cur_bytes += LF_BYTES;
@@ -202,25 +206,28 @@ public class SortTblFile {
             cur_bytes += line.length();
             updateMinMax(key);
         }
-        private boolean shouldFlush () {
+
+        private boolean shouldFlush() {
             return (BLOCK_SIZE - cur_bytes < 300);
         }
+
         private byte[] makeHeader() {
-            String header = "#" + SORT_COL + "|"+min_key+"|"+max_key+"|"+count;
+            String header = "#" + SORT_COL + "|" + min_key + "|" + max_key + "|" + count;
             return header.getBytes();
         }
-        private void flushBlock (OutputStream out) throws IOException {
+
+        private void flushBlock(OutputStream out) throws IOException {
             byte[] header_bytes = makeHeader();
             out.write(header_bytes);
             out.write(LF);
             out.write(buffer, 0, cur_bytes);
-            
+
             int pad_bytes = BLOCK_SIZE - header_bytes.length - LF_BYTES - cur_bytes - LF_BYTES;
             LOG.info("end of HDFS block. padded " + pad_bytes + " bytes");
             char[] padding = new char[pad_bytes];
             Arrays.fill(padding, ' ');
             byte[] padding_bytes = new String(padding).getBytes();
-            assert(padding_bytes.length == pad_bytes);
+            assert (padding_bytes.length == pad_bytes);
             out.write(padding_bytes);
             out.write(LF);
 
@@ -229,7 +236,8 @@ public class SortTblFile {
             max_key = Integer.MIN_VALUE;
             min_key = Integer.MAX_VALUE;
         }
-        private void finalFlushBlock (OutputStream out) throws IOException {
+
+        private void finalFlushBlock(OutputStream out) throws IOException {
             if (cur_bytes > 0) {
                 byte[] header_bytes = makeHeader();
                 out.write(header_bytes);
