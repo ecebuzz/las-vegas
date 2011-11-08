@@ -40,7 +40,10 @@ public class GroupLineorder {
         job.setReducerClass(LongSumReducer.class);
         job.setOutputKeyClass(IntWritable.class);
         job.setOutputValueClass(LongWritable.class);
-        FileInputFormat.addInputPath(job, new Path("hdfs://poseidon.smn.cs.brown.edu:9000/ssb/lineorder/lineorder.tbl"));
+        FileInputFormat.addInputPath(job, new Path(
+                        // "hdfs://poseidon.smn.cs.brown.edu:9000/ssb/lineorder/lineorder.tbl"
+                        "hdfs://poseidon.smn.cs.brown.edu:9000/ssb/s4/lineorder.tbl"
+                        ));
         FileOutputFormat.setOutputPath(job,
                         new Path("hdfs://poseidon.smn.cs.brown.edu:9000/tmp/out_" + new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date())));
         System.exit(job.waitForCompletion(true) ? 0 : 1);

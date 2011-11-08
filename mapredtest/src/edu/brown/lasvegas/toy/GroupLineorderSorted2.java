@@ -81,11 +81,14 @@ public class GroupLineorderSorted2 {
         job.setInputFormatClass(TextInputFormat.class);
         job.setJarByClass(GroupLineorderSorted2.class);
         job.setMapperClass(LineReader.class);
-        job.setCombinerClass(LongSumReducer.class);
+        // job.setCombinerClass(LongSumReducer.class);
         job.setReducerClass(LongSumReducer.class);
         job.setOutputKeyClass(IntWritable.class);
         job.setOutputValueClass(LongWritable.class);
-        FileInputFormat.addInputPath(job, new Path("hdfs://poseidon.smn.cs.brown.edu:9000/ssb/lineorder_od.tbl"));
+        FileInputFormat.addInputPath(job, new Path(
+                        "hdfs://poseidon.smn.cs.brown.edu:9000/ssb/s4/lineorder_od.tbl"
+                        // "hdfs://poseidon.smn.cs.brown.edu:9000/ssb/lineorder_od.tbl"
+                        ));
         FileOutputFormat.setOutputPath(job,
                         new Path("hdfs://poseidon.smn.cs.brown.edu:9000/tmp/out_" + new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date())));
         System.exit(job.waitForCompletion(true) ? 0 : 1);

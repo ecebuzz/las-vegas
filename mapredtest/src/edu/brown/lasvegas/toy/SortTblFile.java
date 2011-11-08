@@ -45,7 +45,7 @@ public class SortTblFile {
     private static int SORT_COL = 5;
     private static int SORT_BUCKET = 1; // >1 to bucket each sorted run (2-level
                                         // sorting).
-    private static File ORG_FILE = new File("/home/hkimura/samba/lineorder.tbl");
+    private static File ORG_FILE = new File("/home/hkimura/samba/s4/lineorder.tbl");
     private static File SORT_TMP_DIR = new File("/media/datavol/sort-tmp");
     private static File OUT_FILE = new File(SORT_TMP_DIR, "lineorder_sorted_" + SORT_COL + ".tbl");
 
