@@ -33,6 +33,8 @@ public class ReadLineorderSkip {
         private int minKey;
         private int maxKey;
         private int totalCountInThisBlock;
+        
+        private long sum;
 
         public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
             String valueStr = value.toString();
@@ -54,7 +56,7 @@ public class ReadLineorderSkip {
                     if (lo_quantity >= 26 && lo_quantity <= 30) {
                         long lo_extendedprice = Long.parseLong(data[9]);
                         assert (lo_extendedprice >= 0);
-                        context.write(label, new LongWritable(lo_extendedprice * lo_discount));
+                        sum += lo_extendedprice * lo_discount;
                     }
                 }
             } else {
@@ -69,6 +71,7 @@ public class ReadLineorderSkip {
 
         protected void setup(Context context) throws IOException, InterruptedException {
             reachedEnd = false;
+            sum = 0;
             if (context.nextKeyValue()) {
                 String header = context.getCurrentValue().toString();
                 if (header.startsWith("#")) {
@@ -86,7 +89,10 @@ public class ReadLineorderSkip {
                 reachedEnd = true;
             }
         }
-
+        protected void cleanup(Context context) throws IOException, InterruptedException {
+            context.write(label, new LongWritable(sum));
+        }
+ 
         public void run(Context context) throws IOException, InterruptedException {
             LOG.info("reading a block...");
             setup(context);
@@ -107,7 +113,7 @@ public class ReadLineorderSkip {
         job.setInputFormatClass(TextInputFormat.class);
         job.setJarByClass(ReadLineorderSkip.class);
         job.setMapperClass(LineReader.class);
-        job.setCombinerClass(LongSumReducer.class);
+        // job.setCombinerClass(LongSumReducer.class);
         job.setReducerClass(LongSumReducer.class);
         job.setOutputKeyClass(IntWritable.class);
         job.setOutputValueClass(LongWritable.class);

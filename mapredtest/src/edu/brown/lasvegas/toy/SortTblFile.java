@@ -23,6 +23,8 @@ import org.apache.log4j.Logger;
  */
 public class SortTblFile {
     private static Logger LOG = Logger.getLogger(SortTblFile.class);
+    static final File SORT_TMP_DIR = new File("/media/datavol/sort-tmp");
+    static final int BLOCK_SIZE = 64 << 20;
     /*
      * ddl.append("CREATE TABLE lineorder(lo_orderkey INT NOT NULL,"); //0
      * ddl.append("lo_linenumber SMALLINT NOT NULL,");//1
@@ -42,12 +44,22 @@ public class SortTblFile {
      * ddl.append("lo_commitdate INT NOT NULL,");//15
      * ddl.append("lo_shipmode CHAR(10) NOT NULL");//16 ddl.append(")");
      */
-    private static int SORT_COL = 5;
-    private static int SORT_BUCKET = 1; // >1 to bucket each sorted run (2-level
+    // for lineorder-odate
+    // static final int SORT_COL = 5;
+    // private static int SORT_BUCKET = 1; // >1 to bucket each sorted run (2-level
                                         // sorting).
-    private static File ORG_FILE = new File("/home/hkimura/samba/s4/lineorder.tbl");
-    private static File SORT_TMP_DIR = new File("/media/datavol/sort-tmp");
-    private static File OUT_FILE = new File(SORT_TMP_DIR, "lineorder_sorted_" + SORT_COL + ".tbl");
+    // for lineorder-partk
+    // static final int SORT_COL = 3;
+    // private static int SORT_BUCKET = 1000;
+
+    // for part
+    static final int SORT_COL = 0; //partkey
+    private static final int SORT_BUCKET = 10000;
+    private static final File ORG_FILE = new File("/home/hkimura/samba/s4/part.tbl");
+    static final File OUT_FILE = new File(SORT_TMP_DIR, "part_sorted_" + SORT_COL + ".tbl");
+    
+    //private static final File ORG_FILE = new File("/home/hkimura/samba/s4/lineorder.tbl");
+    //static final File OUT_FILE = new File(SORT_TMP_DIR, "lineorder_sorted_" + SORT_COL + ".tbl");
 
     public static void main(String[] args) throws Exception {
         LOG.info("starting sort-col=" + SORT_COL + ".");
@@ -140,7 +152,7 @@ public class SortTblFile {
         BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(block.file), "UTF-8"), 1 << 24);
         SortedMap<Integer, ArrayList<String>> sorted = new TreeMap<Integer, ArrayList<String>>();
         for (String line = reader.readLine(); line != null; line = reader.readLine()) {
-            String[] data = line.split("|");
+            String[] data = line.split("\\|");
             int key = Integer.parseInt(data[SORT_COL]);
             ArrayList<String> lines = sorted.get(key);
             if (lines == null) {
@@ -188,7 +200,6 @@ public class SortTblFile {
     private static class HdfsBlock {
         static final byte[] LF = "\r\n".getBytes();
         static final int LF_BYTES = LF.length;
-        static final int BLOCK_SIZE = 64 << 20;
 
         private void updateMinMax(int new_key) {
             max_key = Math.max(max_key, new_key);

@@ -1,0 +1,53 @@
+package edu.brown.lasvegas.toy;
+
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IntWritable;
+import org.apache.hadoop.io.LongWritable;
+import org.apache.hadoop.io.Text;
+import org.apache.hadoop.mapreduce.Job;
+import org.apache.hadoop.mapreduce.Mapper;
+import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
+import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
+import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
+
+/**
+ * Do lineorder-part join. This one loads the entire part table
+ * and does Map-side join.
+ * select sum(p_size*lo_supplycost) from lineorder
+ * join part on (lineorder.lo_partkey=part.p_partkey)
+ */
+public class PartMapsideJoin {
+    public static class LineReader extends Mapper<Object, Text, IntWritable, LongWritable> {
+        public void map(Object key, Text value, Context context) throws IOException, InterruptedException {
+            String valueStr = value.toString();
+            String[] data = valueStr.split("\\|");
+            int lo_orderdate = Integer.parseInt(data[5]);
+            long lo_extendedprice = Long.parseLong(data[9]);
+            context.write(new IntWritable(lo_orderdate), new LongWritable(lo_extendedprice));
+        }
+    }
+
+    public static void main(String[] args) throws Exception {
+        Configuration conf = new Configuration();
+        Job job = new Job(conf, "group lineorder");
+        job.setInputFormatClass(TextInputFormat.class);
+        job.setJarByClass(GroupLineorder.class);
+        job.setMapperClass(LineReader.class);
+        job.setCombinerClass(LongSumReducer.class);
+        job.setReducerClass(LongSumReducer.class);
+        job.setOutputKeyClass(IntWritable.class);
+        job.setOutputValueClass(LongWritable.class);
+        FileInputFormat.addInputPath(job, new Path(
+                        // "hdfs://poseidon.smn.cs.brown.edu:9000/ssb/lineorder/lineorder.tbl"
+                        "hdfs://poseidon.smn.cs.brown.edu:9000/ssb/s4/lineorder.tbl"
+                        ));
+        FileOutputFormat.setOutputPath(job,
+                        new Path("hdfs://poseidon.smn.cs.brown.edu:9000/tmp/out_" + new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date())));
+        System.exit(job.waitForCompletion(true) ? 0 : 1);
+    }
+}
