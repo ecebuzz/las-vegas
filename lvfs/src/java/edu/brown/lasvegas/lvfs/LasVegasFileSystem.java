@@ -9,5 +9,4 @@ import org.apache.hadoop.fs.FileSystem;
  * to provide faster accesses.
  */
 public class LasVegasFileSystem extends Configured {
-
 }
