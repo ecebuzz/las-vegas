@@ -34,7 +34,7 @@ public class PartMapsideJoin {
 
     public static void main(String[] args) throws Exception {
         Configuration conf = new Configuration();
-        Job job = new Job(conf, "group lineorder");
+        Job job = Job.getInstance(conf, "part mapside join");
         job.setInputFormatClass(TextInputFormat.class);
         job.setJarByClass(GroupLineorder.class);
         job.setMapperClass(LineReader.class);

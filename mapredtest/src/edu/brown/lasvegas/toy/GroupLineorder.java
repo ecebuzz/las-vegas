@@ -32,7 +32,7 @@ public class GroupLineorder {
 
     public static void main(String[] args) throws Exception {
         Configuration conf = new Configuration();
-        Job job = new Job(conf, "group lineorder");
+        Job job = Job.getInstance(conf, "group lineorder");
         job.setInputFormatClass(TextInputFormat.class);
         job.setJarByClass(GroupLineorder.class);
         job.setMapperClass(LineReader.class);

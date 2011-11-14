@@ -48,7 +48,7 @@ public class ReadLineorder {
 
     public static void main(String[] args) throws Exception {
         Configuration conf = new Configuration();
-        Job job = new Job(conf, "read lineorder");
+        Job job = Job.getInstance(conf, "read lineorder");
         job.setInputFormatClass(TextInputFormat.class);
         job.setJarByClass(ReadLineorder.class);
         job.setMapperClass(LineReader.class);

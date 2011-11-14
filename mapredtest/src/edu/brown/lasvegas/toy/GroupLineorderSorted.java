@@ -12,7 +12,6 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
-import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.log4j.Logger;
 
@@ -60,8 +59,8 @@ public class GroupLineorderSorted {
 
     public static void main(String[] args) throws Exception {
         Configuration conf = new Configuration();
-        Job job = new Job(conf, "group lineorder sorted");
-        job.setInputFormatClass(TextInputFormat.class);
+        Job job = Job.getInstance(conf, "group lineorder sorted");
+        job.setInputFormatClass(LVTextInputFormat.class);
         job.setJarByClass(GroupLineorderSorted.class);
         job.setMapperClass(LineReader.class);
         job.setCombinerClass(LongSumReducer.class);

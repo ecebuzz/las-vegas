@@ -12,7 +12,6 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.Mapper;
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat;
-import org.apache.hadoop.mapreduce.lib.input.TextInputFormat;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.log4j.Logger;
 
@@ -29,10 +28,10 @@ public class ReadLineorderSkip {
         private IntWritable label = new IntWritable(1);
         /** whether the map function told that we can exit the loop now. */
         private boolean reachedEnd;
-        private int sortCol;
+        //private int sortCol;
         private int minKey;
         private int maxKey;
-        private int totalCountInThisBlock;
+        //private int totalCountInThisBlock;
         
         private long sum;
 
@@ -72,15 +71,18 @@ public class ReadLineorderSkip {
         protected void setup(Context context) throws IOException, InterruptedException {
             reachedEnd = false;
             sum = 0;
+            if (context.getCurrentKey() != null) {
+                LOG.info("??? line=" + context.getCurrentValue().toString());
+            }
             if (context.nextKeyValue()) {
                 String header = context.getCurrentValue().toString();
                 if (header.startsWith("#")) {
                     LOG.info("found a header: " + header);
                     String[] data = header.substring(1).split("\\|");
-                    sortCol = Integer.parseInt(data[0]);
+                    //sortCol = Integer.parseInt(data[0]);
                     minKey = Integer.parseInt(data[1]);
                     maxKey = Integer.parseInt(data[2]);
-                    totalCountInThisBlock = Integer.parseInt(data[3]);
+                    //totalCountInThisBlock = Integer.parseInt(data[3]);
                 } else {
                     LOG.warn("no header in this block?? first line=" + header);
                 }
@@ -109,8 +111,9 @@ public class ReadLineorderSkip {
 
     public static void main(String[] args) throws Exception {
         Configuration conf = new Configuration();
-        Job job = new Job(conf, "read lineorder");
-        job.setInputFormatClass(TextInputFormat.class);
+        conf.set("textinputformat.record.delimiter", "\r\n");
+        Job job = Job.getInstance(conf, "read lineorder skip");
+        job.setInputFormatClass(LVTextInputFormat.class);
         job.setJarByClass(ReadLineorderSkip.class);
         job.setMapperClass(LineReader.class);
         // job.setCombinerClass(LongSumReducer.class);
