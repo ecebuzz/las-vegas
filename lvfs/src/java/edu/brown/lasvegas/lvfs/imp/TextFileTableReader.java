@@ -39,7 +39,7 @@ public class TextFileTableReader implements LVTableReader {
     }
     /**
      * Fill constructor.
-     * @param inFile file to read.
+     * @param in file to read.
      * @param scheme scheme of the table
      * @param delimiter character(s) to tokenize columns
      * @param buffersize buffer size given to underlying BufferedReader

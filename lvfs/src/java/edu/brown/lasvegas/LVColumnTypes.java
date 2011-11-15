@@ -5,6 +5,7 @@ import java.util.HashMap;
 
 /**
  * Defines list of column types that can be stored in LVFS.
+ * This is a <b>logical</b> scheme of a column.
  */
 public class LVColumnTypes {
     /** this number seems not used for any JDBC/XOPEN type.*/

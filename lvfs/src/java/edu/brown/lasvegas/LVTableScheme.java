@@ -1,11 +1,12 @@
 package edu.brown.lasvegas;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
 /**
- * Represents a data scheme of a table in Las-Vegas system.
+ * Represents a <b>logical</b> data scheme of a table in Las-Vegas system.
  */
-public class LVTableScheme {
+public class LVTableScheme implements Serializable {
     private final String tableName;
     private final ArrayList<String> columnNames = new ArrayList<String>();
     private final ArrayList<Integer> columnTypes = new ArrayList<Integer>();
@@ -57,4 +58,6 @@ public class LVTableScheme {
         buffer.append("</lvtable>");
         return new String(buffer);
     }
+    
+    private static final long serialVersionUID = 1L;
 }
