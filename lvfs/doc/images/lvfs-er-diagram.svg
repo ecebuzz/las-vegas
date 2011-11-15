@@ -1,29 +1,29 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.0//EN" "http://www.w3.org/TR/2001/PR-SVG-20010719/DTD/svg10.dtd">
-<svg width="240cm" height="194cm" viewBox="-1013 -967 4800 3868" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<svg width="240cm" height="194cm" viewBox="-1013 -967 4798 3868" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
   <g>
     <g>
-      <rect style="fill: #ffffff" x="658.804" y="-362.125" width="379.6" height="217.45"/>
-      <rect style="fill: none; fill-opacity:0; stroke-width: 10; stroke: #000000" x="658.804" y="-362.125" width="379.6" height="217.45"/>
+      <rect style="fill: #ffffff" x="658.804" y="-362.124" width="379.6" height="217.45"/>
+      <rect style="fill: none; fill-opacity:0; stroke-width: 10; stroke: #000000" x="658.804" y="-362.124" width="379.6" height="217.45"/>
     </g>
-    <text style="fill: #000000;text-anchor:middle;font-size:84.6654;font-family:sanserif;font-style:normal;font-weight:normal" x="849.804" y="-278.125">
-      <tspan x="849.804" y="-278.125">Replica</tspan>
-      <tspan x="849.804" y="-172.292">Scheme</tspan>
+    <text style="fill: #000000;text-anchor:middle;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:normal" x="849.804" y="-278.124">
+      <tspan x="849.804" y="-278.124">Replica</tspan>
+      <tspan x="849.804" y="-172.291">Scheme</tspan>
     </text>
-    <text style="fill: #000000;text-anchor:start;font-size:12.7998;font-family:sanserif;font-style:normal;font-weight:normal" x="848.604" y="-253.4">
+    <text style="fill: #000000;text-anchor:start;font-size:12.8;font-family:sanserif;font-style:normal;font-weight:normal" x="848.604" y="-253.4">
       <tspan x="848.604" y="-253.4"></tspan>
     </text>
   </g>
   <g>
     <g>
-      <rect style="fill: #ffffff" x="-198.6" y="-362.125" width="379.6" height="217.45"/>
-      <rect style="fill: none; fill-opacity:0; stroke-width: 10; stroke: #000000" x="-198.6" y="-362.125" width="379.6" height="217.45"/>
+      <rect style="fill: #ffffff" x="-198.6" y="-362.124" width="379.6" height="217.45"/>
+      <rect style="fill: none; fill-opacity:0; stroke-width: 10; stroke: #000000" x="-198.6" y="-362.124" width="379.6" height="217.45"/>
     </g>
-    <text style="fill: #000000;text-anchor:middle;font-size:84.6654;font-family:sanserif;font-style:normal;font-weight:normal" x="-7.6" y="-278.125">
-      <tspan x="-7.6" y="-278.125">Replica</tspan>
-      <tspan x="-7.6" y="-172.292">Group</tspan>
+    <text style="fill: #000000;text-anchor:middle;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:normal" x="-7.6" y="-278.124">
+      <tspan x="-7.6" y="-278.124">Replica</tspan>
+      <tspan x="-7.6" y="-172.291">Group</tspan>
     </text>
-    <text style="fill: #000000;text-anchor:start;font-size:12.7998;font-family:sanserif;font-style:normal;font-weight:normal" x="-8.8" y="-253.4">
+    <text style="fill: #000000;text-anchor:start;font-size:12.8;font-family:sanserif;font-style:normal;font-weight:normal" x="-8.8" y="-253.4">
       <tspan x="-8.8" y="-253.4"></tspan>
     </text>
   </g>
@@ -32,12 +32,12 @@
       <rect style="fill: #ffffff" x="321.8" y="859.85" width="379.6" height="217.45"/>
       <rect style="fill: none; fill-opacity:0; stroke-width: 10; stroke: #000000" x="321.8" y="859.85" width="379.6" height="217.45"/>
     </g>
-    <text style="fill: #000000;text-anchor:middle;font-size:84.6654;font-family:sanserif;font-style:normal;font-weight:normal" x="514.543" y="947.85">
-      <tspan x="514.543" y="947.85">Table</tspan>
-      <tspan x="514.543" y="1053.68">Fracture</tspan>
+    <text style="fill: #000000;text-anchor:middle;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:normal" x="514.542" y="947.85">
+      <tspan x="514.542" y="947.85">Table</tspan>
+      <tspan x="514.542" y="1053.68">Fracture</tspan>
     </text>
-    <text style="fill: #000000;text-anchor:start;font-size:12.7998;font-family:sanserif;font-style:normal;font-weight:normal" x="511.6" y="968.575">
-      <tspan x="511.6" y="968.575"></tspan>
+    <text style="fill: #000000;text-anchor:start;font-size:12.8;font-family:sanserif;font-style:normal;font-weight:normal" x="511.6" y="968.576">
+      <tspan x="511.6" y="968.576"></tspan>
     </text>
   </g>
   <g>
@@ -45,11 +45,11 @@
       <rect style="fill: #ffffff" x="-909.196" y="221.6" width="379.6" height="217.45"/>
       <rect style="fill: none; fill-opacity:0; stroke-width: 10; stroke: #000000" x="-909.196" y="221.6" width="379.6" height="217.45"/>
     </g>
-    <text style="fill: #000000;text-anchor:middle;font-size:84.6654;font-family:sanserif;font-style:normal;font-weight:normal" x="-718.196" y="353.6">
+    <text style="fill: #000000;text-anchor:middle;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:normal" x="-718.196" y="353.6">
       <tspan x="-718.196" y="353.6">Table</tspan>
     </text>
-    <text style="fill: #000000;text-anchor:start;font-size:12.7998;font-family:sanserif;font-style:normal;font-weight:normal" x="-719.396" y="330.325">
-      <tspan x="-719.396" y="330.325"></tspan>
+    <text style="fill: #000000;text-anchor:start;font-size:12.8;font-family:sanserif;font-style:normal;font-weight:normal" x="-719.396" y="330.326">
+      <tspan x="-719.396" y="330.326"></tspan>
     </text>
   </g>
   <g>
@@ -57,9 +57,9 @@
       <ellipse style="fill: #ffffff" cx="-465.996" cy="-787" rx="269" ry="138"/>
       <ellipse style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" cx="-465.996" cy="-787" rx="269" ry="138"/>
     </g>
-    <text style="fill: #000000;text-anchor:middle;font-size:84.6654;font-family:sanserif;font-style:normal;font-weight:normal" x="-467.071" y="-809.8">
-      <tspan x="-467.071" y="-809.8">Partition</tspan>
-      <tspan x="-467.071" y="-703.967">Scheme</tspan>
+    <text style="fill: #000000;text-anchor:middle;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:normal" x="-467.07" y="-809.8">
+      <tspan x="-467.07" y="-809.8">Partition</tspan>
+      <tspan x="-467.07" y="-703.967">Scheme</tspan>
     </text>
   </g>
   <g>
@@ -67,9 +67,9 @@
       <ellipse style="fill: #ffffff" cx="512.404" cy="-822.2" rx="269" ry="138"/>
       <ellipse style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" cx="512.404" cy="-822.2" rx="269" ry="138"/>
     </g>
-    <text style="fill: #000000;text-anchor:middle;font-size:84.6654;font-family:sanserif;font-style:normal;font-weight:normal" x="511.329" y="-845">
-      <tspan x="511.329" y="-845">In-Block</tspan>
-      <tspan x="511.329" y="-739.167">Sort Scm.</tspan>
+    <text style="fill: #000000;text-anchor:middle;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:normal" x="511.33" y="-845">
+      <tspan x="511.33" y="-845">In-Block</tspan>
+      <tspan x="511.33" y="-739.167">Sort Scm.</tspan>
     </text>
   </g>
   <g>
@@ -77,35 +77,35 @@
       <ellipse style="fill: #ffffff" cx="1201.8" cy="-827.4" rx="269" ry="138"/>
       <ellipse style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" cx="1201.8" cy="-827.4" rx="269" ry="138"/>
     </g>
-    <text style="fill: #000000;text-anchor:middle;font-size:84.6654;font-family:sanserif;font-style:normal;font-weight:normal" x="1200.73" y="-850.2">
+    <text style="fill: #000000;text-anchor:middle;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:normal" x="1200.73" y="-850.2">
       <tspan x="1200.73" y="-850.2">Compress</tspan>
       <tspan x="1200.73" y="-744.367">Scheme</tspan>
     </text>
   </g>
   <g>
     <g>
-      <rect style="fill: #ffffff" x="1175" y="208.325" width="470" height="244"/>
-      <rect style="fill: none; fill-opacity:0; stroke-width: 10; stroke: #000000" x="1175" y="208.325" width="470" height="244"/>
+      <rect style="fill: #ffffff" x="1175" y="208.326" width="470" height="244"/>
+      <rect style="fill: none; fill-opacity:0; stroke-width: 10; stroke: #000000" x="1175" y="208.326" width="470" height="244"/>
     </g>
-    <text style="fill: #000000;text-anchor:middle;font-size:84.6654;font-family:sanserif;font-style:normal;font-weight:normal" x="1412.4" y="308.125">
-      <tspan x="1412.4" y="308.125">Replicated</tspan>
-      <tspan x="1412.4" y="413.958">Fracture</tspan>
+    <text style="fill: #000000;text-anchor:middle;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:normal" x="1412.4" y="308.126">
+      <tspan x="1412.4" y="308.126">Replicated</tspan>
+      <tspan x="1412.4" y="413.959">Fracture</tspan>
     </text>
-    <text style="fill: #000000;text-anchor:start;font-size:12.7998;font-family:sanserif;font-style:normal;font-weight:normal" x="1410" y="330.325">
-      <tspan x="1410" y="330.325"></tspan>
+    <text style="fill: #000000;text-anchor:start;font-size:12.8;font-family:sanserif;font-style:normal;font-weight:normal" x="1410" y="330.326">
+      <tspan x="1410" y="330.326"></tspan>
     </text>
   </g>
   <g>
     <g>
-      <rect style="fill: #ffffff" x="3048.8" y="208.325" width="470" height="244"/>
-      <rect style="fill: none; fill-opacity:0; stroke-width: 10; stroke: #000000" x="3048.8" y="208.325" width="470" height="244"/>
+      <rect style="fill: #ffffff" x="3048.8" y="208.326" width="470" height="244"/>
+      <rect style="fill: none; fill-opacity:0; stroke-width: 10; stroke: #000000" x="3048.8" y="208.326" width="470" height="244"/>
     </g>
-    <text style="fill: #000000;text-anchor:middle;font-size:84.6654;font-family:sanserif;font-style:normal;font-weight:normal" x="3282.2" y="308.125">
-      <tspan x="3282.2" y="308.125">Column</tspan>
-      <tspan x="3282.2" y="413.958">File</tspan>
+    <text style="fill: #000000;text-anchor:middle;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:normal" x="3282.2" y="308.126">
+      <tspan x="3282.2" y="308.126">Column</tspan>
+      <tspan x="3282.2" y="413.959">File</tspan>
     </text>
-    <text style="fill: #000000;text-anchor:start;font-size:12.7998;font-family:sanserif;font-style:normal;font-weight:normal" x="3161" y="321.725">
-      <tspan x="3161" y="321.725"></tspan>
+    <text style="fill: #000000;text-anchor:start;font-size:12.8;font-family:sanserif;font-style:normal;font-weight:normal" x="3161" y="321.726">
+      <tspan x="3161" y="321.726"></tspan>
     </text>
   </g>
   <g>
@@ -113,9 +113,9 @@
       <ellipse style="fill: #ffffff" cx="921.804" cy="1444.6" rx="269" ry="138"/>
       <ellipse style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" cx="921.804" cy="1444.6" rx="269" ry="138"/>
     </g>
-    <text style="fill: #000000;text-anchor:middle;font-size:84.6654;font-family:sanserif;font-style:normal;font-weight:normal" x="924.729" y="1397.8">
-      <tspan x="924.729" y="1397.8">End</tspan>
-      <tspan x="924.729" y="1503.63">Base-Parti.</tspan>
+    <text style="fill: #000000;text-anchor:middle;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:normal" x="924.728" y="1397.8">
+      <tspan x="924.728" y="1397.8">End</tspan>
+      <tspan x="924.728" y="1503.63">Base-Parti.</tspan>
     </text>
   </g>
   <g>
@@ -123,7 +123,7 @@
       <ellipse style="fill: #ffffff" cx="129.804" cy="1444.6" rx="269" ry="138"/>
       <ellipse style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" cx="129.804" cy="1444.6" rx="269" ry="138"/>
     </g>
-    <text style="fill: #000000;text-anchor:middle;font-size:84.6654;font-family:sanserif;font-style:normal;font-weight:normal" x="128.729" y="1401.8">
+    <text style="fill: #000000;text-anchor:middle;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:normal" x="128.729" y="1401.8">
       <tspan x="128.729" y="1401.8">Start</tspan>
       <tspan x="128.729" y="1507.63">Base-Parti.</tspan>
     </text>
@@ -132,38 +132,38 @@
     <ellipse style="fill: #ffffff" cx="-742.196" cy="-359.4" rx="269" ry="138"/>
     <ellipse style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" cx="-742.196" cy="-359.4" rx="269" ry="138"/>
   </g>
-  <text style="fill: #000000;text-anchor:middle;font-size:84.6654;font-family:sanserif;font-style:normal;font-weight:normal" x="-738.196" y="-379.4">
+  <text style="fill: #000000;text-anchor:middle;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:normal" x="-738.196" y="-379.4">
     <tspan x="-738.196" y="-379.4">Is-Base</tspan>
     <tspan x="-738.196" y="-273.567">Group</tspan>
   </text>
   <g>
     <g>
-      <rect style="fill: #ffffff" x="2096.8" y="208.325" width="470" height="244"/>
-      <rect style="fill: none; fill-opacity:0; stroke-width: 10; stroke: #000000" x="2096.8" y="208.325" width="470" height="244"/>
+      <rect style="fill: #ffffff" x="2096.8" y="208.326" width="470" height="244"/>
+      <rect style="fill: none; fill-opacity:0; stroke-width: 10; stroke: #000000" x="2096.8" y="208.326" width="470" height="244"/>
     </g>
-    <text style="fill: #000000;text-anchor:middle;font-size:84.6654;font-family:sanserif;font-style:normal;font-weight:normal" x="2334.2" y="312.125">
-      <tspan x="2334.2" y="312.125">Fracture</tspan>
-      <tspan x="2334.2" y="417.958">Partition</tspan>
+    <text style="fill: #000000;text-anchor:middle;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:normal" x="2334.2" y="312.126">
+      <tspan x="2334.2" y="312.126">Fracture</tspan>
+      <tspan x="2334.2" y="417.959">Partition</tspan>
     </text>
-    <text style="fill: #000000;text-anchor:start;font-size:12.7998;font-family:sanserif;font-style:normal;font-weight:normal" x="2331.8" y="330.325">
-      <tspan x="2331.8" y="330.325"></tspan>
+    <text style="fill: #000000;text-anchor:start;font-size:12.8;font-family:sanserif;font-style:normal;font-weight:normal" x="2331.8" y="330.326">
+      <tspan x="2331.8" y="330.326"></tspan>
     </text>
   </g>
-  <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="-275.784" y1="-689.419" x2="-8.8" y2="-362.125"/>
+  <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="-275.784" y1="-689.42" x2="-8.8" y2="-362.124"/>
   <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="-473.196" y1="-359.4" x2="-198.6" y2="-253.4"/>
-  <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="702.616" y1="-724.619" x2="848.604" y2="-362.125"/>
-  <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="1011.59" y1="-729.819" x2="848.604" y2="-362.125"/>
+  <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="702.616" y1="-724.62" x2="848.604" y2="-362.124"/>
+  <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="1011.59" y1="-729.82" x2="848.604" y2="-362.124"/>
   <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="129.804" y1="1306.6" x2="511.6" y2="1077.3"/>
   <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="511.6" y1="1077.3" x2="921.804" y2="1306.6"/>
   <g>
-    <line style="fill: none; fill-opacity:0; stroke-width: 15; stroke: #000000" x1="321.8" y1="968.575" x2="-492.173" y2="358.379"/>
-    <polygon style="fill: #000000" points="-516.177,340.384 -472.176,348.374 -492.173,358.379 -496.168,380.38 "/>
-    <polygon style="fill: none; fill-opacity:0; stroke-width: 15; stroke: #000000" points="-516.177,340.384 -472.176,348.374 -492.173,358.379 -496.168,380.38 "/>
+    <line style="fill: none; fill-opacity:0; stroke-width: 15; stroke: #000000" x1="321.8" y1="968.576" x2="-492.173" y2="358.38"/>
+    <polygon style="fill: #000000" points="-516.177,340.385 -472.176,348.375 -492.173,358.38 -496.168,380.381 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 15; stroke: #000000" points="-516.177,340.385 -472.176,348.375 -492.173,358.38 -496.168,380.381 "/>
   </g>
   <g>
     <line style="fill: none; fill-opacity:0; stroke-width: 15; stroke: #000000" x1="-8.8" y1="-144.675" x2="-495.04" y2="298.808"/>
-    <polygon style="fill: #000000" points="-517.205,319.024 -501.129,277.292 -495.04,298.808 -474.174,306.846 "/>
-    <polygon style="fill: none; fill-opacity:0; stroke-width: 15; stroke: #000000" points="-517.205,319.024 -501.129,277.292 -495.04,298.808 -474.174,306.846 "/>
+    <polygon style="fill: #000000" points="-517.205,319.025 -501.129,277.293 -495.04,298.808 -474.174,306.847 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 15; stroke: #000000" points="-517.205,319.025 -501.129,277.293 -495.04,298.808 -474.174,306.847 "/>
   </g>
   <g>
     <line style="fill: none; fill-opacity:0; stroke-width: 15; stroke: #000000" x1="658.804" y1="-253.4" x2="227.771" y2="-253.4"/>
@@ -171,48 +171,48 @@
     <polygon style="fill: none; fill-opacity:0; stroke-width: 15; stroke: #000000" points="197.771,-253.4 237.771,-273.4 227.771,-253.4 237.771,-233.4 "/>
   </g>
   <g>
-    <line style="fill: none; fill-opacity:0; stroke-width: 15; stroke: #000000" x1="1410" y1="208.325" x2="1067.73" y2="-216.964"/>
+    <line style="fill: none; fill-opacity:0; stroke-width: 15; stroke: #000000" x1="1410" y1="208.326" x2="1067.73" y2="-216.964"/>
     <polygon style="fill: #000000" points="1048.92,-240.335 1089.58,-221.713 1067.73,-216.964 1058.42,-196.634 "/>
     <polygon style="fill: none; fill-opacity:0; stroke-width: 15; stroke: #000000" points="1048.92,-240.335 1089.58,-221.713 1067.73,-216.964 1058.42,-196.634 "/>
   </g>
   <g>
-    <line style="fill: none; fill-opacity:0; stroke-width: 15; stroke: #000000" x1="1410" y1="452.325" x2="739.202" y2="941.034"/>
-    <polygon style="fill: #000000" points="714.955,958.7 735.508,918.981 739.202,941.034 759.061,951.311 "/>
-    <polygon style="fill: none; fill-opacity:0; stroke-width: 15; stroke: #000000" points="714.955,958.7 735.508,918.981 739.202,941.034 759.061,951.311 "/>
+    <line style="fill: none; fill-opacity:0; stroke-width: 15; stroke: #000000" x1="1410" y1="452.326" x2="739.202" y2="941.035"/>
+    <polygon style="fill: #000000" points="714.955,958.701 735.508,918.982 739.202,941.035 759.061,951.312 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 15; stroke: #000000" points="714.955,958.701 735.508,918.982 739.202,941.035 759.061,951.312 "/>
   </g>
   <g>
-    <line style="fill: none; fill-opacity:0; stroke-width: 15; stroke: #000000" x1="2096.8" y1="330.325" x2="1691.77" y2="330.325"/>
-    <polygon style="fill: #000000" points="1661.77,330.325 1701.77,310.325 1691.77,330.325 1701.77,350.325 "/>
-    <polygon style="fill: none; fill-opacity:0; stroke-width: 15; stroke: #000000" points="1661.77,330.325 1701.77,310.325 1691.77,330.325 1701.77,350.325 "/>
+    <line style="fill: none; fill-opacity:0; stroke-width: 15; stroke: #000000" x1="2096.8" y1="330.326" x2="1691.77" y2="330.326"/>
+    <polygon style="fill: #000000" points="1661.77,330.326 1701.77,310.326 1691.77,330.326 1701.77,350.326 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 15; stroke: #000000" points="1661.77,330.326 1701.77,310.326 1691.77,330.326 1701.77,350.326 "/>
   </g>
   <g>
-    <line style="fill: none; fill-opacity:0; stroke-width: 15; stroke: #000000" x1="3048.8" y1="330.325" x2="2613.57" y2="330.325"/>
-    <polygon style="fill: #000000" points="2583.57,330.325 2623.57,310.325 2613.57,330.325 2623.57,350.325 "/>
-    <polygon style="fill: none; fill-opacity:0; stroke-width: 15; stroke: #000000" points="2583.57,330.325 2623.57,310.325 2613.57,330.325 2623.57,350.325 "/>
+    <line style="fill: none; fill-opacity:0; stroke-width: 15; stroke: #000000" x1="3048.8" y1="330.326" x2="2613.57" y2="330.326"/>
+    <polygon style="fill: #000000" points="2583.57,330.326 2623.57,310.326 2613.57,330.326 2623.57,350.326 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 15; stroke: #000000" points="2583.57,330.326 2623.57,310.326 2613.57,330.326 2623.57,350.326 "/>
   </g>
   <g>
     <g>
       <ellipse style="fill: #ffffff" cx="3286.34" cy="909.6" rx="269" ry="138"/>
       <ellipse style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" cx="3286.34" cy="909.6" rx="269" ry="138"/>
     </g>
-    <text style="fill: #000000;text-anchor:middle;font-size:84.6654;font-family:sanserif;font-style:normal;font-weight:normal" x="3285.26" y="886.8">
+    <text style="fill: #000000;text-anchor:middle;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:normal" x="3285.26" y="886.8">
       <tspan x="3285.26" y="886.8">HDFS</tspan>
       <tspan x="3285.26" y="992.633">File Path</tspan>
     </text>
   </g>
-  <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="3283.8" y1="452.325" x2="3286.34" y2="771.6"/>
+  <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="3283.8" y1="452.326" x2="3286.34" y2="771.6"/>
   <g>
-    <rect style="fill: #ffffff" x="2017.54" y="-617" width="812" height="332"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="2017.54" y="-617" width="812" height="332"/>
+    <rect style="fill: #ffffff" x="2017.54" y="-617" width="812" height="528"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="2017.54" y="-617" width="812" height="528"/>
   </g>
   <g>
-    <rect style="fill: #ffffff" x="2029.34" y="-606.4" width="788.2" height="313.4"/>
-    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="2029.34" y="-606.4" width="788.2" height="313.4"/>
+    <rect style="fill: #ffffff" x="2029.34" y="-606.4" width="788.2" height="504.4"/>
+    <rect style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x="2029.34" y="-606.4" width="788.2" height="504.4"/>
   </g>
   <g>
-    <line style="fill: none; fill-opacity:0; stroke-width: 15; stroke: #000000" x1="2661.67" y1="-410.629" x2="2230.64" y2="-410.629"/>
-    <polygon style="fill: #000000" points="2200.64,-410.629 2240.64,-430.629 2230.64,-410.629 2240.64,-390.629 "/>
-    <polygon style="fill: none; fill-opacity:0; stroke-width: 15; stroke: #000000" points="2200.64,-410.629 2240.64,-430.629 2230.64,-410.629 2240.64,-390.629 "/>
+    <line style="fill: none; fill-opacity:0; stroke-width: 15; stroke: #000000" x1="2661.66" y1="-410.63" x2="2230.63" y2="-410.63"/>
+    <polygon style="fill: #000000" points="2200.63,-410.63 2240.63,-430.63 2230.63,-410.63 2240.63,-390.63 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 15; stroke: #000000" points="2200.63,-410.63 2240.63,-430.63 2230.63,-410.63 2240.63,-390.63 "/>
   </g>
   <text style="fill: #000000;text-anchor:middle;font-size:84.6667;font-family:sanserif;font-style:italic;font-weight:normal" x="2095.92" y="-376.4">
     <tspan x="2095.92" y="-376.4">1</tspan>
@@ -220,55 +220,136 @@
   <text style="fill: #000000;text-anchor:middle;font-size:84.6667;font-family:sanserif;font-style:italic;font-weight:normal" x="2749.92" y="-385">
     <tspan x="2749.92" y="-385">n</tspan>
   </text>
-  <text style="fill: #000000;text-anchor:middle;font-size:84.6654;font-family:sanserif;font-style:normal;font-weight:normal" x="2429.43" y="-499.8">
-    <tspan x="2429.43" y="-499.8">legend</tspan>
+  <text style="fill: #000000;text-anchor:middle;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:normal" x="2429.42" y="-499.8">
+    <tspan x="2429.42" y="-499.8">legend</tspan>
   </text>
-  <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="2331.8" y1="452.325" x2="2336.6" y2="782.6"/>
+  <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="2331.8" y1="452.326" x2="2588.6" y2="778.6"/>
   <g>
     <g>
-      <ellipse style="fill: #ffffff" cx="2336.6" cy="920.6" rx="269" ry="138"/>
-      <ellipse style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" cx="2336.6" cy="920.6" rx="269" ry="138"/>
+      <ellipse style="fill: #ffffff" cx="2588.6" cy="916.6" rx="269" ry="138"/>
+      <ellipse style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" cx="2588.6" cy="916.6" rx="269" ry="138"/>
     </g>
-    <text style="fill: #000000;text-anchor:middle;font-size:84.6654;font-family:sanserif;font-style:normal;font-weight:normal" x="2335.53" y="881.8">
-      <tspan x="2335.53" y="881.8">HDFS</tspan>
-      <tspan x="2335.53" y="987.633">Data Node</tspan>
+    <text style="fill: #000000;text-anchor:middle;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:normal" x="2587.52" y="877.8">
+      <tspan x="2587.52" y="877.8">HDFS</tspan>
+      <tspan x="2587.52" y="983.633">Data Node</tspan>
     </text>
   </g>
-  <text style="fill: #000000;text-anchor:start;font-size:84.6654;font-family:sanserif;font-style:normal;font-weight:normal" x="-780.971" y="2180.2">
-    <tspan x="-780.971" y="2180.2">Replica Scheme A1: Replica Group A, Date sort</tspan>
-    <tspan x="-780.971" y="2286.03">Replica Scheme A2: Replica Group A, Price sort</tspan>
-    <tspan x="-780.971" y="2391.87">Replica Scheme B1: Replica Group B, Customer sort</tspan>
+  <text style="fill: #000000;text-anchor:start;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:normal" x="-780.97" y="2180.2">
+    <tspan x="-780.97" y="2180.2">Replica Scheme A1: Replica Group A, Date sort</tspan>
+    <tspan x="-780.97" y="2286.03">Replica Scheme A2: Replica Group A, Price sort</tspan>
+    <tspan x="-780.97" y="2391.87">Replica Scheme B1: Replica Group B, Customer sort</tspan>
   </text>
-  <text style="fill: #000000;text-anchor:middle;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:700" x="-656.971" y="1808.2">
-    <tspan x="-656.971" y="1808.2">Example:</tspan>
+  <text style="fill: #000000;text-anchor:middle;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:700" x="-656.97" y="1808.2">
+    <tspan x="-656.97" y="1808.2">Example:</tspan>
   </text>
-  <text style="fill: #000000;text-anchor:start;font-size:84.6654;font-family:sanserif;font-style:normal;font-weight:normal" x="-777.396" y="1942.2">
+  <text style="fill: #000000;text-anchor:start;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:normal" x="-777.396" y="1942.2">
     <tspan x="-777.396" y="1942.2">Replica Group A: Date partition, base group</tspan>
     <tspan x="-777.396" y="2048.03">Replica Group B: Customer partition</tspan>
   </text>
-  <text style="fill: #000000;text-anchor:start;font-size:84.6654;font-family:sanserif;font-style:normal;font-weight:normal" x="1662.6" y="1530.2">
+  <text style="fill: #000000;text-anchor:start;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:normal" x="1662.6" y="1530.2">
     <tspan x="1662.6" y="1530.2">Fracture F1: Date=1992/01/01 - 1992/12/31</tspan>
     <tspan x="1662.6" y="1636.03">Fracture F2: Date=1993/01/01 - 1993/12/31</tspan>
     <tspan x="1662.6" y="1741.87"></tspan>
   </text>
-  <text style="fill: #000000;text-anchor:start;font-size:84.6654;font-family:sanserif;font-style:normal;font-weight:normal" x="1670.6" y="2238.2">
+  <text style="fill: #000000;text-anchor:start;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:normal" x="1670.6" y="2238.2">
     <tspan x="1670.6" y="2238.2">All Column Files F1_A1_P1_xxx</tspan>
     <tspan x="1670.6" y="2344.03">(eg F1_A1_P1_Date) reside in same node.</tspan>
   </text>
-  <text style="fill: #000000;text-anchor:middle;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:700" x="-646.096" y="2540.2">
-    <tspan x="-646.096" y="2540.2">Recovery:</tspan>
+  <text style="fill: #000000;text-anchor:middle;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:700" x="325.904" y="2544.2">
+    <tspan x="325.904" y="2544.2">Recovery (always happens per Fracture Partition):</tspan>
   </text>
-  <text style="fill: #000000;text-anchor:start;font-size:84.6654;font-family:sanserif;font-style:normal;font-weight:normal" x="-797.396" y="2664.2">
-    <tspan x="-797.396" y="2664.2">Same Replica Scheme: Recover F1_A2_P1_Date = Copy(F1_A2_P1_Date)</tspan>
-    <tspan x="-797.396" y="2770.03">Same Replica Group: Recover F1_A2_P1_Date = Sort(Filter(Join(F1_A1_P1_Date + F1_A1_P1_Price)))</tspan>
-    <tspan x="-797.396" y="2875.87">Different Replica Group: Recover F1_A2_P1_Date = Sort(Filter(Join(F1_B1_all_Date + F1_B1_all_Price)))</tspan>
+  <text style="fill: #000000;text-anchor:start;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:normal" x="-797.396" y="2664.2">
+    <tspan x="-797.396" y="2664.2">Same Replica Scheme: Recover F1_A2_P1 = Copy(F1_A2_P1)</tspan>
+    <tspan x="-797.396" y="2770.03">Same Replica Group: Recover F1_A2_P1 = Sort(F1_A1_P1)</tspan>
+    <tspan x="-797.396" y="2875.87">Different Replica Group: Recover F1_A2_P1 = Sort(Filter(F1_B1_*))</tspan>
   </text>
-  <text style="fill: #000000;text-anchor:start;font-size:84.6654;font-family:sanserif;font-style:normal;font-weight:normal" x="1666.6" y="1800.2">
+  <text style="fill: #000000;text-anchor:start;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:normal" x="1666.6" y="1800.2">
     <tspan x="1666.6" y="1800.2">Partition F1_A_P1: Date=1992/01/01 - 1992/01/31</tspan>
     <tspan x="1666.6" y="1906.03">Partition F1_A_P2: Date=1992/02/01 - 1992/02/29</tspan>
     <tspan x="1666.6" y="2011.87"></tspan>
   </text>
-  <text style="fill: #000000;text-anchor:start;font-size:84.6654;font-family:sanserif;font-style:normal;font-weight:normal" x="1670.6" y="2042.2">
+  <text style="fill: #000000;text-anchor:start;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:normal" x="1670.6" y="2042.2">
     <tspan x="1670.6" y="2042.2">Note: F1_A1_P1=F1_A2_P1=F1_A_P1 (!=F1_B_P1)</tspan>
+  </text>
+  <text style="fill: #000000;text-anchor:middle;font-size:84.6667;font-family:sanserif;font-style:italic;font-weight:normal" x="2412.7" y="-247">
+    <tspan x="2412.7" y="-247">(xx GB): typical</tspan>
+    <tspan x="2412.7" y="-141.167">         size</tspan>
+  </text>
+  <text style="fill: #000000;text-anchor:start;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:normal" x="-837.226" y="177.2">
+    <tspan x="-837.226" y="177.2">(1 TB)</tspan>
+  </text>
+  <text style="fill: #000000;text-anchor:start;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:normal" x="322.774" y="797.2">
+    <tspan x="322.774" y="797.2">(100 GB)</tspan>
+  </text>
+  <text style="fill: #000000;text-anchor:start;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:normal" x="1406.77" y="141.2">
+    <tspan x="1406.77" y="141.2">(100 GB)</tspan>
+  </text>
+  <text style="fill: #000000;text-anchor:start;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:normal" x="-17.2263" y="-5.2">
+    <tspan x="-17.2263" y="-5.2">(meta)</tspan>
+  </text>
+  <text style="fill: #000000;text-anchor:start;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:normal" x="710.774" y="-10.8">
+    <tspan x="710.774" y="-10.8">(meta)</tspan>
+  </text>
+  <text style="fill: #000000;text-anchor:start;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:normal" x="2206.78" y="149.2">
+    <tspan x="2206.78" y="149.2">(1 GB)</tspan>
+  </text>
+  <text style="fill: #000000;text-anchor:start;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:normal" x="3110.78" y="153.2">
+    <tspan x="3110.78" y="153.2">(50 MB)</tspan>
+  </text>
+  <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="1410" y1="452.326" x2="1342.77" y2="769.6"/>
+  <g>
+    <g>
+      <ellipse style="fill: #ffffff" cx="1342.77" cy="907.6" rx="269" ry="138"/>
+      <ellipse style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" cx="1342.77" cy="907.6" rx="269" ry="138"/>
+    </g>
+    <text style="fill: #000000;text-anchor:middle;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:normal" x="1342.77" y="907.6">
+      <tspan x="1342.77" y="907.6">Aggreg.</tspan>
+      <tspan x="1342.77" y="1013.43">Status</tspan>
+    </text>
+  </g>
+  <g>
+    <ellipse style="fill: #ffffff" cx="2016.77" cy="920.8" rx="269" ry="138"/>
+    <ellipse style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" cx="2016.77" cy="920.8" rx="269" ry="138"/>
+  </g>
+  <text style="fill: #000000;text-anchor:middle;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:normal" x="2020.78" y="940.8">
+    <tspan x="2020.78" y="940.8">Status</tspan>
+  </text>
+  <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="2331.8" y1="452.326" x2="2016.78" y2="782.8"/>
+  <text style="fill: #000000;text-anchor:start;font-size:12.8;font-family:sanserif;font-style:normal;font-weight:normal" x="-721.396" y="942.324">
+    <tspan x="-721.396" y="942.324"></tspan>
+  </text>
+  <g>
+    <line style="fill: none; fill-opacity:0; stroke-width: 15; stroke: #000000" x1="-721.396" y1="833.6" x2="-719.633" y2="485.82"/>
+    <polygon style="fill: #000000" points="-719.481,455.82 -699.684,495.921 -719.633,485.82 -739.684,495.718 "/>
+    <polygon style="fill: none; fill-opacity:0; stroke-width: 15; stroke: #000000" points="-719.481,455.82 -699.684,495.921 -719.633,485.82 -739.684,495.718 "/>
+  </g>
+  <g>
+    <g>
+      <rect style="fill: #ffffff" x="-911.196" y="833.6" width="379.6" height="217.45"/>
+      <rect style="fill: none; fill-opacity:0; stroke-width: 10; stroke: #000000" x="-911.196" y="833.6" width="379.6" height="217.45"/>
+    </g>
+    <text style="fill: #000000;text-anchor:middle;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:normal" x="-720.196" y="969.6">
+      <tspan x="-720.196" y="969.6">Column</tspan>
+    </text>
+  </g>
+  <text style="fill: #000000;text-anchor:start;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:normal" x="-624.196" y="777.2">
+    <tspan x="-624.196" y="777.2">(meta)</tspan>
+  </text>
+  <line style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" x1="-721.396" y1="1051.05" x2="-650.196" y2="1179.6"/>
+  <g>
+    <g>
+      <ellipse style="fill: #ffffff" cx="-650.196" cy="1317.6" rx="269" ry="138"/>
+      <ellipse style="fill: none; fill-opacity:0; stroke-width: 2; stroke: #000000" cx="-650.196" cy="1317.6" rx="269" ry="138"/>
+    </g>
+    <text style="fill: #000000;text-anchor:middle;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:normal" x="-638.196" y="1341.6">
+      <tspan x="-638.196" y="1341.6">Data Type</tspan>
+    </text>
+  </g>
+  <text style="fill: #000000;text-anchor:start;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:normal" x="1107.8" y="1151.2">
+    <tspan x="1107.8" y="1151.2">All-OK, etc</tspan>
+  </text>
+  <text style="fill: #000000;text-anchor:middle;font-size:84.6667;font-family:sanserif;font-style:normal;font-weight:normal" x="1999.8" y="1147.2">
+    <tspan x="1999.8" y="1147.2">OK, recover-</tspan>
+    <tspan x="1999.8" y="1253.03">ing,etc</tspan>
   </text>
 </svg>
