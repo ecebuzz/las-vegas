@@ -1,4 +1,4 @@
-package edu.brown.lasvegas;
+package edu.brown.lasvegas.util;
 
 import com.sleepycat.persist.model.Persistent;
 
@@ -7,16 +7,16 @@ import com.sleepycat.persist.model.Persistent;
  * Used to represent some value range.
  */
 @Persistent
-public class ValueRange {
+public class ValueRange<T extends Comparable<T>> {
     /**
      * The starting key of the range (inclusive).
      */
-    private Comparable<?> startKey;
+    private T startKey;
 
     /**
      * The ending key of the range (exclusive).
      */
-    private Comparable<?> endKey;
+    private T endKey;
     
     /**
      * @see java.lang.Object#toString()
@@ -31,7 +31,7 @@ public class ValueRange {
      *
      * @return the starting key of the range (inclusive)
      */
-    public Comparable<?> getStartKey() {
+    public T getStartKey() {
         return startKey;
     }
 
@@ -40,7 +40,7 @@ public class ValueRange {
      *
      * @param startKey the new starting key of the range (inclusive)
      */
-    public void setStartKey(Comparable<?> startKey) {
+    public void setStartKey(T startKey) {
         this.startKey = startKey;
     }
 
@@ -49,7 +49,7 @@ public class ValueRange {
      *
      * @return the ending key of the range (exclusive)
      */
-    public Comparable<?> getEndKey() {
+    public T getEndKey() {
         return endKey;
     }
 
@@ -58,7 +58,14 @@ public class ValueRange {
      *
      * @param endKey the new ending key of the range (exclusive)
      */
-    public void setEndKey(Comparable<?> endKey) {
+    public void setEndKey(T endKey) {
         this.endKey = endKey;
+    }
+
+    /**
+     * Returns if the given key falls into this range.
+     */
+    public boolean contains (T key) {
+        return startKey.compareTo(key) >= 0 && endKey.compareTo(key) < 0;
     }
 }

@@ -5,6 +5,8 @@ import com.sleepycat.persist.model.PrimaryKey;
 import com.sleepycat.persist.model.Relationship;
 import com.sleepycat.persist.model.SecondaryKey;
 
+import edu.brown.lasvegas.util.CompositeIntKey;
+
 /**
  * Replica (Replicated Fracture) is a stored
  * table fracture with some replica scheme.
@@ -53,15 +55,6 @@ public class LVReplica {
     private LVReplicaStatus status;
 
     /**
-     * Defines the key range of the partitioning column in this replica.
-     * Same as the startKey of the first {@link LVReplicaPartitionRange}
-     * and the endKey of the last {@link LVReplicaPartitionRange}
-     * in this replica.
-     * Can be used to quickly prune out this replica for some query.
-     */
-    private ValueRange range;
-
-    /**
      * To string.
      *
      * @return the string
@@ -70,7 +63,7 @@ public class LVReplica {
     @Override
     public String toString() {
         return "Replica-" + replicaId + "(Scheme=" + schemeId + ", Fracture=" + fractureId + ") "
-        + "status=" + status + ", range=" + range
+        + "status=" + status
         ;
     }
     
@@ -145,23 +138,5 @@ public class LVReplica {
      */
     public void setStatus(LVReplicaStatus status) {
         this.status = status;
-    }
-
-    /**
-     * Gets the defines the key range of the partitioning column in this replica.
-     *
-     * @return the defines the key range of the partitioning column in this replica
-     */
-    public ValueRange getRange() {
-        return range;
-    }
-
-    /**
-     * Sets the defines the key range of the partitioning column in this replica.
-     *
-     * @param range the new defines the key range of the partitioning column in this replica
-     */
-    public void setRange(ValueRange range) {
-        this.range = range;
     }
 }

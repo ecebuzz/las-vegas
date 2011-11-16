@@ -5,6 +5,8 @@ import com.sleepycat.persist.model.PrimaryKey;
 import com.sleepycat.persist.model.Relationship;
 import com.sleepycat.persist.model.SecondaryKey;
 
+import edu.brown.lasvegas.util.ValueRange;
+
 /**
  * The recovery unit of a table.
  * A Fracture is a conceptual partitioning which defines
@@ -33,7 +35,7 @@ public class LVTableFracture {
      * Could be tentatively NULL while creating a new fracture
      * if the base group uses automatic-epoch partitioning.
      */
-    private ValueRange range;
+    private ValueRange<?> range;
 
     /**
      * The number of tuples in this fracture.
@@ -111,7 +113,7 @@ public class LVTableFracture {
      *
      * @return the key range of the base group's partitioning column in this fracture
      */
-    public ValueRange getRange() {
+    public ValueRange<?> getRange() {
         return range;
     }
 
@@ -120,7 +122,7 @@ public class LVTableFracture {
      *
      * @param range the new key range of the base group's partitioning column in this fracture
      */
-    public void setRange(ValueRange range) {
+    public void setRange(ValueRange<?> range) {
         this.range = range;
     }
     

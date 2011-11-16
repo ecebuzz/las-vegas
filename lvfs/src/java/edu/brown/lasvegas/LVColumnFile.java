@@ -5,6 +5,8 @@ import com.sleepycat.persist.model.PrimaryKey;
 import com.sleepycat.persist.model.Relationship;
 import com.sleepycat.persist.model.SecondaryKey;
 
+import edu.brown.lasvegas.util.CompositeIntKey;
+
 /**
  * A columnar file in a replica partition.
  * The smallest unit of data file objects.
@@ -15,7 +17,7 @@ import com.sleepycat.persist.model.SecondaryKey;
 @Entity
 public class LVColumnFile {
     /**
-     * ID of the replica partition this column file belongs to.
+     * ID of the sub-partition this column file belongs to.
      */
     @SecondaryKey(name="IX_PARTITION_ID", relate=Relationship.MANY_TO_ONE, relatedEntity=LVReplicaPartition.class)
     private int partitionId;
@@ -24,7 +26,23 @@ public class LVColumnFile {
      * ID of the column this file stores.
      */
     private int columnId;
+    /**
+     * A hack to create a composite secondary index on Partition-ID and Column-ID.
+     * Don't get or set this directly. Only BDB-JE should access it.
+     */
+    @SecondaryKey(name="IX_PARTITION_COLUMN_ID", relate=Relationship.MANY_TO_ONE)
+    private CompositeIntKey partitionColumnId = new CompositeIntKey();
+    
+    /** getter sees the actual members. */
+    public CompositeIntKey getPartitionColumnId() {
+        partitionColumnId.setValue1(partitionId);
+        partitionColumnId.setValue2(columnId);
+        return partitionColumnId;
+    }
+    /** dummy setter. */
+    public void setPartitionColumnId(CompositeIntKey partitionColumnId) {}
 
+    
     /**
      * Unique ID of this file.
      */
@@ -51,18 +69,18 @@ public class LVColumnFile {
     
 // auto-generated getters/setters (comments by JAutodoc)
     /**
-     * Gets the iD of the replica partition this column file belongs to.
+     * Gets the iD of the sub-partition this column file belongs to.
      *
-     * @return the iD of the replica partition this column file belongs to
+     * @return the iD of the sub-partition this column file belongs to
      */
     public int getPartitionId() {
         return partitionId;
     }
 
     /**
-     * Sets the iD of the replica partition this column file belongs to.
+     * Sets the iD of the sub-partition this column file belongs to.
      *
-     * @param partitionId the new iD of the replica partition this column file belongs to
+     * @param partitionId the new iD of the sub-partition this column file belongs to
      */
     public void setPartitionId(int partitionId) {
         this.partitionId = partitionId;

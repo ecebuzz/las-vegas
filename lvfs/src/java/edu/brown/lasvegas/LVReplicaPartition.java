@@ -5,9 +5,11 @@ import com.sleepycat.persist.model.PrimaryKey;
 import com.sleepycat.persist.model.Relationship;
 import com.sleepycat.persist.model.SecondaryKey;
 
+import edu.brown.lasvegas.util.CompositeIntKey;
+
 /**
  * A sub-partition of {@link LVReplica}.
- * All columns files in each partition are located in the same node
+ * All column files in each partition are located in the same node
  * to speed up tuple re-construction.
  * LVReplicaPartition is also a unit for recovery and replication.
  */
@@ -20,36 +22,38 @@ public class LVReplicaPartition {
     private int replicaId;
 
     /**
-     * Key range of the partitioning column.
+     * ID of the sub-partition scheme this partition is based on.
+     * Can be obtained from replicaId, but easier if we have this here too.
      */
-    @SecondaryKey(name="IX_RANGE_ID", relate=Relationship.MANY_TO_ONE, relatedEntity=LVReplicaPartitionRange.class)
-    private int rangeId;
+    private int replicaPartitionSchemeId;
 
     /**
-     * A hack to create a composite secondary index on Replica-ID and Range-ID.
+     * The index in {@link LVReplicaPartitionScheme#getRanges()}.
+     * Represents the key range this partition stores.
+     */
+    private int range;
+
+    /**
+     * A hack to create a composite secondary index on Replica-ID and Range.
      * Don't get or set this directly. Only BDB-JE should access it.
      */
-    @SecondaryKey(name="IX_REPLICA_RANGE_ID", relate=Relationship.MANY_TO_ONE)
-    private CompositeIntKey replicaRangeId = new CompositeIntKey();
+    @SecondaryKey(name="IX_REPLICA_RANGE", relate=Relationship.MANY_TO_ONE)
+    private CompositeIntKey replicaRange = new CompositeIntKey();
+    
     /** getter sees the actual members. */
-    public CompositeIntKey getReplicaRangeId() {
-        replicaRangeId.setValue1(replicaId);
-        replicaRangeId.setValue2(rangeId);
-        return replicaRangeId;
+    public CompositeIntKey getReplicaRange() {
+        replicaRange.setValue1(replicaId);
+        replicaRange.setValue2(range);
+        return replicaRange;
     }
     /** dummy setter. */
-    public void setReplicaRangeId(CompositeIntKey replicaRangeId) {}
+    public void setReplicaRange(CompositeIntKey replicaRange) {}
 
     /**
      * Unique ID of this replica partition.
      */
     @PrimaryKey
     private int partitionId;
-    
-    /**
-     * The number of tuples in this replica partition.
-     */
-    private long tupleCount;
     
     /**
      * Current status of this replica partition.
@@ -73,13 +77,16 @@ public class LVReplicaPartition {
     private String recoveryHdfsNodeUri;
     
     /**
+     * To string.
+     *
+     * @return the string
      * @see java.lang.Object#toString()
      */
     @Override
     public String toString() {
         return "ReplicaPartition-" + partitionId + " (Replica=" + replicaId
-            + ", Range=" + rangeId + ")"
-            + " TupleCount=" + tupleCount
+            + ", Range=" + range + ")"
+            + " replicaPartitionSchemeId=" + replicaPartitionSchemeId
             + " Status=" + status
             + " currentHdfsNodeUri=" + currentHdfsNodeUri
             + " recoveryHdfsNodeUri=" + recoveryHdfsNodeUri
@@ -106,24 +113,6 @@ public class LVReplicaPartition {
     }
 
     /**
-     * Gets the key range of the partitioning column.
-     *
-     * @return the key range of the partitioning column
-     */
-    public int getRangeId() {
-        return rangeId;
-    }
-
-    /**
-     * Sets the key range of the partitioning column.
-     *
-     * @param rangeId the new key range of the partitioning column
-     */
-    public void setRangeId(int rangeId) {
-        this.rangeId = rangeId;
-    }
-
-    /**
      * Gets the unique ID of this replica partition.
      *
      * @return the unique ID of this replica partition
@@ -139,24 +128,6 @@ public class LVReplicaPartition {
      */
     public void setPartitionId(int partitionId) {
         this.partitionId = partitionId;
-    }
-
-    /**
-     * Gets the number of tuples in this replica partition.
-     *
-     * @return the number of tuples in this replica partition
-     */
-    public long getTupleCount() {
-        return tupleCount;
-    }
-
-    /**
-     * Sets the number of tuples in this replica partition.
-     *
-     * @param tupleCount the new number of tuples in this replica partition
-     */
-    public void setTupleCount(long tupleCount) {
-        this.tupleCount = tupleCount;
     }
 
     /**
@@ -211,5 +182,41 @@ public class LVReplicaPartition {
      */
     public void setRecoveryHdfsNodeUri(String recoveryHdfsNodeUri) {
         this.recoveryHdfsNodeUri = recoveryHdfsNodeUri;
+    }
+    
+    /**
+     * Gets the index in {@link LVReplicaPartitionScheme#getRanges()}.
+     *
+     * @return the index in {@link LVReplicaPartitionScheme#getRanges()}
+     */
+    public int getRange() {
+        return range;
+    }
+    
+    /**
+     * Sets the index in {@link LVReplicaPartitionScheme#getRanges()}.
+     *
+     * @param range the new index in {@link LVReplicaPartitionScheme#getRanges()}
+     */
+    public void setRange(int range) {
+        this.range = range;
+    }
+
+    /**
+     * Gets the iD of the replica partition scheme this partition is based on.
+     *
+     * @return the iD of the replica partition scheme this partition is based on
+     */
+    public int getReplicaPartitionSchemeId() {
+        return replicaPartitionSchemeId;
+    }
+
+    /**
+     * Sets the iD of the replica partition scheme this partition is based on.
+     *
+     * @param replicaPartitionSchemeId the new iD of the replica partition scheme this partition is based on
+     */
+    public void setReplicaPartitionSchemeId(int replicaPartitionSchemeId) {
+        this.replicaPartitionSchemeId = replicaPartitionSchemeId;
     }
 }

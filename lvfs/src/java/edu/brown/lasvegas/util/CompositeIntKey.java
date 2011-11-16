@@ -1,4 +1,4 @@
-package edu.brown.lasvegas;
+package edu.brown.lasvegas.util;
 
 import com.sleepycat.persist.model.KeyField;
 import com.sleepycat.persist.model.Persistent;

@@ -34,7 +34,7 @@ public class LVTableColumn {
     private LVColumnType type;
     
     /**
-     * Sequential order in this table (count from 0).
+     * Sequential order in this table (usually from 1; 0 is always the "epoch" column).
      * Unique in this table.
      */
     private int order;
