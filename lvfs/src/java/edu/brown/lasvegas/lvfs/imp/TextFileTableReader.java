@@ -11,16 +11,15 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.StringTokenizer;
 
-import edu.brown.lasvegas.LVColumnTypes;
+import edu.brown.lasvegas.LVColumnType;
 import edu.brown.lasvegas.LVTableReader;
-import edu.brown.lasvegas.LVTableScheme;
 
 /**
  * An implementation of LVTableReader for a simple
  * line-delimiter and column-delimiter format, such as CSV/TSV.
  */
 public class TextFileTableReader implements LVTableReader {
-    private final LVTableScheme scheme;
+    private final TextFileTableScheme scheme;
     private final String delimiter;
     private final DateFormat dateFormat;
     private final DateFormat timeFormat;
@@ -31,7 +30,7 @@ public class TextFileTableReader implements LVTableReader {
     private long linesRead;
 
     /** shortcut constructor for SSB/TPCH tbl files. */
-    public TextFileTableReader (InputStream in, LVTableScheme scheme, String delimiter) {
+    public TextFileTableReader (InputStream in, TextFileTableScheme scheme, String delimiter) {
         this(in, scheme, delimiter, 1 << 20, Charset.forName("UTF-8"),
             new SimpleDateFormat("yyyy-MM-dd"),
             new SimpleDateFormat("HH:mm:ss"),
@@ -48,7 +47,7 @@ public class TextFileTableReader implements LVTableReader {
      * @param timeFormat used to parse a time column
      * @param timestampFormat used to parse a timestamp column
      */
-    public TextFileTableReader (InputStream in, LVTableScheme scheme, String delimiter, int buffersize, Charset charset,
+    public TextFileTableReader (InputStream in, TextFileTableScheme scheme, String delimiter, int buffersize, Charset charset,
             DateFormat dateFormat, DateFormat timeFormat, DateFormat timestampFormat) {
         this.scheme = scheme;
         this.delimiter = delimiter;
@@ -89,24 +88,28 @@ public class TextFileTableReader implements LVTableReader {
     }
 
     @Override
-    public LVTableScheme getScheme() {
-        return scheme;
+    public int getColumnCount() {
+        return scheme.getColumnCount();
+    }
+    @Override
+    public LVColumnType getColumnType(int columnIndex) {
+        return scheme.getColumnType(columnIndex);
     }
 
     @Override
     public Object getObject(int columnIndex) throws IOException {
         switch (scheme.getColumnType(columnIndex)) {
-        case LVColumnTypes.BIGINT: return Long.valueOf(columnData[columnIndex]);
-        case LVColumnTypes.BOOLEAN: return Boolean.valueOf(columnData[columnIndex]);
-        case LVColumnTypes.DOUBLE: return Double.valueOf(columnData[columnIndex]);
-        case LVColumnTypes.FLOAT: return Float.valueOf(columnData[columnIndex]);
-        case LVColumnTypes.INTEGER: return Integer.valueOf(columnData[columnIndex]);
-        case LVColumnTypes.SMALLINT: return Short.valueOf(columnData[columnIndex]);
-        case LVColumnTypes.TINYINT: return Byte.valueOf(columnData[columnIndex]);
+        case BIGINT: return Long.valueOf(columnData[columnIndex]);
+        case BOOLEAN: return Boolean.valueOf(columnData[columnIndex]);
+        case DOUBLE: return Double.valueOf(columnData[columnIndex]);
+        case FLOAT: return Float.valueOf(columnData[columnIndex]);
+        case INTEGER: return Integer.valueOf(columnData[columnIndex]);
+        case SMALLINT: return Short.valueOf(columnData[columnIndex]);
+        case TINYINT: return Byte.valueOf(columnData[columnIndex]);
 
-        case LVColumnTypes.DATE: return getSqlDate(columnIndex);
-        case LVColumnTypes.TIME: return getSqlTime(columnIndex);
-        case LVColumnTypes.TIMESTAMP: return getSqlTimestamp(columnIndex);        
+        case DATE: return getSqlDate(columnIndex);
+        case TIME: return getSqlTime(columnIndex);
+        case TIMESTAMP: return getSqlTimestamp(columnIndex);        
         }
         return columnData[columnIndex];
     }

@@ -4,8 +4,7 @@ import static org.junit.Assert.*;
 import org.junit.Test;
 import java.io.InputStream;
 
-import edu.brown.lasvegas.LVColumnTypes;
-import edu.brown.lasvegas.LVTableScheme;
+import edu.brown.lasvegas.LVColumnType;
 
 /**
  * Another test using lineorder.tbl.
@@ -14,29 +13,29 @@ public class TextFileTableReaderTestLineorder {
     @Test
     public void testAll() throws Exception {
         InputStream testFile = this.getClass().getResourceAsStream("mini_lineorder.tbl");
-        LVTableScheme scheme = new LVTableScheme("mini_lineorder");
-        scheme.addColumn("lo_orderkey", LVColumnTypes.INTEGER)
-            .addColumn("lo_linenumber", LVColumnTypes.TINYINT)
-            .addColumn("lo_custkey", LVColumnTypes.INTEGER)
-            .addColumn("lo_partkey", LVColumnTypes.INTEGER)
-            .addColumn("lo_suppkey", LVColumnTypes.INTEGER)
-            .addColumn("lo_orderdate", LVColumnTypes.INTEGER)
-            .addColumn("lo_orderpriority", LVColumnTypes.VARCHAR)
-            .addColumn("lo_shippriority", LVColumnTypes.VARCHAR)
-            .addColumn("lo_quantity", LVColumnTypes.INTEGER)
-            .addColumn("lo_extendedprice", LVColumnTypes.BIGINT)
-            .addColumn("lo_ordertotalprice", LVColumnTypes.INTEGER)
-            .addColumn("lo_discount", LVColumnTypes.SMALLINT)
-            .addColumn("lo_revenue", LVColumnTypes.BIGINT)
-            .addColumn("lo_supplycost", LVColumnTypes.INTEGER)
-            .addColumn("lo_tax", LVColumnTypes.INTEGER)
-            .addColumn("lo_commitdate", LVColumnTypes.INTEGER)
-            .addColumn("lo_shipmode", LVColumnTypes.VARCHAR)
+        TextFileTableScheme scheme = new TextFileTableScheme();
+        scheme.addColumn(/*"lo_orderkey", */LVColumnType.INTEGER)
+            .addColumn(/*"lo_linenumber", */LVColumnType.TINYINT)
+            .addColumn(/*"lo_custkey", */LVColumnType.INTEGER)
+            .addColumn(/*"lo_partkey", */LVColumnType.INTEGER)
+            .addColumn(/*"lo_suppkey",*/ LVColumnType.INTEGER)
+            .addColumn(/*"lo_orderdate",*/ LVColumnType.INTEGER)
+            .addColumn(/*"lo_orderpriority",*/ LVColumnType.VARCHAR)
+            .addColumn(/*"lo_shippriority",*/ LVColumnType.VARCHAR)
+            .addColumn(/*"lo_quantity",*/ LVColumnType.INTEGER)
+            .addColumn(/*"lo_extendedprice",*/ LVColumnType.BIGINT)
+            .addColumn(/*"lo_ordertotalprice",*/ LVColumnType.INTEGER)
+            .addColumn(/*"lo_discount",*/ LVColumnType.SMALLINT)
+            .addColumn(/*"lo_revenue",*/ LVColumnType.BIGINT)
+            .addColumn(/*"lo_supplycost",*/ LVColumnType.INTEGER)
+            .addColumn(/*"lo_tax",*/ LVColumnType.INTEGER)
+            .addColumn(/*"lo_commitdate",*/ LVColumnType.INTEGER)
+            .addColumn(/*"lo_shipmode",*/ LVColumnType.VARCHAR)
             ;
         
         TextFileTableReader reader = new TextFileTableReader(testFile, scheme, "|");
         assertEquals (17, scheme.getColumnCount());
-        assertEquals (scheme.getColumnCount(), reader.getScheme().getColumnCount());
+        assertEquals (scheme.getColumnCount(), reader.getColumnCount());
         System.out.println("reading:\n" + scheme.toString());
         int linesRead = 0;
         while (reader.next()) {
@@ -54,7 +53,7 @@ public class TextFileTableReaderTestLineorder {
                     assertTrue (reader.getByte(i) > (byte) 0);
                     assertTrue (reader.getByte(i) < (byte) 10);
                 }
-                if (scheme.getColumnName(i).equals("lo_orderdate") || scheme.getColumnName(i).equals("lo_commitdate")) {
+                if (i == 5 || i == 15) {
                     assertTrue (reader.getInt(i) >= 19920101);
                     assertTrue (reader.getInt(i) <= 19991231);
                 }

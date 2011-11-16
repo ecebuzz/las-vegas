@@ -8,8 +8,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import edu.brown.lasvegas.LVColumnTypes;
-import edu.brown.lasvegas.LVTableScheme;
+import edu.brown.lasvegas.LVColumnType;
 
 /**
  * Testcase for {@link TextFileTableReader}.
@@ -21,18 +20,18 @@ public class TextFileTableReaderTest {
     @Before
     public void setUp() throws Exception {
         InputStream testFile = this.getClass().getResourceAsStream("alltypes.csv");
-        LVTableScheme scheme = new LVTableScheme("alltypes");
-        scheme.addColumn("col0", LVColumnTypes.BOOLEAN)
-            .addColumn("col1", LVColumnTypes.TINYINT)
-            .addColumn("col2", LVColumnTypes.SMALLINT)
-            .addColumn("col3", LVColumnTypes.INTEGER)
-            .addColumn("col4", LVColumnTypes.BIGINT)
-            .addColumn("col5", LVColumnTypes.FLOAT)
-            .addColumn("col6", LVColumnTypes.DOUBLE)
-            .addColumn("col7", LVColumnTypes.DATE)
-            .addColumn("col8", LVColumnTypes.TIME)
-            .addColumn("col9", LVColumnTypes.TIMESTAMP)
-            .addColumn("col10", LVColumnTypes.VARCHAR)
+        TextFileTableScheme scheme = new TextFileTableScheme();
+        scheme.addColumn(LVColumnType.BOOLEAN)
+            .addColumn(LVColumnType.TINYINT)
+            .addColumn(LVColumnType.SMALLINT)
+            .addColumn(LVColumnType.INTEGER)
+            .addColumn(LVColumnType.BIGINT)
+            .addColumn(LVColumnType.FLOAT)
+            .addColumn(LVColumnType.DOUBLE)
+            .addColumn(LVColumnType.DATE)
+            .addColumn(LVColumnType.TIME)
+            .addColumn(LVColumnType.TIMESTAMP)
+            .addColumn(LVColumnType.VARCHAR)
             ;
         
         reader = new TextFileTableReader(testFile, scheme, ",");
@@ -51,15 +50,6 @@ public class TextFileTableReaderTest {
         assertTrue(reader.next());
         assertTrue(reader.next());
         assertFalse(reader.next());
-    }
-
-    /**
-     * Test method for {@link edu.brown.lasvegas.lvfs.imp.TextFileTableReader#getScheme()}.
-     */
-    @Test
-    public void testGetScheme() {
-        assertEquals("col3", reader.getScheme().getColumnName(3));
-        assertEquals(LVColumnTypes.BOOLEAN, reader.getScheme().getColumnType(0));
     }
 
     /**

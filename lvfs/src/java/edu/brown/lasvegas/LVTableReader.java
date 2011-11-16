@@ -31,8 +31,11 @@ public interface LVTableReader {
     /** Revoke every resource this object holds. */
     void close() throws IOException;
     
-    /** Returns the scheme of this table. */
-    LVTableScheme getScheme();
+    /** Returns the number of columns. */
+    int getColumnCount();
+
+    /** Returns the data type of specified column. */
+    LVColumnType getColumnType(int columnIndex);
     
     /** for general reads. */
     Object getObject (int columnIndex) throws IOException;
