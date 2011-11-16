@@ -1,8 +1,6 @@
 package edu.brown.lasvegas;
 
 import com.sleepycat.persist.model.Entity;
-import com.sleepycat.persist.model.KeyField;
-import com.sleepycat.persist.model.Persistent;
 import com.sleepycat.persist.model.PrimaryKey;
 import com.sleepycat.persist.model.Relationship;
 import com.sleepycat.persist.model.SecondaryKey;
@@ -27,24 +25,20 @@ public class LVReplica {
     @SecondaryKey(name="IX_FRACTURE_ID", relate=Relationship.MANY_TO_ONE, relatedEntity=LVTableFracture.class)
     private int fractureId;
 
-    /** composite class to create a composite secondary index. */
-    @Persistent
-    public static class SchemeFractureId {
-        /** The scheme id. */
-        @KeyField(1)
-        int schemeId;
-        
-        /** The fracture id. */
-        @KeyField(2)
-        int fractureId;
-    }
-    
     /**
      * A hack to create a composite secondary index on Scheme-ID and Fracture-ID.
      * Don't get or set this directly. Only BDB-JE should access it.
      */
     @SecondaryKey(name="IX_SCHEME_FRACTURE_ID", relate=Relationship.MANY_TO_ONE)
-    private SchemeFractureId schemeFractureId;
+    private CompositeIntKey schemeFractureId = new CompositeIntKey();
+    /** getter sees the actual members. */
+    public CompositeIntKey getSchemeFractureId() {
+        schemeFractureId.setValue1(schemeId);
+        schemeFractureId.setValue2(fractureId);
+        return schemeFractureId;
+    }
+    /** dummy setter. */
+    public void setSchemeFractureId(CompositeIntKey schemeFractureId) {}
     
     /**
      * A unique (system-wide) ID of this replica.
@@ -55,7 +49,17 @@ public class LVReplica {
     /**
      * Status of this replica.
      */
+    @SecondaryKey(name="IX_STATUS", relate=Relationship.MANY_TO_ONE)
     private LVReplicaStatus status;
+
+    /**
+     * Defines the key range of the partitioning column in this replica.
+     * Same as the startKey of the first {@link LVReplicaPartitionRange}
+     * and the endKey of the last {@link LVReplicaPartitionRange}
+     * in this replica.
+     * Can be used to quickly prune out this replica for some query.
+     */
+    private ValueRange range;
 
     /**
      * To string.
@@ -65,7 +69,9 @@ public class LVReplica {
      */
     @Override
     public String toString() {
-        return "Replica-" + replicaId + "(Scheme=" + schemeId + ", Fracture=" + fractureId + ") status=" + status;
+        return "Replica-" + replicaId + "(Scheme=" + schemeId + ", Fracture=" + fractureId + ") "
+        + "status=" + status + ", range=" + range
+        ;
     }
     
 // auto-generated getters/setters (comments by JAutodoc)
@@ -106,24 +112,6 @@ public class LVReplica {
     }
 
     /**
-     * Gets the a hack to create a composite secondary index on Scheme-ID and Fracture-ID.
-     *
-     * @return the a hack to create a composite secondary index on Scheme-ID and Fracture-ID
-     */
-    public SchemeFractureId getSchemeFractureId() {
-        return schemeFractureId;
-    }
-
-    /**
-     * Sets the a hack to create a composite secondary index on Scheme-ID and Fracture-ID.
-     *
-     * @param schemeFractureId the new a hack to create a composite secondary index on Scheme-ID and Fracture-ID
-     */
-    public void setSchemeFractureId(SchemeFractureId schemeFractureId) {
-        this.schemeFractureId = schemeFractureId;
-    }
-
-    /**
      * Gets the a unique (system-wide) ID of this replica.
      *
      * @return the a unique (system-wide) ID of this replica
@@ -157,5 +145,23 @@ public class LVReplica {
      */
     public void setStatus(LVReplicaStatus status) {
         this.status = status;
+    }
+
+    /**
+     * Gets the defines the key range of the partitioning column in this replica.
+     *
+     * @return the defines the key range of the partitioning column in this replica
+     */
+    public ValueRange getRange() {
+        return range;
+    }
+
+    /**
+     * Sets the defines the key range of the partitioning column in this replica.
+     *
+     * @param range the new defines the key range of the partitioning column in this replica
+     */
+    public void setRange(ValueRange range) {
+        this.range = range;
     }
 }

@@ -29,20 +29,11 @@ public class LVTableFracture {
     private int fractureId;
 
     /**
-     * Defines the beginning key of this fracture (inclusive).
-     * The key of the base group's partitioning column.
-     * Could be NULL only when the base group uses automatic-epoch
-     * partitioning.
+     * The key range of the base group's partitioning column in this fracture.
+     * Could be tentatively NULL while creating a new fracture
+     * if the base group uses automatic-epoch partitioning.
      */
-    private Object startKey;
-
-    /**
-     * Defines the ending key of this fracture (exclusive).
-     * The key of the base group's partitioning column.
-     * Could be NULL only when the base group uses automatic-epoch
-     * partitioning.
-     */
-    private Object endKey;
+    private ValueRange range;
 
     /**
      * The number of tuples in this fracture.
@@ -56,7 +47,7 @@ public class LVTableFracture {
     @Override
     public String toString() {
         return "Fracture-" + fractureId + " in Table-" + tableId
-        + ": start=" + startKey + ", end=" + endKey
+        + ": range=" + range
         + ". tupleCount=" + tupleCount;
     }
 
@@ -98,42 +89,6 @@ public class LVTableFracture {
     }
 
     /**
-     * Gets the defines the beginning key of this fracture (inclusive).
-     *
-     * @return the defines the beginning key of this fracture (inclusive)
-     */
-    public Object getStartKey() {
-        return startKey;
-    }
-
-    /**
-     * Sets the defines the beginning key of this fracture (inclusive).
-     *
-     * @param startKey the new defines the beginning key of this fracture (inclusive)
-     */
-    public void setStartKey(Object startKey) {
-        this.startKey = startKey;
-    }
-
-    /**
-     * Gets the defines the ending key of this fracture (exclusive).
-     *
-     * @return the defines the ending key of this fracture (exclusive)
-     */
-    public Object getEndKey() {
-        return endKey;
-    }
-
-    /**
-     * Sets the defines the ending key of this fracture (exclusive).
-     *
-     * @param endKey the new defines the ending key of this fracture (exclusive)
-     */
-    public void setEndKey(Object endKey) {
-        this.endKey = endKey;
-    }
-
-    /**
      * Gets the number of tuples in this fracture.
      *
      * @return the number of tuples in this fracture
@@ -149,6 +104,24 @@ public class LVTableFracture {
      */
     public void setTupleCount(long tupleCount) {
         this.tupleCount = tupleCount;
+    }
+
+    /**
+     * Gets the key range of the base group's partitioning column in this fracture.
+     *
+     * @return the key range of the base group's partitioning column in this fracture
+     */
+    public ValueRange getRange() {
+        return range;
+    }
+
+    /**
+     * Sets the key range of the base group's partitioning column in this fracture.
+     *
+     * @param range the new key range of the base group's partitioning column in this fracture
+     */
+    public void setRange(ValueRange range) {
+        this.range = range;
     }
     
 }
