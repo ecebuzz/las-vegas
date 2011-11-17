@@ -2,18 +2,18 @@ package edu.brown.lasvegas.lvfs.imp;
 
 import java.util.ArrayList;
 
-import edu.brown.lasvegas.LVColumnType;
+import edu.brown.lasvegas.ColumnType;
 
 /**
  * Represents a data scheme of a table stored as a text file.
  */
 public class TextFileTableScheme {
-    private final ArrayList<LVColumnType> columnTypes = new ArrayList<LVColumnType>();
+    private final ArrayList<ColumnType> columnTypes = new ArrayList<ColumnType>();
     
     /**
      * Returns this to allow scheme.addColumn(hoge).addColumn(foo)...
      */
-    public TextFileTableScheme addColumn(LVColumnType type) {
+    public TextFileTableScheme addColumn(ColumnType type) {
         columnTypes.add(type);
         return this;
     }
@@ -25,7 +25,7 @@ public class TextFileTableScheme {
     public int getColumnCount () {
         return columnTypes.size();
     }
-    public LVColumnType getColumnType(int index) {
+    public ColumnType getColumnType(int index) {
         assert (index < columnTypes.size());
         return columnTypes.get(index);
     }

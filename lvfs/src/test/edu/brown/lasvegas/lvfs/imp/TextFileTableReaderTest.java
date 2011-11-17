@@ -8,7 +8,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import edu.brown.lasvegas.LVColumnType;
+import edu.brown.lasvegas.ColumnType;
 
 /**
  * Testcase for {@link TextFileTableReader}.
@@ -21,17 +21,17 @@ public class TextFileTableReaderTest {
     public void setUp() throws Exception {
         InputStream testFile = this.getClass().getResourceAsStream("alltypes.csv");
         TextFileTableScheme scheme = new TextFileTableScheme();
-        scheme.addColumn(LVColumnType.BOOLEAN)
-            .addColumn(LVColumnType.TINYINT)
-            .addColumn(LVColumnType.SMALLINT)
-            .addColumn(LVColumnType.INTEGER)
-            .addColumn(LVColumnType.BIGINT)
-            .addColumn(LVColumnType.FLOAT)
-            .addColumn(LVColumnType.DOUBLE)
-            .addColumn(LVColumnType.DATE)
-            .addColumn(LVColumnType.TIME)
-            .addColumn(LVColumnType.TIMESTAMP)
-            .addColumn(LVColumnType.VARCHAR)
+        scheme.addColumn(ColumnType.BOOLEAN)
+            .addColumn(ColumnType.TINYINT)
+            .addColumn(ColumnType.SMALLINT)
+            .addColumn(ColumnType.INTEGER)
+            .addColumn(ColumnType.BIGINT)
+            .addColumn(ColumnType.FLOAT)
+            .addColumn(ColumnType.DOUBLE)
+            .addColumn(ColumnType.DATE)
+            .addColumn(ColumnType.TIME)
+            .addColumn(ColumnType.TIMESTAMP)
+            .addColumn(ColumnType.VARCHAR)
             ;
         
         reader = new TextFileTableReader(testFile, scheme, ",");

@@ -5,7 +5,7 @@ import java.sql.Types;
 /**
  * Defines list of column types that can be stored in LVFS.
  */
-public enum LVColumnType {
+public enum ColumnType {
     
     /** The INVALID. */
     INVALID(-42),
@@ -63,7 +63,7 @@ public enum LVColumnType {
      *
      * @param xopenType the xopen type
      */
-    LVColumnType (int xopenType) {
+    ColumnType (int xopenType) {
         this.xopenType = xopenType;
     }
     

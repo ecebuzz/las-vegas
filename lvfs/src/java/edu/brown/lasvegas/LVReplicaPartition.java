@@ -15,10 +15,11 @@ import edu.brown.lasvegas.util.CompositeIntKey;
  */
 @Entity
 public class LVReplicaPartition {
+    public static final String IX_REPLICA_ID = "IX_REPLICA_ID";
     /**
      * ID of the replica (Replicated Fracture) this replica partition belongs to.
      */
-    @SecondaryKey(name="IX_REPLICA_ID", relate=Relationship.MANY_TO_ONE, relatedEntity=LVReplica.class)
+    @SecondaryKey(name=IX_REPLICA_ID, relate=Relationship.MANY_TO_ONE, relatedEntity=LVReplica.class)
     private int replicaId;
 
     /**
@@ -33,11 +34,12 @@ public class LVReplicaPartition {
      */
     private int range;
 
+    public static final String IX_REPLICA_RANGE = "IX_REPLICA_RANGE";
     /**
      * A hack to create a composite secondary index on Replica-ID and Range.
      * Don't get or set this directly. Only BDB-JE should access it.
      */
-    @SecondaryKey(name="IX_REPLICA_RANGE", relate=Relationship.MANY_TO_ONE)
+    @SecondaryKey(name=IX_REPLICA_RANGE, relate=Relationship.MANY_TO_ONE)
     private CompositeIntKey replicaRange = new CompositeIntKey();
     
     /** getter sees the actual members. */
@@ -55,25 +57,28 @@ public class LVReplicaPartition {
     @PrimaryKey
     private int partitionId;
     
+    public static final String IX_STATUS = "IX_STATUS";
     /**
      * Current status of this replica partition.
      */
-    @SecondaryKey(name="IX_STATUS", relate=Relationship.MANY_TO_ONE)
-    private LVReplicaPartitionStatus status;
+    @SecondaryKey(name=IX_STATUS, relate=Relationship.MANY_TO_ONE)
+    private ReplicaPartitionStatus status;
 
+    public static final String IX_CURRENT_HDFS_NODE = "IX_CURRENT_HDFS_NODE";
     /**
      * URI of the current HDFS node that contains this replica partition.
      */
-    @SecondaryKey(name="IX_CURRENT_HDFS_NODE", relate=Relationship.MANY_TO_ONE)
+    @SecondaryKey(name=IX_CURRENT_HDFS_NODE, relate=Relationship.MANY_TO_ONE)
     private String currentHdfsNodeUri;
 
+    public static final String IX_RECOVERY_HDFS_NODE = "IX_RECOVERY_HDFS_NODE";
     /**
      * URI of the HDFS node that is trying to recovery this replica partition.
      * As soon as the recovery is done, it becomes the new currentHdfsNodeUri
      * and recoveryHdfsNodeUri will be set to an empty string.
      * recoveryHdfsNodeUri is empty as far as the replica partition is intact.
      */
-    @SecondaryKey(name="IX_RECOVERY_HDFS_NODE", relate=Relationship.MANY_TO_ONE)
+    @SecondaryKey(name=IX_RECOVERY_HDFS_NODE, relate=Relationship.MANY_TO_ONE)
     private String recoveryHdfsNodeUri;
     
     /**
@@ -135,7 +140,7 @@ public class LVReplicaPartition {
      *
      * @return the current status of this replica partition
      */
-    public LVReplicaPartitionStatus getStatus() {
+    public ReplicaPartitionStatus getStatus() {
         return status;
     }
 
@@ -144,7 +149,7 @@ public class LVReplicaPartition {
      *
      * @param status the new current status of this replica partition
      */
-    public void setStatus(LVReplicaPartitionStatus status) {
+    public void setStatus(ReplicaPartitionStatus status) {
         this.status = status;
     }
 

@@ -4,7 +4,7 @@ import static org.junit.Assert.*;
 import org.junit.Test;
 import java.io.InputStream;
 
-import edu.brown.lasvegas.LVColumnType;
+import edu.brown.lasvegas.ColumnType;
 
 /**
  * Another test using lineorder.tbl.
@@ -14,23 +14,23 @@ public class TextFileTableReaderTestLineorder {
     public void testAll() throws Exception {
         InputStream testFile = this.getClass().getResourceAsStream("mini_lineorder.tbl");
         TextFileTableScheme scheme = new TextFileTableScheme();
-        scheme.addColumn(/*"lo_orderkey", */LVColumnType.INTEGER)
-            .addColumn(/*"lo_linenumber", */LVColumnType.TINYINT)
-            .addColumn(/*"lo_custkey", */LVColumnType.INTEGER)
-            .addColumn(/*"lo_partkey", */LVColumnType.INTEGER)
-            .addColumn(/*"lo_suppkey",*/ LVColumnType.INTEGER)
-            .addColumn(/*"lo_orderdate",*/ LVColumnType.INTEGER)
-            .addColumn(/*"lo_orderpriority",*/ LVColumnType.VARCHAR)
-            .addColumn(/*"lo_shippriority",*/ LVColumnType.VARCHAR)
-            .addColumn(/*"lo_quantity",*/ LVColumnType.INTEGER)
-            .addColumn(/*"lo_extendedprice",*/ LVColumnType.BIGINT)
-            .addColumn(/*"lo_ordertotalprice",*/ LVColumnType.INTEGER)
-            .addColumn(/*"lo_discount",*/ LVColumnType.SMALLINT)
-            .addColumn(/*"lo_revenue",*/ LVColumnType.BIGINT)
-            .addColumn(/*"lo_supplycost",*/ LVColumnType.INTEGER)
-            .addColumn(/*"lo_tax",*/ LVColumnType.INTEGER)
-            .addColumn(/*"lo_commitdate",*/ LVColumnType.INTEGER)
-            .addColumn(/*"lo_shipmode",*/ LVColumnType.VARCHAR)
+        scheme.addColumn(/*"lo_orderkey", */ColumnType.INTEGER)
+            .addColumn(/*"lo_linenumber", */ColumnType.TINYINT)
+            .addColumn(/*"lo_custkey", */ColumnType.INTEGER)
+            .addColumn(/*"lo_partkey", */ColumnType.INTEGER)
+            .addColumn(/*"lo_suppkey",*/ ColumnType.INTEGER)
+            .addColumn(/*"lo_orderdate",*/ ColumnType.INTEGER)
+            .addColumn(/*"lo_orderpriority",*/ ColumnType.VARCHAR)
+            .addColumn(/*"lo_shippriority",*/ ColumnType.VARCHAR)
+            .addColumn(/*"lo_quantity",*/ ColumnType.INTEGER)
+            .addColumn(/*"lo_extendedprice",*/ ColumnType.BIGINT)
+            .addColumn(/*"lo_ordertotalprice",*/ ColumnType.INTEGER)
+            .addColumn(/*"lo_discount",*/ ColumnType.SMALLINT)
+            .addColumn(/*"lo_revenue",*/ ColumnType.BIGINT)
+            .addColumn(/*"lo_supplycost",*/ ColumnType.INTEGER)
+            .addColumn(/*"lo_tax",*/ ColumnType.INTEGER)
+            .addColumn(/*"lo_commitdate",*/ ColumnType.INTEGER)
+            .addColumn(/*"lo_shipmode",*/ ColumnType.VARCHAR)
             ;
         
         TextFileTableReader reader = new TextFileTableReader(testFile, scheme, "|");

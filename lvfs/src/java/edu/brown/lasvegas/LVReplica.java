@@ -15,23 +15,26 @@ import edu.brown.lasvegas.util.CompositeIntKey;
  */
 @Entity
 public class LVReplica {
+    public static final String IX_SCHEME_ID = "IX_SCHEME_ID";
     /**
      * ID of the scheme of this replica.
      */
-    @SecondaryKey(name="IX_SCHEME_ID", relate=Relationship.MANY_TO_ONE, relatedEntity=LVReplicaScheme.class)
+    @SecondaryKey(name=IX_SCHEME_ID, relate=Relationship.MANY_TO_ONE, relatedEntity=LVReplicaScheme.class)
     private int schemeId;
 
+    public static final String IX_FRACTURE_ID = "IX_FRACTURE_ID";
     /**
      * ID of the fracture of this replica.
      */
-    @SecondaryKey(name="IX_FRACTURE_ID", relate=Relationship.MANY_TO_ONE, relatedEntity=LVTableFracture.class)
+    @SecondaryKey(name=IX_FRACTURE_ID, relate=Relationship.MANY_TO_ONE, relatedEntity=LVTableFracture.class)
     private int fractureId;
 
+    public static final String IX_SCHEME_FRACTURE_ID = "IX_SCHEME_FRACTURE_ID";
     /**
      * A hack to create a composite secondary index on Scheme-ID and Fracture-ID.
      * Don't get or set this directly. Only BDB-JE should access it.
      */
-    @SecondaryKey(name="IX_SCHEME_FRACTURE_ID", relate=Relationship.MANY_TO_ONE)
+    @SecondaryKey(name=IX_SCHEME_FRACTURE_ID, relate=Relationship.MANY_TO_ONE)
     private CompositeIntKey schemeFractureId = new CompositeIntKey();
     /** getter sees the actual members. */
     public CompositeIntKey getSchemeFractureId() {
@@ -48,11 +51,12 @@ public class LVReplica {
     @PrimaryKey
     private int replicaId;
     
+    public static final String IX_STATUS = "IX_STATUS";
     /**
      * Status of this replica.
      */
-    @SecondaryKey(name="IX_STATUS", relate=Relationship.MANY_TO_ONE)
-    private LVReplicaStatus status;
+    @SecondaryKey(name=IX_STATUS, relate=Relationship.MANY_TO_ONE)
+    private ReplicaStatus status;
 
     /**
      * To string.
@@ -127,7 +131,7 @@ public class LVReplica {
      *
      * @return the status of this replica
      */
-    public LVReplicaStatus getStatus() {
+    public ReplicaStatus getStatus() {
         return status;
     }
 
@@ -136,7 +140,7 @@ public class LVReplica {
      *
      * @param status the new status of this replica
      */
-    public void setStatus(LVReplicaStatus status) {
+    public void setStatus(ReplicaStatus status) {
         this.status = status;
     }
 }

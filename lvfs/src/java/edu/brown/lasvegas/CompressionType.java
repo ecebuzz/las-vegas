@@ -4,7 +4,7 @@ package edu.brown.lasvegas;
  * Defines type of compression scheme for a column file.
  * This is part of <b>physical</b> data schemes.
  */
-public enum LVCompressionType {
+public enum CompressionType {
     /** No compression. */
     NONE,
     /** Dictionary encoding. great for few-valued columns. */

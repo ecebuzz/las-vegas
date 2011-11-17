@@ -17,23 +17,26 @@ import edu.brown.lasvegas.util.ValueRange;
  */
 @Entity
 public class LVReplicaPartitionScheme {
+    public static final String IX_FRACTURE_ID = "IX_FRACTURE_ID";
     /**
      * ID of the fracture the sub-partitions belong to.
      */
-    @SecondaryKey(name="IX_FRACTURE_ID", relate=Relationship.MANY_TO_ONE, relatedEntity=LVTableFracture.class)
+    @SecondaryKey(name=IX_FRACTURE_ID, relate=Relationship.MANY_TO_ONE, relatedEntity=LVTableFracture.class)
     private int fractureId;
 
+    public static final String IX_GROUP_ID = "IX_GROUP_ID";
     /**
      * ID of the replica group among which these sub-partitions are shared.
      */
-    @SecondaryKey(name="IX_GROUP_ID", relate=Relationship.MANY_TO_ONE, relatedEntity=LVReplicaGroup.class)
+    @SecondaryKey(name=IX_GROUP_ID, relate=Relationship.MANY_TO_ONE, relatedEntity=LVReplicaGroup.class)
     private int groupId;
     
+    public static final String IX_FRACTURE_GROUP_ID = "IX_FRACTURE_GROUP_ID";
     /**
      * A hack to create a composite secondary index on Fracture-ID and Group-ID.
      * Don't get or set this directly. Only BDB-JE should access it.
      */
-    @SecondaryKey(name="IX_FRACTURE_GROUP_ID", relate=Relationship.MANY_TO_ONE)
+    @SecondaryKey(name=IX_FRACTURE_GROUP_ID, relate=Relationship.MANY_TO_ONE)
     private CompositeIntKey fractureGroupId = new CompositeIntKey();
     
     /** getter sees the actual members. */

@@ -4,13 +4,13 @@ import java.io.IOException;
 import java.util.Map;
 
 import edu.brown.lasvegas.LVColumnFile;
-import edu.brown.lasvegas.LVColumnType;
-import edu.brown.lasvegas.LVCompressionType;
+import edu.brown.lasvegas.ColumnType;
+import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.LVReplica;
 import edu.brown.lasvegas.LVReplicaGroup;
 import edu.brown.lasvegas.LVReplicaPartition;
 import edu.brown.lasvegas.LVReplicaPartitionScheme;
-import edu.brown.lasvegas.LVReplicaPartitionStatus;
+import edu.brown.lasvegas.ReplicaPartitionStatus;
 import edu.brown.lasvegas.LVReplicaScheme;
 import edu.brown.lasvegas.LVTable;
 import edu.brown.lasvegas.LVTableColumn;
@@ -74,16 +74,19 @@ public interface MetadataRepository {
     LVTable getTable(int tableId) throws IOException;
     
     /**
-     * Creates a new table with the given columns.
+     * Creates a new table with the given columns and base partitioning scheme.
+     * This method itself does not create any replica scheme for this table.
+     * You have to create at least one replica scheme to this table before importing fractures.
      * @param name the name of the new table
      * @param columns spec of the columns in the table (ID/Order is ignored)
      * The epoch column is automatically added as an implicit column. 
-     * @param baseGroup the base replica group of the table (ID is ignored)
-     * If null, an automatic group with epoch partitioning is created.
+     * @param basePartitioningColumnOrder the partitioning column of the base replica group for this table.
+     * Specified by the column order (0=epoch, 1=columns[0], 2=columns[1], ...).
      * @return the newly created table
      * @throws IOException
+     * @see {@link #createNewReplicaScheme(LVReplicaGroup, LVTableColumn, Map)}
      */
-    LVTable createNewTable (String name, LVTableColumn[] columns, LVReplicaGroup baseGroup) throws IOException;
+    LVTable createNewTable (String name, LVTableColumn[] columns, int basePartitioningColumnOrder) throws IOException;
     
     /**
      * Drops a table and all of its column files in all replicas.
@@ -130,7 +133,7 @@ public interface MetadataRepository {
      * @return the newly added column
      * @throws IOException
      */
-    LVTableColumn createNewColumn (LVTable table, String name, LVColumnType type) throws IOException;
+    LVTableColumn createNewColumn (LVTable table, String name, ColumnType type) throws IOException;
     
     /**
      * Drops a column and all of its column files in all replicas.
@@ -258,7 +261,7 @@ public interface MetadataRepository {
      * Creates a new additional replica group in the given table
      * with the specified in-block sorting column and compression scheme.
      * Column compression scheme can be changed later.
-     * Call {@link #changeColumnCompressionScheme(LVReplicaScheme, LVTableColumn, LVCompressionType)}
+     * Call {@link #changeColumnCompressionScheme(LVReplicaScheme, LVTableColumn, CompressionType)}
      * afterwards to do so.
      * @param group the replica group to create a replica scheme
      * @param sortingColumn the in-block sorting column of the replica scheme
@@ -268,7 +271,7 @@ public interface MetadataRepository {
      * @throws IOException
      */
     LVReplicaScheme createNewReplicaScheme(LVReplicaGroup group, LVTableColumn sortingColumn,
-                    Map<Integer, LVCompressionType> columnCompressionSchemes) throws IOException;
+                    Map<Integer, CompressionType> columnCompressionSchemes) throws IOException;
 
 
     /**
@@ -281,7 +284,7 @@ public interface MetadataRepository {
      * @throws IOException
      */
     LVReplicaScheme changeColumnCompressionScheme(LVReplicaScheme scheme,
-                    LVTableColumn column, LVCompressionType compressionType) throws IOException;
+                    LVTableColumn column, CompressionType compressionType) throws IOException;
     
     /**
      * Deletes the replica scheme metadata object and related objects from this repository.
@@ -460,7 +463,7 @@ public interface MetadataRepository {
      * @throws IOException
      */
     void updateReplicaPartition(LVReplicaPartition subPartition,
-        LVReplicaPartitionStatus status,
+        ReplicaPartitionStatus status,
         String currentHdfsNodeUri,
         String recoveryHdfsNodeUri
         ) throws IOException;

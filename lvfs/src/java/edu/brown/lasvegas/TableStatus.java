@@ -1,7 +1,7 @@
 package edu.brown.lasvegas;
 
 /** defines the possible status of a table. */
-public enum LVTableStatus {
+public enum TableStatus {
     /** The table is in a query-able state. */
     OK,
     /** The table is being created. When done, becomes OK. */

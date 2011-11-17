@@ -16,21 +16,23 @@ import edu.brown.lasvegas.util.CompositeIntKey;
  */
 @Entity
 public class LVColumnFile {
+    public static final String IX_PARTITION_ID = "IX_PARTITION_ID";
     /**
      * ID of the sub-partition this column file belongs to.
      */
-    @SecondaryKey(name="IX_PARTITION_ID", relate=Relationship.MANY_TO_ONE, relatedEntity=LVReplicaPartition.class)
+    @SecondaryKey(name=IX_PARTITION_ID, relate=Relationship.MANY_TO_ONE, relatedEntity=LVReplicaPartition.class)
     private int partitionId;
 
     /**
      * ID of the column this file stores.
      */
     private int columnId;
+    public static final String IX_PARTITION_COLUMN_ID = "IX_PARTITION_COLUMN_ID";
     /**
      * A hack to create a composite secondary index on Partition-ID and Column-ID.
      * Don't get or set this directly. Only BDB-JE should access it.
      */
-    @SecondaryKey(name="IX_PARTITION_COLUMN_ID", relate=Relationship.MANY_TO_ONE)
+    @SecondaryKey(name=IX_PARTITION_COLUMN_ID, relate=Relationship.MANY_TO_ONE)
     private CompositeIntKey partitionColumnId = new CompositeIntKey();
     
     /** getter sees the actual members. */

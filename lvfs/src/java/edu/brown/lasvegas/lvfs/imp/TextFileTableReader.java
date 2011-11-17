@@ -11,7 +11,7 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.StringTokenizer;
 
-import edu.brown.lasvegas.LVColumnType;
+import edu.brown.lasvegas.ColumnType;
 import edu.brown.lasvegas.LVTableReader;
 
 /**
@@ -92,7 +92,7 @@ public class TextFileTableReader implements LVTableReader {
         return scheme.getColumnCount();
     }
     @Override
-    public LVColumnType getColumnType(int columnIndex) {
+    public ColumnType getColumnType(int columnIndex) {
         return scheme.getColumnType(columnIndex);
     }
 

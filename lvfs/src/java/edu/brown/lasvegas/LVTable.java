@@ -18,15 +18,16 @@ public class LVTable {
     @PrimaryKey
     private int tableId;
     
+    public static final String IX_NAME = "IX_NAME";
     /**
      * The logical name of this table. Of course has to be unique.
      * Only some set of characters are allowed in table name (as defined in ANSI SQL). 
      */
-    @SecondaryKey(name="IX_NAME", relate=Relationship.ONE_TO_ONE)
+    @SecondaryKey(name=IX_NAME, relate=Relationship.ONE_TO_ONE)
     private String name;
 
     /** current status of this table. */
-    private LVTableStatus status;
+    private TableStatus status;
     
     /**
      * @see java.lang.Object#toString()
@@ -78,7 +79,7 @@ public class LVTable {
      *
      * @return the current status of this table
      */
-    public LVTableStatus getStatus() {
+    public TableStatus getStatus() {
         return status;
     }
 
@@ -87,7 +88,7 @@ public class LVTable {
      *
      * @param status the new current status of this table
      */
-    public void setStatus(LVTableStatus status) {
+    public void setStatus(TableStatus status) {
         this.status = status;
     }
 }

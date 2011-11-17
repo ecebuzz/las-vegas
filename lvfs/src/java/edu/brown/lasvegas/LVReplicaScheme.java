@@ -13,10 +13,11 @@ import com.sleepycat.persist.model.SecondaryKey;
  */
 @Entity
 public class LVReplicaScheme {
+    public static final String IX_GROUP_ID = "IX_GROUP_ID";
     /**
      * ID of the replica group (partitioning scheme) this scheme belongs to.
      */
-    @SecondaryKey(name="IX_GROUP_ID", relate=Relationship.MANY_TO_ONE, relatedEntity=LVReplicaGroup.class)
+    @SecondaryKey(name=IX_GROUP_ID, relate=Relationship.MANY_TO_ONE, relatedEntity=LVReplicaGroup.class)
     private int groupId;
     
     /**
@@ -35,17 +36,17 @@ public class LVReplicaScheme {
      * The key is column ID. If the map does not have corresponding column ID, the column
      * is supposed to be not compressed (can happen after adding a column).
      */
-    private HashMap<Integer, LVCompressionType> columnCompressionSchemes = new HashMap<Integer, LVCompressionType>();
+    private HashMap<Integer, CompressionType> columnCompressionSchemes = new HashMap<Integer, CompressionType>();
     /**
      * Gets the compression scheme of specified column.
      * @param columnId ID of the column
      * @return the compression scheme of the column
      */
-    public LVCompressionType getColumnCompressionScheme(int columnId) {
-        LVCompressionType type = columnCompressionSchemes.get(columnId);
+    public CompressionType getColumnCompressionScheme(int columnId) {
+        CompressionType type = columnCompressionSchemes.get(columnId);
         if (type == null) {
             // if not explicitly registered, it's no-compression
-            return LVCompressionType.NONE;
+            return CompressionType.NONE;
         } else {
             return type;
         }
@@ -123,7 +124,7 @@ public class LVReplicaScheme {
      *
      * @return the each column's compression scheme
      */
-    public HashMap<Integer, LVCompressionType> getColumnCompressionSchemes() {
+    public HashMap<Integer, CompressionType> getColumnCompressionSchemes() {
         return columnCompressionSchemes;
     }
 
@@ -132,7 +133,7 @@ public class LVReplicaScheme {
      *
      * @param columnCompressionSchemes the new each column's compression scheme
      */
-    public void setColumnCompressionSchemes(HashMap<Integer, LVCompressionType> columnCompressionSchemes) {
+    public void setColumnCompressionSchemes(HashMap<Integer, CompressionType> columnCompressionSchemes) {
         this.columnCompressionSchemes = columnCompressionSchemes;
     }
 }

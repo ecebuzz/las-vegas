@@ -18,10 +18,11 @@ import edu.brown.lasvegas.util.ValueRange;
  */
 @Entity
 public class LVTableFracture {
+    public static final String IX_TABLE_ID = "IX_TABLE_ID";
     /**
      * ID of the table this fracture belongs to.
      */
-    @SecondaryKey(name="IX_TABLE_ID", relate=Relationship.MANY_TO_ONE, relatedEntity=LVTable.class)
+    @SecondaryKey(name=IX_TABLE_ID, relate=Relationship.MANY_TO_ONE, relatedEntity=LVTable.class)
     private int tableId;
     
     /**

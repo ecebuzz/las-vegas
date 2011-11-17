@@ -10,10 +10,11 @@ import com.sleepycat.persist.model.SecondaryKey;
  */
 @Entity
 public class LVTableColumn {
+    public static final String IX_TABLE_ID = "IX_TABLE_ID";
     /**
      * ID of the table this column belongs to.
      */
-    @SecondaryKey(name="IX_TABLE_ID", relate=Relationship.MANY_TO_ONE, relatedEntity=LVTable.class)
+    @SecondaryKey(name=IX_TABLE_ID, relate=Relationship.MANY_TO_ONE, relatedEntity=LVTable.class)
     private int tableId;
     
     /**
@@ -29,9 +30,9 @@ public class LVTableColumn {
     
     /**
      * Data type of this column.
-     * @see LVColumnType
+     * @see ColumnType
      */
-    private LVColumnType type;
+    private ColumnType type;
     
     /**
      * Sequential order in this table (usually from 1; 0 is always the "epoch" column).
@@ -40,7 +41,7 @@ public class LVTableColumn {
     private int order;
 
     /** current status of this table. */
-    private LVColumnStatus status;
+    private ColumnStatus status;
     
     /**
      * @see java.lang.Object#toString()
@@ -111,7 +112,7 @@ public class LVTableColumn {
      *
      * @return the data type of this column
      */
-    public LVColumnType getType() {
+    public ColumnType getType() {
         return type;
     }
 
@@ -120,7 +121,7 @@ public class LVTableColumn {
      *
      * @param type the new data type of this column
      */
-    public void setType(LVColumnType type) {
+    public void setType(ColumnType type) {
         this.type = type;
     }
 
@@ -147,7 +148,7 @@ public class LVTableColumn {
      *
      * @return the current status of this table
      */
-    public LVColumnStatus getStatus() {
+    public ColumnStatus getStatus() {
         return status;
     }
 
@@ -156,7 +157,7 @@ public class LVTableColumn {
      *
      * @param status the new current status of this table
      */
-    public void setStatus(LVColumnStatus status) {
+    public void setStatus(ColumnStatus status) {
         this.status = status;
     }
 }

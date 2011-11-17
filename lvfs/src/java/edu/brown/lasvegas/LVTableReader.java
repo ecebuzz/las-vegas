@@ -35,7 +35,7 @@ public interface LVTableReader {
     int getColumnCount();
 
     /** Returns the data type of specified column. */
-    LVColumnType getColumnType(int columnIndex);
+    ColumnType getColumnType(int columnIndex);
     
     /** for general reads. */
     Object getObject (int columnIndex) throws IOException;
