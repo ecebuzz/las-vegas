@@ -17,7 +17,7 @@ import edu.brown.lasvegas.util.ValueRange;
  * to have the same scheme.
  */
 @Entity
-public class LVTableFracture {
+public class LVFracture {
     public static final String IX_TABLE_ID = "IX_TABLE_ID";
     /**
      * ID of the table this fracture belongs to.

@@ -16,12 +16,12 @@ import edu.brown.lasvegas.util.ValueRange;
  * can efficiently recover files between them.
  */
 @Entity
-public class LVReplicaPartitionScheme {
+public class LVSubPartitionScheme {
     public static final String IX_FRACTURE_ID = "IX_FRACTURE_ID";
     /**
      * ID of the fracture the sub-partitions belong to.
      */
-    @SecondaryKey(name=IX_FRACTURE_ID, relate=Relationship.MANY_TO_ONE, relatedEntity=LVTableFracture.class)
+    @SecondaryKey(name=IX_FRACTURE_ID, relate=Relationship.MANY_TO_ONE, relatedEntity=LVFracture.class)
     private int fractureId;
 
     public static final String IX_GROUP_ID = "IX_GROUP_ID";

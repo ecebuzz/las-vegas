@@ -26,7 +26,7 @@ public class LVReplica {
     /**
      * ID of the fracture of this replica.
      */
-    @SecondaryKey(name=IX_FRACTURE_ID, relate=Relationship.MANY_TO_ONE, relatedEntity=LVTableFracture.class)
+    @SecondaryKey(name=IX_FRACTURE_ID, relate=Relationship.MANY_TO_ONE, relatedEntity=LVFracture.class)
     private int fractureId;
 
     public static final String IX_SCHEME_FRACTURE_ID = "IX_SCHEME_FRACTURE_ID";
@@ -59,6 +59,12 @@ public class LVReplica {
     private ReplicaStatus status;
 
     /**
+     * ID of the sub-partition scheme this partition is based on.
+     * Can be obtained from replicaId, but easier if we have this here too (de-normalization).
+     */
+    private int replicaPartitionSchemeId;
+
+    /**
      * To string.
      *
      * @return the string
@@ -67,7 +73,7 @@ public class LVReplica {
     @Override
     public String toString() {
         return "Replica-" + replicaId + "(Scheme=" + schemeId + ", Fracture=" + fractureId + ") "
-        + "status=" + status
+        + "status=" + status + ", replicaPartitionSchemeId=" + replicaPartitionSchemeId
         ;
     }
     
@@ -142,5 +148,23 @@ public class LVReplica {
      */
     public void setStatus(ReplicaStatus status) {
         this.status = status;
+    }
+
+    /**
+     * Gets the iD of the replica partition scheme this replica uses.
+     *
+     * @return the iD of the replica partition scheme this replica uses
+     */
+    public int getReplicaPartitionSchemeId() {
+        return replicaPartitionSchemeId;
+    }
+
+    /**
+     * Sets the iD of the replica partition scheme this replica uses.
+     *
+     * @param replicaPartitionSchemeId the new iD of the replica partition scheme this replica uses
+     */
+    public void setReplicaPartitionSchemeId(int replicaPartitionSchemeId) {
+        this.replicaPartitionSchemeId = replicaPartitionSchemeId;
     }
 }

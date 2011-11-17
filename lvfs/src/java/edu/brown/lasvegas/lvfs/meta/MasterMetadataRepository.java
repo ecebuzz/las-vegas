@@ -27,12 +27,12 @@ import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.LVReplica;
 import edu.brown.lasvegas.LVReplicaGroup;
 import edu.brown.lasvegas.LVReplicaPartition;
-import edu.brown.lasvegas.LVReplicaPartitionScheme;
+import edu.brown.lasvegas.LVSubPartitionScheme;
 import edu.brown.lasvegas.ReplicaPartitionStatus;
 import edu.brown.lasvegas.LVReplicaScheme;
 import edu.brown.lasvegas.LVTable;
-import edu.brown.lasvegas.LVTableColumn;
-import edu.brown.lasvegas.LVTableFracture;
+import edu.brown.lasvegas.LVColumn;
+import edu.brown.lasvegas.LVFracture;
 import edu.brown.lasvegas.ReplicaStatus;
 import edu.brown.lasvegas.TableStatus;
 import edu.brown.lasvegas.util.CompositeIntKey;
@@ -87,7 +87,7 @@ public class MasterMetadataRepository implements MetadataRepository {
         loadRepository();
     }
     
-    /** renamed the BDB home to cleanup everything. */
+    /** rename the BDB home to cleanup everything. */
     private void formatRepository () throws IOException {
         // we never delete the old repository. just rename.
         File backup = new File(bdbEnvHome.getParentFile(), bdbEnvHome.getName() + "_backup_"
@@ -119,7 +119,7 @@ public class MasterMetadataRepository implements MetadataRepository {
         }
         LOG.info("initialized BDB.");
     }
-
+    
     @Override
     public int issueNewEpoch() throws IOException {
         return bdbTableAccessors.masterTableAccessor.issueNewId(MasterTable.EPOCH_SEQ);
@@ -149,12 +149,20 @@ public class MasterMetadataRepository implements MetadataRepository {
     }
 
     @Override
+    public void close () throws IOException {
+        LOG.info("closing...");
+        sync();
+        bdbEnv.close();
+        LOG.info("closed.");
+    }
+
+    @Override
     public LVTable getTable(int tableId) throws IOException {
         return bdbTableAccessors.tableAccessor.PKX.get(tableId);
     }
 
     @Override
-    public LVTable createNewTable(String name, LVTableColumn[] columns, int basePartitioningColumnOrder) throws IOException {
+    public LVTable createNewTable(String name, LVColumn[] columns, int basePartitioningColumnOrder) throws IOException {
         LOG.info("creating new table " + name + "...");
         // misc parameter check
         if (name == null || name.length() == 0) {
@@ -173,8 +181,8 @@ public class MasterMetadataRepository implements MetadataRepository {
         {
             // check column name duplicates
             HashSet<String> columnNames = new HashSet<String>();
-            columnNames.add(LVTableColumn.EPOCH_COLUMN_NAME);
-            for (LVTableColumn column : columns) {
+            columnNames.add(LVColumn.EPOCH_COLUMN_NAME);
+            for (LVColumn column : columns) {
                 if (column.getName() == null || column.getName().length() == 0) {
                     throw new IOException ("empty column name");
                 }
@@ -196,30 +204,30 @@ public class MasterMetadataRepository implements MetadataRepository {
         // then, create columns. first column is the implicit epoch column
         int basePartitioningColumnId = -1;
         {
-            LVTableColumn column = new LVTableColumn();
-            column.setName(LVTableColumn.EPOCH_COLUMN_NAME);
+            LVColumn column = new LVColumn();
+            column.setName(LVColumn.EPOCH_COLUMN_NAME);
             column.setOrder(0);
             column.setStatus(ColumnStatus.OK);
             column.setType(ColumnType.INTEGER);
             column.setTableId(tableId);
-            int columnId = bdbTableAccessors.tableColumnAccessor.issueNewId();
+            int columnId = bdbTableAccessors.columnAccessor.issueNewId();
             column.setColumnId(columnId);
-            bdbTableAccessors.tableColumnAccessor.PKX.putNoReturn(column);
+            bdbTableAccessors.columnAccessor.PKX.putNoReturn(column);
             if (basePartitioningColumnOrder == 0) {
                 basePartitioningColumnId = columnId;
             }
         }
         for (int i = 0; i < columns.length; ++i) {
             int order = i + 1;
-            LVTableColumn column = new LVTableColumn();
+            LVColumn column = new LVColumn();
             column.setName(columns[i].getName());
             column.setOrder(order);
             column.setStatus(ColumnStatus.OK);
             column.setType(columns[i].getType());
             column.setTableId(tableId);
-            int columnId = bdbTableAccessors.tableColumnAccessor.issueNewId();
+            int columnId = bdbTableAccessors.columnAccessor.issueNewId();
             column.setColumnId(columnId);
-            bdbTableAccessors.tableColumnAccessor.PKX.putNoReturn(column);
+            bdbTableAccessors.columnAccessor.PKX.putNoReturn(column);
             if (basePartitioningColumnOrder == order) {
                 basePartitioningColumnId = columnId;
             }
@@ -257,33 +265,54 @@ public class MasterMetadataRepository implements MetadataRepository {
 
     @Override
     public void dropTable(LVTable table) throws IOException {
-        // TODO Auto-generated method stub
+        LOG.info("Dropping table : " + table);
+        assert (table.getTableId() > 0);
+        // drop child fractures
+        LVFracture[] fractures = getAllFractures(table.getTableId());
+        for (LVFracture fracture : fractures) {
+            dropFracture(fracture);
+        }
+        // drop child replica group
+        LVReplicaGroup[] groups = getAllReplicaGroups(table.getTableId());
+        for (LVReplicaGroup group : groups) {
+            dropReplicaGroup(group);
+        }
+        // drop child columns
+        LVColumn[] columns = getAllColumns(table.getTableId());
+        for (LVColumn column : columns) {
+            dropColumn(column);
+        }
+        boolean deleted = bdbTableAccessors.tableAccessor.PKX.delete(table.getTableId());
+        if (!deleted) {
+            LOG.warn("this table has been already deleted?? :" + table);
+        }
+        LOG.info("Dropped");
     }
 
     @Override
-    public LVTableColumn[] getAllColumns(int tableId) throws IOException {
-        EntityIndex<Integer, LVTableColumn> entities = bdbTableAccessors.tableColumnAccessor.IX_TABLE_ID.subIndex(tableId);
-        SortedMap<Integer, LVTableColumn> orderedMap = new TreeMap<Integer, LVTableColumn>(); // sorted by Order
-        for (LVTableColumn column : entities.map().values()) {
+    public LVColumn[] getAllColumns(int tableId) throws IOException {
+        EntityIndex<Integer, LVColumn> entities = bdbTableAccessors.columnAccessor.IX_TABLE_ID.subIndex(tableId);
+        SortedMap<Integer, LVColumn> orderedMap = new TreeMap<Integer, LVColumn>(); // sorted by Order
+        for (LVColumn column : entities.map().values()) {
             assert (!orderedMap.containsKey(column.getOrder()));
             orderedMap.put(column.getOrder(), column);
         }
-        return orderedMap.values().toArray(new LVTableColumn[orderedMap.size()]);
+        return orderedMap.values().toArray(new LVColumn[orderedMap.size()]);
     }
 
     @Override
-    public LVTableColumn getColumn(int columnId) throws IOException {
-        return bdbTableAccessors.tableColumnAccessor.PKX.get(columnId);
+    public LVColumn getColumn(int columnId) throws IOException {
+        return bdbTableAccessors.columnAccessor.PKX.get(columnId);
     }
 
     @Override
-    public LVTableColumn createNewColumn(LVTable table, String name, ColumnType type) throws IOException {
+    public LVColumn createNewColumn(LVTable table, String name, ColumnType type) throws IOException {
         assert (table.getTableId() > 0);
         if (name == null || name.length() == 0) {
             throw new IOException ("empty column name");
         }
         int maxOrder = -1;
-        for (LVTableColumn column : bdbTableAccessors.tableColumnAccessor.IX_TABLE_ID.subIndex(table.getTableId()).map().values()) {
+        for (LVColumn column : bdbTableAccessors.columnAccessor.IX_TABLE_ID.subIndex(table.getTableId()).map().values()) {
             if (column.getName().equalsIgnoreCase(name)) {
                 throw new IOException ("this column name already exists: " + name);
             }
@@ -291,69 +320,85 @@ public class MasterMetadataRepository implements MetadataRepository {
         }
         assert (maxOrder > 0);
 
-        LVTableColumn column = new LVTableColumn();
+        LVColumn column = new LVColumn();
         column.setName(name);
         column.setOrder(maxOrder + 1);
         column.setStatus(ColumnStatus.BEING_CREATED);
         column.setType(type);
         column.setTableId(table.getTableId());
-        column.setColumnId(bdbTableAccessors.tableColumnAccessor.issueNewId());
-        bdbTableAccessors.tableColumnAccessor.PKX.putNoReturn(column);
+        column.setColumnId(bdbTableAccessors.columnAccessor.issueNewId());
+        bdbTableAccessors.columnAccessor.PKX.putNoReturn(column);
         return column;
     }
 
     @Override
-    public void requestDropColumn(LVTableColumn column) throws IOException {
+    public void requestDropColumn(LVColumn column) throws IOException {
         assert (column.getColumnId() > 0);
         if (LOG.isInfoEnabled()) {
             LOG.info("drop column requested : " + column);
         }
-        if (!bdbTableAccessors.tableColumnAccessor.PKX.contains(column.getColumnId())) {
+        if (!bdbTableAccessors.columnAccessor.PKX.contains(column.getColumnId())) {
             throw new IOException("this column does not exist. already dropped? : " + column);
         }
         column.setStatus(ColumnStatus.BEING_DROPPED);
-        bdbTableAccessors.tableColumnAccessor.PKX.putNoReturn(column);
+        bdbTableAccessors.columnAccessor.PKX.putNoReturn(column);
     }
 
     @Override
-    public void dropColumn(LVTableColumn column) throws IOException {
+    public void dropColumn(LVColumn column) throws IOException {
         assert (column.getColumnId() > 0);
-        boolean deleted = bdbTableAccessors.tableColumnAccessor.PKX.delete(column.getColumnId());
+        boolean deleted = bdbTableAccessors.columnAccessor.PKX.delete(column.getColumnId());
         if (!deleted) {
-            LOG.warn("this column was already deleted?? :" + column);
+            LOG.warn("this column has been already deleted?? :" + column);
         }
     }
 
     @Override
-    public LVTableFracture getFracture(int fractureId) throws IOException {
-        return bdbTableAccessors.tableFractureAccessor.PKX.get(fractureId);
+    public LVFracture getFracture(int fractureId) throws IOException {
+        return bdbTableAccessors.fractureAccessor.PKX.get(fractureId);
     }
 
     @Override
-    public LVTableFracture[] getAllFractures(int tableId) throws IOException {
-        Collection<LVTableFracture> values = bdbTableAccessors.tableFractureAccessor.IX_TABLE_ID.subIndex(tableId).map().values();
-        return values.toArray(new LVTableFracture[values.size()]);
+    public LVFracture[] getAllFractures(int tableId) throws IOException {
+        Collection<LVFracture> values = bdbTableAccessors.fractureAccessor.IX_TABLE_ID.subIndex(tableId).map().values();
+        return values.toArray(new LVFracture[values.size()]);
     }
 
     @Override
-    public LVTableFracture createNewFracture(LVTable table) throws IOException {
+    public LVFracture createNewFracture(LVTable table) throws IOException {
         assert (table.getTableId() > 0);
-        LVTableFracture fracture = new LVTableFracture();
+        LVFracture fracture = new LVFracture();
         fracture.setTableId(table.getTableId());
-        fracture.setFractureId(bdbTableAccessors.tableFractureAccessor.issueNewId());
-        bdbTableAccessors.tableFractureAccessor.PKX.putNoReturn(fracture);
+        fracture.setFractureId(bdbTableAccessors.fractureAccessor.issueNewId());
+        bdbTableAccessors.fractureAccessor.PKX.putNoReturn(fracture);
         return fracture;
     }
 
     @Override
-    public void finalizeFracture(LVTableFracture fracture) throws IOException {
+    public void finalizeFracture(LVFracture fracture) throws IOException {
         assert (fracture.getFractureId() > 0);
-        bdbTableAccessors.tableFractureAccessor.PKX.putNoReturn(fracture);
+        bdbTableAccessors.fractureAccessor.PKX.putNoReturn(fracture);
     }
 
     @Override
-    public void dropFracture(LVTableFracture fracture) throws IOException {
-        // TODO Auto-generated method stub
+    public void dropFracture(LVFracture fracture) throws IOException {
+        LOG.info("Dropping fracture : " + fracture);
+        assert (fracture.getFractureId() > 0);
+        // drop child sub-partition schemes
+        LVSubPartitionScheme[] subPartitionSchemes = getAllSubPartitionSchemesByFractureId(fracture.getFractureId());
+        for (LVSubPartitionScheme subPartitionScheme : subPartitionSchemes) {
+            dropSubPartitionScheme(subPartitionScheme);
+        }
+        // drop child replicas
+        LVReplica[] replicas = getAllReplicasByFractureId(fracture.getFractureId());
+        for (LVReplica replica : replicas) {
+            dropReplica(replica);
+        }
+        boolean deleted = bdbTableAccessors.fractureAccessor.PKX.delete(fracture.getFractureId());
+        if (!deleted) {
+            LOG.warn("this fracture has been already deleted?? :" + fracture);
+        }
+        LOG.info("Dropped");
     }
 
     @Override
@@ -378,7 +423,7 @@ public class MasterMetadataRepository implements MetadataRepository {
     }
 
     @Override
-    public LVReplicaGroup createNewReplicaGroup(LVTable table, LVTableColumn partitioningColumn) throws IOException {
+    public LVReplicaGroup createNewReplicaGroup(LVTable table, LVColumn partitioningColumn) throws IOException {
         assert (table.getTableId() > 0);
         assert (partitioningColumn.getColumnId() > 0);
         assert (table.getTableId() == partitioningColumn.getTableId());
@@ -402,7 +447,23 @@ public class MasterMetadataRepository implements MetadataRepository {
 
     @Override
     public void dropReplicaGroup(LVReplicaGroup group) throws IOException {
-        // TODO Auto-generated method stub        
+        LOG.info("Dropping replica group : " + group);
+        assert (group.getGroupId() > 0);
+        // drop child sub-partition schemes
+        LVSubPartitionScheme[] subPartitionSchemes = getAllSubPartitionSchemesByGroupId(group.getGroupId());
+        for (LVSubPartitionScheme subPartitionScheme : subPartitionSchemes) {
+            dropSubPartitionScheme(subPartitionScheme);
+        }
+        // drop child replica schemes
+        LVReplicaScheme[] schemes = getAllReplicaSchemes(group.getGroupId());
+        for (LVReplicaScheme scheme : schemes) {
+            dropReplicaScheme(scheme);
+        }
+        boolean deleted = bdbTableAccessors.replicaGroupAccessor.PKX.delete(group.getGroupId());
+        if (!deleted) {
+            LOG.warn("this replica group has been already deleted?? :" + group);
+        }
+        LOG.info("Dropped");
     }
 
     @Override
@@ -417,7 +478,7 @@ public class MasterMetadataRepository implements MetadataRepository {
     }
 
     @Override
-    public LVReplicaScheme createNewReplicaScheme(LVReplicaGroup group, LVTableColumn sortingColumn, Map<Integer, CompressionType> columnCompressionSchemes)
+    public LVReplicaScheme createNewReplicaScheme(LVReplicaGroup group, LVColumn sortingColumn, Map<Integer, CompressionType> columnCompressionSchemes)
                     throws IOException {
         assert (group.getGroupId() > 0);
         assert (sortingColumn.getColumnId() > 0);
@@ -426,12 +487,12 @@ public class MasterMetadataRepository implements MetadataRepository {
         HashMap<Integer, CompressionType> clonedCompressionSchemes = new HashMap<Integer, CompressionType> (columnCompressionSchemes);
         boolean foundSortingColumn = false;
         // complement compression type
-        for (LVTableColumn column : getAllColumns(group.getTableId())) {
+        for (LVColumn column : getAllColumns(group.getTableId())) {
             if (column.getColumnId() == sortingColumn.getColumnId()) {
                 foundSortingColumn = true;
             }
             if (!clonedCompressionSchemes.containsKey(column.getColumnId())) {
-                if (column.getName().equals(LVTableColumn.EPOCH_COLUMN_NAME)) {
+                if (column.getName().equals(LVColumn.EPOCH_COLUMN_NAME)) {
                     // epoch is always RLE because it's a few-valued column
                     clonedCompressionSchemes.put(column.getColumnId(), CompressionType.RLE);
                 } else {
@@ -451,7 +512,7 @@ public class MasterMetadataRepository implements MetadataRepository {
     }
 
     @Override
-    public LVReplicaScheme changeColumnCompressionScheme(LVReplicaScheme scheme, LVTableColumn column, CompressionType compressionType) throws IOException {
+    public LVReplicaScheme changeColumnCompressionScheme(LVReplicaScheme scheme, LVColumn column, CompressionType compressionType) throws IOException {
         assert (scheme.getSchemeId() > 0);
         scheme.getColumnCompressionSchemes().put(column.getColumnId(), compressionType);
         bdbTableAccessors.replicaSchemeAccessor.PKX.putNoReturn(scheme);
@@ -460,8 +521,15 @@ public class MasterMetadataRepository implements MetadataRepository {
 
     @Override
     public void dropReplicaScheme(LVReplicaScheme scheme) throws IOException {
-        // TODO Auto-generated method stub
-        
+        assert (scheme.getSchemeId() > 0);
+        LVReplica[] replicas = getAllReplicasBySchemeId(scheme.getSchemeId());
+        for (LVReplica replica : replicas) {
+            dropReplica(replica);
+        }
+        boolean deleted = bdbTableAccessors.replicaSchemeAccessor.PKX.delete(scheme.getSchemeId());
+        if (!deleted) {
+            LOG.warn("this replica scheme has been already deleted?? :" + scheme);
+        }
     }
 
     @Override
@@ -487,7 +555,7 @@ public class MasterMetadataRepository implements MetadataRepository {
     }
 
     @Override
-    public LVReplica createNewReplica(LVReplicaScheme scheme, LVTableFracture fracture) throws IOException {
+    public LVReplica createNewReplica(LVReplicaScheme scheme, LVFracture fracture) throws IOException {
         assert (scheme.getSchemeId() > 0);
         assert (fracture.getFractureId() > 0);
         LVReplica replica = new LVReplica();
@@ -495,6 +563,11 @@ public class MasterMetadataRepository implements MetadataRepository {
         replica.setSchemeId(scheme.getSchemeId());
         replica.setStatus(ReplicaStatus.OK);
         replica.setReplicaId(bdbTableAccessors.replicaAccessor.issueNewId());
+
+        // also sets ReplicaPartitionSchemeId. this is a de-normalization
+        LVSubPartitionScheme subPartitionScheme = getSubPartitionSchemeByFractureAndGroup(fracture.getFractureId(), scheme.getGroupId());
+        replica.setReplicaPartitionSchemeId(subPartitionScheme.getReplicaPartitionSchemeId());
+
         bdbTableAccessors.replicaAccessor.PKX.putNoReturn(replica);
         return replica;
     }
@@ -508,53 +581,65 @@ public class MasterMetadataRepository implements MetadataRepository {
 
     @Override
     public void dropReplica(LVReplica replica) throws IOException {
-        // TODO Auto-generated method stub
+        assert (replica.getReplicaId() > 0);
+        LVReplicaPartition[] subPartitions = getAllReplicaPartitionsByReplicaId(replica.getReplicaId());
+        for (LVReplicaPartition subPartition : subPartitions) {
+            dropReplicaPartition(subPartition);
+        }
+        boolean deleted = bdbTableAccessors.replicaAccessor.PKX.delete(replica.getReplicaId());
+        if (!deleted) {
+            LOG.warn("this replica has been already deleted?? :" + replica);
+        }
     }
 
     @Override
-    public LVReplicaPartitionScheme getReplicaPartitionScheme(int subPartitionSchemeId) throws IOException {
-        return bdbTableAccessors.replicaPartitionSchemeAccessor.PKX.get(subPartitionSchemeId);
+    public LVSubPartitionScheme getSubPartitionScheme(int subPartitionSchemeId) throws IOException {
+        return bdbTableAccessors.subPartitionSchemeAccessor.PKX.get(subPartitionSchemeId);
     }
 
     @Override
-    public LVReplicaPartitionScheme[] getAllReplicaPartitionSchemesByFractureId(int fractureId) throws IOException {
-        Collection<LVReplicaPartitionScheme> values = bdbTableAccessors.replicaPartitionSchemeAccessor.IX_FRACTURE_ID.subIndex(fractureId).map().values();
-        return values.toArray(new LVReplicaPartitionScheme[values.size()]);
+    public LVSubPartitionScheme[] getAllSubPartitionSchemesByFractureId(int fractureId) throws IOException {
+        Collection<LVSubPartitionScheme> values = bdbTableAccessors.subPartitionSchemeAccessor.IX_FRACTURE_ID.subIndex(fractureId).map().values();
+        return values.toArray(new LVSubPartitionScheme[values.size()]);
     }
 
     @Override
-    public LVReplicaPartitionScheme[] getAllReplicaPartitionSchemesByGroupId(int groupId) throws IOException {
-        Collection<LVReplicaPartitionScheme> values = bdbTableAccessors.replicaPartitionSchemeAccessor.IX_GROUP_ID.subIndex(groupId).map().values();
-        return values.toArray(new LVReplicaPartitionScheme[values.size()]);
+    public LVSubPartitionScheme[] getAllSubPartitionSchemesByGroupId(int groupId) throws IOException {
+        Collection<LVSubPartitionScheme> values = bdbTableAccessors.subPartitionSchemeAccessor.IX_GROUP_ID.subIndex(groupId).map().values();
+        return values.toArray(new LVSubPartitionScheme[values.size()]);
     }
 
     @Override
-    public LVReplicaPartitionScheme getReplicaPartitionSchemeByFractureAndGroup(int fractureId, int groupId) throws IOException {
-        return bdbTableAccessors.replicaPartitionSchemeAccessor.IX_FRACTURE_GROUP_ID.get(new CompositeIntKey(fractureId, groupId));
+    public LVSubPartitionScheme getSubPartitionSchemeByFractureAndGroup(int fractureId, int groupId) throws IOException {
+        return bdbTableAccessors.subPartitionSchemeAccessor.IX_FRACTURE_GROUP_ID.get(new CompositeIntKey(fractureId, groupId));
     }
 
     @Override
-    public LVReplicaPartitionScheme createNewReplicaPartitionScheme(LVTableFracture fracture, LVReplicaGroup group) throws IOException {
+    public LVSubPartitionScheme createNewSubPartitionScheme(LVFracture fracture, LVReplicaGroup group) throws IOException {
         assert (fracture.getFractureId() > 0);
         assert (group.getGroupId() > 0);
         assert (fracture.getTableId() == group.getTableId());
-        LVReplicaPartitionScheme partitionScheme = new LVReplicaPartitionScheme();
+        LVSubPartitionScheme partitionScheme = new LVSubPartitionScheme();
         partitionScheme.setFractureId(fracture.getFractureId());
         partitionScheme.setGroupId(group.getGroupId());
-        partitionScheme.setReplicaPartitionSchemeId(bdbTableAccessors.replicaPartitionSchemeAccessor.issueNewId());
-        bdbTableAccessors.replicaPartitionSchemeAccessor.PKX.putNoReturn(partitionScheme);
+        partitionScheme.setReplicaPartitionSchemeId(bdbTableAccessors.subPartitionSchemeAccessor.issueNewId());
+        bdbTableAccessors.subPartitionSchemeAccessor.PKX.putNoReturn(partitionScheme);
         return partitionScheme;
     }
 
     @Override
-    public void finalizeReplicaPartitionScheme(LVReplicaPartitionScheme subPartitionScheme) throws IOException {
+    public void finalizeSubPartitionScheme(LVSubPartitionScheme subPartitionScheme) throws IOException {
         assert (subPartitionScheme.getReplicaPartitionSchemeId() > 0);
-        bdbTableAccessors.replicaPartitionSchemeAccessor.PKX.putNoReturn(subPartitionScheme);
+        bdbTableAccessors.subPartitionSchemeAccessor.PKX.putNoReturn(subPartitionScheme);
     }
 
     @Override
-    public void dropReplicaPartitionScheme(LVReplicaPartitionScheme subPartitionScheme) throws IOException {
-        // TODO Auto-generated method stub
+    public void dropSubPartitionScheme(LVSubPartitionScheme subPartitionScheme) throws IOException {
+        assert (subPartitionScheme.getReplicaPartitionSchemeId() > 0);
+        boolean deleted = bdbTableAccessors.subPartitionSchemeAccessor.PKX.delete(subPartitionScheme.getReplicaPartitionSchemeId());
+        if (!deleted) {
+            LOG.warn("this sub-partition scheme has been already deleted?? :" + subPartitionScheme);
+        }
     }
 
     @Override
@@ -582,11 +667,8 @@ public class MasterMetadataRepository implements MetadataRepository {
         subPartition.setReplicaId(replica.getReplicaId());
         subPartition.setStatus(ReplicaPartitionStatus.BEING_RECOVERED);
         subPartition.setPartitionId(bdbTableAccessors.replicaPartitionAccessor.issueNewId());
-
         // also sets ReplicaPartitionSchemeId. this is a de-normalization
-        LVReplicaScheme scheme = getReplicaScheme(replica.getSchemeId());
-        LVReplicaPartitionScheme subPartitionScheme = getReplicaPartitionSchemeByFractureAndGroup(replica.getFractureId(), scheme.getGroupId());
-        subPartition.setReplicaPartitionSchemeId(subPartitionScheme.getReplicaPartitionSchemeId());
+        subPartition.setSubPartitionSchemeId(replica.getReplicaPartitionSchemeId());
 
         bdbTableAccessors.replicaPartitionAccessor.PKX.putNoReturn(subPartition);
         return subPartition;
@@ -606,7 +688,15 @@ public class MasterMetadataRepository implements MetadataRepository {
 
     @Override
     public void dropReplicaPartition(LVReplicaPartition subPartition) throws IOException {
-        // TODO Auto-generated method stub        
+        assert (subPartition.getPartitionId() > 0);
+        LVColumnFile[] columnFiles = getAllColumnFilesByReplicaPartitionId (subPartition.getPartitionId());
+        for (LVColumnFile columnFile : columnFiles) {
+            dropColumnFile(columnFile);
+        }
+        boolean deleted = bdbTableAccessors.replicaPartitionAccessor.PKX.delete(subPartition.getPartitionId());
+        if (!deleted) {
+            LOG.warn("this sub-partition has been already deleted?? :" + subPartition);
+        }
     }
 
     @Override
@@ -626,7 +716,7 @@ public class MasterMetadataRepository implements MetadataRepository {
     }
 
     @Override
-    public LVColumnFile createNewColumnFile(LVReplicaPartition subPartition, LVTableColumn column, String hdfsFilePath, long fileSize) throws IOException {
+    public LVColumnFile createNewColumnFile(LVReplicaPartition subPartition, LVColumn column, String hdfsFilePath, long fileSize) throws IOException {
         assert (column.getColumnId() > 0);
         assert (subPartition.getPartitionId() > 0);
         LVColumnFile file = new LVColumnFile();
@@ -644,7 +734,7 @@ public class MasterMetadataRepository implements MetadataRepository {
         assert (columnFile.getColumnFileId() > 0);
         boolean deleted = bdbTableAccessors.columnFileAccessor.PKX.delete(columnFile.getColumnFileId());
         if (!deleted) {
-            LOG.warn("this column file was already deleted?? :" + columnFile);
+            LOG.warn("this column file has been already deleted?? :" + columnFile);
         }
     }
 }

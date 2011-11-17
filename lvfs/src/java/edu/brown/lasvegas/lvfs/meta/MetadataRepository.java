@@ -9,12 +9,12 @@ import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.LVReplica;
 import edu.brown.lasvegas.LVReplicaGroup;
 import edu.brown.lasvegas.LVReplicaPartition;
-import edu.brown.lasvegas.LVReplicaPartitionScheme;
+import edu.brown.lasvegas.LVSubPartitionScheme;
 import edu.brown.lasvegas.ReplicaPartitionStatus;
 import edu.brown.lasvegas.LVReplicaScheme;
 import edu.brown.lasvegas.LVTable;
-import edu.brown.lasvegas.LVTableColumn;
-import edu.brown.lasvegas.LVTableFracture;
+import edu.brown.lasvegas.LVColumn;
+import edu.brown.lasvegas.LVFracture;
 import edu.brown.lasvegas.ReplicaStatus;
 
 /**
@@ -56,7 +56,6 @@ public interface MetadataRepository {
      */
     void sync() throws IOException;
 
-    //////////////////////// Table Methods : begin ////////////////////////////////
     /**
      * Not only making everything durable, this method compacts
      * internal data in storage layer to speed up next start-up. 
@@ -65,6 +64,14 @@ public interface MetadataRepository {
      * @throws IOException
      */
     void checkpoint() throws IOException;
+
+    /**
+     * Releases every resource this repository holds.
+     * @throws IOException
+     */
+    void close () throws IOException;
+
+    //////////////////////// Table Methods : begin ////////////////////////////////
     
     /**
      * Returns the table object with the given ID.
@@ -85,9 +92,9 @@ public interface MetadataRepository {
      * Specified by the column order (0=epoch, 1=columns[0], 2=columns[1], ...).
      * @return the newly created table
      * @throws IOException
-     * @see {@link #createNewReplicaScheme(LVReplicaGroup, LVTableColumn, Map)}
+     * @see {@link #createNewReplicaScheme(LVReplicaGroup, LVColumn, Map)}
      */
-    LVTable createNewTable (String name, LVTableColumn[] columns, int basePartitioningColumnOrder) throws IOException;
+    LVTable createNewTable (String name, LVColumn[] columns, int basePartitioningColumnOrder) throws IOException;
     
     /**
      * Drops a table and all of its column files in all replicas.
@@ -111,10 +118,10 @@ public interface MetadataRepository {
     /**
      * Returns all columns in the specified table. 
      * @param tableId Table ID
-     * @return column objects, in the order of {@link LVTableColumn#getOrder()}.
+     * @return column objects, in the order of {@link LVColumn#getOrder()}.
      * @throws IOException
      */
-    LVTableColumn[] getAllColumns(int tableId) throws IOException;
+    LVColumn[] getAllColumns(int tableId) throws IOException;
 
     /**
      * Returns the column object with the given ID. 
@@ -122,7 +129,7 @@ public interface MetadataRepository {
      * @return column object. null if the ID is not found.
      * @throws IOException
      */
-    LVTableColumn getColumn(int columnId) throws IOException;
+    LVColumn getColumn(int columnId) throws IOException;
 
     /**
      * Add a new column to the last of an existing table.
@@ -134,7 +141,7 @@ public interface MetadataRepository {
      * @return the newly added column
      * @throws IOException
      */
-    LVTableColumn createNewColumn (LVTable table, String name, ColumnType type) throws IOException;
+    LVColumn createNewColumn (LVTable table, String name, ColumnType type) throws IOException;
     
     /**
      * Drops a column and all of its column files in all replicas.
@@ -143,7 +150,7 @@ public interface MetadataRepository {
      * @param column the column to drop
      * @throws IOException
      */
-    void requestDropColumn (LVTableColumn column) throws IOException;
+    void requestDropColumn (LVColumn column) throws IOException;
 
     /**
      * This method called to fully delete the metadata object of the column and
@@ -152,7 +159,7 @@ public interface MetadataRepository {
      * @param column the column to drop
      * @throws IOException
      */
-    void dropColumn (LVTableColumn column) throws IOException;
+    void dropColumn (LVColumn column) throws IOException;
     
     //////////////////////// Fracture Methods : begin ////////////////////////////////
     /**
@@ -161,7 +168,7 @@ public interface MetadataRepository {
      * @return fracture object. null if the ID is not found.
      * @throws IOException
      */
-    LVTableFracture getFracture(int fractureId) throws IOException;
+    LVFracture getFracture(int fractureId) throws IOException;
 
     /**
      * Returns all fractures in the table. 
@@ -169,19 +176,19 @@ public interface MetadataRepository {
      * @return fracture objects. not in a particular order.
      * @throws IOException
      */
-    LVTableFracture[] getAllFractures(int tableId) throws IOException;
+    LVFracture[] getAllFractures(int tableId) throws IOException;
 
     /**
      * Creates a new fracture in the given table. As of this method call,
      * the caller doesn't have to know the exact key range or tuple count.
      * So, this method merely acquires a unique ID for the new fracture.
      * As soon as the key range and tuple counts are finalized, call
-     * {@link #finalizeFracture(LVTableFracture)}.
+     * {@link #finalizeFracture(LVFracture)}.
      * @param table the table to create a new fracture
      * @return new Fracture object
      * @throws IOException
      */
-    LVTableFracture createNewFracture(LVTable table) throws IOException;
+    LVFracture createNewFracture(LVTable table) throws IOException;
 
     /**
      * Saves and finalizes the fracture definition.
@@ -189,7 +196,7 @@ public interface MetadataRepository {
      * @param fracture the fracture object with full details (eg key range).
      * @throws IOException
      */
-    void finalizeFracture(LVTableFracture fracture) throws IOException;
+    void finalizeFracture(LVFracture fracture) throws IOException;
     
     /**
      * Deletes the fracture metadata object and related objects from this repository.
@@ -197,7 +204,7 @@ public interface MetadataRepository {
      * @param fracture the fracture object to delete
      * @throws IOException
      */
-    void dropFracture (LVTableFracture fracture) throws IOException;
+    void dropFracture (LVFracture fracture) throws IOException;
 
     //////////////////////// Replica Group Methods : begin ////////////////////////////////
     /**
@@ -231,7 +238,7 @@ public interface MetadataRepository {
      * @return new ReplicaGroup object
      * @throws IOException
      */
-    LVReplicaGroup createNewReplicaGroup(LVTable table, LVTableColumn partitioningColumn) throws IOException;
+    LVReplicaGroup createNewReplicaGroup(LVTable table, LVColumn partitioningColumn) throws IOException;
     
     /**
      * Deletes the replica group metadata object and related objects from this repository.
@@ -262,7 +269,7 @@ public interface MetadataRepository {
      * Creates a new additional replica group in the given table
      * with the specified in-block sorting column and compression scheme.
      * Column compression scheme can be changed later.
-     * Call {@link #changeColumnCompressionScheme(LVReplicaScheme, LVTableColumn, CompressionType)}
+     * Call {@link #changeColumnCompressionScheme(LVReplicaScheme, LVColumn, CompressionType)}
      * afterwards to do so.
      * @param group the replica group to create a replica scheme
      * @param sortingColumn the in-block sorting column of the replica scheme
@@ -271,7 +278,7 @@ public interface MetadataRepository {
      * @return new ReplicaScheme object
      * @throws IOException
      */
-    LVReplicaScheme createNewReplicaScheme(LVReplicaGroup group, LVTableColumn sortingColumn,
+    LVReplicaScheme createNewReplicaScheme(LVReplicaGroup group, LVColumn sortingColumn,
                     Map<Integer, CompressionType> columnCompressionSchemes) throws IOException;
 
 
@@ -285,7 +292,7 @@ public interface MetadataRepository {
      * @throws IOException
      */
     LVReplicaScheme changeColumnCompressionScheme(LVReplicaScheme scheme,
-                    LVTableColumn column, CompressionType compressionType) throws IOException;
+                    LVColumn column, CompressionType compressionType) throws IOException;
     
     /**
      * Deletes the replica scheme metadata object and related objects from this repository.
@@ -335,7 +342,7 @@ public interface MetadataRepository {
      * @return new Replica object
      * @throws IOException
      */
-    LVReplica createNewReplica(LVReplicaScheme scheme, LVTableFracture fracture) throws IOException;
+    LVReplica createNewReplica(LVReplicaScheme scheme, LVFracture fracture) throws IOException;
 
     /**
      * Updates the status of the replica.
@@ -360,7 +367,7 @@ public interface MetadataRepository {
      * @return sub-partition scheme object. null if the ID is not found.
      * @throws IOException
      */
-    LVReplicaPartitionScheme getReplicaPartitionScheme(int subPartitionSchemeId) throws IOException;
+    LVSubPartitionScheme getSubPartitionScheme(int subPartitionSchemeId) throws IOException;
 
     /**
      * Returns all sub-partition scheme objects  in the given fracture.
@@ -368,7 +375,7 @@ public interface MetadataRepository {
      * @return sub-partition scheme objects. not in a particular order.
      * @throws IOException
      */
-    LVReplicaPartitionScheme[] getAllReplicaPartitionSchemesByFractureId(int fractureId) throws IOException;
+    LVSubPartitionScheme[] getAllSubPartitionSchemesByFractureId(int fractureId) throws IOException;
 
     /**
      * Returns all sub-partition scheme objects  of the given replica group.
@@ -376,7 +383,7 @@ public interface MetadataRepository {
      * @return sub-partition scheme objects. not in a particular order.
      * @throws IOException
      */
-    LVReplicaPartitionScheme[] getAllReplicaPartitionSchemesByGroupId(int groupId) throws IOException;
+    LVSubPartitionScheme[] getAllSubPartitionSchemesByGroupId(int groupId) throws IOException;
 
     /**
      * Returns the sub-partition scheme object for the given . 
@@ -385,21 +392,21 @@ public interface MetadataRepository {
      * @return sub-partition scheme. null if the ID is not found.
      * @throws IOException
      */
-    LVReplicaPartitionScheme getReplicaPartitionSchemeByFractureAndGroup(int fractureId, int groupId) throws IOException;
+    LVSubPartitionScheme getSubPartitionSchemeByFractureAndGroup(int fractureId, int groupId) throws IOException;
 
     /**
      * Creates a new sub-partition scheme for the given fracture and replica group.
      * As of this method call, the caller doesn't have to know the exact key range.
      * So, this method merely acquires a unique ID for the new sub-partition scheme.
      * As soon as the key ranges are finalized, call
-     * {@link #finalizeReplicaPartitionScheme(LVReplicaPartitionScheme)}.
+     * {@link #finalizeSubPartitionScheme(LVSubPartitionScheme)}.
      * @param fracture Fracture the replica partition scheme is for.
      * @param group Replica Group the partition scheme is for.
      * @return new sub-partition scheme
      * @throws IOException
      */
-    LVReplicaPartitionScheme createNewReplicaPartitionScheme(
-                    LVTableFracture fracture, LVReplicaGroup group) throws IOException;
+    LVSubPartitionScheme createNewSubPartitionScheme(
+                    LVFracture fracture, LVReplicaGroup group) throws IOException;
 
     /**
      * Saves and finalizes the sub-partition scheme definition.
@@ -407,14 +414,16 @@ public interface MetadataRepository {
      * @param subPartitionScheme the sub-partition scheme object with full details (eg key ranges).
      * @throws IOException
      */
-    void finalizeReplicaPartitionScheme(LVReplicaPartitionScheme subPartitionScheme) throws IOException;
+    void finalizeSubPartitionScheme(LVSubPartitionScheme subPartitionScheme) throws IOException;
     
     /**
-     * Deletes the sub-partition scheme metadata object and related objects from this repository.
+     * Deletes the sub-partition scheme metadata object.
+     * This method does not delete subsequent objects because the deletion of containing fracture/group
+     * will do it instead (fracture/group -> replica, subPartitionScheme -> subPartition is a lattice relationship).
      * @param subPartitionScheme the sub-partition scheme object to delete
      * @throws IOException
      */
-    void dropReplicaPartitionScheme (LVReplicaPartitionScheme subPartitionScheme) throws IOException;
+    void dropSubPartitionScheme (LVSubPartitionScheme subPartitionScheme) throws IOException;
 
     //////////////////////// Replica Partition (Sub-Partition) Methods : begin ////////////////////////////////
     /**
@@ -436,7 +445,7 @@ public interface MetadataRepository {
     /**
      * Returns the sub-partition object of the given replica for the given range (index in sub-partition scheme's range definitions).
      * @param replicaId Replica (Replicated-Fracture) the sub-partition belongs to.
-     * @param range key range the sub-partitions stores. index of {@link LVReplicaPartitionScheme#getRanges()}
+     * @param range key range the sub-partitions stores. index of {@link LVSubPartitionScheme#getRanges()}
      * @return sub-partition object.
      * @throws IOException
      */
@@ -445,7 +454,7 @@ public interface MetadataRepository {
     /**
      * Creates a new sub-partition for the replica and range.
      * @param replica Replica (Replicated-Fracture) the sub-partition belongs to.
-     * @param range key range the sub-partitions stores. index of {@link LVReplicaPartitionScheme#getRanges()}
+     * @param range key range the sub-partitions stores. index of {@link LVSubPartitionScheme#getRanges()}
      * @return new sub-partition
      * @throws IOException
      */
@@ -510,7 +519,7 @@ public interface MetadataRepository {
      * @return new column file
      * @throws IOException
      */
-    LVColumnFile createNewColumnFile(LVReplicaPartition subPartition, LVTableColumn column,
+    LVColumnFile createNewColumnFile(LVReplicaPartition subPartition, LVColumn column,
                     String hdfsFilePath, long fileSize) throws IOException;
     
     /**

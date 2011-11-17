@@ -24,12 +24,12 @@ public class LVReplicaPartition {
 
     /**
      * ID of the sub-partition scheme this partition is based on.
-     * Can be obtained from replicaId, but easier if we have this here too.
+     * Can be obtained from replicaId, but easier if we have this here too (de-normalization).
      */
-    private int replicaPartitionSchemeId;
+    private int subPartitionSchemeId;
 
     /**
-     * The index in {@link LVReplicaPartitionScheme#getRanges()}.
+     * The index in {@link LVSubPartitionScheme#getRanges()}.
      * Represents the key range this partition stores.
      */
     private int range;
@@ -91,7 +91,7 @@ public class LVReplicaPartition {
     public String toString() {
         return "ReplicaPartition-" + partitionId + " (Replica=" + replicaId
             + ", Range=" + range + ")"
-            + " replicaPartitionSchemeId=" + replicaPartitionSchemeId
+            + " subPartitionSchemeId=" + subPartitionSchemeId
             + " Status=" + status
             + " currentHdfsNodeUri=" + currentHdfsNodeUri
             + " recoveryHdfsNodeUri=" + recoveryHdfsNodeUri
@@ -190,38 +190,38 @@ public class LVReplicaPartition {
     }
     
     /**
-     * Gets the index in {@link LVReplicaPartitionScheme#getRanges()}.
+     * Gets the index in {@link LVSubPartitionScheme#getRanges()}.
      *
-     * @return the index in {@link LVReplicaPartitionScheme#getRanges()}
+     * @return the index in {@link LVSubPartitionScheme#getRanges()}
      */
     public int getRange() {
         return range;
     }
     
     /**
-     * Sets the index in {@link LVReplicaPartitionScheme#getRanges()}.
+     * Sets the index in {@link LVSubPartitionScheme#getRanges()}.
      *
-     * @param range the new index in {@link LVReplicaPartitionScheme#getRanges()}
+     * @param range the new index in {@link LVSubPartitionScheme#getRanges()}
      */
     public void setRange(int range) {
         this.range = range;
     }
 
     /**
-     * Gets the iD of the replica partition scheme this partition is based on.
+     * Gets the iD of the sub-partition scheme this partition is based on.
      *
-     * @return the iD of the replica partition scheme this partition is based on
+     * @return the iD of the sub-partition scheme this partition is based on
      */
-    public int getReplicaPartitionSchemeId() {
-        return replicaPartitionSchemeId;
+    public int getSubPartitionSchemeId() {
+        return subPartitionSchemeId;
     }
 
     /**
-     * Sets the iD of the replica partition scheme this partition is based on.
+     * Sets the iD of the sub-partition scheme this partition is based on.
      *
-     * @param replicaPartitionSchemeId the new iD of the replica partition scheme this partition is based on
+     * @param subPartitionSchemeId the new iD of the sub-partition scheme this partition is based on
      */
-    public void setReplicaPartitionSchemeId(int replicaPartitionSchemeId) {
-        this.replicaPartitionSchemeId = replicaPartitionSchemeId;
+    public void setSubPartitionSchemeId(int subPartitionSchemeId) {
+        this.subPartitionSchemeId = subPartitionSchemeId;
     }
 }

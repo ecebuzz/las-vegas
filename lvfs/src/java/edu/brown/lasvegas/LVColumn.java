@@ -9,7 +9,7 @@ import com.sleepycat.persist.model.SecondaryKey;
  * Logical scheme of a column.
  */
 @Entity
-public class LVTableColumn {
+public class LVColumn {
     public static final String IX_TABLE_ID = "IX_TABLE_ID";
     /**
      * ID of the table this column belongs to.

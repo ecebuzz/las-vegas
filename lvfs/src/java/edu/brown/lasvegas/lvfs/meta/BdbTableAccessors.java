@@ -12,11 +12,11 @@ import edu.brown.lasvegas.LVColumnFile;
 import edu.brown.lasvegas.LVReplica;
 import edu.brown.lasvegas.LVReplicaGroup;
 import edu.brown.lasvegas.LVReplicaPartition;
-import edu.brown.lasvegas.LVReplicaPartitionScheme;
+import edu.brown.lasvegas.LVSubPartitionScheme;
 import edu.brown.lasvegas.LVReplicaScheme;
 import edu.brown.lasvegas.LVTable;
-import edu.brown.lasvegas.LVTableColumn;
-import edu.brown.lasvegas.LVTableFracture;
+import edu.brown.lasvegas.LVColumn;
+import edu.brown.lasvegas.LVFracture;
 import edu.brown.lasvegas.ReplicaPartitionStatus;
 import edu.brown.lasvegas.ReplicaStatus;
 import edu.brown.lasvegas.util.CompositeIntKey;
@@ -79,22 +79,22 @@ class BdbTableAccessors {
         final SecondaryIndex<String, Integer, LVTable> IX_NAME;
     }
 
-    final TableColumnAccessor tableColumnAccessor = new TableColumnAccessor();
-    class TableColumnAccessor extends MetaTableAccessor<LVTableColumn> {
-        TableColumnAccessor () {
-            super(LVTableColumn.class);
-            IX_TABLE_ID = store.getSecondaryIndex(PKX, Integer.class, LVTableColumn.IX_TABLE_ID);
+    final ColumnAccessor columnAccessor = new ColumnAccessor();
+    class ColumnAccessor extends MetaTableAccessor<LVColumn> {
+        ColumnAccessor () {
+            super(LVColumn.class);
+            IX_TABLE_ID = store.getSecondaryIndex(PKX, Integer.class, LVColumn.IX_TABLE_ID);
         }
-        final SecondaryIndex<Integer, Integer, LVTableColumn> IX_TABLE_ID;
+        final SecondaryIndex<Integer, Integer, LVColumn> IX_TABLE_ID;
     }
 
-    final TableFractureAccessor tableFractureAccessor = new TableFractureAccessor();
-    class TableFractureAccessor extends MetaTableAccessor<LVTableFracture> {
-        TableFractureAccessor () {
-            super(LVTableFracture.class);
-            IX_TABLE_ID = store.getSecondaryIndex(PKX, Integer.class, LVTableFracture.IX_TABLE_ID);
+    final FractureAccessor fractureAccessor = new FractureAccessor();
+    class FractureAccessor extends MetaTableAccessor<LVFracture> {
+        FractureAccessor () {
+            super(LVFracture.class);
+            IX_TABLE_ID = store.getSecondaryIndex(PKX, Integer.class, LVFracture.IX_TABLE_ID);
         }
-        final SecondaryIndex<Integer, Integer, LVTableFracture> IX_TABLE_ID;
+        final SecondaryIndex<Integer, Integer, LVFracture> IX_TABLE_ID;
     }
 
 
@@ -116,17 +116,17 @@ class BdbTableAccessors {
         final SecondaryIndex<Integer, Integer, LVReplicaScheme> IX_GROUP_ID;
     }
 
-    final ReplicaPartitionSchemeAccessor replicaPartitionSchemeAccessor = new ReplicaPartitionSchemeAccessor();
-    class ReplicaPartitionSchemeAccessor extends MetaTableAccessor<LVReplicaPartitionScheme> {
-        ReplicaPartitionSchemeAccessor () {
-            super(LVReplicaPartitionScheme.class);
-            IX_GROUP_ID = store.getSecondaryIndex(PKX, Integer.class, LVReplicaPartitionScheme.IX_GROUP_ID);
-            IX_FRACTURE_ID = store.getSecondaryIndex(PKX, Integer.class, LVReplicaPartitionScheme.IX_FRACTURE_ID);
-            IX_FRACTURE_GROUP_ID = store.getSecondaryIndex(PKX, CompositeIntKey.class, LVReplicaPartitionScheme.IX_FRACTURE_GROUP_ID);
+    final SubPartitionSchemeAccessor subPartitionSchemeAccessor = new SubPartitionSchemeAccessor();
+    class SubPartitionSchemeAccessor extends MetaTableAccessor<LVSubPartitionScheme> {
+        SubPartitionSchemeAccessor () {
+            super(LVSubPartitionScheme.class);
+            IX_GROUP_ID = store.getSecondaryIndex(PKX, Integer.class, LVSubPartitionScheme.IX_GROUP_ID);
+            IX_FRACTURE_ID = store.getSecondaryIndex(PKX, Integer.class, LVSubPartitionScheme.IX_FRACTURE_ID);
+            IX_FRACTURE_GROUP_ID = store.getSecondaryIndex(PKX, CompositeIntKey.class, LVSubPartitionScheme.IX_FRACTURE_GROUP_ID);
         }
-        final SecondaryIndex<Integer, Integer, LVReplicaPartitionScheme> IX_GROUP_ID;
-        final SecondaryIndex<Integer, Integer, LVReplicaPartitionScheme> IX_FRACTURE_ID;
-        final SecondaryIndex<CompositeIntKey, Integer, LVReplicaPartitionScheme> IX_FRACTURE_GROUP_ID;
+        final SecondaryIndex<Integer, Integer, LVSubPartitionScheme> IX_GROUP_ID;
+        final SecondaryIndex<Integer, Integer, LVSubPartitionScheme> IX_FRACTURE_ID;
+        final SecondaryIndex<CompositeIntKey, Integer, LVSubPartitionScheme> IX_FRACTURE_GROUP_ID;
     }
 
     final ReplicaPartitionAccessor replicaPartitionAccessor = new ReplicaPartitionAccessor();
