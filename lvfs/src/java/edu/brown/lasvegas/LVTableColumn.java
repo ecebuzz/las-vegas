@@ -29,6 +29,12 @@ public class LVTableColumn {
     private String name;
     
     /**
+     * epoch is an automatically added column to store coarse grained timestamp
+     * of the tuple. The column always has this name and the is the first column (order=0). 
+     */
+    public static final String EPOCH_COLUMN_NAME = "__epoch";
+    
+    /**
      * Data type of this column.
      * @see ColumnType
      */

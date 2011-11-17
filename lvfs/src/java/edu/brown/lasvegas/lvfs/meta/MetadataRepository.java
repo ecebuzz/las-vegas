@@ -15,6 +15,7 @@ import edu.brown.lasvegas.LVReplicaScheme;
 import edu.brown.lasvegas.LVTable;
 import edu.brown.lasvegas.LVTableColumn;
 import edu.brown.lasvegas.LVTableFracture;
+import edu.brown.lasvegas.ReplicaStatus;
 
 /**
  * Represents a repository of all metadata in LVFS.
@@ -328,11 +329,7 @@ public interface MetadataRepository {
     LVReplica getReplicaFromSchemeAndFracture(int schemeId, int fractureId) throws IOException;
 
     /**
-     * Creates a new replica for the given replica scheme and fracture. As of this method call,
-     * the caller doesn't have to know the exact key range.
-     * So, this method merely acquires a unique ID for the new replica.
-     * As soon as the key range and tuple counts are finalized, call
-     * {@link #finalizeReplica(LVReplica)}.
+     * Creates a new replica for the given replica scheme and fracture.
      * @param scheme the replica scheme the new replica will be based on
      * @param fracture the fracture the new replica will be based on
      * @return new Replica object
@@ -341,12 +338,13 @@ public interface MetadataRepository {
     LVReplica createNewReplica(LVReplicaScheme scheme, LVTableFracture fracture) throws IOException;
 
     /**
-     * Saves and finalizes the replica definition.
-     * A newly created replica is inactive until this method call.
-     * @param replica the replica object with full details (eg key range).
+     * Updates the status of the replica.
+     * @param replica the replica object
+     * @param status new status
+     * @return modified Replica object
      * @throws IOException
      */
-    void finalizeReplica(LVReplica replica) throws IOException;
+    LVReplica updateReplicaStatus(LVReplica replica, ReplicaStatus status) throws IOException;
     
     /**
      * Deletes the replica metadata object and related objects from this repository.
@@ -460,9 +458,10 @@ public interface MetadataRepository {
      * @param status new status of the sub-partition
      * @param currentHdfsNodeUri new value for currentHdfsNodeUri 
      * @param recoveryHdfsNodeUri new value for recoveryHdfsNodeUri
+     * @return modified sub-partition
      * @throws IOException
      */
-    void updateReplicaPartition(LVReplicaPartition subPartition,
+    LVReplicaPartition updateReplicaPartition(LVReplicaPartition subPartition,
         ReplicaPartitionStatus status,
         String currentHdfsNodeUri,
         String recoveryHdfsNodeUri
