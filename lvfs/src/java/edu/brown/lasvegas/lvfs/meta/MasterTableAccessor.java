@@ -3,7 +3,7 @@ package edu.brown.lasvegas.lvfs.meta;
 import com.sleepycat.persist.EntityStore;
 import com.sleepycat.persist.PrimaryIndex;
 
-public class MasterTableAccessor {
+public class MasterTableAccessor implements EntityTableAccessor {
     private final PrimaryIndex<String, MasterTable> primaryIndex;
     private final EntityStore masterStore;
     public MasterTableAccessor(EntityStore masterStore) {
@@ -32,5 +32,9 @@ public class MasterTableAccessor {
         Integer previousId = (Integer) get(idSequence, Integer.valueOf(0));
         put(idSequence, previousId + 1);
         return previousId + 1;
+    }
+    @Override
+    public void close() {
+        masterStore.close();
     }
 }

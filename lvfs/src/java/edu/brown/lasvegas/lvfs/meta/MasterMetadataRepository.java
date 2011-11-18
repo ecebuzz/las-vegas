@@ -64,7 +64,7 @@ public class MasterMetadataRepository implements MetadataRepository {
         }
         if (!bdbEnvHome.exists()) {
             LOG.info(bdbEnvHome.getAbsolutePath() + " does not exist. creating..");
-            boolean created = bdbEnvHome.mkdir();
+            boolean created = bdbEnvHome.mkdirs();
             if (!created) {
                 LOG.error(bdbEnvHome.getAbsolutePath() + " could not be created.");
                 throw new IOException ("failed to create BDB home folder:" + bdbEnvHome.getAbsolutePath());
@@ -102,22 +102,10 @@ public class MasterMetadataRepository implements MetadataRepository {
     }
     
     /**
-     * loads or initializes essential tables.
+     * loads all tables.
      */
     private void loadRepository () {
-        if (!bdbEnv.getDatabaseNames().contains(MasterTable.DBNAME)) {
-            initialiseRepository();
-        }
         bdbTableAccessors = new BdbTableAccessors(bdbEnv);
-    }
-    
-    private void initialiseRepository () {
-        LOG.info("initializing BDB ...");
-        for (String databaseName : bdbEnv.getDatabaseNames()) {
-            LOG.info("removing existing DB:" + databaseName);
-            bdbEnv.removeDatabase(null, databaseName);
-        }
-        LOG.info("initialized BDB.");
     }
     
     @Override
@@ -152,6 +140,7 @@ public class MasterMetadataRepository implements MetadataRepository {
     public void close () throws IOException {
         LOG.info("closing...");
         sync();
+        bdbTableAccessors.closeAll();
         bdbEnv.close();
         LOG.info("closed.");
     }

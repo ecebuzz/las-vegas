@@ -3,6 +3,7 @@ package edu.brown.lasvegas.lvfs.meta;
 import org.apache.log4j.Logger;
 
 import com.sleepycat.je.Environment;
+import com.sleepycat.persist.EntityCursor;
 import com.sleepycat.persist.EntityStore;
 import com.sleepycat.persist.PrimaryIndex;
 import com.sleepycat.persist.SecondaryIndex;
@@ -20,6 +21,7 @@ import edu.brown.lasvegas.LVFracture;
 import edu.brown.lasvegas.ReplicaPartitionStatus;
 import edu.brown.lasvegas.ReplicaStatus;
 import edu.brown.lasvegas.util.CompositeIntKey;
+import edu.brown.lasvegas.util.MemoryUtil;
 
 /**
  * Collection of accessors for BDB tables.
@@ -30,24 +32,78 @@ class BdbTableAccessors {
     final StoreConfig storeConfig;
     final MasterTableAccessor masterTableAccessor;
 
+    final TableAccessor tableAccessor;
+    final ColumnAccessor columnAccessor;
+    final FractureAccessor fractureAccessor;
+    final ReplicaGroupAccessor replicaGroupAccessor;
+    final ReplicaSchemeAccessor replicaSchemeAccessor;
+    final SubPartitionSchemeAccessor subPartitionSchemeAccessor;
+    final ReplicaPartitionAccessor replicaPartitionAccessor;
+    final ReplicaAccessor replicaAccessor;
+    final ColumnFileAccessor columnFileAccessor;
     BdbTableAccessors (Environment bdbEnv) {
         this.bdbEnv = bdbEnv;
+        if (LOG.isInfoEnabled()) {
+            LOG.info("loading BDB. stat=" + bdbEnv.getStats(null));
+            MemoryUtil.outputMemory();
+        }
         storeConfig = new StoreConfig();
         storeConfig.setAllowCreate(true);
         storeConfig.setTransactional(false);
         EntityStore masterStore = new EntityStore(bdbEnv, MasterTable.DBNAME, storeConfig);
         masterTableAccessor = new MasterTableAccessor(masterStore);
+        tableAccessor = new TableAccessor();
+        columnAccessor = new ColumnAccessor();
+        fractureAccessor = new FractureAccessor();
+        replicaGroupAccessor = new ReplicaGroupAccessor();
+        replicaSchemeAccessor = new ReplicaSchemeAccessor();
+        subPartitionSchemeAccessor = new SubPartitionSchemeAccessor();
+        replicaPartitionAccessor = new ReplicaPartitionAccessor();
+        replicaAccessor = new ReplicaAccessor();
+        columnFileAccessor = new ColumnFileAccessor();
+    }
+    
+    void closeAll () {
+        for (EntityTableAccessor accessor : new EntityTableAccessor[]{
+                        masterTableAccessor,
+                        tableAccessor,
+                        columnAccessor,
+                        fractureAccessor,
+                        replicaGroupAccessor,
+                        replicaSchemeAccessor,
+                        subPartitionSchemeAccessor,
+                        replicaPartitionAccessor,
+                        replicaAccessor,
+                        columnFileAccessor,
+                    }) {
+            accessor.close();
+        }
     }
 
     /**
      * Base class of table accessors for BDB.
      * @param <Ent> entity class (e.g., LVTable).
      */
-    class MetaTableAccessor<Ent> {
+    class MetaTableAccessor<Ent> implements EntityTableAccessor {
         MetaTableAccessor (Class<Ent> entClass) {
             idSequence = entClass.getName();
             store = new EntityStore(bdbEnv, "LVFS_" + entClass.getName(), storeConfig);
             PKX = store.getPrimaryIndex(Integer.class, entClass);
+            // load everything in main memory. metadata should be enough compact.
+            // note: database.preload() is not enough as it only preloads index node.
+            if (LOG.isInfoEnabled()) {
+                LOG.info("preloading " + store.getStoreName());
+            }
+            EntityCursor<Ent> cursor = PKX.entities();
+            int count = 0;
+            while (cursor.next() != null) {
+                ++count;
+            }
+            cursor.close();
+            if (LOG.isInfoEnabled()) {
+                LOG.info("preloaded " + count + " records");
+                MemoryUtil.outputMemory();
+            }
         }
         /** name of the ID sequence stored in master table. */
         final String idSequence;
@@ -57,6 +113,7 @@ class BdbTableAccessors {
          * primary index on the table.
          */
         final PrimaryIndex<Integer, Ent> PKX;
+
         int issueNewId () {
             int newId = masterTableAccessor.issueNewId(idSequence);
             if (LOG.isDebugEnabled()) {
@@ -68,9 +125,12 @@ class BdbTableAccessors {
             }
             return newId;
         }
+        @Override
+        public void close() {
+            store.close();
+        }
     }
 
-    final TableAccessor tableAccessor = new TableAccessor();
     class TableAccessor extends MetaTableAccessor<LVTable> {
         TableAccessor () {
             super(LVTable.class);
@@ -79,7 +139,6 @@ class BdbTableAccessors {
         final SecondaryIndex<String, Integer, LVTable> IX_NAME;
     }
 
-    final ColumnAccessor columnAccessor = new ColumnAccessor();
     class ColumnAccessor extends MetaTableAccessor<LVColumn> {
         ColumnAccessor () {
             super(LVColumn.class);
@@ -88,7 +147,6 @@ class BdbTableAccessors {
         final SecondaryIndex<Integer, Integer, LVColumn> IX_TABLE_ID;
     }
 
-    final FractureAccessor fractureAccessor = new FractureAccessor();
     class FractureAccessor extends MetaTableAccessor<LVFracture> {
         FractureAccessor () {
             super(LVFracture.class);
@@ -97,8 +155,6 @@ class BdbTableAccessors {
         final SecondaryIndex<Integer, Integer, LVFracture> IX_TABLE_ID;
     }
 
-
-    final ReplicaGroupAccessor replicaGroupAccessor = new ReplicaGroupAccessor();
     class ReplicaGroupAccessor extends MetaTableAccessor<LVReplicaGroup> {
         ReplicaGroupAccessor () {
             super(LVReplicaGroup.class);
@@ -107,7 +163,6 @@ class BdbTableAccessors {
         final SecondaryIndex<Integer, Integer, LVReplicaGroup> IX_TABLE_ID;
     }
 
-    final ReplicaSchemeAccessor replicaSchemeAccessor = new ReplicaSchemeAccessor();
     class ReplicaSchemeAccessor extends MetaTableAccessor<LVReplicaScheme> {
         ReplicaSchemeAccessor () {
             super(LVReplicaScheme.class);
@@ -116,7 +171,6 @@ class BdbTableAccessors {
         final SecondaryIndex<Integer, Integer, LVReplicaScheme> IX_GROUP_ID;
     }
 
-    final SubPartitionSchemeAccessor subPartitionSchemeAccessor = new SubPartitionSchemeAccessor();
     class SubPartitionSchemeAccessor extends MetaTableAccessor<LVSubPartitionScheme> {
         SubPartitionSchemeAccessor () {
             super(LVSubPartitionScheme.class);
@@ -129,7 +183,6 @@ class BdbTableAccessors {
         final SecondaryIndex<CompositeIntKey, Integer, LVSubPartitionScheme> IX_FRACTURE_GROUP_ID;
     }
 
-    final ReplicaPartitionAccessor replicaPartitionAccessor = new ReplicaPartitionAccessor();
     class ReplicaPartitionAccessor extends MetaTableAccessor<LVReplicaPartition> {
         ReplicaPartitionAccessor () {
             super(LVReplicaPartition.class);
@@ -142,7 +195,6 @@ class BdbTableAccessors {
         final SecondaryIndex<ReplicaPartitionStatus, Integer, LVReplicaPartition> IX_STATUS;
     }
 
-    final ReplicaAccessor replicaAccessor = new ReplicaAccessor();
     class ReplicaAccessor extends MetaTableAccessor<LVReplica> {
         ReplicaAccessor () {
             super(LVReplica.class);
@@ -157,8 +209,6 @@ class BdbTableAccessors {
         final SecondaryIndex<ReplicaStatus, Integer, LVReplica> IX_STATUS;
     }
 
-
-    final ColumnFileAccessor columnFileAccessor = new ColumnFileAccessor();
     class ColumnFileAccessor extends MetaTableAccessor<LVColumnFile> {
         ColumnFileAccessor () {
             super(LVColumnFile.class);
