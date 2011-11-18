@@ -9,12 +9,19 @@ import edu.brown.lasvegas.util.ValueRange;
 
 /**
  * The recovery unit of a table.
- * A Fracture is a conceptual partitioning which defines
- * the subset of tuples from the table.
+ * <p>A Fracture is a conceptual partitioning which defines
+ * the subset of tuples from the table.</p>
  * 
- * Fractures are totally separated; all recovery and querying happen per fracture.
+ * <p>Fractures are totally separated; all recovery and querying happen per fracture.
  * Technically, two fractures are two different tables which happen
- * to have the same scheme.
+ * to have the same scheme.</p>
+ * 
+ * <p>Each table has exactly one {@link LVColumn} whose {@link LVColumn#isFracturingColumn()} returns
+ * true. Fracture is a partition over the column. As default, the epoch column is the fracturing key.
+ * If the user wants to choose non-default fracturing key, s/he has to make sure the key
+ * is a valid partitioning key; any subsequently imported fracture must not have
+ * an overlapping value of the fracturing key.
+ * A monotonically increasing column such as sequentially numbered ID key is a good candidate.</p>
  */
 @Entity
 public class LVFracture {
@@ -32,9 +39,7 @@ public class LVFracture {
     private int fractureId;
 
     /**
-     * The key range of the base group's partitioning column in this fracture.
-     * Could be tentatively NULL while creating a new fracture
-     * if the base group uses automatic-epoch partitioning.
+     * The key range of the fracturing key in this fracture.
      */
     private ValueRange<?> range;
 
@@ -110,18 +115,18 @@ public class LVFracture {
     }
 
     /**
-     * Gets the key range of the base group's partitioning column in this fracture.
+     * Gets the key range of the fracturing key in this fracture.
      *
-     * @return the key range of the base group's partitioning column in this fracture
+     * @return the key range of the fracturing key in this fracture.
      */
     public ValueRange<?> getRange() {
         return range;
     }
 
     /**
-     * Sets the key range of the base group's partitioning column in this fracture.
+     * Sets the key range of the fracturing key in this fracture.
      *
-     * @param range the new key range of the base group's partitioning column in this fracture
+     * @param range the key range of the fracturing key in this fracture.
      */
     public void setRange(ValueRange<?> range) {
         this.range = range;

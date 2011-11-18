@@ -24,14 +24,6 @@ public class LVReplicaGroup {
      */
     @PrimaryKey
     private int groupId;
-
-    /**
-     * Whether this group is the base partitioning scheme.
-     * Other replica group is technically a composite partitioning
-     * starting with the partitioning key of this group.
-     * There is only one base replica group in each table.
-     */
-    private boolean baseGroup;
     
     /**
      * ID of the column used as the partitioning key in this replica group.
@@ -44,7 +36,7 @@ public class LVReplicaGroup {
     @Override
     public String toString() {
         return "ReplicaGroup-" + groupId + " in Table-" + tableId
-        + (baseGroup ? "(Base-Group)" : "") + " partitioning-column-id=" + partitioningColumnId;
+        + " partitioning-column-id=" + partitioningColumnId;
     }
 
 // auto-generated getters/setters (comments by JAutodoc)
@@ -82,24 +74,6 @@ public class LVReplicaGroup {
      */
     public void setGroupId(int groupId) {
         this.groupId = groupId;
-    }
-
-    /**
-     * Checks if is whether this group is the base partitioning scheme.
-     *
-     * @return the whether this group is the base partitioning scheme
-     */
-    public boolean isBaseGroup() {
-        return baseGroup;
-    }
-
-    /**
-     * Sets the whether this group is the base partitioning scheme.
-     *
-     * @param baseGroup the new whether this group is the base partitioning scheme
-     */
-    public void setBaseGroup(boolean baseGroup) {
-        this.baseGroup = baseGroup;
     }
 
     /**

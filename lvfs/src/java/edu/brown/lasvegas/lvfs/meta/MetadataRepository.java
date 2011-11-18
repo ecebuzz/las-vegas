@@ -88,13 +88,11 @@ public interface MetadataRepository {
      * @param name the name of the new table
      * @param columns spec of the columns in the table (ID/Order is ignored)
      * The epoch column is automatically added as an implicit column. 
-     * @param basePartitioningColumnOrder the partitioning column of the base replica group for this table.
-     * Specified by the column order (0=epoch, 1=columns[0], 2=columns[1], ...).
      * @return the newly created table
      * @throws IOException
-     * @see {@link #createNewReplicaScheme(LVReplicaGroup, LVColumn, Map)}
+     * @see #createNewReplicaScheme(LVReplicaGroup, LVColumn, Map)
      */
-    LVTable createNewTable (String name, LVColumn[] columns, int basePartitioningColumnOrder) throws IOException;
+    LVTable createNewTable (String name, LVColumn[] columns) throws IOException;
     
     /**
      * Drops a table and all of its column files in all replicas.
@@ -222,17 +220,9 @@ public interface MetadataRepository {
      * @throws IOException
      */
     LVReplicaGroup[] getAllReplicaGroups(int tableId) throws IOException;
-    /**
-     * Returns the base replica group of the table. 
-     * @param tableId Table ID.
-     * @return the base group of the table
-     * @throws IOException
-     */
-    LVReplicaGroup getBaseReplicaGroup(int tableId) throws IOException;
 
     /**
      * Creates a new additional replica group in the given table with the specified partitioning column.
-     * This method can't add a base group, which has to be created when the table is created.
      * @param table the table to create a new group
      * @param partitioningColumn the partitioning column of the new group
      * @return new ReplicaGroup object
@@ -242,7 +232,7 @@ public interface MetadataRepository {
     
     /**
      * Deletes the replica group metadata object and related objects from this repository.
-     * The base replica group must not be deleted unless this is part of dropTable.
+     * The last replica group must not be deleted unless this is part of dropTable.
      * @param group the replica group object to delete
      * @throws IOException
      */

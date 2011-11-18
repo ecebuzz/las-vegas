@@ -30,11 +30,22 @@ public class LVTable {
     private TableStatus status;
     
     /**
+     * The column used to fracture (partition) this table.
+     * 
+     * All replicas are technically partitioned by a composite partitioning,
+     * fractures and sub-partitions.
+     * Only one column in a table is a fracturing column.
+     * Also, only the keys added as of table creation can be fracturing column.
+     * As a default, epoch column is the fracturing column.
+     */
+    private int fracturingColumnId;
+
+    /**
      * @see java.lang.Object#toString()
      */
     @Override
     public String toString() {
-        return "Table-" + tableId + "(" + name + "): status=" + status;
+        return "Table-" + tableId + "(" + name + "): status=" + status + ", fracturingColumnId=" + fracturingColumnId;
     }
 
  // auto-generated getters/setters (comments by JAutodoc)
@@ -90,5 +101,23 @@ public class LVTable {
      */
     public void setStatus(TableStatus status) {
         this.status = status;
+    }
+
+    /**
+     * Gets the column used to fracture (partition) this table.
+     *
+     * @return the column used to fracture (partition) this table
+     */
+    public int getFracturingColumnId() {
+        return fracturingColumnId;
+    }
+
+    /**
+     * Sets the column used to fracture (partition) this table.
+     *
+     * @param fracturingColumnId the new column used to fracture (partition) this table
+     */
+    public void setFracturingColumnId(int fracturingColumnId) {
+        this.fracturingColumnId = fracturingColumnId;
     }
 }

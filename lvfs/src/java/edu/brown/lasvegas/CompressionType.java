@@ -5,7 +5,7 @@ package edu.brown.lasvegas;
  * This is part of <b>physical</b> data schemes.
  */
 public enum CompressionType {
-    /** No compression. */
+    /** No compression. */                  
     NONE,
     /** Dictionary encoding. great for few-valued columns. */
     DICTIONARY,

@@ -162,14 +162,11 @@ public class MasterMetadataRepository implements MetadataRepository {
     }
 
     @Override
-    public LVTable createNewTable(String name, LVColumn[] columns, int basePartitioningColumnOrder) throws IOException {
+    public LVTable createNewTable(String name, LVColumn[] columns) throws IOException {
         LOG.info("creating new table " + name + "...");
         // misc parameter check
         if (name == null || name.length() == 0) {
             throw new IOException ("empty table name");
-        }
-        if (basePartitioningColumnOrder < 0 || basePartitioningColumnOrder > columns.length) {
-            throw new IOException ("basePartitioningColumnOrder has an invalid value");
         }
         if (columns.length == 0) {
             throw new IOException ("table without any columns is not allowed");
@@ -177,7 +174,8 @@ public class MasterMetadataRepository implements MetadataRepository {
         if (bdbTableAccessors.tableAccessor.IX_NAME.contains(name)) {
             throw new IOException ("this table name already exists:" + name);
         }
-        
+
+        boolean userSpecifiedFracturingColumn = false;
         {
             // check column name duplicates
             HashSet<String> columnNames = new HashSet<String>();
@@ -190,6 +188,12 @@ public class MasterMetadataRepository implements MetadataRepository {
                     throw new IOException ("this column name is used more than once:" + column.getName());
                 }
                 columnNames.add(column.getName().toLowerCase());
+                if (column.isFracturingColumn()) {
+                    if (userSpecifiedFracturingColumn) {
+                        throw new IOException ("cannot specify more than one fracturing column:" + column.getName());
+                    }
+                    userSpecifiedFracturingColumn = true;
+                }
             }
         }
 
@@ -199,10 +203,11 @@ public class MasterMetadataRepository implements MetadataRepository {
         table.setStatus(TableStatus.BEING_CREATED);
         int tableId = bdbTableAccessors.tableAccessor.issueNewId();
         table.setTableId(tableId);
+        table.setFracturingColumnId(-1); // we don't know this at this point
         bdbTableAccessors.tableAccessor.PKX.putNoReturn(table);
         
         // then, create columns. first column is the implicit epoch column
-        int basePartitioningColumnId = -1;
+        int fracturingColumnId = -1;
         {
             LVColumn column = new LVColumn();
             column.setName(LVColumn.EPOCH_COLUMN_NAME);
@@ -212,9 +217,10 @@ public class MasterMetadataRepository implements MetadataRepository {
             column.setTableId(tableId);
             int columnId = bdbTableAccessors.columnAccessor.issueNewId();
             column.setColumnId(columnId);
+            column.setFracturingColumn(!userSpecifiedFracturingColumn);
             bdbTableAccessors.columnAccessor.PKX.putNoReturn(column);
-            if (basePartitioningColumnOrder == 0) {
-                basePartitioningColumnId = columnId;
+            if (column.isFracturingColumn()) {
+                fracturingColumnId = columnId;
             }
         }
         for (int i = 0; i < columns.length; ++i) {
@@ -227,22 +233,16 @@ public class MasterMetadataRepository implements MetadataRepository {
             column.setTableId(tableId);
             int columnId = bdbTableAccessors.columnAccessor.issueNewId();
             column.setColumnId(columnId);
+            column.setFracturingColumn(columns[i].isFracturingColumn());
             bdbTableAccessors.columnAccessor.PKX.putNoReturn(column);
-            if (basePartitioningColumnOrder == order) {
-                basePartitioningColumnId = columnId;
+            if (column.isFracturingColumn()) {
+                fracturingColumnId = columnId;
             }
         }
-        assert (basePartitioningColumnId != -1);
+        assert (fracturingColumnId != -1);
         
-        // create base replica group
-        LVReplicaGroup baseGroup = new LVReplicaGroup();
-        baseGroup.setBaseGroup(true);
-        baseGroup.setPartitioningColumnId(basePartitioningColumnId);
-        baseGroup.setTableId(tableId);
-        baseGroup.setGroupId(bdbTableAccessors.replicaGroupAccessor.issueNewId());
-        bdbTableAccessors.replicaGroupAccessor.PKX.putNoReturn(baseGroup);
-        
-        // finally,  update the status of table
+        // finally,  update the table
+        table.setFracturingColumnId(fracturingColumnId);
         table.setStatus(TableStatus.OK);
         bdbTableAccessors.tableAccessor.PKX.putNoReturn(table);
         
@@ -326,6 +326,7 @@ public class MasterMetadataRepository implements MetadataRepository {
         column.setStatus(ColumnStatus.BEING_CREATED);
         column.setType(type);
         column.setTableId(table.getTableId());
+        column.setFracturingColumn(false);
         column.setColumnId(bdbTableAccessors.columnAccessor.issueNewId());
         bdbTableAccessors.columnAccessor.PKX.putNoReturn(column);
         return column;
@@ -413,16 +414,6 @@ public class MasterMetadataRepository implements MetadataRepository {
     }
 
     @Override
-    public LVReplicaGroup getBaseReplicaGroup(int tableId) throws IOException {
-        for(LVReplicaGroup group : bdbTableAccessors.replicaGroupAccessor.IX_TABLE_ID.subIndex(tableId).map().values()) {
-            if (group.isBaseGroup()) {
-                return group;
-            }
-        }
-        throw new IOException ("Error! this tableId does not have base group. " + tableId);
-    }
-
-    @Override
     public LVReplicaGroup createNewReplicaGroup(LVTable table, LVColumn partitioningColumn) throws IOException {
         assert (table.getTableId() > 0);
         assert (partitioningColumn.getColumnId() > 0);
@@ -436,7 +427,6 @@ public class MasterMetadataRepository implements MetadataRepository {
         }
         
         LVReplicaGroup group = new LVReplicaGroup();
-        group.setBaseGroup(false);
         group.setPartitioningColumnId(partitioningColumn.getColumnId());
         group.setTableId(table.getTableId());
         group.setGroupId(bdbTableAccessors.replicaGroupAccessor.issueNewId());
