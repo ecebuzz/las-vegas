@@ -6,6 +6,9 @@ import java.io.IOException;
 
 import org.junit.Test;
 
+import edu.brown.lasvegas.LVFracture;
+import edu.brown.lasvegas.LVTable;
+
 /**
  * Base class of testcases for Metadata repository.
  * As each implementation should behave in a same way,
@@ -33,7 +36,9 @@ public abstract class MetadataRepositoryTest {
         assertEquals (epoch1 + 1, epoch2);
         int epoch3 = repository.issueNewEpoch();
         assertEquals (epoch1 + 2, epoch3);
+
         reloadRepository();
+
         int epoch4 = repository.issueNewEpoch();
         assertEquals (epoch1 + 3, epoch4);
         int epoch5 = repository.issueNewEpoch();
@@ -42,23 +47,43 @@ public abstract class MetadataRepositoryTest {
 
     @Test
     public void testIssueNewId() throws IOException {
-        fail("Not yet implemented"); // TODO
+        int table1 = repository.issueNewId(LVTable.class);
+        int fracture1 = repository.issueNewId(LVFracture.class);
+        int table2 = repository.issueNewId(LVTable.class);
+        int fracture2 = repository.issueNewId(LVFracture.class);
+        int table3 = repository.issueNewId(LVTable.class);
+        assertEquals (table1 + 1, table2);
+        assertEquals (table1 + 2, table3);
+        assertEquals (fracture1 + 1, fracture2);
+
+        reloadRepository();
+
+        int fracture3 = repository.issueNewId(LVFracture.class);
+        int fracture4 = repository.issueNewId(LVFracture.class);
+        int table4 = repository.issueNewId(LVTable.class);
+
+        assertEquals (table1 + 3, table4);
+        assertEquals (fracture1 + 2, fracture3);
+        assertEquals (fracture1 + 3, fracture4);
     }
 
     @Test
     public void testSync() throws IOException {
-        fail("Not yet implemented"); // TODO
+        // other tests indirectly use this method anyway.
+        // so this should be enough
+        repository.sync();
     }
 
     @Test
     public void testCheckpoint() throws IOException {
-        fail("Not yet implemented"); // TODO
+        // not quite in-detail at all, but it's hard to really test this method
+        repository.checkpoint();
     }
 
-    @Test
-    public void testClose() throws IOException {
-        fail("Not yet implemented"); // TODO
-    }
+    // close() is indirectly called in many tests.
+    // and calling close() here will cause a trouble due to double-closing.
+    // so, let's not test it here..
+    // public void testClose() throws IOException {}
 
     @Test
     public void testGetTable() throws IOException {

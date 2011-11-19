@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<project basedir="." default="all" name="lvfs">
+    <property environment="env"/>
+    <property name="junit.output.dir" value="junit"/>
+    <property name="debuglevel" value="source,lines,vars"/>
+    <property name="target" value="1.6"/>
+    <property name="source" value="1.6"/>
+    <path id="lvfs.classpath">
+        <pathelement location="bin"/>
+    	<fileset dir="lib">
+    		<include name="*.jar" />
+        </fileset>
+    </path>
+
+	<target name="clean" description="Delete all compiled files">
+        <delete dir="bin" quiet="true" />
+        <delete dir="${junit.output.dir}" quiet="true" />
+    </target>
+
+	<target name="compile" description="Compile all java files and copy resources into bin">
+        <echo message="${ant.project.name}: ${ant.file}"/>
+            <mkdir dir="bin"/>
+        <javac debug="true" debuglevel="${debuglevel}" destdir="bin" source="${source}" target="${target}" includeantruntime="false">
+            <src path="src/java"/>
+            <classpath refid="lvfs.classpath"/>
+        </javac>
+        <javac debug="true" debuglevel="${debuglevel}" destdir="bin" source="${source}" target="${target}" includeantruntime="false">
+            <src path="src/test"/>
+            <classpath refid="lvfs.classpath"/>
+        </javac>
+		<!-- copy resource files -->
+        <copy includeemptydirs="false" todir="bin" failonerror="false">
+            <fileset dir="src/java">
+                <exclude name="**/*.launch"/>
+                <exclude name="**/*.java"/>
+            </fileset>
+        </copy>
+        <copy includeemptydirs="false" todir="bin" failonerror="false">
+            <fileset dir="src/test">
+                <exclude name="**/*.launch"/>
+                <exclude name="**/*.java"/>
+            </fileset>
+        </copy>
+    </target>
+
+	<target name="test" depends="compile" description="Run all unit tests">
+        <delete dir="${junit.output.dir}" quiet="true" />
+        <mkdir dir="${junit.output.dir}"/>
+        <junit fork="yes" printsummary="no">
+            <formatter type="plain" usefile="false"/>
+            <formatter type="xml"/>
+        	<batchtest todir="${junit.output.dir}">
+                <fileset dir="bin">
+                    <include name="**/*Test.class"/>
+                </fileset>
+        	</batchtest>
+            <classpath refid="lvfs.classpath"/>
+        </junit>
+    </target>
+
+	<target name="junitreport" description="Create junit test report">
+        <junitreport todir="${junit.output.dir}">
+            <fileset dir="${junit.output.dir}">
+                <include name="TEST-*.xml"/>
+            </fileset>
+            <report format="frames" todir="${junit.output.dir}"/>
+        </junitreport>
+    </target>
+	
+	<target name="doc" depends="compile" description="Generate Javadoc">
+		<delete dir="doc/api" />
+		<mkdir dir="doc/api" />
+		<javadoc destdir="doc/api">
+	        <classpath refid="lvfs.classpath"/>		
+			<packageset dir="src/java">
+				<include name="**/**"/>
+			</packageset>
+		</javadoc>
+	</target>
+	
+	<target name="all" depends="compile,test,doc,junitreport" description="Do all compilation and tests" />
+</project>
