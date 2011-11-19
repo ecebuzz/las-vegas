@@ -49,7 +49,7 @@
         <junit fork="yes" printsummary="no">
             <formatter type="plain" usefile="false"/>
             <formatter type="xml"/>
-        	<batchtest todir="${junit.output.dir}">
+        	<batchtest todir="${junit.output.dir}" >
                 <fileset dir="bin">
                     <include name="**/*Test.class"/>
                 </fileset>

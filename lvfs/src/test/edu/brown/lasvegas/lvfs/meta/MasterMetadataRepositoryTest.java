@@ -10,7 +10,7 @@ import org.junit.BeforeClass;
 /**
  * Testcase for {@link MasterMetadataRepository}.
  */
-public class MasterMetadataRepositoryTest extends MetadataRepositoryTest {
+public class MasterMetadataRepositoryTest extends MetadataRepositoryTestBase {
     private static final String TEST_BDB_HOME = "test/bdb_data";
     private static MasterMetadataRepository staticRepository;
     

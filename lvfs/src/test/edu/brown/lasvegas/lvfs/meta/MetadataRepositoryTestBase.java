@@ -14,8 +14,11 @@ import edu.brown.lasvegas.LVTable;
  * As each implementation should behave in a same way,
  * most of tests are defined here regardless the test is for
  * master or slave.
+ * 
+ * Name of this abstract class doesn't end with Test so that our ant script
+ * easily skip this. 
  */
-public abstract class MetadataRepositoryTest {
+public abstract class MetadataRepositoryTestBase {
     /**
      * The derived testcase sets the repository instance to be tested.
      */
