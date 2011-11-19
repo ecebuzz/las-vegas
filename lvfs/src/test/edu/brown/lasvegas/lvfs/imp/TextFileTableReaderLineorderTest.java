@@ -9,7 +9,7 @@ import edu.brown.lasvegas.ColumnType;
 /**
  * Another test using lineorder.tbl.
  */
-public class TextFileTableReaderTestLineorder {
+public class TextFileTableReaderLineorderTest {
     @Test
     public void testAll() throws Exception {
         InputStream testFile = this.getClass().getResourceAsStream("mini_lineorder.tbl");
