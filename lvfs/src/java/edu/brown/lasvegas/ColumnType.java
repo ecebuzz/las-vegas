@@ -42,6 +42,9 @@ public enum ColumnType {
     
     /** The VARCHAR. */
     VARCHAR(Types.VARCHAR),
+
+    /** The VARBINARY. */
+    VARBINARY(Types.VARBINARY),
     ;
 
     /**

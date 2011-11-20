@@ -58,7 +58,7 @@
         </junit>
     </target>
 
-	<target name="junitreport" description="Create junit test report">
+	<target name="testreport" description="Create junit test report">
         <junitreport todir="${junit.output.dir}">
             <fileset dir="${junit.output.dir}">
                 <include name="TEST-*.xml"/>
@@ -78,5 +78,5 @@
 		</javadoc>
 	</target>
 	
-	<target name="all" depends="compile,test,doc,junitreport" description="Do all compilation and tests" />
+	<target name="all" depends="compile,test,doc" description="Do all compilation and tests" />
 </project>
