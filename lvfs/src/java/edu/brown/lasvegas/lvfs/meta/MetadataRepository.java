@@ -49,6 +49,14 @@ public interface MetadataRepository {
      * @return unique ID for the class.
      */
     int issueNewId(Class<?> clazz) throws IOException;
+
+    /**
+     * Issues (reserves) a series of unique IDs at once for better performance.
+     * @param clazz specified the metadata object.
+     * @param blockSize number of IDs to reserve
+     * @return the beginning of unique IDs for the class.
+     */
+    int issueNewIdBlock(Class<?> clazz, int blockSize) throws IOException;
     
     /**
      * Assures every change in this repository is flushed to disk.
@@ -514,11 +522,12 @@ public interface MetadataRepository {
      * @param column Column
      * @param hdfsFilePath the file path of the column file in HDFS
      * @param fileSize the byte size of the file
+     * @param checksum CRC32 checksum of the file
      * @return new column file
      * @throws IOException
      */
     LVColumnFile createNewColumnFile(LVReplicaPartition subPartition, LVColumn column,
-                    String hdfsFilePath, long fileSize) throws IOException;
+                    String hdfsFilePath, long fileSize, int checksum) throws IOException;
     
     /**
      * Deletes the column file metadata object from this repository.

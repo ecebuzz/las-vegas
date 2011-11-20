@@ -42,13 +42,13 @@ public class LVReplicaPartition implements LVObject {
     @SecondaryKey(name=IX_REPLICA_RANGE, relate=Relationship.MANY_TO_ONE)
     private CompositeIntKey replicaRange = new CompositeIntKey();
     
-    /** getter sees the actual members. */
     public CompositeIntKey getReplicaRange() {
-        replicaRange.setValue1(replicaId);
-        replicaRange.setValue2(range);
         return replicaRange;
     }
-    /** dummy setter. */
+    private void syncReplicaRange() {
+        replicaRange.setValue1(replicaId);
+        replicaRange.setValue2(range);
+    }
     public void setReplicaRange(CompositeIntKey replicaRange) {}
 
     /**
@@ -118,6 +118,7 @@ public class LVReplicaPartition implements LVObject {
      */
     public void setReplicaId(int replicaId) {
         this.replicaId = replicaId;
+        syncReplicaRange();
     }
 
     /**
@@ -208,6 +209,7 @@ public class LVReplicaPartition implements LVObject {
      */
     public void setRange(int range) {
         this.range = range;
+        syncReplicaRange();
     }
 
     /**

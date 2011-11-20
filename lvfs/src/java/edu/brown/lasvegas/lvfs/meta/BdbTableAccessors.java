@@ -157,11 +157,9 @@ class BdbTableAccessors {
             super(LVSubPartitionScheme.class);
             IX_GROUP_ID = store.getSecondaryIndex(PKX, Integer.class, LVSubPartitionScheme.IX_GROUP_ID);
             IX_FRACTURE_ID = store.getSecondaryIndex(PKX, Integer.class, LVSubPartitionScheme.IX_FRACTURE_ID);
-            IX_FRACTURE_GROUP_ID = store.getSecondaryIndex(PKX, CompositeIntKey.class, LVSubPartitionScheme.IX_FRACTURE_GROUP_ID);
         }
         final SecondaryIndex<Integer, Integer, LVSubPartitionScheme> IX_GROUP_ID;
         final SecondaryIndex<Integer, Integer, LVSubPartitionScheme> IX_FRACTURE_ID;
-        final SecondaryIndex<CompositeIntKey, Integer, LVSubPartitionScheme> IX_FRACTURE_GROUP_ID;
     }
 
     class ReplicaPartitionAccessor extends MetaTableAccessor<LVReplicaPartition> {

@@ -23,8 +23,12 @@ public class MasterTableAccessor {
     }
     
     public int issueNewId (String idSequence) {
+        return issueNewIdBlock (idSequence, 1);
+    }
+    public int issueNewIdBlock (String idSequence, int blockSize) {
+        assert (blockSize > 0);
         Integer previousId = (Integer) get(idSequence, Integer.valueOf(0));
-        put(idSequence, previousId + 1);
-        return previousId + 1;
+        put(idSequence, previousId + blockSize);
+        return previousId + 1; // +1 is the beginning of reserved block
     }
 }

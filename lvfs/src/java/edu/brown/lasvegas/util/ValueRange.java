@@ -24,6 +24,15 @@ public class ValueRange<T extends Comparable<T>> {
         this.endKey = endKey;
     }
     
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == null || !(obj instanceof ValueRange)) {
+            return false;
+        }
+        ValueRange<?> o = (ValueRange<?>) obj;
+        return startKey.equals(o.startKey) && endKey.equals(o.endKey);
+    }
+    
     /**
      * @see java.lang.Object#toString()
      */

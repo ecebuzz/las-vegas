@@ -5,7 +5,6 @@ import com.sleepycat.persist.model.PrimaryKey;
 import com.sleepycat.persist.model.Relationship;
 import com.sleepycat.persist.model.SecondaryKey;
 
-import edu.brown.lasvegas.util.CompositeIntKey;
 import edu.brown.lasvegas.util.ValueRange;
 
 /**
@@ -30,24 +29,6 @@ public class LVSubPartitionScheme implements LVObject {
      */
     @SecondaryKey(name=IX_GROUP_ID, relate=Relationship.MANY_TO_ONE, relatedEntity=LVReplicaGroup.class)
     private int groupId;
-    
-    public static final String IX_FRACTURE_GROUP_ID = "IX_FRACTURE_GROUP_ID";
-    /**
-     * A hack to create a composite secondary index on Fracture-ID and Group-ID.
-     * Don't get or set this directly. Only BDB-JE should access it.
-     */
-    @SecondaryKey(name=IX_FRACTURE_GROUP_ID, relate=Relationship.MANY_TO_ONE)
-    private CompositeIntKey fractureGroupId = new CompositeIntKey();
-    
-    /** getter sees the actual members. */
-    public CompositeIntKey getFractureGroupId() {
-        fractureGroupId.setValue1(fractureId);
-        fractureGroupId.setValue2(groupId);
-        return fractureGroupId;
-    }
-    
-    /** dummy setter. */
-    public void setFractureGroupId(CompositeIntKey fractureGroupId) {}
     
     /**
      * Unique ID of this sub-partition scheme.

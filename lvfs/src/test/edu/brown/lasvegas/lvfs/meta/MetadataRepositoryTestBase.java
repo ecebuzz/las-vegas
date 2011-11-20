@@ -3,15 +3,24 @@ package edu.brown.lasvegas.lvfs.meta;
 import static org.junit.Assert.*;
 
 import java.io.IOException;
+import java.util.HashMap;
 
 import org.junit.Test;
 
 import edu.brown.lasvegas.ColumnStatus;
 import edu.brown.lasvegas.ColumnType;
+import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.LVColumn;
+import edu.brown.lasvegas.LVColumnFile;
 import edu.brown.lasvegas.LVFracture;
+import edu.brown.lasvegas.LVReplica;
 import edu.brown.lasvegas.LVReplicaGroup;
+import edu.brown.lasvegas.LVReplicaPartition;
+import edu.brown.lasvegas.LVReplicaScheme;
+import edu.brown.lasvegas.LVSubPartitionScheme;
 import edu.brown.lasvegas.LVTable;
+import edu.brown.lasvegas.ReplicaPartitionStatus;
+import edu.brown.lasvegas.ReplicaStatus;
 import edu.brown.lasvegas.TableStatus;
 import edu.brown.lasvegas.util.ValueRange;
 
@@ -47,11 +56,24 @@ public abstract class MetadataRepositoryTestBase {
     protected void baseTearDown() throws Exception {
         repository = null;
     }
-    private LVTable DEFAULT_TABLE;
+    
+    
     private final static String DEFAULT_TABLE_NAME = "deftable";
+    private LVTable DEFAULT_TABLE;
+    /** 0=epoch, 1=intcol, 2=strcol, 3=floatcol, 4=tscol. */
     private LVColumn[] DEFAULT_COLUMNS;
     private LVFracture DEFAULT_FRACTURE;
+    /** intcol partition. */
     private LVReplicaGroup DEFAULT_GROUP;
+    /** intcol sort. */
+    private LVReplicaScheme DEFAULT_SCHEME;
+    /** 2 partitions (40-140, 140-300). */
+    private LVSubPartitionScheme DEFAULT_SUB_PARTITION_SCHEME;
+    private LVReplica DEFAULT_REPLICA;
+    /** 2 partitions. */
+    private LVReplicaPartition[] DEFAULT_REPLICA_PARTITIONS;
+    /** [2 partition][5 columns]. */
+    private LVColumnFile[][] DEFAULT_COLUMN_FILES;
     
     /** for ease of testing, create a few default objects. */
     private void initDefaultTestObjects () throws IOException {
@@ -82,6 +104,48 @@ public abstract class MetadataRepositoryTestBase {
         assertTrue (DEFAULT_GROUP.getGroupId() > 0);
         assertEquals(DEFAULT_TABLE.getTableId(), DEFAULT_GROUP.getTableId());
         assertEquals(DEFAULT_COLUMNS[1].getColumnId(), DEFAULT_GROUP.getPartitioningColumnId());
+        
+        DEFAULT_SUB_PARTITION_SCHEME = repository.createNewSubPartitionScheme(DEFAULT_FRACTURE, DEFAULT_GROUP);
+        assertTrue (DEFAULT_SUB_PARTITION_SCHEME.getSubPartitionSchemeId() > 0);
+        assertEquals(DEFAULT_FRACTURE.getFractureId(), DEFAULT_SUB_PARTITION_SCHEME.getFractureId());
+        assertEquals(DEFAULT_GROUP.getGroupId(), DEFAULT_SUB_PARTITION_SCHEME.getGroupId());
+        DEFAULT_SUB_PARTITION_SCHEME.setRanges(new ValueRange<?>[]{new ValueRange<Integer>(40, 140), new ValueRange<Integer>(140, 300)});
+        repository.finalizeSubPartitionScheme(DEFAULT_SUB_PARTITION_SCHEME);
+
+        HashMap<Integer, CompressionType> comp = new HashMap<Integer, CompressionType>();
+        comp.put(DEFAULT_COLUMNS[0].getColumnId(), CompressionType.RLE);
+        comp.put(DEFAULT_COLUMNS[1].getColumnId(), CompressionType.NULL_SUPPRESS);
+        comp.put(DEFAULT_COLUMNS[2].getColumnId(), CompressionType.DICTIONARY);
+        comp.put(DEFAULT_COLUMNS[3].getColumnId(), CompressionType.SNAPPY);
+        DEFAULT_SCHEME = repository.createNewReplicaScheme(DEFAULT_GROUP, DEFAULT_COLUMNS[1], comp);
+        assertTrue (DEFAULT_SCHEME.getSchemeId() > 0);
+        
+        DEFAULT_REPLICA = repository.createNewReplica(DEFAULT_SCHEME, DEFAULT_FRACTURE);
+        assertTrue (DEFAULT_REPLICA.getReplicaId() > 0);
+        assertEquals(DEFAULT_SCHEME.getSchemeId(), DEFAULT_REPLICA.getSchemeId());
+        assertEquals(DEFAULT_FRACTURE.getFractureId(), DEFAULT_REPLICA.getFractureId());
+        
+        DEFAULT_REPLICA_PARTITIONS = new LVReplicaPartition[2];
+        DEFAULT_COLUMN_FILES = new LVColumnFile[2][];
+        for (int i = 0; i < 2; ++i) {
+            DEFAULT_REPLICA_PARTITIONS[i] = repository.createNewReplicaPartition(DEFAULT_REPLICA, i);
+            assertEquals(DEFAULT_REPLICA.getReplicaId(), DEFAULT_REPLICA_PARTITIONS[i].getReplicaId());
+            assertEquals(i, DEFAULT_REPLICA_PARTITIONS[i].getRange());
+            assertEquals(DEFAULT_SUB_PARTITION_SCHEME.getSubPartitionSchemeId(), DEFAULT_REPLICA_PARTITIONS[i].getSubPartitionSchemeId());
+            assertEquals(ReplicaPartitionStatus.BEING_RECOVERED, DEFAULT_REPLICA_PARTITIONS[i].getStatus());
+            DEFAULT_REPLICA_PARTITIONS[i] = repository.updateReplicaPartition(DEFAULT_REPLICA_PARTITIONS[i], ReplicaPartitionStatus.OK, "hdfs://dummy_url_" + i, "");
+            assertEquals(ReplicaPartitionStatus.OK, DEFAULT_REPLICA_PARTITIONS[i].getStatus());
+            DEFAULT_COLUMN_FILES[i] = new LVColumnFile[DEFAULT_COLUMNS.length];
+            for (int j = 0; j < DEFAULT_COLUMNS.length; ++j) {
+                DEFAULT_COLUMN_FILES[i][j] = repository.createNewColumnFile(DEFAULT_REPLICA_PARTITIONS[i],
+                                DEFAULT_COLUMNS[j], "hdfs://dummy_url_" + i + "/colfile" + j, 123456L + j, 654321 + j);
+                assertEquals(DEFAULT_COLUMNS[j].getColumnId(), DEFAULT_COLUMN_FILES[i][j].getColumnId());
+                assertEquals(123456L + j, DEFAULT_COLUMN_FILES[i][j].getFileSize());
+                assertEquals(654321 + j, DEFAULT_COLUMN_FILES[i][j].getChecksum());
+                assertEquals(DEFAULT_REPLICA_PARTITIONS[i].getPartitionId(), DEFAULT_COLUMN_FILES[i][j].getPartitionId());
+                assertEquals("hdfs://dummy_url_" + i + "/colfile" + j, DEFAULT_COLUMN_FILES[i][j].getHdfsFilePath());
+            }
+        }
     }
     
 
@@ -121,6 +185,21 @@ public abstract class MetadataRepositoryTestBase {
         assertEquals (table1 + 3, table4);
         assertEquals (fracture1 + 2, fracture3);
         assertEquals (fracture1 + 3, fracture4);
+    }
+    @Test
+    public void testIssueNewIdBlock() throws IOException {
+        // call issueNewIdBlock with sorta random number (but deterministic) of block size for each of them.
+        // this also makes the following test more robust, randomizing the sequential IDs.
+        Class<?>[] array = new Class<?>[]{LVColumn.class, LVColumnFile.class, LVFracture.class,
+                LVReplica.class, LVReplicaGroup.class, LVReplicaPartition.class, LVReplicaScheme.class, LVSubPartitionScheme.class, LVTable.class};
+        for (int i = 0; i < array.length; ++i) {
+            int count = (((i + 17) * 613287413) % (1 << 16));
+            if (count < 0) count = -count;
+            if (count == 0) count = 1;
+            int newId = repository.issueNewIdBlock(array[i], count);
+            int next = repository.issueNewId(array[i]);
+            assertEquals (newId + count, next);
+        }
     }
 
     @Test
@@ -412,152 +491,352 @@ public abstract class MetadataRepositoryTestBase {
     }
 
     @Test
+    public void testSubPartitionSchemeAssorted() throws IOException {
+        LVFracture fracture1 = DEFAULT_FRACTURE;
+        LVFracture fracture2 = repository.createNewFracture(DEFAULT_TABLE);
+
+        LVReplicaGroup group1 = DEFAULT_GROUP;
+        LVReplicaGroup group2 = repository.createNewReplicaGroup(DEFAULT_TABLE, DEFAULT_COLUMNS[2]);
+        
+        LVSubPartitionScheme subPartitionScheme11 = repository.getSubPartitionScheme(DEFAULT_SUB_PARTITION_SCHEME.getSubPartitionSchemeId());
+        LVSubPartitionScheme subPartitionScheme12 = createSubPartitionScheme(fracture1, group2, new ValueRange<?>[]{new ValueRange<String>("A", "C"), new ValueRange<String>("C", "E")});
+        LVSubPartitionScheme subPartitionScheme21 = createSubPartitionScheme(fracture2, group1, new ValueRange<?>[]{new ValueRange<Integer>(40, 150), new ValueRange<Integer>(150, 400)});
+        LVSubPartitionScheme subPartitionScheme22 = createSubPartitionScheme(fracture2, group2, new ValueRange<?>[]{new ValueRange<String>("A", "BD"), new ValueRange<String>("BD", "FF")});
+        
+        {
+            LVSubPartitionScheme[] array = repository.getAllSubPartitionSchemesByFractureId(fracture1.getFractureId());
+            assertEquals(2, array.length);
+            assertEquals(array[0].getSubPartitionSchemeId(), subPartitionScheme11.getSubPartitionSchemeId());
+            assertEquals(array[1].getSubPartitionSchemeId(), subPartitionScheme12.getSubPartitionSchemeId());
+        }
+        {
+            LVSubPartitionScheme[] array = repository.getAllSubPartitionSchemesByGroupId(group2.getGroupId());
+            assertEquals(2, array.length);
+            assertEquals(array[0].getSubPartitionSchemeId(), subPartitionScheme12.getSubPartitionSchemeId());
+            assertEquals(array[1].getSubPartitionSchemeId(), subPartitionScheme22.getSubPartitionSchemeId());
+        }
+        {
+            LVSubPartitionScheme ret = repository.getSubPartitionSchemeByFractureAndGroup(fracture2.getFractureId(), group1.getGroupId());
+            assertEquals(subPartitionScheme21.getSubPartitionSchemeId(), ret.getSubPartitionSchemeId());
+        }
+        
+        repository.dropSubPartitionScheme(subPartitionScheme12);
+        reloadRepository();
+
+        {
+            LVSubPartitionScheme[] array = repository.getAllSubPartitionSchemesByFractureId(fracture1.getFractureId());
+            assertEquals(1, array.length);
+            assertEquals(array[0].getSubPartitionSchemeId(), subPartitionScheme11.getSubPartitionSchemeId());
+        }
+        {
+            LVSubPartitionScheme[] array = repository.getAllSubPartitionSchemesByGroupId(group2.getGroupId());
+            assertEquals(1, array.length);
+            assertEquals(array[0].getSubPartitionSchemeId(), subPartitionScheme22.getSubPartitionSchemeId());
+        }
+        {
+            LVSubPartitionScheme ret = repository.getSubPartitionSchemeByFractureAndGroup(fracture2.getFractureId(), group1.getGroupId());
+            assertEquals(subPartitionScheme21.getSubPartitionSchemeId(), ret.getSubPartitionSchemeId());
+        }
+        assertNull(repository.getSubPartitionSchemeByFractureAndGroup(fracture1.getFractureId(), group2.getGroupId()));
+    }
+    private LVSubPartitionScheme createSubPartitionScheme (LVFracture fracture, LVReplicaGroup group, ValueRange<?>[] ranges) throws IOException {
+        LVSubPartitionScheme subPartitionScheme = repository.createNewSubPartitionScheme(fracture, group);
+        assertTrue (subPartitionScheme.getSubPartitionSchemeId() > 0);
+        assertEquals(fracture.getFractureId(), subPartitionScheme.getFractureId());
+        assertEquals(group.getGroupId(), subPartitionScheme.getGroupId());
+        subPartitionScheme.setRanges(ranges);
+        repository.finalizeSubPartitionScheme(subPartitionScheme);
+
+        LVSubPartitionScheme forCheck = repository.getSubPartitionScheme(subPartitionScheme.getSubPartitionSchemeId());
+        assertEquals(subPartitionScheme.getSubPartitionSchemeId(), forCheck.getSubPartitionSchemeId());
+        assertEquals(fracture.getFractureId(), forCheck.getFractureId());
+        assertEquals(group.getGroupId(), forCheck.getGroupId());
+        
+        assertEquals(ranges.length, forCheck.getRanges().length);
+        for (int i = 0; i < ranges.length; ++i) {
+            assertEquals(ranges[i], forCheck.getRanges()[i]);
+        }
+        
+        return subPartitionScheme;
+    }
+
+    @Test
     public void testGetReplicaScheme() throws IOException {
-        fail("Not yet implemented"); // TODO
+        LVReplicaScheme scheme = repository.getReplicaScheme(DEFAULT_SCHEME.getSchemeId());
+        assertEquals (DEFAULT_SCHEME.getSchemeId(), scheme.getSchemeId());
+        assertEquals (DEFAULT_GROUP.getGroupId(), scheme.getGroupId());
+        assertEquals (DEFAULT_COLUMNS[1].getColumnId(), scheme.getSortColumnId());
+
+        HashMap<Integer, CompressionType> map = scheme.getColumnCompressionSchemes();
+        assertEquals (CompressionType.RLE, map.get(DEFAULT_COLUMNS[0].getColumnId()));
+        assertEquals (CompressionType.NULL_SUPPRESS, map.get(DEFAULT_COLUMNS[1].getColumnId()));
+        assertEquals (CompressionType.DICTIONARY, map.get(DEFAULT_COLUMNS[2].getColumnId()));
+        assertEquals (CompressionType.SNAPPY, map.get(DEFAULT_COLUMNS[3].getColumnId()));
+        assertTrue (map.get(DEFAULT_COLUMNS[4].getColumnId()) == null
+                    || map.get(DEFAULT_COLUMNS[4].getColumnId()) == CompressionType.NONE);
+
+        assertEquals (CompressionType.RLE, scheme.getColumnCompressionScheme(DEFAULT_COLUMNS[0].getColumnId()));
+        assertEquals (CompressionType.NULL_SUPPRESS, scheme.getColumnCompressionScheme(DEFAULT_COLUMNS[1].getColumnId()));
+        assertEquals (CompressionType.DICTIONARY, scheme.getColumnCompressionScheme(DEFAULT_COLUMNS[2].getColumnId()));
+        assertEquals (CompressionType.SNAPPY, scheme.getColumnCompressionScheme(DEFAULT_COLUMNS[3].getColumnId()));
+        assertEquals (CompressionType.NONE, scheme.getColumnCompressionScheme(DEFAULT_COLUMNS[4].getColumnId()));
     }
 
     @Test
-    public void testGetAllReplicaSchemes() throws IOException {
-        fail("Not yet implemented"); // TODO
+    public void testReplicaSchemeAssorted() throws IOException {
+        HashMap<Integer, CompressionType> comp = new HashMap<Integer, CompressionType>();
+        comp.put(DEFAULT_COLUMNS[0].getColumnId(), CompressionType.RLE);
+        comp.put(DEFAULT_COLUMNS[1].getColumnId(), CompressionType.RLE);
+        comp.put(DEFAULT_COLUMNS[2].getColumnId(), CompressionType.NONE);
+        LVReplicaScheme scheme = repository.createNewReplicaScheme(DEFAULT_GROUP, DEFAULT_COLUMNS[2], comp);
+        assertTrue (scheme.getSchemeId() > 0);
+        
+        assertEquals (DEFAULT_GROUP.getGroupId(), scheme.getGroupId());
+        assertEquals (DEFAULT_COLUMNS[2].getColumnId(), scheme.getSortColumnId());
+
+        assertEquals (CompressionType.RLE, scheme.getColumnCompressionScheme(DEFAULT_COLUMNS[0].getColumnId()));
+        assertEquals (CompressionType.RLE, scheme.getColumnCompressionScheme(DEFAULT_COLUMNS[1].getColumnId()));
+        assertEquals (CompressionType.NONE, scheme.getColumnCompressionScheme(DEFAULT_COLUMNS[2].getColumnId()));
+        assertEquals (CompressionType.NONE, scheme.getColumnCompressionScheme(DEFAULT_COLUMNS[3].getColumnId()));
+        assertEquals (CompressionType.NONE, scheme.getColumnCompressionScheme(DEFAULT_COLUMNS[4].getColumnId()));
+        
+        LVReplicaScheme[] schemes = repository.getAllReplicaSchemes(DEFAULT_GROUP.getGroupId());
+        assertEquals (2, schemes.length);
+        assertEquals (DEFAULT_SCHEME.getSchemeId(), schemes[0].getSchemeId());
+        assertEquals (scheme.getSchemeId(), schemes[1].getSchemeId());
+        assertEquals (DEFAULT_COLUMNS[1].getColumnId(), schemes[0].getSortColumnId());
+        assertEquals (DEFAULT_COLUMNS[2].getColumnId(), schemes[1].getSortColumnId());
+        
+        repository.changeColumnCompressionScheme(scheme, DEFAULT_COLUMNS[4], CompressionType.SNAPPY);
+        repository.changeColumnCompressionScheme(scheme, DEFAULT_COLUMNS[1], CompressionType.NONE);
+
+        reloadRepository();
+
+        schemes = repository.getAllReplicaSchemes(DEFAULT_GROUP.getGroupId());
+        assertEquals (2, schemes.length);
+        assertEquals (DEFAULT_SCHEME.getSchemeId(), schemes[0].getSchemeId());
+        assertEquals (scheme.getSchemeId(), schemes[1].getSchemeId());
+        assertEquals (DEFAULT_COLUMNS[1].getColumnId(), schemes[0].getSortColumnId());
+        assertEquals (DEFAULT_COLUMNS[2].getColumnId(), schemes[1].getSortColumnId());
+
+        scheme = repository.getReplicaScheme(scheme.getSchemeId());
+        assertEquals (CompressionType.RLE, scheme.getColumnCompressionScheme(DEFAULT_COLUMNS[0].getColumnId()));
+        assertEquals (CompressionType.NONE, scheme.getColumnCompressionScheme(DEFAULT_COLUMNS[1].getColumnId()));
+        assertEquals (CompressionType.NONE, scheme.getColumnCompressionScheme(DEFAULT_COLUMNS[2].getColumnId()));
+        assertEquals (CompressionType.NONE, scheme.getColumnCompressionScheme(DEFAULT_COLUMNS[3].getColumnId()));
+        assertEquals (CompressionType.SNAPPY, scheme.getColumnCompressionScheme(DEFAULT_COLUMNS[4].getColumnId()));
+        
+        repository.dropReplicaScheme(schemes[0]);
+
+        schemes = repository.getAllReplicaSchemes(DEFAULT_GROUP.getGroupId());
+        assertEquals (1, schemes.length);
+        assertEquals (scheme.getSchemeId(), schemes[0].getSchemeId());
+        assertEquals (DEFAULT_COLUMNS[2].getColumnId(), schemes[0].getSortColumnId());
     }
 
     @Test
-    public void testCreateNewReplicaScheme() throws IOException {
-        fail("Not yet implemented"); // TODO
-    }
+    public void testReplicaAssorted() throws IOException {
+        LVFracture fracture1 = DEFAULT_FRACTURE;
+        LVFracture fracture2 = repository.createNewFracture(DEFAULT_TABLE);
 
-    @Test
-    public void testChangeColumnCompressionScheme() throws IOException {
-        fail("Not yet implemented"); // TODO
-    }
+        LVSubPartitionScheme subPartitionScheme2 = repository.createNewSubPartitionScheme(fracture2, DEFAULT_GROUP);
+        assertTrue (subPartitionScheme2.getSubPartitionSchemeId() > 0);
+        assertEquals(fracture2.getFractureId(), subPartitionScheme2.getFractureId());
+        assertEquals(DEFAULT_GROUP.getGroupId(), subPartitionScheme2.getGroupId());
+        subPartitionScheme2.setRanges(new ValueRange<?>[]{new ValueRange<Integer>(40, 160), new ValueRange<Integer>(160, 300)});
+        repository.finalizeSubPartitionScheme(subPartitionScheme2);
 
-    @Test
-    public void testDropReplicaScheme() throws IOException {
-        fail("Not yet implemented"); // TODO
-    }
+        LVReplicaScheme scheme1 = DEFAULT_SCHEME;
+        LVReplicaScheme scheme2 = repository.createNewReplicaScheme(DEFAULT_GROUP, DEFAULT_COLUMNS[3], new HashMap<Integer, CompressionType>());
 
-    @Test
-    public void testGetReplica() throws IOException {
-        fail("Not yet implemented"); // TODO
-    }
+        LVReplica replica11 = repository.getReplica(DEFAULT_REPLICA.getReplicaId());
+        assertEquals(DEFAULT_REPLICA.getReplicaId(), replica11.getReplicaId());
 
-    @Test
-    public void testGetAllReplicasBySchemeId() throws IOException {
-        fail("Not yet implemented"); // TODO
-    }
+        {
+            LVReplica[] replicas = repository.getAllReplicasBySchemeId(scheme1.getSchemeId());
+            assertEquals(1, replicas.length);
+            assertEquals(replica11.getReplicaId(), replicas[0].getReplicaId());
+        }
+        
+        LVReplica replica12 = repository.createNewReplica(scheme1, fracture2);
+        LVReplica replica21 = repository.createNewReplica(scheme2, fracture1);
+        LVReplica replica22 = repository.createNewReplica(scheme2, fracture2);
+        for (LVReplica replica : new LVReplica[] {replica11, replica12, replica21, replica22}) {
+            assertEquals(ReplicaStatus.NOT_READY, replica.getStatus());
+        }
+        
+        assertEquals(replica21.getReplicaId(), repository.getReplicaFromSchemeAndFracture(scheme2.getSchemeId(), fracture1.getFractureId()).getReplicaId());
+        assertEquals(replica12.getReplicaId(), repository.getReplicaFromSchemeAndFracture(scheme1.getSchemeId(), fracture2.getFractureId()).getReplicaId());
+        
+        {
+            LVReplica[] replicas = repository.getAllReplicasBySchemeId(scheme1.getSchemeId());
+            assertEquals(2, replicas.length);
+            assertEquals(replica11.getReplicaId(), replicas[0].getReplicaId());
+            assertEquals(replica12.getReplicaId(), replicas[1].getReplicaId());
+        }
+        {
+            LVReplica[] replicas = repository.getAllReplicasByFractureId(fracture2.getFractureId());
+            assertEquals(2, replicas.length);
+            assertEquals(replica12.getReplicaId(), replicas[0].getReplicaId());
+            assertEquals(replica22.getReplicaId(), replicas[1].getReplicaId());
+        }
+        
+        repository.updateReplicaStatus(replica12, ReplicaStatus.OK);
+        repository.dropReplica(replica11);
+        
+        reloadRepository();
 
-    @Test
-    public void testGetAllReplicasByFractureId() throws IOException {
-        fail("Not yet implemented"); // TODO
-    }
+        assertNull(repository.getReplica(DEFAULT_REPLICA.getReplicaId()));
+        replica12 = repository.getReplica(replica12.getReplicaId());
+        replica21 = repository.getReplica(replica21.getReplicaId());
+        replica22 = repository.getReplica(replica22.getReplicaId());
+        assertEquals(ReplicaStatus.OK, replica12.getStatus());
+        assertEquals(ReplicaStatus.NOT_READY, replica21.getStatus());
+        assertEquals(ReplicaStatus.NOT_READY, replica22.getStatus());
 
-    @Test
-    public void testGetReplicaFromSchemeAndFracture() throws IOException {
-        fail("Not yet implemented"); // TODO
+        {
+            LVReplica[] replicas = repository.getAllReplicasBySchemeId(scheme1.getSchemeId());
+            assertEquals(1, replicas.length);
+            assertEquals(replica12.getReplicaId(), replicas[0].getReplicaId());
+        }
+        {
+            LVReplica[] replicas = repository.getAllReplicasByFractureId(fracture2.getFractureId());
+            assertEquals(2, replicas.length);
+            assertEquals(replica12.getReplicaId(), replicas[0].getReplicaId());
+            assertEquals(replica22.getReplicaId(), replicas[1].getReplicaId());
+        }
     }
-
-    @Test
-    public void testCreateNewReplica() throws IOException {
-        fail("Not yet implemented"); // TODO
-    }
-
-    @Test
-    public void testUpdateReplicaStatus() throws IOException {
-        fail("Not yet implemented"); // TODO
-    }
-
-    @Test
-    public void testDropReplica() throws IOException {
-        fail("Not yet implemented"); // TODO
-    }
-
-    @Test
-    public void testGetSubPartitionScheme() throws IOException {
-        fail("Not yet implemented"); // TODO
-    }
-
-    @Test
-    public void testGetAllSubPartitionSchemesByFractureId() throws IOException {
-        fail("Not yet implemented"); // TODO
-    }
-
-    @Test
-    public void testGetAllSubPartitionSchemesByGroupId() throws IOException {
-        fail("Not yet implemented"); // TODO
-    }
-
-    @Test
-    public void testGetSubPartitionSchemeByFractureAndGroup() throws IOException {
-        fail("Not yet implemented"); // TODO
-    }
-
-    @Test
-    public void testCreateNewSubPartitionScheme() throws IOException {
-        fail("Not yet implemented"); // TODO
-    }
-
-    @Test
-    public void testFinalizeSubPartitionScheme() throws IOException {
-        fail("Not yet implemented"); // TODO
-    }
-
-    @Test
-    public void testDropSubPartitionScheme() throws IOException {
-        fail("Not yet implemented"); // TODO
-    }
-
+    
     @Test
     public void testGetReplicaPartition() throws IOException {
-        fail("Not yet implemented"); // TODO
+        LVReplicaPartition partition = repository.getReplicaPartition(DEFAULT_REPLICA_PARTITIONS[1].getPartitionId());
+        assertEquals(DEFAULT_REPLICA.getReplicaId(), partition.getReplicaId());
+        assertEquals(1, partition.getRange());
+        assertEquals(DEFAULT_SUB_PARTITION_SCHEME.getSubPartitionSchemeId(), partition.getSubPartitionSchemeId());
+        assertEquals(ReplicaPartitionStatus.OK, partition.getStatus());
     }
 
     @Test
     public void testGetAllReplicaPartitionsByReplicaId() throws IOException {
-        fail("Not yet implemented"); // TODO
+        LVReplicaPartition[] partitions = repository.getAllReplicaPartitionsByReplicaId(DEFAULT_REPLICA.getReplicaId());
+        assertEquals(2, partitions.length);
+        assertEquals(DEFAULT_REPLICA_PARTITIONS[0].getPartitionId(), partitions[0].getPartitionId());
+        assertEquals(DEFAULT_REPLICA_PARTITIONS[1].getPartitionId(), partitions[1].getPartitionId());
     }
 
     @Test
     public void testGetReplicaPartitionByReplicaAndRange() throws IOException {
-        fail("Not yet implemented"); // TODO
+        LVReplicaPartition partition = repository.getReplicaPartitionByReplicaAndRange(DEFAULT_REPLICA.getReplicaId(), 1);
+        assertEquals(DEFAULT_REPLICA.getReplicaId(), partition.getReplicaId());
+        assertEquals(1, partition.getRange());
+        assertEquals(DEFAULT_SUB_PARTITION_SCHEME.getSubPartitionSchemeId(), partition.getSubPartitionSchemeId());
+        assertEquals(ReplicaPartitionStatus.OK, partition.getStatus());
+        assertNull(repository.getReplicaPartitionByReplicaAndRange(DEFAULT_REPLICA.getReplicaId(), 2));
     }
 
     @Test
-    public void testCreateNewReplicaPartition() throws IOException {
-        fail("Not yet implemented"); // TODO
-    }
+    public void testReplicaPartitionAssorted() throws IOException {
+        LVReplicaScheme scheme = repository.createNewReplicaScheme(DEFAULT_GROUP, DEFAULT_COLUMNS[3], new HashMap<Integer, CompressionType>());
+        LVReplica replica = repository.createNewReplica(scheme, DEFAULT_FRACTURE);
+        
+        assertTrue (replica.getReplicaId() > 0);
+        assertEquals(scheme.getSchemeId(), replica.getSchemeId());
+        assertEquals(DEFAULT_FRACTURE.getFractureId(), replica.getFractureId());
+        assertEquals(DEFAULT_SUB_PARTITION_SCHEME.getSubPartitionSchemeId(), replica.getSubPartitionSchemeId());
+        
+        LVReplicaPartition[] partitions = new LVReplicaPartition[2];
+        for (int i = 0; i < 2; ++i) {
+            partitions[i] = repository.createNewReplicaPartition(replica, i);
+            assertEquals(replica.getReplicaId(), partitions[i].getReplicaId());
+            assertEquals(i, partitions[i].getRange());
+            assertEquals(DEFAULT_SUB_PARTITION_SCHEME.getSubPartitionSchemeId(), partitions[i].getSubPartitionSchemeId());
+            assertEquals(ReplicaPartitionStatus.BEING_RECOVERED, partitions[i].getStatus());
+            partitions[i] = repository.updateReplicaPartition(partitions[i], ReplicaPartitionStatus.OK, "hdfs://dummy_url_" + i, "");
+            assertEquals(ReplicaPartitionStatus.OK, partitions[i].getStatus());
+        }
+        {
+            LVReplicaPartition[] ret = repository.getAllReplicaPartitionsByReplicaId(replica.getReplicaId());
+            assertEquals(2, ret.length);
+            assertEquals(partitions[0].getPartitionId(), ret[0].getPartitionId());
+            assertEquals(partitions[1].getPartitionId(), ret[1].getPartitionId());
+        }
 
-    @Test
-    public void testUpdateReplicaPartition() throws IOException {
-        fail("Not yet implemented"); // TODO
-    }
+        partitions[0] = repository.updateReplicaPartition(partitions[0], ReplicaPartitionStatus.LOST, "hdfs://dummy_url_" + 0, "hdfs://dummy_url_" + 1);
+        assertEquals(ReplicaPartitionStatus.LOST, partitions[0].getStatus());
+        assertEquals("hdfs://dummy_url_" + 0, partitions[0].getCurrentHdfsNodeUri());
+        assertEquals("hdfs://dummy_url_" + 1, partitions[0].getRecoveryHdfsNodeUri());
+        
+        repository.dropReplicaPartition(partitions[0]);
 
-    @Test
-    public void testDropReplicaPartition() throws IOException {
-        fail("Not yet implemented"); // TODO
+        reloadRepository();
+        
+        {
+            LVReplicaPartition[] ret = repository.getAllReplicaPartitionsByReplicaId(replica.getReplicaId());
+            assertEquals(1, ret.length);
+            assertEquals(partitions[1].getPartitionId(), ret[0].getPartitionId());
+        }
+        assertNull(repository.getReplicaPartition(partitions[0].getPartitionId()));
+        {
+            LVReplicaPartition ret = repository.getReplicaPartitionByReplicaAndRange(replica.getReplicaId(), 1);
+            assertEquals(partitions[1].getPartitionId(), ret.getPartitionId());
+        }
     }
 
     @Test
     public void testGetColumnFile() throws IOException {
-        fail("Not yet implemented"); // TODO
+        validateColumnFile (repository.getColumnFile(DEFAULT_COLUMN_FILES[0][3].getColumnFileId()), 0, 3);
+        validateColumnFile (repository.getColumnFileByReplicaPartitionAndColumn(DEFAULT_REPLICA_PARTITIONS[1].getPartitionId(), DEFAULT_COLUMNS[0].getColumnId()), 1, 0);
+    }
+    private void validateColumnFile(LVColumnFile file, int partition, int col) {
+        assertEquals(DEFAULT_COLUMNS[col].getColumnId(), file.getColumnId());
+        assertEquals(DEFAULT_COLUMN_FILES[partition][col].getFileSize(), file.getFileSize());
+        assertEquals(DEFAULT_COLUMN_FILES[partition][col].getChecksum(), file.getChecksum());
+        assertEquals(DEFAULT_REPLICA_PARTITIONS[partition].getPartitionId(), file.getPartitionId());
+        assertEquals("hdfs://dummy_url_" + partition + "/colfile" + col, file.getHdfsFilePath());
     }
 
     @Test
     public void testGetAllColumnFilesByReplicaPartitionId() throws IOException {
-        fail("Not yet implemented"); // TODO
+        for (int partition = 0; partition < 2; ++partition) {
+            LVColumnFile[] files = repository.getAllColumnFilesByReplicaPartitionId(DEFAULT_REPLICA_PARTITIONS[partition].getPartitionId());
+            for (int col = 0; col < DEFAULT_COLUMNS.length; ++col) {
+                validateColumnFile (files[col], partition, col);
+            }
+        }
     }
 
     @Test
-    public void testGetColumnFileByReplicaPartitionAndColumn() throws IOException {
-        fail("Not yet implemented"); // TODO
-    }
-
-    @Test
-    public void testCreateNewColumnFile() throws IOException {
-        fail("Not yet implemented"); // TODO
-    }
-
-    @Test
-    public void testDropColumnFile() throws IOException {
-        fail("Not yet implemented"); // TODO
+    public void testColumnFileAssorted() throws IOException {
+        LVColumn column = repository.createNewColumn(DEFAULT_TABLE, "newcol", ColumnType.BIGINT);
+        validateNewColumn(column);
+        
+        LVColumnFile[] files = new LVColumnFile[2];
+        for (int i = 0; i < 2; ++i) {
+            files[i] = repository.createNewColumnFile(DEFAULT_REPLICA_PARTITIONS[i],
+                            column, "hdfs://dummy_url_" + i + "/newcolfile" + i, 5763241L, 12176);
+            assertEquals(column.getColumnId(), files[i].getColumnId());
+            assertEquals(5763241L, files[i].getFileSize());
+            assertEquals(12176, files[i].getChecksum());
+            assertEquals(DEFAULT_REPLICA_PARTITIONS[i].getPartitionId(), files[i].getPartitionId());
+        }
+        
+        repository.dropColumnFile(files[1]);
+        reloadRepository();
+        
+        {
+            LVColumnFile[] ret = repository.getAllColumnFilesByReplicaPartitionId(DEFAULT_REPLICA_PARTITIONS[0].getPartitionId());
+            assertEquals(DEFAULT_COLUMNS.length + 1, ret.length);
+            assertEquals(files[0].getColumnFileId(), ret[DEFAULT_COLUMNS.length].getColumnFileId());
+            assertEquals(column.getColumnId(), ret[DEFAULT_COLUMNS.length].getColumnId());
+        }
+        
+        {
+            LVColumnFile[] ret = repository.getAllColumnFilesByReplicaPartitionId(DEFAULT_REPLICA_PARTITIONS[1].getPartitionId());
+            assertEquals(DEFAULT_COLUMNS.length, ret.length);
+            for (LVColumnFile file : ret) {
+                assertTrue (file.getColumnFileId() != files[1].getColumnFileId());
+                assertTrue (file.getColumnId() != column.getColumnId());
+            }
+        }
     }
 }

@@ -3,7 +3,6 @@ package edu.brown.lasvegas.lvfs.meta;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -25,7 +24,6 @@ import edu.brown.lasvegas.ColumnStatus;
 import edu.brown.lasvegas.LVColumnFile;
 import edu.brown.lasvegas.ColumnType;
 import edu.brown.lasvegas.CompressionType;
-import edu.brown.lasvegas.LVObjectIdComparator;
 import edu.brown.lasvegas.LVReplica;
 import edu.brown.lasvegas.LVReplicaGroup;
 import edu.brown.lasvegas.LVReplicaPartition;
@@ -118,6 +116,13 @@ public class MasterMetadataRepository implements MetadataRepository {
     @Override
     public int issueNewId(Class<?> clazz) throws IOException {
         return bdbTableAccessors.masterTableAccessor.issueNewId(clazz.getName());
+    }
+    @Override
+    public int issueNewIdBlock(Class<?> clazz, int blockSize) throws IOException {
+        if (blockSize <= 0) {
+            throw new IOException ("invalid blockSize:" + blockSize);
+        }
+        return bdbTableAccessors.masterTableAccessor.issueNewIdBlock(clazz.getName(), blockSize);
     }
 
     @Override
@@ -356,11 +361,9 @@ public class MasterMetadataRepository implements MetadataRepository {
 
     @Override
     public LVFracture[] getAllFractures(int tableId) throws IOException {
-        Collection<LVFracture> values = bdbTableAccessors.fractureAccessor.IX_TABLE_ID.subIndex(tableId).map().values();
         // ID order
-        LVFracture[] array = values.toArray(new LVFracture[values.size()]);
-        Arrays.sort(array, new LVObjectIdComparator<LVFracture>());
-        return array;
+        Collection<LVFracture> values = bdbTableAccessors.fractureAccessor.IX_TABLE_ID.subIndex(tableId).sortedMap().values();
+        return values.toArray(new LVFracture[values.size()]);
     }
 
     @Override
@@ -407,11 +410,9 @@ public class MasterMetadataRepository implements MetadataRepository {
 
     @Override
     public LVReplicaGroup[] getAllReplicaGroups(int tableId) throws IOException {
-        Collection<LVReplicaGroup> values = bdbTableAccessors.replicaGroupAccessor.IX_TABLE_ID.subIndex(tableId).map().values();
         // ID order
-        LVReplicaGroup[] array = values.toArray(new LVReplicaGroup[values.size()]);
-        Arrays.sort(array, new LVObjectIdComparator<LVReplicaGroup>());
-        return array;
+        Collection<LVReplicaGroup> values = bdbTableAccessors.replicaGroupAccessor.IX_TABLE_ID.subIndex(tableId).sortedMap().values();
+        return values.toArray(new LVReplicaGroup[values.size()]);
     }
 
     @Override
@@ -464,11 +465,9 @@ public class MasterMetadataRepository implements MetadataRepository {
 
     @Override
     public LVReplicaScheme[] getAllReplicaSchemes(int groupId) throws IOException {
-        Collection<LVReplicaScheme> values = bdbTableAccessors.replicaSchemeAccessor.IX_GROUP_ID.subIndex(groupId).map().values();
         // ID order
-        LVReplicaScheme[] array = values.toArray(new LVReplicaScheme[values.size()]);
-        Arrays.sort(array, new LVObjectIdComparator<LVReplicaScheme>());
-        return array;
+        Collection<LVReplicaScheme> values = bdbTableAccessors.replicaSchemeAccessor.IX_GROUP_ID.subIndex(groupId).sortedMap().values();
+        return values.toArray(new LVReplicaScheme[values.size()]);
     }
 
     @Override
@@ -533,20 +532,16 @@ public class MasterMetadataRepository implements MetadataRepository {
 
     @Override
     public LVReplica[] getAllReplicasBySchemeId(int schemeId) throws IOException {
-        Collection<LVReplica> values = bdbTableAccessors.replicaAccessor.IX_SCHEME_ID.subIndex(schemeId).map().values();
         // ID order
-        LVReplica[] array = values.toArray(new LVReplica[values.size()]);
-        Arrays.sort(array, new LVObjectIdComparator<LVReplica>());
-        return array;
+        Collection<LVReplica> values = bdbTableAccessors.replicaAccessor.IX_SCHEME_ID.subIndex(schemeId).sortedMap().values();
+        return values.toArray(new LVReplica[values.size()]);
     }
 
     @Override
     public LVReplica[] getAllReplicasByFractureId(int fractureId) throws IOException {
-        Collection<LVReplica> values = bdbTableAccessors.replicaAccessor.IX_FRACTURE_ID.subIndex(fractureId).map().values();
         // ID order
-        LVReplica[] array = values.toArray(new LVReplica[values.size()]);
-        Arrays.sort(array, new LVObjectIdComparator<LVReplica>());
-        return array;
+        Collection<LVReplica> values = bdbTableAccessors.replicaAccessor.IX_FRACTURE_ID.subIndex(fractureId).sortedMap().values();
+        return values.toArray(new LVReplica[values.size()]);
     }
 
     @Override
@@ -561,12 +556,12 @@ public class MasterMetadataRepository implements MetadataRepository {
         LVReplica replica = new LVReplica();
         replica.setFractureId(fracture.getFractureId());
         replica.setSchemeId(scheme.getSchemeId());
-        replica.setStatus(ReplicaStatus.OK);
+        replica.setStatus(ReplicaStatus.NOT_READY);
         replica.setReplicaId(bdbTableAccessors.replicaAccessor.issueNewId());
 
         // also sets ReplicaPartitionSchemeId. this is a de-normalization
         LVSubPartitionScheme subPartitionScheme = getSubPartitionSchemeByFractureAndGroup(fracture.getFractureId(), scheme.getGroupId());
-        replica.setReplicaPartitionSchemeId(subPartitionScheme.getSubPartitionSchemeId());
+        replica.setSubPartitionSchemeId(subPartitionScheme.getSubPartitionSchemeId());
 
         bdbTableAccessors.replicaAccessor.PKX.putNoReturn(replica);
         return replica;
@@ -599,25 +594,29 @@ public class MasterMetadataRepository implements MetadataRepository {
 
     @Override
     public LVSubPartitionScheme[] getAllSubPartitionSchemesByFractureId(int fractureId) throws IOException {
-        Collection<LVSubPartitionScheme> values = bdbTableAccessors.subPartitionSchemeAccessor.IX_FRACTURE_ID.subIndex(fractureId).map().values();
         // ID order
-        LVSubPartitionScheme[] array = values.toArray(new LVSubPartitionScheme[values.size()]);
-        Arrays.sort(array, new LVObjectIdComparator<LVSubPartitionScheme>());
-        return array;
+        Collection<LVSubPartitionScheme> values = bdbTableAccessors.subPartitionSchemeAccessor.IX_FRACTURE_ID.subIndex(fractureId).sortedMap().values();
+        return values.toArray(new LVSubPartitionScheme[values.size()]);
     }
 
     @Override
     public LVSubPartitionScheme[] getAllSubPartitionSchemesByGroupId(int groupId) throws IOException {
-        Collection<LVSubPartitionScheme> values = bdbTableAccessors.subPartitionSchemeAccessor.IX_GROUP_ID.subIndex(groupId).map().values();
         // ID order
-        LVSubPartitionScheme[] array = values.toArray(new LVSubPartitionScheme[values.size()]);
-        Arrays.sort(array, new LVObjectIdComparator<LVSubPartitionScheme>());
-        return array;
+        Collection<LVSubPartitionScheme> values = bdbTableAccessors.subPartitionSchemeAccessor.IX_GROUP_ID.subIndex(groupId).sortedMap().values();
+        return values.toArray(new LVSubPartitionScheme[values.size()]);
     }
 
     @Override
     public LVSubPartitionScheme getSubPartitionSchemeByFractureAndGroup(int fractureId, int groupId) throws IOException {
-        return bdbTableAccessors.subPartitionSchemeAccessor.IX_FRACTURE_GROUP_ID.get(new CompositeIntKey(fractureId, groupId));
+        // #fractures * #groups should be large.. so, joining two indexes is not so slower than composite index
+        Map<Integer, LVSubPartitionScheme> map1 = bdbTableAccessors.subPartitionSchemeAccessor.IX_FRACTURE_ID.subIndex(fractureId).map();
+        Map<Integer, LVSubPartitionScheme> map2 = bdbTableAccessors.subPartitionSchemeAccessor.IX_GROUP_ID.subIndex(groupId).map();
+        for (LVSubPartitionScheme value : map1.values()) {
+            if (map2.containsKey(value.getPrimaryKey())) {
+                return value;
+            }
+        }
+        return null;
     }
 
     @Override
@@ -657,15 +656,13 @@ public class MasterMetadataRepository implements MetadataRepository {
     public LVReplicaPartition[] getAllReplicaPartitionsByReplicaId(int replicaId) throws IOException {
         Collection<LVReplicaPartition> values = bdbTableAccessors.replicaPartitionAccessor.IX_REPLICA_ID.subIndex(replicaId).map().values();
         // range order
-        LVReplicaPartition[] array = new LVReplicaPartition[values.size()];
-        // range is always 0 to values.size() -1, so we can safely sort in the following way
+        SortedMap<Integer, LVReplicaPartition> map = new TreeMap<Integer, LVReplicaPartition>();
         for (LVReplicaPartition value : values) {
             assert (value.getRange() >= 0);
-            assert (value.getRange() < values.size());
-            assert (array[value.getRange()] == null);
-            array[value.getRange()] = value;
+            assert (!map.containsKey(value.getRange()));
+            map.put(value.getRange(), value);
         }
-        return array;
+        return map.values().toArray(new LVReplicaPartition[values.size()]);
     }
 
     @Override
@@ -683,7 +680,7 @@ public class MasterMetadataRepository implements MetadataRepository {
         subPartition.setStatus(ReplicaPartitionStatus.BEING_RECOVERED);
         subPartition.setPartitionId(bdbTableAccessors.replicaPartitionAccessor.issueNewId());
         // also sets ReplicaPartitionSchemeId. this is a de-normalization
-        subPartition.setSubPartitionSchemeId(replica.getReplicaPartitionSchemeId());
+        subPartition.setSubPartitionSchemeId(replica.getSubPartitionSchemeId());
 
         bdbTableAccessors.replicaPartitionAccessor.PKX.putNoReturn(subPartition);
         return subPartition;
@@ -721,7 +718,7 @@ public class MasterMetadataRepository implements MetadataRepository {
 
     @Override
     public LVColumnFile[] getAllColumnFilesByReplicaPartitionId(int subPartitionId) throws IOException {
-        Collection<LVColumnFile> values = bdbTableAccessors.columnFileAccessor.IX_PARTITION_ID.subIndex(subPartitionId).map().values();
+        Collection<LVColumnFile> values = bdbTableAccessors.columnFileAccessor.IX_PARTITION_ID.subIndex(subPartitionId).sortedMap().values();
         // TODO sort by column's order... although this is not quite an important contract
         return values.toArray(new LVColumnFile[values.size()]);
     }
@@ -732,7 +729,7 @@ public class MasterMetadataRepository implements MetadataRepository {
     }
 
     @Override
-    public LVColumnFile createNewColumnFile(LVReplicaPartition subPartition, LVColumn column, String hdfsFilePath, long fileSize) throws IOException {
+    public LVColumnFile createNewColumnFile(LVReplicaPartition subPartition, LVColumn column, String hdfsFilePath, long fileSize, int checksum) throws IOException {
         assert (column.getColumnId() > 0);
         assert (subPartition.getPartitionId() > 0);
         LVColumnFile file = new LVColumnFile();
@@ -741,6 +738,7 @@ public class MasterMetadataRepository implements MetadataRepository {
         file.setFileSize(fileSize);
         file.setHdfsFilePath(hdfsFilePath);
         file.setPartitionId(subPartition.getPartitionId());
+        file.setChecksum(checksum);
         bdbTableAccessors.columnFileAccessor.PKX.putNoReturn(file);
         return file;
     }

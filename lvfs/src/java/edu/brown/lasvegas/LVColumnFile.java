@@ -34,15 +34,16 @@ public class LVColumnFile implements LVObject {
      */
     @SecondaryKey(name=IX_PARTITION_COLUMN_ID, relate=Relationship.MANY_TO_ONE)
     private CompositeIntKey partitionColumnId = new CompositeIntKey();
-    
-    /** getter sees the actual members. */
     public CompositeIntKey getPartitionColumnId() {
-        partitionColumnId.setValue1(partitionId);
-        partitionColumnId.setValue2(columnId);
         return partitionColumnId;
     }
-    /** dummy setter. */
-    public void setPartitionColumnId(CompositeIntKey partitionColumnId) {}
+    private void syncPartitionColumnId() {
+        partitionColumnId.setValue1(partitionId);
+        partitionColumnId.setValue2(columnId);
+    }
+    public void setPartitionColumnId(CompositeIntKey partitionColumnId) {
+        this.partitionColumnId = partitionColumnId;
+    }
 
     
     /**
@@ -65,12 +66,15 @@ public class LVColumnFile implements LVObject {
      */
     private long fileSize;
     
+    /** CRC32 of the file. */
+    private int checksum;
+    
     /**
      * @see java.lang.Object#toString()
      */
     public String toString() {
         return "ColumnFile-" + columnFileId + " (Column=" + columnId + ", Partition=" + partitionId + ")"
-            + " HDFS-PATH=" + hdfsFilePath + ", FileSize=" + fileSize;
+            + " HDFS-PATH=" + hdfsFilePath + ", FileSize=" + fileSize + ", checksum=" + checksum;
     }
     
 // auto-generated getters/setters (comments by JAutodoc)
@@ -90,6 +94,7 @@ public class LVColumnFile implements LVObject {
      */
     public void setPartitionId(int partitionId) {
         this.partitionId = partitionId;
+        syncPartitionColumnId();
     }
 
     /**
@@ -108,6 +113,7 @@ public class LVColumnFile implements LVObject {
      */
     public void setColumnId(int columnId) {
         this.columnId = columnId;
+        syncPartitionColumnId();
     }
 
     /**
@@ -164,4 +170,21 @@ public class LVColumnFile implements LVObject {
         this.fileSize = fileSize;
     }
     
+    /**
+     * Gets the cRC32 of the file.
+     *
+     * @return the cRC32 of the file
+     */
+    public int getChecksum() {
+        return checksum;
+    }
+    
+    /**
+     * Sets the cRC32 of the file.
+     *
+     * @param checksum the new cRC32 of the file
+     */
+    public void setChecksum(int checksum) {
+        this.checksum = checksum;
+    }
 }

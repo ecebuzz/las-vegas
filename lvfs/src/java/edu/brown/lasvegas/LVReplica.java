@@ -36,14 +36,16 @@ public class LVReplica implements LVObject {
      */
     @SecondaryKey(name=IX_SCHEME_FRACTURE_ID, relate=Relationship.MANY_TO_ONE)
     private CompositeIntKey schemeFractureId = new CompositeIntKey();
-    /** getter sees the actual members. */
     public CompositeIntKey getSchemeFractureId() {
-        schemeFractureId.setValue1(schemeId);
-        schemeFractureId.setValue2(fractureId);
         return schemeFractureId;
     }
-    /** dummy setter. */
-    public void setSchemeFractureId(CompositeIntKey schemeFractureId) {}
+    private void syncSchemeFractureId() {
+        schemeFractureId.setValue1(schemeId);
+        schemeFractureId.setValue2(fractureId);
+    }
+    public void setSchemeFractureId(CompositeIntKey schemeFractureId) {
+        this.schemeFractureId = schemeFractureId;
+    }
     
     /**
      * A unique (system-wide) ID of this replica.
@@ -65,7 +67,7 @@ public class LVReplica implements LVObject {
      * ID of the sub-partition scheme this partition is based on.
      * Can be obtained from replicaId, but easier if we have this here too (de-normalization).
      */
-    private int replicaPartitionSchemeId;
+    private int subPartitionSchemeId;
 
     /**
      * To string.
@@ -76,7 +78,7 @@ public class LVReplica implements LVObject {
     @Override
     public String toString() {
         return "Replica-" + replicaId + "(Scheme=" + schemeId + ", Fracture=" + fractureId + ") "
-        + "status=" + status + ", replicaPartitionSchemeId=" + replicaPartitionSchemeId
+        + "status=" + status + ", subPartitionSchemeId=" + subPartitionSchemeId
         ;
     }
     
@@ -97,6 +99,7 @@ public class LVReplica implements LVObject {
      */
     public void setSchemeId(int schemeId) {
         this.schemeId = schemeId;
+        syncSchemeFractureId();
     }
 
     /**
@@ -115,6 +118,7 @@ public class LVReplica implements LVObject {
      */
     public void setFractureId(int fractureId) {
         this.fractureId = fractureId;
+        syncSchemeFractureId();
     }
 
     /**
@@ -154,20 +158,20 @@ public class LVReplica implements LVObject {
     }
 
     /**
-     * Gets the iD of the replica partition scheme this replica uses.
+     * Gets the iD of the sub-partition scheme this replica uses.
      *
-     * @return the iD of the replica partition scheme this replica uses
+     * @return the iD of the sub-partition scheme this replica uses
      */
-    public int getReplicaPartitionSchemeId() {
-        return replicaPartitionSchemeId;
+    public int getSubPartitionSchemeId() {
+        return subPartitionSchemeId;
     }
 
     /**
      * Sets the iD of the replica partition scheme this replica uses.
      *
-     * @param replicaPartitionSchemeId the new iD of the replica partition scheme this replica uses
+     * @param subPartitionSchemeId the new iD of the sub-partition scheme this replica uses
      */
-    public void setReplicaPartitionSchemeId(int replicaPartitionSchemeId) {
-        this.replicaPartitionSchemeId = replicaPartitionSchemeId;
+    public void setSubPartitionSchemeId(int subPartitionSchemeId) {
+        this.subPartitionSchemeId = subPartitionSchemeId;
     }
 }
