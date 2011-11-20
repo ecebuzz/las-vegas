@@ -149,6 +149,10 @@ public class MasterMetadataRepository implements MetadataRepository {
     public LVTable getTable(int tableId) throws IOException {
         return bdbTableAccessors.tableAccessor.PKX.get(tableId);
     }
+    @Override
+    public LVTable getTable(String name) throws IOException {
+        return bdbTableAccessors.tableAccessor.IX_NAME.get(name);
+    }
 
     @Override
     public LVTable createNewTable(String name, LVColumn[] columns) throws IOException {

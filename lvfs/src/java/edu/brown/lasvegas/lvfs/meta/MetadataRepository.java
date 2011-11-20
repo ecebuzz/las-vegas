@@ -82,6 +82,14 @@ public interface MetadataRepository {
     LVTable getTable(int tableId) throws IOException;
     
     /**
+     * Returns the table object with the given name (case insensitive). 
+     * @param name Table name 
+     * @return table object. null if the name is not found.
+     * @throws IOException
+     */
+    LVTable getTable(String name) throws IOException;
+
+    /**
      * Creates a new table with the given columns and base partitioning scheme.
      * This method itself does not create any replica scheme for this table.
      * You have to create at least one replica scheme to this table before importing fractures.

@@ -30,6 +30,7 @@ class BdbTableAccessors {
     private static Logger LOG = Logger.getLogger(BdbTableAccessors.class);
     final Environment bdbEnv;
     final StoreConfig storeConfig;
+    final EntityStore store;
     final MasterTableAccessor masterTableAccessor;
 
     final TableAccessor tableAccessor;
@@ -50,8 +51,8 @@ class BdbTableAccessors {
         storeConfig = new StoreConfig();
         storeConfig.setAllowCreate(true);
         storeConfig.setTransactional(false);
-        EntityStore masterStore = new EntityStore(bdbEnv, MasterTable.DBNAME, storeConfig);
-        masterTableAccessor = new MasterTableAccessor(masterStore);
+        store = new EntityStore(bdbEnv, MasterTable.DBNAME, storeConfig);
+        masterTableAccessor = new MasterTableAccessor(store);
         tableAccessor = new TableAccessor();
         columnAccessor = new ColumnAccessor();
         fractureAccessor = new FractureAccessor();
@@ -64,30 +65,16 @@ class BdbTableAccessors {
     }
     
     void closeAll () {
-        for (EntityTableAccessor accessor : new EntityTableAccessor[]{
-                        masterTableAccessor,
-                        tableAccessor,
-                        columnAccessor,
-                        fractureAccessor,
-                        replicaGroupAccessor,
-                        replicaSchemeAccessor,
-                        subPartitionSchemeAccessor,
-                        replicaPartitionAccessor,
-                        replicaAccessor,
-                        columnFileAccessor,
-                    }) {
-            accessor.close();
-        }
+        store.close();
     }
 
     /**
      * Base class of table accessors for BDB.
      * @param <Ent> entity class (e.g., LVTable).
      */
-    class MetaTableAccessor<Ent> implements EntityTableAccessor {
+    class MetaTableAccessor<Ent> {
         MetaTableAccessor (Class<Ent> entClass) {
             idSequence = entClass.getName();
-            store = new EntityStore(bdbEnv, "LVFS_" + entClass.getName(), storeConfig);
             PKX = store.getPrimaryIndex(Integer.class, entClass);
             // load everything in main memory. metadata should be enough compact.
             // note: database.preload() is not enough as it only preloads index node.
@@ -107,8 +94,6 @@ class BdbTableAccessors {
         }
         /** name of the ID sequence stored in master table. */
         final String idSequence;
-        /** BDB table entity. */
-        final EntityStore store;
         /**
          * primary index on the table.
          */
@@ -124,10 +109,6 @@ class BdbTableAccessors {
                 }
             }
             return newId;
-        }
-        @Override
-        public void close() {
-            store.close();
         }
     }
 

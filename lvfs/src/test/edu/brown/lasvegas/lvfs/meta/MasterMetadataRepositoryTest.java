@@ -12,33 +12,33 @@ import org.junit.BeforeClass;
  */
 public class MasterMetadataRepositoryTest extends MetadataRepositoryTestBase {
     private static final String TEST_BDB_HOME = "test/bdb_data";
-    private static MasterMetadataRepository staticRepository;
+    private static MasterMetadataRepository masterRepository;
     
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
-        staticRepository = new MasterMetadataRepository(true, TEST_BDB_HOME);
+        masterRepository = new MasterMetadataRepository(true, TEST_BDB_HOME); // nuke the folder
     }
 
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
-        staticRepository.close();
-        staticRepository = null;
+        masterRepository.close();
+        masterRepository = null;
     }
 
     @Before
     public void setUp() throws Exception {
-        super.repository = staticRepository;
+        super.baseSetUp(masterRepository);
     }
 
     @After
     public void tearDown() throws Exception {
-        super.repository = null;
+        super.baseTearDown();
     }
     
     @Override
     protected void reloadRepository() throws IOException {
-        staticRepository.close();
-        staticRepository = new MasterMetadataRepository(false, TEST_BDB_HOME);
-        super.repository = staticRepository;
+        masterRepository.close();
+        masterRepository = new MasterMetadataRepository(false, TEST_BDB_HOME);
+        repository = masterRepository;
     }
 }

@@ -10,6 +10,16 @@ import com.sleepycat.persist.model.SecondaryKey;
  */
 @Entity
 public class LVColumn {
+    public LVColumn() {}
+    public LVColumn(String name, ColumnType type) {
+        this (name, type, false);
+    }
+    public LVColumn(String name, ColumnType type, boolean fracturingColumn) {
+        setName(name);
+        setType(type);
+        setFracturingColumn(fracturingColumn);
+    }
+    
     public static final String IX_TABLE_ID = "IX_TABLE_ID";
     /**
      * ID of the table this column belongs to.

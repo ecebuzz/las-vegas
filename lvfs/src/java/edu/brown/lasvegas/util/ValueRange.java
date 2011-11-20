@@ -18,6 +18,12 @@ public class ValueRange<T extends Comparable<T>> {
      */
     private T endKey;
     
+    public ValueRange () {}
+    public ValueRange (T startKey, T endKey) {
+        this.startKey = startKey;
+        this.endKey = endKey;
+    }
+    
     /**
      * @see java.lang.Object#toString()
      */
