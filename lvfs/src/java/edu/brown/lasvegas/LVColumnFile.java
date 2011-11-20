@@ -15,7 +15,7 @@ import edu.brown.lasvegas.util.CompositeIntKey;
  * are located in the same node.
  */
 @Entity
-public class LVColumnFile {
+public class LVColumnFile implements LVObject {
     public static final String IX_PARTITION_ID = "IX_PARTITION_ID";
     /**
      * ID of the sub-partition this column file belongs to.
@@ -50,7 +50,11 @@ public class LVColumnFile {
      */
     @PrimaryKey
     private int columnFileId;
-    
+    @Override
+    public int getPrimaryKey() {
+        return columnFileId;
+    }
+
     /**
      * The file path of this columnar file in HDFS.
      */

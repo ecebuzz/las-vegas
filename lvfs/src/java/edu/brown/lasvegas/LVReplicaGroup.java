@@ -11,7 +11,7 @@ import com.sleepycat.persist.model.SecondaryKey;
  * with minimal I/Os because they share the partitioning scheme.
  */
 @Entity
-public class LVReplicaGroup {
+public class LVReplicaGroup implements LVObject {
     public static final String IX_TABLE_ID = "IX_TABLE_ID";
     /**
      * ID of the table this fracture belongs to.
@@ -24,7 +24,10 @@ public class LVReplicaGroup {
      */
     @PrimaryKey
     private int groupId;
-    
+    @Override
+    public int getPrimaryKey() {
+        return groupId;
+    }   
     /**
      * ID of the column used as the partitioning key in this replica group.
      */

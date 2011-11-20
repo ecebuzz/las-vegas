@@ -9,7 +9,7 @@ import com.sleepycat.persist.model.SecondaryKey;
  * Logical scheme of a column.
  */
 @Entity
-public class LVColumn {
+public class LVColumn implements LVObject {
     public LVColumn() {}
     public LVColumn(String name, ColumnType type) {
         this (name, type, false);
@@ -32,6 +32,10 @@ public class LVColumn {
      */
     @PrimaryKey
     private int columnId;
+    @Override
+    public int getPrimaryKey() {
+        return columnId;
+    }
 
     /**
      * The name of this column. Unique in this table.

@@ -16,7 +16,7 @@ import edu.brown.lasvegas.util.ValueRange;
  * can efficiently recover files between them.
  */
 @Entity
-public class LVSubPartitionScheme {
+public class LVSubPartitionScheme implements LVObject {
     public static final String IX_FRACTURE_ID = "IX_FRACTURE_ID";
     /**
      * ID of the fracture the sub-partitions belong to.
@@ -50,11 +50,14 @@ public class LVSubPartitionScheme {
     public void setFractureGroupId(CompositeIntKey fractureGroupId) {}
     
     /**
-     * Unique ID of this range.
+     * Unique ID of this sub-partition scheme.
      */
     @PrimaryKey
-    private int replicaPartitionSchemeId;
-
+    private int subPartitionSchemeId;
+    @Override
+    public int getPrimaryKey() {
+        return subPartitionSchemeId;
+    }   
     /**
      * The key ranges of the partitioning column in this group.
      * Sorted by the ranges themselves.
@@ -67,7 +70,7 @@ public class LVSubPartitionScheme {
     @Override
     public String toString() {
         StringBuffer buffer = new StringBuffer();
-        buffer.append("ReplicaPartitionScheme-" + replicaPartitionSchemeId)
+        buffer.append("SubPartitionScheme-" + subPartitionSchemeId)
             .append("(Fracture=" + fractureId + ", Group=" + groupId + ")");
         buffer.append(" ranges={");
         for (ValueRange<?> range : ranges) {
@@ -115,21 +118,21 @@ public class LVSubPartitionScheme {
     }
     
     /**
-     * Gets the unique ID of this range.
+     * Gets the unique ID of this sub-partition scheme.
      *
-     * @return the unique ID of this range
+     * @return the unique ID of this sub-partition scheme
      */
-    public int getReplicaPartitionSchemeId() {
-        return replicaPartitionSchemeId;
+    public int getSubPartitionSchemeId() {
+        return subPartitionSchemeId;
     }
     
     /**
-     * Sets the unique ID of this range.
+     * Sets the unique ID of this sub-partition scheme.
      *
-     * @param replicaPartitionSchemeId the new unique ID of this range
+     * @param subPartitionSchemeId the new unique ID of this sub-partition scheme
      */
-    public void setReplicaPartitionSchemeId(int replicaPartitionSchemeId) {
-        this.replicaPartitionSchemeId = replicaPartitionSchemeId;
+    public void setSubPartitionSchemeId(int subPartitionSchemeId) {
+        this.subPartitionSchemeId = subPartitionSchemeId;
     }
     
     /**

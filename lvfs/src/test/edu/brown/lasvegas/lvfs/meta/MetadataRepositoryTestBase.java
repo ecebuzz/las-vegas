@@ -50,6 +50,8 @@ public abstract class MetadataRepositoryTestBase {
     private LVTable DEFAULT_TABLE;
     private final static String DEFAULT_TABLE_NAME = "deftable";
     private LVColumn[] DEFAULT_COLUMNS;
+    private LVFracture DEFAULT_FRACTURE;
+    private LVReplicaGroup DEFAULT_GROUP;
     
     /** for ease of testing, create a few default objects. */
     private void initDefaultTestObjects () throws IOException {
@@ -67,6 +69,19 @@ public abstract class MetadataRepositoryTestBase {
         
         DEFAULT_COLUMNS = repository.getAllColumns(DEFAULT_TABLE.getTableId());
         assertEquals (4 + 1, DEFAULT_COLUMNS.length);
+
+        DEFAULT_FRACTURE = repository.createNewFracture(DEFAULT_TABLE);
+        assertTrue (DEFAULT_FRACTURE.getFractureId() > 0);
+        assertEquals(DEFAULT_TABLE.getTableId(), DEFAULT_FRACTURE.getTableId());
+        
+        DEFAULT_FRACTURE.setTupleCount(1000000L);
+        DEFAULT_FRACTURE.setRange(new ValueRange<Integer>(0, 100));
+        repository.finalizeFracture(DEFAULT_FRACTURE);
+
+        DEFAULT_GROUP = repository.createNewReplicaGroup(DEFAULT_TABLE, DEFAULT_COLUMNS[1]);
+        assertTrue (DEFAULT_GROUP.getGroupId() > 0);
+        assertEquals(DEFAULT_TABLE.getTableId(), DEFAULT_GROUP.getTableId());
+        assertEquals(DEFAULT_COLUMNS[1].getColumnId(), DEFAULT_GROUP.getPartitioningColumnId());
     }
     
 
@@ -295,34 +310,34 @@ public abstract class MetadataRepositoryTestBase {
         assertTrue(fractureId1 != fractureId2);
      
         LVFracture[] fractures = repository.getAllFractures(DEFAULT_TABLE.getTableId());
-        assertEquals (2, fractures.length);
-        validateFracture (fractures[0], fractureId1, 123456789L, 100, 300);
-        validateFracture (fractures[1], fractureId2, 23456789L, 300, 600);
+        assertEquals (3, fractures.length);
+        validateFracture (fractures[1], fractureId1, 123456789L, 100, 300);
+        validateFracture (fractures[2], fractureId2, 23456789L, 300, 600);
 
         reloadRepository();
 
         validateFracture (repository.getFracture(fractureId1), fractureId1, 123456789L, 100, 300);
         validateFracture (repository.getFracture(fractureId2), fractureId2, 23456789L, 300, 600);
         fractures = repository.getAllFractures(DEFAULT_TABLE.getTableId());
-        assertEquals (2, fractures.length);
-        validateFracture (fractures[0], fractureId1, 123456789L, 100, 300);
-        validateFracture (fractures[1], fractureId2, 23456789L, 300, 600);
+        assertEquals (3, fractures.length);
+        validateFracture (fractures[1], fractureId1, 123456789L, 100, 300);
+        validateFracture (fractures[2], fractureId2, 23456789L, 300, 600);
         
-        repository.dropFracture(fractures[0]);
+        repository.dropFracture(fractures[1]);
 
         assertNull (repository.getFracture(fractureId1));
         validateFracture (repository.getFracture(fractureId2), fractureId2, 23456789L, 300, 600);
         fractures = repository.getAllFractures(DEFAULT_TABLE.getTableId());
-        assertEquals (1, fractures.length);
-        validateFracture (fractures[0], fractureId2, 23456789L, 300, 600);
+        assertEquals (2, fractures.length);
+        validateFracture (fractures[1], fractureId2, 23456789L, 300, 600);
 
         reloadRepository();
 
         assertNull (repository.getFracture(fractureId1));
         validateFracture (repository.getFracture(fractureId2), fractureId2, 23456789L, 300, 600);
         fractures = repository.getAllFractures(DEFAULT_TABLE.getTableId());
-        assertEquals (1, fractures.length);
-        validateFracture (fractures[0], fractureId2, 23456789L, 300, 600);
+        assertEquals (2, fractures.length);
+        validateFracture (fractures[1], fractureId2, 23456789L, 300, 600);
     }
     private void validateFracture (LVFracture fracture, int fractureId, long tupleCount, int start, int end) {
         assertEquals (fractureId, fracture.getFractureId());
@@ -361,34 +376,34 @@ public abstract class MetadataRepositoryTestBase {
         assertTrue(groupId1 != groupId2);
      
         LVReplicaGroup[] groups = repository.getAllReplicaGroups(DEFAULT_TABLE.getTableId());
-        assertEquals (2, groups.length);
-        validateGroup (groups[0], groupId1, DEFAULT_COLUMNS[3].getColumnId());
-        validateGroup (groups[1], groupId2, DEFAULT_COLUMNS[2].getColumnId());
+        assertEquals (3, groups.length);
+        validateGroup (groups[1], groupId1, DEFAULT_COLUMNS[3].getColumnId());
+        validateGroup (groups[2], groupId2, DEFAULT_COLUMNS[2].getColumnId());
 
         reloadRepository();
 
         validateGroup (repository.getReplicaGroup(groupId1), groupId1, DEFAULT_COLUMNS[3].getColumnId());
         validateGroup (repository.getReplicaGroup(groupId2), groupId2, DEFAULT_COLUMNS[2].getColumnId());
         groups = repository.getAllReplicaGroups(DEFAULT_TABLE.getTableId());
-        assertEquals (2, groups.length);
-        validateGroup (groups[0], groupId1, DEFAULT_COLUMNS[3].getColumnId());
-        validateGroup (groups[1], groupId2, DEFAULT_COLUMNS[2].getColumnId());
+        assertEquals (3, groups.length);
+        validateGroup (groups[1], groupId1, DEFAULT_COLUMNS[3].getColumnId());
+        validateGroup (groups[2], groupId2, DEFAULT_COLUMNS[2].getColumnId());
         
-        repository.dropReplicaGroup(groups[0]);
+        repository.dropReplicaGroup(groups[1]);
 
         assertNull (repository.getReplicaGroup(groupId1));
         validateGroup (repository.getReplicaGroup(groupId2), groupId2, DEFAULT_COLUMNS[2].getColumnId());
         groups = repository.getAllReplicaGroups(DEFAULT_TABLE.getTableId());
-        assertEquals (1, groups.length);
-        validateGroup (groups[0], groupId2, DEFAULT_COLUMNS[2].getColumnId());
+        assertEquals (2, groups.length);
+        validateGroup (groups[1], groupId2, DEFAULT_COLUMNS[2].getColumnId());
 
         reloadRepository();
 
         assertNull (repository.getReplicaGroup(groupId1));
         validateGroup (repository.getReplicaGroup(groupId2), groupId2, DEFAULT_COLUMNS[2].getColumnId());
         groups = repository.getAllReplicaGroups(DEFAULT_TABLE.getTableId());
-        assertEquals (1, groups.length);
-        validateGroup (groups[0], groupId2, DEFAULT_COLUMNS[2].getColumnId());
+        assertEquals (2, groups.length);
+        validateGroup (groups[1], groupId2, DEFAULT_COLUMNS[2].getColumnId());
     }
     private void validateGroup (LVReplicaGroup group, int groupId, int partitioningColumnId) {
         assertEquals (groupId, group.getGroupId());

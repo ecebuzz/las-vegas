@@ -12,7 +12,7 @@ import com.sleepycat.persist.model.SecondaryKey;
  * to replicate a table.
  */
 @Entity
-public class LVReplicaScheme {
+public class LVReplicaScheme implements LVObject {
     public static final String IX_GROUP_ID = "IX_GROUP_ID";
     /**
      * ID of the replica group (partitioning scheme) this scheme belongs to.
@@ -25,7 +25,10 @@ public class LVReplicaScheme {
      */
     @PrimaryKey
     private int schemeId;
-
+    @Override
+    public int getPrimaryKey() {
+        return schemeId;
+    }   
     /**
      * ID of the column used as the in-block-sort key in this replica scheme.
      */

@@ -14,7 +14,7 @@ import edu.brown.lasvegas.util.CompositeIntKey;
  * and the recovery unit in this system.
  */
 @Entity
-public class LVReplica {
+public class LVReplica implements LVObject {
     public static final String IX_SCHEME_ID = "IX_SCHEME_ID";
     /**
      * ID of the scheme of this replica.
@@ -50,7 +50,10 @@ public class LVReplica {
      */
     @PrimaryKey
     private int replicaId;
-    
+    @Override
+    public int getPrimaryKey() {
+        return replicaId;
+    }   
     public static final String IX_STATUS = "IX_STATUS";
     /**
      * Status of this replica.

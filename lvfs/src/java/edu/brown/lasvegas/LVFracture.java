@@ -24,7 +24,7 @@ import edu.brown.lasvegas.util.ValueRange;
  * A monotonically increasing column such as sequentially numbered ID key is a good candidate.</p>
  */
 @Entity
-public class LVFracture {
+public class LVFracture implements LVObject {
     public static final String IX_TABLE_ID = "IX_TABLE_ID";
     /**
      * ID of the table this fracture belongs to.
@@ -37,7 +37,10 @@ public class LVFracture {
      */
     @PrimaryKey
     private int fractureId;
-
+    @Override
+    public int getPrimaryKey() {
+        return fractureId;
+    }
     /**
      * The key range of the fracturing key in this fracture.
      */

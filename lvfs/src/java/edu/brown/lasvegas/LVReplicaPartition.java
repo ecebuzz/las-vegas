@@ -14,7 +14,7 @@ import edu.brown.lasvegas.util.CompositeIntKey;
  * LVReplicaPartition is also a unit for recovery and replication.
  */
 @Entity
-public class LVReplicaPartition {
+public class LVReplicaPartition implements LVObject {
     public static final String IX_REPLICA_ID = "IX_REPLICA_ID";
     /**
      * ID of the replica (Replicated Fracture) this replica partition belongs to.
@@ -56,7 +56,10 @@ public class LVReplicaPartition {
      */
     @PrimaryKey
     private int partitionId;
-    
+    @Override
+    public int getPrimaryKey() {
+        return partitionId;
+    }   
     public static final String IX_STATUS = "IX_STATUS";
     /**
      * Current status of this replica partition.

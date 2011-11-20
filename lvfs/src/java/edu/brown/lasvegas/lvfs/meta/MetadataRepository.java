@@ -179,7 +179,7 @@ public interface MetadataRepository {
     /**
      * Returns all fractures in the table. 
      * @param tableId Table that contains the fractures.
-     * @return fracture objects. not in a particular order.
+     * @return fracture objects. in ID order.
      * @throws IOException
      */
     LVFracture[] getAllFractures(int tableId) throws IOException;
@@ -224,7 +224,7 @@ public interface MetadataRepository {
     /**
      * Returns all replica groups in the table. 
      * @param tableId Table ID.
-     * @return replica group objects. not in a particular order.
+     * @return replica group objects. in ID order.
      * @throws IOException
      */
     LVReplicaGroup[] getAllReplicaGroups(int tableId) throws IOException;
@@ -258,7 +258,7 @@ public interface MetadataRepository {
     /**
      * Returns all replica schemes in the specified replica group. 
      * @param groupId Replica Scheme ID.
-     * @return replica scheme objects. not in a particular order.
+     * @return replica scheme objects. in ID order.
      * @throws IOException
      */
     LVReplicaScheme[] getAllReplicaSchemes(int groupId) throws IOException;
@@ -311,7 +311,7 @@ public interface MetadataRepository {
     /**
      * Returns all replicas in the given replica scheme.
      * @param schemeId Replica scheme the replicas are based on.
-     * @return replica objects. not in a particular order.
+     * @return replica objects. in ID order.
      * @throws IOException
      */
     LVReplica[] getAllReplicasBySchemeId(int schemeId) throws IOException;
@@ -319,7 +319,7 @@ public interface MetadataRepository {
     /**
      * Returns all replicas of the given fracture.
      * @param fractureId Fracture the replicas are based on.
-     * @return replica objects. not in a particular order.
+     * @return replica objects. in ID order.
      * @throws IOException
      */
     LVReplica[] getAllReplicasByFractureId(int fractureId) throws IOException;
@@ -370,7 +370,7 @@ public interface MetadataRepository {
     /**
      * Returns all sub-partition scheme objects  in the given fracture.
      * @param fractureId Fracture the replica partition schemes are for.
-     * @return sub-partition scheme objects. not in a particular order.
+     * @return sub-partition scheme objects. in ID order.
      * @throws IOException
      */
     LVSubPartitionScheme[] getAllSubPartitionSchemesByFractureId(int fractureId) throws IOException;
@@ -378,7 +378,7 @@ public interface MetadataRepository {
     /**
      * Returns all sub-partition scheme objects  of the given replica group.
      * @param groupId Replica Group the partition schemes are for.
-     * @return sub-partition scheme objects. not in a particular order.
+     * @return sub-partition scheme objects. in ID order.
      * @throws IOException
      */
     LVSubPartitionScheme[] getAllSubPartitionSchemesByGroupId(int groupId) throws IOException;

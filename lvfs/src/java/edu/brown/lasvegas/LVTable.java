@@ -11,13 +11,16 @@ import com.sleepycat.persist.model.SecondaryKey;
  * of physical replicas.
  */
 @Entity
-public class LVTable {
+public class LVTable implements LVObject {
     /**
      * A unique (system-wide) ID of this table.
      */
     @PrimaryKey
     private int tableId;
-    
+    @Override
+    public int getPrimaryKey() {
+        return tableId;
+    }   
     public static final String IX_NAME = "IX_NAME";
     /**
      * The logical name of this table. Of course has to be unique.
