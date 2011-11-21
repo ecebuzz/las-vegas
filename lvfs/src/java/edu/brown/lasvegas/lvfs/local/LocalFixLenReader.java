@@ -52,7 +52,7 @@ public class LocalFixLenReader<T, AT> extends LocalTypedReader<T, AT>{
      * @param bitsPerEntry number of bits to represent one entry.
      * so far must be multiply of 8 (might allow 1/2/4 later..).
      */
-    private LocalFixLenReader(File rawFile, FixLenValueTraits<T, AT> traits) throws IOException {
+    public LocalFixLenReader(File rawFile, FixLenValueTraits<T, AT> traits) throws IOException {
         super (rawFile);
         this.bitsPerValue = traits.getBitsPerValue();
         this.traits = traits;

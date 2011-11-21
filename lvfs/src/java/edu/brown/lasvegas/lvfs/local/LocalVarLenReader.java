@@ -31,7 +31,7 @@ public class LocalVarLenReader<T> extends LocalTypedReader<T, T[]> {
         return new LocalVarLenReader<byte[]>(rawFile, new AllValueTraits.VarbinValueTraits());
     }
 
-    private LocalVarLenReader(File rawFile, VarLenValueTraits<T> traits) throws IOException {
+    public LocalVarLenReader(File rawFile, VarLenValueTraits<T> traits) throws IOException {
         super (rawFile);
         this.traits = traits;
     }

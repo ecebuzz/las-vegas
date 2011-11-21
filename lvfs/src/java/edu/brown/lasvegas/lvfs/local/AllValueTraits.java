@@ -1,5 +1,6 @@
 package edu.brown.lasvegas.lvfs.local;
 
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -24,6 +25,10 @@ public final class AllValueTraits {
             return reader.readBytes(buffer, off, len);
         }
         @Override
+        public void writeValue(DataOutputStream out, Byte value) throws IOException {
+            out.writeByte(value);
+        }
+        @Override
         public short getBitsPerValue() {
             return 8;
         }
@@ -39,6 +44,10 @@ public final class AllValueTraits {
             len = readIntoConversionBuffer(reader, len);
             ByteBuffer.wrap(conversionBuffer).asShortBuffer().get(buffer, off, len);
             return len;
+        }
+        @Override
+        public void writeValue(DataOutputStream out, Short value) throws IOException {
+            out.writeShort(value);
         }
         @Override
         public short getBitsPerValue() {
@@ -58,7 +67,10 @@ public final class AllValueTraits {
             ByteBuffer.wrap(conversionBuffer).asIntBuffer().get(buffer, off, len);
             return len;
         }
-        
+        @Override
+        public void writeValue(DataOutputStream out, Integer value) throws IOException {
+            out.writeInt(value);
+        }
         @Override
         public short getBitsPerValue() {
             return 32;
@@ -75,6 +87,10 @@ public final class AllValueTraits {
             len = readIntoConversionBuffer(reader, len);
             ByteBuffer.wrap(conversionBuffer).asLongBuffer().get(buffer, off, len);
             return len;
+        }
+        @Override
+        public void writeValue(DataOutputStream out, Long value) throws IOException {
+            out.writeLong(value);
         }
         @Override
         public short getBitsPerValue() {
@@ -94,6 +110,10 @@ public final class AllValueTraits {
             return len;
         }
         @Override
+        public void writeValue(DataOutputStream out, Float value) throws IOException {
+            out.writeFloat(value);
+        }
+        @Override
         public short getBitsPerValue() {
             return 32;
         }
@@ -109,6 +129,10 @@ public final class AllValueTraits {
             len = readIntoConversionBuffer(reader, len);
             ByteBuffer.wrap(conversionBuffer).asDoubleBuffer().get(buffer, off, len);
             return len;
+        }
+        @Override
+        public void writeValue(DataOutputStream out, Double value) throws IOException {
+            out.writeDouble(value);
         }
         @Override
         public short getBitsPerValue() {

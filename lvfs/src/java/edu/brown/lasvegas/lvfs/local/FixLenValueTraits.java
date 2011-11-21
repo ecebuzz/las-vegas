@@ -1,5 +1,6 @@
 package edu.brown.lasvegas.lvfs.local;
 
+import java.io.DataOutputStream;
 import java.io.IOException;
 
 /**
@@ -31,6 +32,11 @@ public abstract class FixLenValueTraits<T, AT> {
      * Returns the number of bits to represent one value.
      */
     public abstract short getBitsPerValue ();
+    
+    /**
+     * Writes one value to DataOutputStream. This method is mainly used for testcases.
+     */
+    public abstract void writeValue (DataOutputStream out, T value) throws IOException;
 
     protected byte[] conversionBuffer = new byte[1024];
     protected int readIntoConversionBuffer(LocalRawFileReader reader, int len) throws IOException {
