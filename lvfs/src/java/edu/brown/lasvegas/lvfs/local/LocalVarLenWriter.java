@@ -12,11 +12,20 @@ import java.util.ArrayList;
  * Thus, this writer also collects tuple positions
  * to produce a "position file" as a sparse index.
  */
-public class LocalVarLenWriter<T> extends LocalRawFileWriter {
+public final class LocalVarLenWriter<T> extends LocalRawFileWriter {
+    /** Constructs an instance of varchar column. */
+    public static LocalVarLenWriter<String> getInstanceVarchar(File rawFile, int collectPerBytes) throws IOException {
+        return new LocalVarLenWriter<String>(rawFile, new AllValueTraits.VarcharValueTraits(), collectPerBytes);
+    }
+    /** Constructs an instance of varbinary column. */
+    public static LocalVarLenWriter<byte[]> getInstanceVarbin(File rawFile, int collectPerBytes) throws IOException {
+        return new LocalVarLenWriter<byte[]>(rawFile, new AllValueTraits.VarbinValueTraits(), collectPerBytes);
+    }
+
     private final VarLenValueTraits<T> traits;
 
     private final int collectPerBytes;
-    private long prevCollectPosition = Long.MIN_VALUE; // to always collect at the first value
+    private long prevCollectPosition = -1L; // to always collect at the first value
     private long curTuple = 0L;
     private ArrayList<Long> collectedTuples = new ArrayList<Long>();
     private ArrayList<Long> collectedPositions = new ArrayList<Long>();
@@ -29,38 +38,32 @@ public class LocalVarLenWriter<T> extends LocalRawFileWriter {
     public void writeValue (T value) throws IOException {
         collectTuplePosition();
         byte[] bytes = traits.toBytes(value);
-        int totalBytes; // including length header
         if (bytes.length < (1 << 7)) {
             // 1 byte length header
             writeByte((byte) 1);
             writeByte((byte) bytes.length);
-            totalBytes = 1 + 1 + bytes.length;
         } else if (bytes.length < (1 << 15)) {
             // 2 byte length header
             writeByte((byte) 2);
-            totalBytes = 1 + 2 + bytes.length;
             writeShort((short) bytes.length);
         } else if (bytes.length < (1 << 31)) {
             // 4 byte length header
             writeByte((byte) 4);
-            totalBytes = 1 + 4 + bytes.length;
             writeInt(bytes.length);
         } else {
             // 8 byte length header (this is not quite implemented as byte[1<<32] isn't possible)
             writeByte((byte) 8);
-            totalBytes = 1 + 8 + bytes.length;
             writeLong(bytes.length);
         }
         writeBytes(bytes, 0, bytes.length);
         ++curTuple;
-        curPosition += totalBytes;
     }
 
     private void collectTuplePosition () {
-        if (curPosition - prevCollectPosition >= collectPerBytes) {
+        if (prevCollectPosition < 0 || getCurPosition() - prevCollectPosition >= collectPerBytes) {
             collectedTuples.add(curTuple);
-            collectedPositions.add(curPosition);
-            prevCollectPosition = curPosition;
+            collectedPositions.add(getCurPosition());
+            prevCollectPosition = getCurPosition();
             assert (collectedTuples.size() == collectedPositions.size());
         }
     }

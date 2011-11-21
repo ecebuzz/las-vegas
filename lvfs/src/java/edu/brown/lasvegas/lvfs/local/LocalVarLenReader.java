@@ -19,7 +19,7 @@ import java.io.IOException;
  * Use {@link LocalPosFileReader} and {@link #seekToByteAbsolute(long)}
  * to do so.</p>
  */
-public class LocalVarLenReader<T> extends LocalTypedReader<T, T[]> {
+public final class LocalVarLenReader<T> extends LocalTypedReader<T, T[]> {
     private final VarLenValueTraits<T> traits;
 
     /** Constructs an instance of varchar column. */

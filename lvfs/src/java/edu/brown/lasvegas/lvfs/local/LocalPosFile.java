@@ -109,6 +109,10 @@ public final class LocalPosFile {
         }
         public final long tuple;
         public final long bytePosition;
+        @Override
+        public String toString() {
+            return "Pos: tuple=" + tuple + ", from " + bytePosition + "th bytes";
+        }
     }
     
     /**

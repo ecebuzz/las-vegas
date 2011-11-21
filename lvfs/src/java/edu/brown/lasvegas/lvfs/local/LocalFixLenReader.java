@@ -13,7 +13,7 @@ import org.apache.log4j.Logger;
  * @param <T> Value type (e.g., Integer)
  * @param <AT> Array type (e.g., int[]). used for fast batch accesses. 
  */
-public class LocalFixLenReader<T, AT> extends LocalTypedReader<T, AT>{
+public final class LocalFixLenReader<T, AT> extends LocalTypedReader<T, AT>{
     private static Logger LOG = Logger.getLogger(LocalFixLenReader.class);
 
     /**

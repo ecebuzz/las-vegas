@@ -53,6 +53,6 @@ public class LocalFixLenWriter<T, AT> extends LocalRawFileWriter {
      * @throws IOException
      */
     public void writeValues (AT values, int off, int len) throws IOException {
-        traits.writeValues(stream, values, off, len);
+        traits.writeValues(this, values, off, len);
     }
 }

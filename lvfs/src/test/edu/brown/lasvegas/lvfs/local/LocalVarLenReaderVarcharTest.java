@@ -18,7 +18,7 @@ public class LocalVarLenReaderVarcharTest {
     private final static int VALUE_COUNT = 123;
     
     private static String generateValue (int index) {
-        return ("str" + index + "abc");
+        return ("str" + index + "ab\u6728\u6751c"); // also use some unicode
     }
 
     @Before

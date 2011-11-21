@@ -54,7 +54,7 @@ public class LocalRawFileReader {
     /**
      * Close the file handle and release all resources.
      */
-    public void close() throws IOException {
+    public final void close() throws IOException {
         rawStream.close();
         rawStream = null;
     }
@@ -85,13 +85,20 @@ public class LocalRawFileReader {
         
         long bytesToSkip = bytePosition - curPosition;
         assert (bytesToSkip > 0L);
-        long skippedByte = rawStream.skip(bytesToSkip);
-        if (bytesToSkip != skippedByte) {
-            LOG.warn("unexpected skip behavior?? " + skippedByte + "/" + bytesToSkip + " at " + this);
+        // InputStream#skip() might skip fewer bytes than requested for legitimate reasons
+        // ex. buffered stream reached the end of the buffer.
+        // So, we need to repeatedly call it. (negative return is definitely an error though)
+        for (long totalSkipped = 0L; totalSkipped < bytesToSkip;) {
+            long skippedByte = rawStream.skip(bytesToSkip - totalSkipped);
+            if (skippedByte < 0) {
+                throw new IOException ("failed to skip??" + this);
+            }
+            totalSkipped += skippedByte;
+            assert (totalSkipped <= bytesToSkip);
         }
-        curPosition += skippedByte;
+        curPosition += bytesToSkip;
         if (LOG.isDebugEnabled()) {
-            LOG.debug("skipped " + skippedByte + " bytes: " + this);
+            LOG.debug("skipped " + bytesToSkip + " bytes: " + this);
         }
     }
     /**
@@ -197,17 +204,6 @@ public class LocalRawFileReader {
     public long getRawFileSize() {
         return rawFileSize;
     }
-
-    /**
-     * Gets the input stream of the raw file.
-     *
-     * @return the input stream of the raw file
-     */
-    /* encapsulate everything about raw stream in this class..
-    public FileInputStream getRawStream() {
-        return rawStream;
-    }
-    */
 
     /**
      * Gets the current byte position of the input stream.

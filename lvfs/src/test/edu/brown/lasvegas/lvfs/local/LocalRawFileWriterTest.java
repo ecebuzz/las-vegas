@@ -1,16 +1,14 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 /**
- * Testcase for {@link LocalRawFileReader}.
+ * Testcases for {@link LocalRawFileWriter}.
  */
-public class LocalRawFileReaderTest extends LocalRawFileTestBase {
+public class LocalRawFileWriterTest extends LocalRawFileTestBase {
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
         // create the file to test
@@ -19,9 +17,9 @@ public class LocalRawFileReaderTest extends LocalRawFileTestBase {
             throw new Exception ("Couldn't create test directory " + file.getParentFile().getAbsolutePath());
         }
         file.delete();
-        DataOutputStream out = new DataOutputStream(new FileOutputStream(file));
+        LocalRawFileWriter out = new LocalRawFileWriter(file, 0);
 
-        out.write(new byte[] { (byte)-120, (byte)0, (byte)40});//0-3
+        out.writeBytes(new byte[] { (byte)-120, (byte)0, (byte)40}, 0, 3);//0-3
         out.writeBoolean(false);//3-4
         out.writeBoolean(true);//4-5
         out.writeByte((byte)-60);//5-6

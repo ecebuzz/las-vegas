@@ -22,8 +22,12 @@ public class LocalRawFileWriter {
     protected final File file;
     
     /** output stream of the raw file. */
-    protected final OutputStream stream;
-    protected long curPosition = 0L;
+    private final OutputStream stream;
+    private long curPosition = 0L;
+    public final long getCurPosition () {
+        return curPosition;
+    }
+    // no setter because only this class should maintain it
 
     public LocalRawFileWriter (File file, int bufferSize) throws IOException {
         this.file = file;
@@ -37,14 +41,13 @@ public class LocalRawFileWriter {
         }
     }
 
-    public void flush () throws IOException {
+    public final void flush () throws IOException {
         stream.flush();
         if (LOG.isDebugEnabled()) {
             LOG.debug("flushed file:" + file.getAbsolutePath());
         }
     }
-    public void close () throws IOException {
-        stream.flush();
+    public final void close () throws IOException {
         stream.close();
         if (LOG.isDebugEnabled()) {
             LOG.debug("closed file:" + file.getAbsolutePath());
@@ -104,7 +107,15 @@ public class LocalRawFileWriter {
     }
 
     /** Writes 8 bytes as double. */
-    public final void readDouble(double v) throws IOException {
+    public final void writeDouble(double v) throws IOException {
         writeLong(Double.doubleToLongBits(v));
+    }
+
+    /**
+     * @see java.lang.Object#toString()
+     */
+    @Override
+    public String toString() {
+        return "RawFileWriter (" + file.getAbsolutePath() + ") curPos=" + curPosition;
     }
 }
