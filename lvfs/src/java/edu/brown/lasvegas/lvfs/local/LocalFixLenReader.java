@@ -6,15 +6,15 @@ import java.io.IOException;
 import org.apache.log4j.Logger;
 
 /**
- * LocalRawFileReader that assumes fixed-length entries.
+ * File reader that assumes fixed-length entries.
  * Simpler and faster.
  * Integer/float/datetime files without compression, dictionary compressed files,
  * and prefix-compressed integer/float/datetime files fall into this category.
  * @param <T> Value type (e.g., Integer)
  * @param <AT> Array type (e.g., int[]). used for fast batch accesses. 
  */
-public class LocalFixLenRawFileReader<T, AT> extends LocalRawFileReader implements TypedReader<T, AT>{
-    private static Logger LOG = Logger.getLogger(LocalFixLenRawFileReader.class);
+public class LocalFixLenReader<T, AT> extends LocalTypedReader<T, AT>{
+    private static Logger LOG = Logger.getLogger(LocalFixLenReader.class);
 
     /**
      * number of bits to represent one entry. so far must be multiply of 8 (might allow 1/2/4 later..)
@@ -24,35 +24,35 @@ public class LocalFixLenRawFileReader<T, AT> extends LocalRawFileReader implemen
     private final FixLenValueTraits<T, AT> traits;
     
     /** Constructs an instance for 1-byte fixed length integer values. */
-    public static LocalFixLenRawFileReader<Byte, byte[]> getInstanceTinyint(File rawFile) throws IOException {
-        return new LocalFixLenRawFileReader<Byte, byte[]>(rawFile, new AllValueTraits.TinyintValueTraits());
+    public static LocalFixLenReader<Byte, byte[]> getInstanceTinyint(File rawFile) throws IOException {
+        return new LocalFixLenReader<Byte, byte[]>(rawFile, new AllValueTraits.TinyintValueTraits());
     }
     /** Constructs an instance for 2-byte fixed length integer values. */
-    public static LocalFixLenRawFileReader<Short, short[]> getInstanceSmallint(File rawFile) throws IOException {
-        return new LocalFixLenRawFileReader<Short, short[]>(rawFile, new AllValueTraits.SmallintValueTraits());
+    public static LocalFixLenReader<Short, short[]> getInstanceSmallint(File rawFile) throws IOException {
+        return new LocalFixLenReader<Short, short[]>(rawFile, new AllValueTraits.SmallintValueTraits());
     }
     /** Constructs an instance for 4-byte fixed length integer values. */
-    public static LocalFixLenRawFileReader<Integer, int[]> getInstanceInteger(File rawFile) throws IOException {
-        return new LocalFixLenRawFileReader<Integer, int[]>(rawFile, new AllValueTraits.IntegerValueTraits());
+    public static LocalFixLenReader<Integer, int[]> getInstanceInteger(File rawFile) throws IOException {
+        return new LocalFixLenReader<Integer, int[]>(rawFile, new AllValueTraits.IntegerValueTraits());
     }
     /** Constructs an instance for 8-byte fixed length integer values. */
-    public static LocalFixLenRawFileReader<Long, long[]> getInstanceBigint(File rawFile) throws IOException {
-        return new LocalFixLenRawFileReader<Long, long[]>(rawFile, new AllValueTraits.BigintValueTraits());
+    public static LocalFixLenReader<Long, long[]> getInstanceBigint(File rawFile) throws IOException {
+        return new LocalFixLenReader<Long, long[]>(rawFile, new AllValueTraits.BigintValueTraits());
     }
     /** Constructs an instance for 4-byte fixed length float values. */
-    public static LocalFixLenRawFileReader<Float, float[]> getInstanceFloat(File rawFile) throws IOException {
-        return new LocalFixLenRawFileReader<Float, float[]>(rawFile, new AllValueTraits.FloatValueTraits());
+    public static LocalFixLenReader<Float, float[]> getInstanceFloat(File rawFile) throws IOException {
+        return new LocalFixLenReader<Float, float[]>(rawFile, new AllValueTraits.FloatValueTraits());
     }
     /** Constructs an instance for 8-byte fixed length float values. */
-    public static LocalFixLenRawFileReader<Double, double[]> getInstanceDouble(File rawFile) throws IOException {
-        return new LocalFixLenRawFileReader<Double, double[]>(rawFile, new AllValueTraits.DoubleValueTraits());
+    public static LocalFixLenReader<Double, double[]> getInstanceDouble(File rawFile) throws IOException {
+        return new LocalFixLenReader<Double, double[]>(rawFile, new AllValueTraits.DoubleValueTraits());
     }
 
     /**
      * @param bitsPerEntry number of bits to represent one entry.
      * so far must be multiply of 8 (might allow 1/2/4 later..).
      */
-    private LocalFixLenRawFileReader(File rawFile, FixLenValueTraits<T, AT> traits) throws IOException {
+    private LocalFixLenReader(File rawFile, FixLenValueTraits<T, AT> traits) throws IOException {
         super (rawFile);
         this.bitsPerValue = traits.getBitsPerValue();
         this.traits = traits;
@@ -83,7 +83,15 @@ public class LocalFixLenRawFileReader<T, AT> extends LocalRawFileReader implemen
         return traits.readValue(this);
     }
     @Override
+    public int readValues(AT buffer, int off, int len) throws IOException {
+        return traits.readValues(this, buffer, off, len);
+    }
+    @Override
     public void skipValue() throws IOException {
         seekToTupleRelative(1);
+    }
+    @Override
+    public void skipValues(int skip) throws IOException {
+        seekToTupleRelative(skip);
     }
 }

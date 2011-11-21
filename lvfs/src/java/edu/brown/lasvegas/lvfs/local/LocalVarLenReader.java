@@ -4,7 +4,7 @@ import java.io.File;
 import java.io.IOException;
 
 /**
- * LocalRawFileReader for variable-length entries.
+ * File reader for variable-length entries.
  * The file format is a series of:
  * <table>
  * <tr><td>size of length</td><td>1 byte. 1/2/4/8.</td></tr>
@@ -19,19 +19,19 @@ import java.io.IOException;
  * Use {@link LocalPosFileReader} and {@link #seekToByteAbsolute(long)}
  * to do so.</p>
  */
-public class LocalVarLenRawFileReader<T> extends LocalRawFileReader implements TypedReader<T, T[]> {
+public class LocalVarLenReader<T> extends LocalTypedReader<T, T[]> {
     private final VarLenValueTraits<T> traits;
 
     /** Constructs an instance of varchar column. */
-    public static LocalVarLenRawFileReader<String> getInstanceVarchar(File rawFile) throws IOException {
-        return new LocalVarLenRawFileReader<String>(rawFile, new AllValueTraits.VarcharValueTraits());
+    public static LocalVarLenReader<String> getInstanceVarchar(File rawFile) throws IOException {
+        return new LocalVarLenReader<String>(rawFile, new AllValueTraits.VarcharValueTraits());
     }
     /** Constructs an instance of varbinary column. */
-    public static LocalVarLenRawFileReader<byte[]> getInstanceVarbin(File rawFile) throws IOException {
-        return new LocalVarLenRawFileReader<byte[]>(rawFile, new AllValueTraits.VarbinValueTraits());
+    public static LocalVarLenReader<byte[]> getInstanceVarbin(File rawFile) throws IOException {
+        return new LocalVarLenReader<byte[]>(rawFile, new AllValueTraits.VarbinValueTraits());
     }
 
-    private LocalVarLenRawFileReader(File rawFile, VarLenValueTraits<T> traits) throws IOException {
+    private LocalVarLenReader(File rawFile, VarLenValueTraits<T> traits) throws IOException {
         super (rawFile);
         this.traits = traits;
     }
@@ -41,11 +41,27 @@ public class LocalVarLenRawFileReader<T> extends LocalRawFileReader implements T
         int length = readLengthHeader();
         return traits.readValue(this, length);
     }
+    @Override
+    public int readValues(T[] buffer, int off, int len) throws IOException {
+        // unlike fixed-len reader. there is no faster way to do this.
+        // so, just call readValue for each value...
+        int count = 0;
+        for (; count < len; ++count) {
+            buffer[off + count] = readValue();
+        }
+        return count;
+    }
 
     @Override
     public void skipValue () throws IOException {
         int length = readLengthHeader();
         super.seekToByteRelative(length);
+    }
+    @Override
+    public void skipValues(int skip) throws IOException {
+        for (int i = 0; i < skip; ++i) {
+            skipValue();
+        }
     }
     private int readLengthHeader () throws IOException {
         byte lengthSize = super.readByte();

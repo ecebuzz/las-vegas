@@ -10,7 +10,7 @@ import java.nio.charset.Charset;
  */
 public final class AllValueTraits {
     
-    // traits for fixed-len numfer types.
+    // traits for fixed-len number types.
     // Array type is primitive (eg int[]), not Integer[], for performance.
     // This means that these types are essentially NOT NULL.
 
@@ -115,6 +115,9 @@ public final class AllValueTraits {
             return 64;
         }
     }
+
+    // traits for variable-len types.
+    // these are simpler in terms of traits, but not as fast as fixed-len types.
 
     /**
      * Traits for variable-length char (java-String).

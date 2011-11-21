@@ -49,6 +49,14 @@ public class LocalRawFileReader {
     }
     
     /**
+     * Close the file handle and release all resources.
+     */
+    public void close() throws IOException {
+        rawStream.close();
+        rawStream = null;
+    }
+    
+    /**
      * Jump to the desired absolute byte position. This method can jump to
      * previous position. In that case, this method re-opens the
      * input stream.
@@ -68,8 +76,12 @@ public class LocalRawFileReader {
             LOG.warn("too large byte position. adjusted to file size " + bytePosition + "/" + rawFileSize + " at " + this);
             bytePosition = rawFileSize;
         }
+        if (bytePosition == curPosition) {
+            return;
+        }
         
-        long bytesToSkip = curPosition - bytePosition;
+        long bytesToSkip = bytePosition - curPosition;
+        assert (bytesToSkip > 0L);
         long skippedByte = rawStream.skip(bytesToSkip);
         if (bytesToSkip != skippedByte) {
             LOG.warn("unexpected skip behavior?? " + skippedByte + "/" + bytesToSkip + " at " + this);
@@ -106,6 +118,11 @@ public class LocalRawFileReader {
         return read;
     }
 
+    /** Reads 1 byte  (so far we don't compress 8 booleans into 1 byte) and returns it as boolean. */
+    public final boolean readBoolean () throws IOException {
+        byte b = readByte();
+        return b != (byte) 0;
+    }
     /** Reads 1 byte and returns it as byte. */
     public final byte readByte () throws IOException {
         int read = rawStream.read();
@@ -119,31 +136,19 @@ public class LocalRawFileReader {
 
     /** Reads 2 bytes and returns it as short. */
     public final short readShort () throws IOException {
-        int read = rawStream.read(smallBuf, 0, 2);
-        if (read < 2) {
-            throw new IOException ("EOF " + this);
-        }
-        curPosition += 2;
+        readBytes (smallBuf, 0, 2);
         return (short)((((int) smallBuf[0]) << 8) + ((int) smallBuf[1] & 255));
     }
     
     /** Reads 4 bytes and returns it as int. */
     public final int readInt () throws IOException {
-        int read = rawStream.read(smallBuf, 0, 4);
-        if (read < 4) {
-            throw new IOException ("EOF " + this);
-        }
-        curPosition += 4;
+        readBytes (smallBuf, 0, 4);
         return ((((int) smallBuf[0]) << 24) + (((int) smallBuf[1] & 255) << 16) + (((int) smallBuf[2] & 255) << 8) + ((int) smallBuf[3] & 255));
     }
     
     /** Reads 8 bytes and returns it as long. */
     public final long readLong () throws IOException {
-        int read = rawStream.read(smallBuf, 0, 4);
-        if (read < 8) {
-            throw new IOException ("EOF " + this);
-        }
-        curPosition += 8;
+        readBytes (smallBuf, 0, 8);
         return (((long) smallBuf[0] << 56) +
             ((long)(smallBuf[1] & 255) << 48) +
             ((long)(smallBuf[2] & 255) << 40) +
@@ -195,9 +200,11 @@ public class LocalRawFileReader {
      *
      * @return the input stream of the raw file
      */
+    /* encapsulate everything about raw stream in this class..
     public FileInputStream getRawStream() {
         return rawStream;
     }
+    */
 
     /**
      * Gets the current byte position of the input stream.
