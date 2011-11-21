@@ -48,10 +48,6 @@ public class LocalFixLenReader<T, AT> extends LocalTypedReader<T, AT>{
         return new LocalFixLenReader<Double, double[]>(rawFile, new AllValueTraits.DoubleValueTraits());
     }
 
-    /**
-     * @param bitsPerEntry number of bits to represent one entry.
-     * so far must be multiply of 8 (might allow 1/2/4 later..).
-     */
     public LocalFixLenReader(File rawFile, FixLenValueTraits<T, AT> traits) throws IOException {
         super (rawFile);
         this.bitsPerValue = traits.getBitsPerValue();

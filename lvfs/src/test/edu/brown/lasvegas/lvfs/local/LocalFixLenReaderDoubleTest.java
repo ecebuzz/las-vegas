@@ -8,5 +8,7 @@ public class LocalFixLenReaderDoubleTest extends LocalFixLenReaderTestBase<Doubl
     @Override
     protected double[] createArray (int size) { return new double[size];}
     @Override
+    protected void setToArray(double[] array, int index, Double value) { array[index] = value; }
+    @Override
     protected Double getFromArray(double[] array, int index) { return array[index]; }
 }

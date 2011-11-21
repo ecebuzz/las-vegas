@@ -8,5 +8,7 @@ public class LocalFixLenReaderSmallintTest extends LocalFixLenReaderTestBase<Sho
     @Override
     protected short[] createArray (int size) { return new short[size];}
     @Override
+    protected void setToArray(short[] array, int index, Short value){ array[index] = value; }
+    @Override
     protected Short getFromArray(short[] array, int index) { return array[index]; }
 }

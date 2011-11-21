@@ -10,5 +10,7 @@ public class LocalFixLenReaderIntegerTest extends LocalFixLenReaderTestBase<Inte
     @Override
     protected int[] createArray (int size) { return new int[size];}
     @Override
+    protected void setToArray(int[] array, int index, Integer value){ array[index] = value; }
+    @Override
     protected Integer getFromArray(int[] array, int index) { return array[index]; }
 }

@@ -8,5 +8,7 @@ public class LocalFixLenReaderFloatTest extends LocalFixLenReaderTestBase<Float,
     @Override
     protected float[] createArray (int size) { return new float[size];}
     @Override
+    protected void setToArray(float[] array, int index, Float value){ array[index] = value; }
+    @Override
     protected Float getFromArray(float[] array, int index) { return array[index]; }
 }

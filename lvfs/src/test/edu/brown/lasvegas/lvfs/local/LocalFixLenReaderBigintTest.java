@@ -8,5 +8,7 @@ public class LocalFixLenReaderBigintTest extends LocalFixLenReaderTestBase<Long,
     @Override
     protected long[] createArray (int size) { return new long[size];}
     @Override
+    protected void setToArray(long[] array, int index, Long value) { array[index] = value; }
+    @Override
     protected Long getFromArray(long[] array, int index) { return array[index]; }
 }

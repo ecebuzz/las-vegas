@@ -2,6 +2,7 @@ package edu.brown.lasvegas.lvfs.local;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
@@ -29,6 +30,10 @@ public final class AllValueTraits {
             out.writeByte(value);
         }
         @Override
+        public void writeValues(OutputStream stream, byte[] values, int off, int len) throws IOException {
+            stream.write(values, off, len);
+        }
+        @Override
         public short getBitsPerValue() {
             return 8;
         }
@@ -48,6 +53,12 @@ public final class AllValueTraits {
         @Override
         public void writeValue(DataOutputStream out, Short value) throws IOException {
             out.writeShort(value);
+        }
+        @Override
+        public void writeValues(OutputStream stream, short[] values, int off, int len) throws IOException {
+            int reserved = reserveConversionBufferSize(len);
+            ByteBuffer.wrap(conversionBuffer).asShortBuffer().put(values, off, len);
+            stream.write(conversionBuffer, 0, reserved);
         }
         @Override
         public short getBitsPerValue() {
@@ -72,6 +83,12 @@ public final class AllValueTraits {
             out.writeInt(value);
         }
         @Override
+        public void writeValues(OutputStream stream, int[] values, int off, int len) throws IOException {
+            int reserved = reserveConversionBufferSize(len);
+            ByteBuffer.wrap(conversionBuffer).asIntBuffer().put(values, off, len);
+            stream.write(conversionBuffer, 0, reserved);
+        }
+        @Override
         public short getBitsPerValue() {
             return 32;
         }
@@ -91,6 +108,12 @@ public final class AllValueTraits {
         @Override
         public void writeValue(DataOutputStream out, Long value) throws IOException {
             out.writeLong(value);
+        }
+        @Override
+        public void writeValues(OutputStream stream, long[] values, int off, int len) throws IOException {
+            int reserved = reserveConversionBufferSize(len);
+            ByteBuffer.wrap(conversionBuffer).asLongBuffer().put(values, off, len);
+            stream.write(conversionBuffer, 0, reserved);
         }
         @Override
         public short getBitsPerValue() {
@@ -114,6 +137,12 @@ public final class AllValueTraits {
             out.writeFloat(value);
         }
         @Override
+        public void writeValues(OutputStream stream, float[] values, int off, int len) throws IOException {
+            int reserved = reserveConversionBufferSize(len);
+            ByteBuffer.wrap(conversionBuffer).asFloatBuffer().put(values, off, len);
+            stream.write(conversionBuffer, 0, reserved);
+        }
+        @Override
         public short getBitsPerValue() {
             return 32;
         }
@@ -133,6 +162,12 @@ public final class AllValueTraits {
         @Override
         public void writeValue(DataOutputStream out, Double value) throws IOException {
             out.writeDouble(value);
+        }
+        @Override
+        public void writeValues(OutputStream stream, double[] values, int off, int len) throws IOException {
+            int reserved = reserveConversionBufferSize(len);
+            ByteBuffer.wrap(conversionBuffer).asDoubleBuffer().put(values, off, len);
+            stream.write(conversionBuffer, 0, reserved);
         }
         @Override
         public short getBitsPerValue() {
