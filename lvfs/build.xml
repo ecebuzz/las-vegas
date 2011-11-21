@@ -44,8 +44,11 @@
     </target>
 
 	<target name="test" depends="compile" description="Run all unit tests">
+        <delete quiet="true">
+        	<fileset dir="${junit.output.dir}" includes="*.xml" />
+    	</delete>
         <delete dir="${junit.output.dir}" quiet="true" />
-        <mkdir dir="${junit.output.dir}"/>
+        <mkdir dir="${junit.output.dir}" />
         <junit fork="yes" printsummary="no">
             <formatter type="plain" usefile="false"/>
             <formatter type="xml"/>
