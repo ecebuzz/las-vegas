@@ -1,5 +1,6 @@
 package edu.brown.lasvegas.lvfs.local;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -7,7 +8,7 @@ import java.io.IOException;
 import org.apache.log4j.Logger;
 
 /**
- * Deals with a read-only local data file.
+ * Reads a read-only local data file.
  * All data files are in a plain format where
  * each entry is stored contiguously. No dictionary,
  * no index whatever. Those additional things are
@@ -22,9 +23,11 @@ public class LocalRawFileReader {
     private final long rawFileSize;
     
     /** input stream of the raw file. */
-    private FileInputStream rawStream;
+    private BufferedInputStream rawStream;
     /** current byte position of the input stream. */
     private long curPosition;
+    
+    private final static int STREAM_BUFFER_SIZE = 1 << 16;
     
     /**
      * Instantiates a new local raw file reader.
@@ -35,7 +38,7 @@ public class LocalRawFileReader {
     public LocalRawFileReader (File rawFile) throws IOException {
         this.rawFile = rawFile;
         rawFileSize = rawFile.length();
-        rawStream = new FileInputStream(rawFile);
+        rawStream = new BufferedInputStream(new FileInputStream(rawFile), STREAM_BUFFER_SIZE);
         curPosition = 0;
         if (LOG.isDebugEnabled()) {
             LOG.debug("opened raw file:" + this);
@@ -44,7 +47,7 @@ public class LocalRawFileReader {
     
     private void reopenStream () throws IOException {
         rawStream.close();
-        rawStream = new FileInputStream(rawFile);
+        rawStream = new BufferedInputStream(new FileInputStream(rawFile), STREAM_BUFFER_SIZE);
         curPosition = 0;
     }
     

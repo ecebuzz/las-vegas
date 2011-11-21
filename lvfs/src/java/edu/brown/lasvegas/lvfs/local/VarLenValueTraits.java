@@ -15,4 +15,9 @@ public abstract class VarLenValueTraits<T> {
     public Object readValueAsObject(LocalRawFileReader reader, int length) throws IOException {
         return readValue (reader, length);
     }
+
+    /**
+     * Converts the object to byte array.
+     */
+    public abstract byte[] toBytes (T value);
 }

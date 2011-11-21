@@ -15,11 +15,17 @@ public abstract class LocalTypedReader<T, AT> extends LocalRawFileReader {
 
     /**
      * Reads and returns the next entry.
+     * This method should not be used frequently unless
+     * you will read a very small number of values.
+     * Otherwise, use readValues() with a large buffer size.
      */
     public abstract T readValue () throws IOException;
     
     /**
      * Reads arbitrary number of values at once.
+     * This method significantly reduces per-value overheads
+     * such as Disk I/O and de-serialization. Use this method
+     * with large buffer as much as possible. 
      * @param buffer the buffer to receive results
      * @param off offset of the buffer
      * @param len maximum number of values to read

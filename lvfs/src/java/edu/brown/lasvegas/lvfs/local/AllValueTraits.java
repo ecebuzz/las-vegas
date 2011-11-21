@@ -193,6 +193,10 @@ public final class AllValueTraits {
             int read = reader.readBytes(conversionBuffer, 0, length);
             return new String(conversionBuffer, 0, read, CHARSET);
         }
+        @Override
+        public byte[] toBytes(String value) {
+            return value.getBytes(CHARSET);
+        }
         
         private static Charset CHARSET;
         static {
@@ -215,6 +219,10 @@ public final class AllValueTraits {
             int read = reader.readBytes(buffer, 0, length);
             assert (read == length);
             return buffer;
+        }
+        @Override
+        public byte[] toBytes(byte[] value) {
+            return value;
         }
     }
 

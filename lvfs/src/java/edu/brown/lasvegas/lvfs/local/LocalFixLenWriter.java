@@ -1,10 +1,7 @@
 package edu.brown.lasvegas.lvfs.local;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-
-import org.apache.log4j.Logger;
 
 /**
  * File writer that assumes fixed-length entries.
@@ -15,13 +12,8 @@ import org.apache.log4j.Logger;
  * @param <T> Value type (e.g., Integer)
  * @param <AT> Array type (e.g., int[]).
  */
-public class LocalFixLenWriter<T, AT> {
-    private static Logger LOG = Logger.getLogger(LocalFixLenReader.class);
-
-    private final File file;
+public class LocalFixLenWriter<T, AT> extends LocalRawFileWriter {
     private final FixLenValueTraits<T, AT> traits;
-    
-    private FileOutputStream stream;
     
     /** Constructs an instance for 1-byte fixed length integer values. */
     public static LocalFixLenWriter<Byte, byte[]> getInstanceTinyint(File rawFile) throws IOException {
@@ -49,29 +41,10 @@ public class LocalFixLenWriter<T, AT> {
     }
 
     public LocalFixLenWriter(File file, FixLenValueTraits<T, AT> traits) throws IOException {
-        this.file = file;
+        super (file, 0); // the only API of this class is a batch-write. No buffering needed
         this.traits = traits;
-        this.stream = new FileOutputStream(file, false);
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("created fixed-len file:" + file.getAbsolutePath());
-        }
     }
 
-    public void flush () throws IOException {
-        stream.flush();
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("flushed fixed-len file:" + file.getAbsolutePath());
-        }
-    }
-    public void close () throws IOException {
-        stream.flush();
-        stream.close();
-        stream = null;
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("closed fixed-len file:" + file.getAbsolutePath());
-        }
-    }
-    
     /**
      * Writes arbitrary number of values at once.
      * @param values the values to write out
