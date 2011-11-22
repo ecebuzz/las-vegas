@@ -8,6 +8,8 @@ import java.io.OutputStream;
 
 import org.apache.log4j.Logger;
 
+import edu.brown.lasvegas.lvfs.RawValueWriter;
+
 /**
  * Writes a write-once local data file.
  * All data files are in a plain format where
@@ -24,6 +26,16 @@ public class LocalRawFileWriter {
     /** output stream of the raw file. */
     private final OutputStream stream;
     private final FileOutputStream fo;
+
+    private final RawValueWriter writer;
+    /**
+     * Returns the internal writer object to receive written values.
+     * Usually this is only used from derived classes, but testcases also use it.
+     */
+    public final RawValueWriter getValueWriter () {
+        return writer;
+    }
+
     private long curPosition = 0L;
     public final long getCurPosition () {
         return curPosition;
@@ -41,6 +53,13 @@ public class LocalRawFileWriter {
         } else {
             stream = new BufferedOutputStream(fo, bufferSize);
         }
+        writer = new RawValueWriter() {
+            @Override
+            public void writeBytes(byte[] buf, int off, int len) throws IOException {
+                stream.write(buf, off, len);
+                curPosition += len;
+            }
+        };
         if (LOG.isDebugEnabled()) {
             LOG.debug("created file:" + file.getAbsolutePath());
         }
@@ -57,7 +76,7 @@ public class LocalRawFileWriter {
      * data is durable, but this might be costly. As Hadoop application does not 
      * need 100% ACID, asynchronous write by OS might be enough. 
      */
-    public final void flush (boolean sync) throws IOException {
+    public void flush (boolean sync) throws IOException {
         stream.flush(); // this flushes out the buffer, but still the stream might not be written out
         if (sync) {
             fo.getFD().sync(); // this really ensures the written data is durable.
@@ -71,63 +90,6 @@ public class LocalRawFileWriter {
         if (LOG.isDebugEnabled()) {
             LOG.debug("closed file:" + file.getAbsolutePath());
         }
-    }
-
-    /** Writes arbitrary byte array. */
-    public final void writeBytes (byte[] buf, int off, int len) throws IOException {
-        stream.write(buf, off, len);
-        curPosition += len; // stream.write is always followed by curPosition increment
-    }
-
-    /** Writes 1 byte. */
-    public final void writeByte (byte v) throws IOException {
-        stream.write(v);
-        ++curPosition;// stream.write is always followed by curPosition increment
-    }
-
-    /** Writes 1 byte  (so far we don't compress 8 booleans into 1 byte) as boolean. */
-    public final void writeBoolean (boolean v) throws IOException {
-        writeByte(v ? (byte) 1 : (byte) 0);
-    }
-    private final byte[] smallBuf = new byte[8];
-
-    /** Writes 2 bytes as short. */
-    public final void writeShort (short v) throws IOException {
-        smallBuf[0] = (byte) (v >>> 8);
-        smallBuf[1] = (byte) (v >>> 0);
-        writeBytes (smallBuf, 0, 2);
-    }
-    
-    /** Writes 4 bytes as int. */
-    public final void writeInt (int v) throws IOException {
-        smallBuf[0] = (byte) (v >>> 24);
-        smallBuf[1] = (byte) (v >>> 16);
-        smallBuf[2] = (byte) (v >>> 8);
-        smallBuf[3] = (byte) (v >>> 0);
-        writeBytes (smallBuf, 0, 4);
-    }
-    
-    /** Writes 8 bytes as long. */
-    public final void writeLong (long v) throws IOException {
-        smallBuf[0] = (byte) (v >>> 56);
-        smallBuf[1] = (byte) (v >>> 48);
-        smallBuf[2] = (byte) (v >>> 40);
-        smallBuf[3] = (byte) (v >>> 32);
-        smallBuf[4] = (byte) (v >>> 24);
-        smallBuf[5] = (byte) (v >>> 16);
-        smallBuf[6] = (byte) (v >>> 8);
-        smallBuf[7] = (byte) (v >>> 0);
-        writeBytes (smallBuf, 0, 8);
-    }
-
-    /** Writes 4 bytes as float. */
-    public final void writeFloat(float v) throws IOException {
-        writeInt(Float.floatToIntBits(v));
-    }
-
-    /** Writes 8 bytes as double. */
-    public final void writeDouble(double v) throws IOException {
-        writeLong(Double.doubleToLongBits(v));
     }
 
     /**

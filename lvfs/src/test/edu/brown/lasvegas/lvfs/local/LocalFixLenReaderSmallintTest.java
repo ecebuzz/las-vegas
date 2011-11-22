@@ -1,5 +1,8 @@
 package edu.brown.lasvegas.lvfs.local;
 
+import edu.brown.lasvegas.lvfs.AllValueTraits;
+import edu.brown.lasvegas.lvfs.FixLenValueTraits;
+
 public class LocalFixLenReaderSmallintTest extends LocalFixLenReaderTestBase<Short, short[]> {
     @Override
     protected Short generateValue(int index) { return (short) ((409 * index) % (1L << 16));  }

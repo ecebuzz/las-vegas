@@ -3,6 +3,10 @@ package edu.brown.lasvegas.lvfs.local;
 import java.io.File;
 import java.io.IOException;
 
+import edu.brown.lasvegas.lvfs.AllValueTraits;
+import edu.brown.lasvegas.lvfs.FixLenValueTraits;
+import edu.brown.lasvegas.lvfs.TypedWriter;
+
 /**
  * File writer that assumes fixed-length entries.
  * Writer is even simpler than Reader as we support only file creation.
@@ -12,7 +16,7 @@ import java.io.IOException;
  * @param <T> Value type (e.g., Integer)
  * @param <AT> Array type (e.g., int[]).
  */
-public class LocalFixLenWriter<T, AT> extends LocalRawFileWriter {
+public final class LocalFixLenWriter<T, AT> extends LocalRawFileWriter implements TypedWriter<T, AT> {
     private final FixLenValueTraits<T, AT> traits;
     
     /** Constructs an instance for 1-byte fixed length integer values. */
@@ -45,14 +49,12 @@ public class LocalFixLenWriter<T, AT> extends LocalRawFileWriter {
         this.traits = traits;
     }
 
-    /**
-     * Writes arbitrary number of values at once.
-     * @param values the values to write out
-     * @param off offset of the values
-     * @param len number of values to write
-     * @throws IOException
-     */
+    @Override
     public void writeValues (AT values, int off, int len) throws IOException {
-        traits.writeValues(this, values, off, len);
+        traits.writeValues(getValueWriter(), values, off, len);
+    }
+    @Override
+    public void writeValue(T value) throws IOException {
+        traits.writeValue(getValueWriter(), value);
     }
 }

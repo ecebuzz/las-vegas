@@ -10,6 +10,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import edu.brown.lasvegas.lvfs.RawValueReader;
+
 /**
  * Base testcase for both reader and writer.
  * Only difference is how to create the data file (setUpBeforeClass).
@@ -21,26 +23,29 @@ public abstract class LocalRawFileTestBase {
     
     @Before
     public void setUp() throws Exception {
-        reader = new LocalRawFileReader(file);
+        rawReader = new LocalRawFileReader(file);
+        reader = rawReader.getValueReader();
     }
 
     @After
     public void tearDown() throws Exception {
-        reader.close();
+        rawReader.close();
+        rawReader = null;
         reader = null;
     }
     
-    private LocalRawFileReader reader;
+    private LocalRawFileReader rawReader;
+    private RawValueReader reader;
 
     @Test
     public void testSeek() throws IOException {
-        reader.seekToByteAbsolute(7);
+        rawReader.seekToByteAbsolute(7);
         assertEquals((short)-4520, reader.readShort()); // now 9
-        reader.seekToByteRelative(10); // now 19
+        rawReader.seekToByteRelative(10); // now 19
         assertEquals(0xD02E908A2490F939L, reader.readLong()); // now 27
-        reader.seekToByteRelative(-18); // now 9
+        rawReader.seekToByteRelative(-18); // now 9
         assertEquals((short)31001, reader.readShort()); // now 11
-        reader.seekToByteAbsolute(0);
+        rawReader.seekToByteAbsolute(0);
         assertEquals((byte)-120, reader.readByte());
     }
 
@@ -69,42 +74,42 @@ public abstract class LocalRawFileTestBase {
 
     @Test
     public void testReadBoolean() throws IOException {
-        reader.seekToByteAbsolute(3);
+        rawReader.seekToByteAbsolute(3);
         assertEquals(false, reader.readBoolean());
         assertEquals(true, reader.readBoolean());
     }
 
     @Test
     public void testReadShort() throws IOException {
-        reader.seekToByteAbsolute(7);
+        rawReader.seekToByteAbsolute(7);
         assertEquals((short)-4520, reader.readShort());
         assertEquals((short)31001, reader.readShort());
     }
 
     @Test
     public void testReadInt() throws IOException {
-        reader.seekToByteAbsolute(11);
+        rawReader.seekToByteAbsolute(11);
         assertEquals(0x2490F939, reader.readInt());
         assertEquals(0xB490F979, reader.readInt());
     }
 
     @Test
     public void testReadLong() throws IOException {
-        reader.seekToByteAbsolute(19);
+        rawReader.seekToByteAbsolute(19);
         assertEquals(0xD02E908A2490F939L, reader.readLong());
         assertEquals(0x102E908A2490F9EAL, reader.readLong());
     }
 
     @Test
     public void testReadFloat() throws IOException {
-        reader.seekToByteAbsolute(35);
+        rawReader.seekToByteAbsolute(35);
         assertEquals(0.00345f, reader.readFloat(), 0.0000001f);
         assertEquals(-98724957.34f, reader.readFloat(), 0.01f);
     }
 
     @Test
     public void testReadDouble() throws IOException {
-        reader.seekToByteAbsolute(43);
+        rawReader.seekToByteAbsolute(43);
         assertEquals(0.00000000345d, reader.readDouble(), 0.0000000000001d);
         assertEquals(-9872495734907234324.09d, reader.readDouble(), 0.0001d);
     }

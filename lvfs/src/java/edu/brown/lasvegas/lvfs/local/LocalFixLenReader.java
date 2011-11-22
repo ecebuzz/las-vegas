@@ -5,6 +5,10 @@ import java.io.IOException;
 
 import org.apache.log4j.Logger;
 
+import edu.brown.lasvegas.lvfs.AllValueTraits;
+import edu.brown.lasvegas.lvfs.FixLenValueTraits;
+import edu.brown.lasvegas.lvfs.TypedReader;
+
 /**
  * File reader that assumes fixed-length entries.
  * Simpler and faster.
@@ -13,7 +17,7 @@ import org.apache.log4j.Logger;
  * @param <T> Value type (e.g., Integer)
  * @param <AT> Array type (e.g., int[]). used for fast batch accesses. 
  */
-public final class LocalFixLenReader<T, AT> extends LocalTypedReader<T, AT>{
+public final class LocalFixLenReader<T, AT> extends LocalRawFileReader implements TypedReader<T, AT>{
     private static Logger LOG = Logger.getLogger(LocalFixLenReader.class);
 
     /**
@@ -76,11 +80,11 @@ public final class LocalFixLenReader<T, AT> extends LocalTypedReader<T, AT>{
     
     @Override
     public T readValue() throws IOException {
-        return traits.readValue(this);
+        return traits.readValue(getValueReader());
     }
     @Override
     public int readValues(AT buffer, int off, int len) throws IOException {
-        return traits.readValues(this, buffer, off, len);
+        return traits.readValues(getValueReader(), buffer, off, len);
     }
     @Override
     public void skipValue() throws IOException {

@@ -1,5 +1,8 @@
 package edu.brown.lasvegas.lvfs.local;
 
+import edu.brown.lasvegas.lvfs.AllValueTraits;
+import edu.brown.lasvegas.lvfs.FixLenValueTraits;
+
 public class LocalFixLenReaderDoubleTest extends LocalFixLenReaderTestBase<Double, double[]> {
     @Override
     protected Double generateValue(int index) { return (923482.87453457 * index) - (Math.pow(index, 1.47d));  }

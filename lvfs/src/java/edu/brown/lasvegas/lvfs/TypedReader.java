@@ -1,6 +1,5 @@
-package edu.brown.lasvegas.lvfs.local;
+package edu.brown.lasvegas.lvfs;
 
-import java.io.File;
 import java.io.IOException;
 
 /**
@@ -8,18 +7,14 @@ import java.io.IOException;
  * @param <T> Value type
  * @param <AT> Array type 
  */
-public abstract class LocalTypedReader<T, AT> extends LocalRawFileReader {
-    protected LocalTypedReader(File rawFile) throws IOException {
-        super (rawFile);
-    }
-
+public interface TypedReader<T, AT> {
     /**
      * Reads and returns the next entry.
      * This method should not be used frequently unless
      * you will read a very small number of values.
      * Otherwise, use readValues() with a large buffer size.
      */
-    public abstract T readValue () throws IOException;
+    T readValue () throws IOException;
     
     /**
      * Reads arbitrary number of values at once.
@@ -31,12 +26,12 @@ public abstract class LocalTypedReader<T, AT> extends LocalRawFileReader {
      * @param len maximum number of values to read
      * @return number of values read
      */
-    public abstract int readValues (AT buffer, int off, int len) throws IOException;
+    int readValues (AT buffer, int off, int len) throws IOException;
 
     /**
      * Skip one entry.
      */
-    public abstract void skipValue () throws IOException;
+    void skipValue () throws IOException;
 
     /**
      * Skip arbitrary number of entries.
@@ -44,5 +39,5 @@ public abstract class LocalTypedReader<T, AT> extends LocalRawFileReader {
      * Use index files and {@link #seekToByteAbsolute(long)} to speed-up jumps.
      * @param skip number of entries to skip. must be positive values.
      */
-    public abstract void skipValues (int skip) throws IOException;
+    void skipValues (int skip) throws IOException;
 }

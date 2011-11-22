@@ -1,5 +1,8 @@
 package edu.brown.lasvegas.lvfs.local;
 
+import edu.brown.lasvegas.lvfs.AllValueTraits;
+import edu.brown.lasvegas.lvfs.FixLenValueTraits;
+
 public class LocalFixLenReaderBigintTest extends LocalFixLenReaderTestBase<Long, long[]> {
     @Override
     protected Long generateValue(int index) { return (0xF32948D569843L * index) % (1L << 40);  }

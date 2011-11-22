@@ -12,5 +12,10 @@
 			<attribute name="javadoc_location" value="file:/home/hkimura/Downloads/je-4.1.10/docs/java/"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry kind="lib" path="lib/snappy-java-1.0.4.1.jar" sourcepath="/home/hkimura/Downloads/snappy-java-1.0.4.1/src/main/java">
+		<attributes>
+			<attribute name="javadoc_location" value="file:/home/hkimura/Downloads/snappy-java-1.0.4.1/wiki/apidocs/"/>
+		</attributes>
+	</classpathentry>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

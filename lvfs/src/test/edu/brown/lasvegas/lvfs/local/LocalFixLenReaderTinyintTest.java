@@ -1,5 +1,8 @@
 package edu.brown.lasvegas.lvfs.local;
 
+import edu.brown.lasvegas.lvfs.AllValueTraits;
+import edu.brown.lasvegas.lvfs.FixLenValueTraits;
+
 public class LocalFixLenReaderTinyintTest extends LocalFixLenReaderTestBase<Byte, byte[]> {
     @Override
     protected Byte generateValue(int index) { return (byte) (index - 50);  }

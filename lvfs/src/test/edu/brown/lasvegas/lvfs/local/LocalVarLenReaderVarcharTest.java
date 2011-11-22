@@ -11,6 +11,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import edu.brown.lasvegas.lvfs.AllValueTraits;
+
 public class LocalVarLenReaderVarcharTest {
     private File file;
     private LocalVarLenReader<String> reader;

@@ -7,6 +7,8 @@ import java.io.IOException;
 
 import org.apache.log4j.Logger;
 
+import edu.brown.lasvegas.lvfs.RawValueReader;
+
 /**
  * Reads a read-only local data file.
  * All data files are in a plain format where
@@ -22,6 +24,15 @@ public class LocalRawFileReader {
     /** actual size of underlying file. */
     private final long rawFileSize;
     
+    private final RawValueReader reader;
+    /**
+     * Returns the internal reader object to given read values.
+     * Usually this is only used from derived classes, but testcases also use it.
+     */
+    public final RawValueReader getValueReader () {
+        return reader;
+    }
+
     /** input stream of the raw file. */
     private BufferedInputStream rawStream;
     /** current byte position of the input stream. */
@@ -40,6 +51,42 @@ public class LocalRawFileReader {
         rawFileSize = rawFile.length();
         rawStream = new BufferedInputStream(new FileInputStream(rawFile), STREAM_BUFFER_SIZE);
         curPosition = 0;
+        reader = new RawValueReader() {
+            @Override
+            public int readBytes(byte[] buf, int off, int len) throws IOException {
+                int read = rawStream.read(buf, off, len);
+                if (read < 0) {
+                    throw new IOException ("EOF " + this);
+                }
+                curPosition += read;
+                return read;
+            }
+            @Override
+            public void skipBytes(long length) throws IOException {
+                if (length < 0) {
+                    throw new IOException ("negative skip length:" + length);
+                }
+                if (length == 0) {
+                    return;
+                }
+                // InputStream#skip() might skip fewer bytes than requested for legitimate reasons
+                // ex. buffered stream reached the end of the buffer.
+                // So, we need to repeatedly call it. (negative return is definitely an error though)
+                for (long totalSkipped = 0; totalSkipped < length;) {
+                    long skippedByte = rawStream.skip(length - totalSkipped);
+                    if (skippedByte < 0) {
+                        throw new IOException ("failed to skip??" + this);
+                    }
+                    totalSkipped += skippedByte;
+                    assert (totalSkipped <= length);
+                }
+                curPosition += length;
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("skipped " + length + " bytes: " + this);
+                }
+                
+            }
+        };
         if (LOG.isDebugEnabled()) {
             LOG.debug("opened raw file:" + this);
         }
@@ -79,27 +126,7 @@ public class LocalRawFileReader {
             LOG.warn("too large byte position. adjusted to file size " + bytePosition + "/" + rawFileSize + " at " + this);
             bytePosition = rawFileSize;
         }
-        if (bytePosition == curPosition) {
-            return;
-        }
-        
-        long bytesToSkip = bytePosition - curPosition;
-        assert (bytesToSkip > 0L);
-        // InputStream#skip() might skip fewer bytes than requested for legitimate reasons
-        // ex. buffered stream reached the end of the buffer.
-        // So, we need to repeatedly call it. (negative return is definitely an error though)
-        for (long totalSkipped = 0L; totalSkipped < bytesToSkip;) {
-            long skippedByte = rawStream.skip(bytesToSkip - totalSkipped);
-            if (skippedByte < 0) {
-                throw new IOException ("failed to skip??" + this);
-            }
-            totalSkipped += skippedByte;
-            assert (totalSkipped <= bytesToSkip);
-        }
-        curPosition += bytesToSkip;
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("skipped " + bytesToSkip + " bytes: " + this);
-        }
+        reader.skipBytes(bytePosition - curPosition);
     }
     /**
      * Jump to the desired byte position relative to current position. This method can jump to
@@ -110,73 +137,6 @@ public class LocalRawFileReader {
      */
     public final void seekToByteRelative (long bytesToSkip) throws IOException {
         seekToByteAbsolute (curPosition + bytesToSkip);
-    }
-    /**
-     * Reads len bytes to the given buffer.
-     * @param buf buffer to receive the result
-     * @param off offset of buf
-     * @param len number of bytes to read
-     * @return number of bytes actually read
-     * @throws IOException
-     */
-    public final int readBytes (byte[] buf, int off, int len) throws IOException {
-        int read = rawStream.read(buf, off, len);
-        if (read < 0) {
-            throw new IOException ("EOF " + this);
-        }
-        curPosition += read;
-        return read;
-    }
-
-    /** Reads 1 byte  (so far we don't compress 8 booleans into 1 byte) and returns it as boolean. */
-    public final boolean readBoolean () throws IOException {
-        byte b = readByte();
-        return b != (byte) 0;
-    }
-    /** Reads 1 byte and returns it as byte. */
-    public final byte readByte () throws IOException {
-        int read = rawStream.read();
-        if (read < 0) {
-            throw new IOException ("EOF " + this);
-        }
-        curPosition += 1;
-        return (byte) read; // it's signed byte!
-    }
-    private final byte[] smallBuf = new byte[8];
-
-    /** Reads 2 bytes and returns it as short. */
-    public final short readShort () throws IOException {
-        readBytes (smallBuf, 0, 2);
-        return (short)((((int) smallBuf[0]) << 8) + ((int) smallBuf[1] & 255));
-    }
-    
-    /** Reads 4 bytes and returns it as int. */
-    public final int readInt () throws IOException {
-        readBytes (smallBuf, 0, 4);
-        return ((((int) smallBuf[0]) << 24) + (((int) smallBuf[1] & 255) << 16) + (((int) smallBuf[2] & 255) << 8) + ((int) smallBuf[3] & 255));
-    }
-    
-    /** Reads 8 bytes and returns it as long. */
-    public final long readLong () throws IOException {
-        readBytes (smallBuf, 0, 8);
-        return (((long) smallBuf[0] << 56) +
-            ((long)(smallBuf[1] & 255) << 48) +
-            ((long)(smallBuf[2] & 255) << 40) +
-            ((long)(smallBuf[3] & 255) << 32) +
-            ((long)(smallBuf[4] & 255) << 24) +
-            ((smallBuf[5] & 255) << 16) +
-            ((smallBuf[6] & 255) <<  8) +
-            ((smallBuf[7] & 255) <<  0));
-    }
-
-    /** Reads 4 bytes and returns it as float. */
-    public final float readFloat() throws IOException {
-        return Float.intBitsToFloat(readInt());
-    }
-
-    /** Reads 8 bytes and returns it as double. */
-    public final double readDouble() throws IOException {
-        return Double.longBitsToDouble(readLong());
     }
 
     /**

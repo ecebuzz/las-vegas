@@ -11,6 +11,8 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 
+import edu.brown.lasvegas.lvfs.FixLenValueTraits;
+
 /**
  * Base class of testcases for LocalFixLenReader.
  * Name of this abstract class doesn't end with Test so that our ant script

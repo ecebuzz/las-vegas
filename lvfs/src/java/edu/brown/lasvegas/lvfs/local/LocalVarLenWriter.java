@@ -4,6 +4,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import edu.brown.lasvegas.lvfs.AllValueTraits;
+import edu.brown.lasvegas.lvfs.TypedWriter;
+import edu.brown.lasvegas.lvfs.VarLenValueTraits;
+
 /**
  * File writer for variable-length values.
  * 
@@ -12,7 +16,7 @@ import java.util.ArrayList;
  * Thus, this writer also collects tuple positions
  * to produce a "position file" as a sparse index.
  */
-public final class LocalVarLenWriter<T> extends LocalRawFileWriter {
+public final class LocalVarLenWriter<T> extends LocalRawFileWriter implements TypedWriter<T, T[]>  {
     /** Constructs an instance of varchar column. */
     public static LocalVarLenWriter<String> getInstanceVarchar(File rawFile, int collectPerBytes) throws IOException {
         return new LocalVarLenWriter<String>(rawFile, new AllValueTraits.VarcharValueTraits(), collectPerBytes);
@@ -34,28 +38,18 @@ public final class LocalVarLenWriter<T> extends LocalRawFileWriter {
         this.traits = traits;
         this.collectPerBytes = collectPerBytes;
     }
-    
+    @Override
+    public void writeValues(T[] values, int off, int len) throws IOException {
+        // simply loop.
+        // because of length header, there is no faster way to do this.
+        for (int i = off; i < off + len; ++i) {
+            writeValue(values[i]);
+        }
+    }
+    @Override
     public void writeValue (T value) throws IOException {
         collectTuplePosition();
-        byte[] bytes = traits.toBytes(value);
-        if (bytes.length < (1 << 7)) {
-            // 1 byte length header
-            writeByte((byte) 1);
-            writeByte((byte) bytes.length);
-        } else if (bytes.length < (1 << 15)) {
-            // 2 byte length header
-            writeByte((byte) 2);
-            writeShort((short) bytes.length);
-        } else if (bytes.length < (1 << 31)) {
-            // 4 byte length header
-            writeByte((byte) 4);
-            writeInt(bytes.length);
-        } else {
-            // 8 byte length header (this is not quite implemented as byte[1<<32] isn't possible)
-            writeByte((byte) 8);
-            writeLong(bytes.length);
-        }
-        writeBytes(bytes, 0, bytes.length);
+        traits.writeValue(getValueWriter(), value);
         ++curTuple;
     }
 

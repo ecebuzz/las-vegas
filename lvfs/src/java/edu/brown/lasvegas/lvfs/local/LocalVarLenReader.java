@@ -3,6 +3,10 @@ package edu.brown.lasvegas.lvfs.local;
 import java.io.File;
 import java.io.IOException;
 
+import edu.brown.lasvegas.lvfs.AllValueTraits;
+import edu.brown.lasvegas.lvfs.TypedReader;
+import edu.brown.lasvegas.lvfs.VarLenValueTraits;
+
 /**
  * File reader for variable-length entries.
  * The file format is a series of:
@@ -19,7 +23,7 @@ import java.io.IOException;
  * Use {@link LocalPosFileReader} and {@link #seekToByteAbsolute(long)}
  * to do so.</p>
  */
-public final class LocalVarLenReader<T> extends LocalTypedReader<T, T[]> {
+public final class LocalVarLenReader<T> extends LocalRawFileReader implements TypedReader<T, T[]> {
     private final VarLenValueTraits<T> traits;
 
     /** Constructs an instance of varchar column. */
@@ -38,8 +42,7 @@ public final class LocalVarLenReader<T> extends LocalTypedReader<T, T[]> {
 
     @Override
     public T readValue () throws IOException {
-        int length = readLengthHeader();
-        return traits.readValue(this, length);
+        return traits.readValue(getValueReader());
     }
     @Override
     public int readValues(T[] buffer, int off, int len) throws IOException {
@@ -54,28 +57,13 @@ public final class LocalVarLenReader<T> extends LocalTypedReader<T, T[]> {
 
     @Override
     public void skipValue () throws IOException {
-        int length = readLengthHeader();
-        super.seekToByteRelative(length);
+        int length = getValueReader(). readLengthHeader();
+        getValueReader().skipBytes(length);
     }
     @Override
     public void skipValues(int skip) throws IOException {
         for (int i = 0; i < skip; ++i) {
             skipValue();
         }
-    }
-    private int readLengthHeader () throws IOException {
-        byte lengthSize = super.readByte();
-        int length;
-        switch (lengthSize) {
-        case 1: length = super.readByte(); break;
-        case 2: length = super.readShort(); break;
-        case 4: length = super.readInt(); break;
-        default:
-            throw new IOException ("unexpected length size=" + lengthSize + ". corrupted file?" + this);
-        }
-        if (length < 0) {
-            throw new IOException ("negative value length=" + length + ". corrupted file?" + this);
-        }
-        return length;
     }
 }
