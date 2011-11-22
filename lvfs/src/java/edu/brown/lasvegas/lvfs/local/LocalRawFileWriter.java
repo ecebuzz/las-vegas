@@ -31,10 +31,13 @@ public class LocalRawFileWriter {
 
     public LocalRawFileWriter (File file, int bufferSize) throws IOException {
         this.file = file;
+        if (file.exists()) {
+            file.delete();
+        }
         if (bufferSize <= 0) {
-            stream = new FileOutputStream (file);
+            stream = new FileOutputStream (file, false);
         } else {
-            stream = new BufferedOutputStream(new FileOutputStream(file), bufferSize);
+            stream = new BufferedOutputStream(new FileOutputStream(file, false), bufferSize);
         }
         if (LOG.isDebugEnabled()) {
             LOG.debug("created file:" + file.getAbsolutePath());

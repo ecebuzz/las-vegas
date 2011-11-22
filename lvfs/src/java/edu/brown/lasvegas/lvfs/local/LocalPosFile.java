@@ -54,7 +54,10 @@ public final class LocalPosFile {
         byte[] bytes = new byte[array.length * 8];
         ByteBuffer.wrap(bytes).asLongBuffer().put(array);
         long midTime = LOG.isDebugEnabled() ? System.nanoTime() : 0L; // after CPU intensive stuffs
-        FileOutputStream stream = new FileOutputStream(file);
+        if (file.exists()) {
+            file.delete();
+        }
+        FileOutputStream stream = new FileOutputStream(file, false);
         stream.write(bytes);
         stream.flush();
         stream.close();
