@@ -23,6 +23,7 @@ public class LocalRawFileWriter {
     
     /** output stream of the raw file. */
     private final OutputStream stream;
+    private final FileOutputStream fo;
     private long curPosition = 0L;
     public final long getCurPosition () {
         return curPosition;
@@ -34,18 +35,33 @@ public class LocalRawFileWriter {
         if (file.exists()) {
             file.delete();
         }
+        fo = new FileOutputStream (file, false);
         if (bufferSize <= 0) {
-            stream = new FileOutputStream (file, false);
+            stream = fo;
         } else {
-            stream = new BufferedOutputStream(new FileOutputStream(file, false), bufferSize);
+            stream = new BufferedOutputStream(fo, bufferSize);
         }
         if (LOG.isDebugEnabled()) {
             LOG.debug("created file:" + file.getAbsolutePath());
         }
     }
 
+    /**
+     * this version only flushes the underlying stream, does not call sync.
+     */
     public final void flush () throws IOException {
-        stream.flush();
+        flush (false);
+    }
+    /**
+     * @param sync whether to call getFD().sync(). This makes sure the written
+     * data is durable, but this might be costly. As Hadoop application does not 
+     * need 100% ACID, asynchronous write by OS might be enough. 
+     */
+    public final void flush (boolean sync) throws IOException {
+        stream.flush(); // this flushes out the buffer, but still the stream might not be written out
+        if (sync) {
+            fo.getFD().sync(); // this really ensures the written data is durable.
+        }
         if (LOG.isDebugEnabled()) {
             LOG.debug("flushed file:" + file.getAbsolutePath());
         }

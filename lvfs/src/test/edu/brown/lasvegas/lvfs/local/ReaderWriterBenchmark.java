@@ -38,19 +38,19 @@ public class ReaderWriterBenchmark {
                 }
             }
         }
-        if (args.length == 0 || !args[0].equalsIgnoreCase("readonly")) {
+        if (args.length == 0 || args[0].equalsIgnoreCase("writeonly") || args[0].equalsIgnoreCase("writeonly_sync")) {
             long startTime = System.currentTimeMillis();
             LocalFixLenWriter<Short, short[]> writer = LocalFixLenWriter.getInstanceSmallint(file);
             for (int i = 0; i < 1024; ++i) {
                 writer.writeValues(buf, 0, buf.length);
             }
-            writer.flush();
+            writer.flush(args[0].equalsIgnoreCase("writeonly_sync"));
             writer.close();
             long endTime = System.currentTimeMillis();
             System.out.println("wrote " + (file.length() >> 20) + "MB in " + (endTime - startTime) + "ms");
         }
 
-        if (args.length == 0 || !args[0].equalsIgnoreCase("writeonly")) {
+        if (args.length == 0 || args[0].equalsIgnoreCase("readonly")) {
             long startTime = System.currentTimeMillis();
             LocalFixLenReader<Short, short[]> reader = LocalFixLenReader.getInstanceSmallint(file);
             for (int i = 0; i < 1024; ++i) {
