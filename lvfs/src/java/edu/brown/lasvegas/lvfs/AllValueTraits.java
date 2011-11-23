@@ -1,7 +1,6 @@
 package edu.brown.lasvegas.lvfs;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 /**
  * Defines all value traits classes.
@@ -12,10 +11,7 @@ public final class AllValueTraits {
     // traits for fixed-len number types.
     // Array type is primitive (eg int[]), not Integer[], for performance.
     // This means that these types are essentially NOT NULL.
-    public static TinyintValueTraits getTraits (Byte v) {
-        return new TinyintValueTraits();
-    }
-    public static final class TinyintValueTraits extends FixLenValueTraits<Byte, byte[]>{
+    public static final class TinyintValueTraits implements FixLenValueTraits<Byte, byte[]>{
         @Override
         public Byte readValue(RawValueReader reader) throws IOException {
             return reader.readByte();
@@ -38,16 +34,14 @@ public final class AllValueTraits {
         }
     }
 
-    public static final class SmallintValueTraits extends FixLenValueTraits<Short, short[]> {
+    public static final class SmallintValueTraits implements FixLenValueTraits<Short, short[]> {
         @Override
         public Short readValue(RawValueReader reader) throws IOException {
             return reader.readShort();
         }
         @Override
         public int readValues(RawValueReader reader, short[] buffer, int off, int len) throws IOException {
-            len = readIntoConversionBuffer(reader, len);
-            ByteBuffer.wrap(conversionBuffer).asShortBuffer().get(buffer, off, len);
-            return len;
+            return reader.readShorts(buffer, off, len);
         }
         @Override
         public void writeValue(RawValueWriter writer, Short value) throws IOException {
@@ -55,9 +49,7 @@ public final class AllValueTraits {
         }
         @Override
         public void writeValues(RawValueWriter writer, short[] values, int off, int len) throws IOException {
-            int reserved = reserveConversionBufferSize(len);
-            ByteBuffer.wrap(conversionBuffer).asShortBuffer().put(values, off, len);
-            writer.writeBytes(conversionBuffer, 0, reserved);
+            writer.writeShorts(values, off, len);
         }
         @Override
         public short getBitsPerValue() {
@@ -65,7 +57,7 @@ public final class AllValueTraits {
         }
     }
 
-    public static final class IntegerValueTraits extends FixLenValueTraits<Integer, int[]> {
+    public static final class IntegerValueTraits implements FixLenValueTraits<Integer, int[]> {
         @Override
         public Integer readValue(RawValueReader reader) throws IOException {
             return reader.readInt();
@@ -73,9 +65,7 @@ public final class AllValueTraits {
 
         @Override
         public int readValues(RawValueReader reader, int[] buffer, int off, int len) throws IOException {
-            len = readIntoConversionBuffer(reader, len);
-            ByteBuffer.wrap(conversionBuffer).asIntBuffer().get(buffer, off, len);
-            return len;
+            return reader.readInts(buffer, off, len);
         }
         @Override
         public void writeValue(RawValueWriter writer, Integer value) throws IOException {
@@ -83,9 +73,7 @@ public final class AllValueTraits {
         }
         @Override
         public void writeValues(RawValueWriter writer, int[] values, int off, int len) throws IOException {
-            int reserved = reserveConversionBufferSize(len);
-            ByteBuffer.wrap(conversionBuffer).asIntBuffer().put(values, off, len);
-            writer.writeBytes(conversionBuffer, 0, reserved);
+            writer.writeInts(values, off, len);
         }
         @Override
         public short getBitsPerValue() {
@@ -93,16 +81,14 @@ public final class AllValueTraits {
         }
     }
 
-    public static final class BigintValueTraits extends FixLenValueTraits<Long, long[]> {
+    public static final class BigintValueTraits implements FixLenValueTraits<Long, long[]> {
         @Override
         public Long readValue(RawValueReader reader) throws IOException {
             return reader.readLong();
         }
         @Override
         public int readValues(RawValueReader reader, long[] buffer, int off, int len) throws IOException {
-            len = readIntoConversionBuffer(reader, len);
-            ByteBuffer.wrap(conversionBuffer).asLongBuffer().get(buffer, off, len);
-            return len;
+            return reader.readLongs(buffer, off, len);
         }
         @Override
         public void writeValue(RawValueWriter writer, Long value) throws IOException {
@@ -110,9 +96,7 @@ public final class AllValueTraits {
         }
         @Override
         public void writeValues(RawValueWriter writer, long[] values, int off, int len) throws IOException {
-            int reserved = reserveConversionBufferSize(len);
-            ByteBuffer.wrap(conversionBuffer).asLongBuffer().put(values, off, len);
-            writer.writeBytes(conversionBuffer, 0, reserved);
+            writer.writeLongs(values, off, len);
         }
         @Override
         public short getBitsPerValue() {
@@ -120,16 +104,14 @@ public final class AllValueTraits {
         }
     }
     
-    public static final class FloatValueTraits extends FixLenValueTraits<Float, float[]> {
+    public static final class FloatValueTraits implements FixLenValueTraits<Float, float[]> {
         @Override
         public Float readValue(RawValueReader reader) throws IOException {
             return reader.readFloat();
         }
         @Override
         public int readValues(RawValueReader reader, float[] buffer, int off, int len) throws IOException {
-            len = readIntoConversionBuffer(reader, len);
-            ByteBuffer.wrap(conversionBuffer).asFloatBuffer().get(buffer, off, len);
-            return len;
+            return reader.readFloats(buffer, off, len);
         }
         @Override
         public void writeValue(RawValueWriter writer, Float value) throws IOException {
@@ -137,9 +119,7 @@ public final class AllValueTraits {
         }
         @Override
         public void writeValues(RawValueWriter writer, float[] values, int off, int len) throws IOException {
-            int reserved = reserveConversionBufferSize(len);
-            ByteBuffer.wrap(conversionBuffer).asFloatBuffer().put(values, off, len);
-            writer.writeBytes(conversionBuffer, 0, reserved);
+            writer.writeFloats(values, off, len);
         }
         @Override
         public short getBitsPerValue() {
@@ -147,16 +127,14 @@ public final class AllValueTraits {
         }
     }
 
-    public static final class DoubleValueTraits extends FixLenValueTraits<Double, double[]> {
+    public static final class DoubleValueTraits implements FixLenValueTraits<Double, double[]> {
         @Override
         public Double readValue(RawValueReader reader) throws IOException {
             return reader.readDouble();
         }
         @Override
         public int readValues(RawValueReader reader, double[] buffer, int off, int len) throws IOException {
-            len = readIntoConversionBuffer(reader, len);
-            ByteBuffer.wrap(conversionBuffer).asDoubleBuffer().get(buffer, off, len);
-            return len;
+            return reader.readDoubles(buffer, off, len);
         }
         @Override
         public void writeValue(RawValueWriter writer, Double value) throws IOException {
@@ -164,9 +142,7 @@ public final class AllValueTraits {
         }
         @Override
         public void writeValues(RawValueWriter writer, double[] values, int off, int len) throws IOException {
-            int reserved = reserveConversionBufferSize(len);
-            ByteBuffer.wrap(conversionBuffer).asDoubleBuffer().put(values, off, len);
-            writer.writeBytes(conversionBuffer, 0, reserved);
+            writer.writeDoubles(values, off, len);
         }
         @Override
         public short getBitsPerValue() {
@@ -180,7 +156,7 @@ public final class AllValueTraits {
     /**
      * Traits for variable-length char (java-String).
      */
-    public static final class VarcharValueTraits extends VarLenValueTraits<String> {
+    public static final class VarcharValueTraits implements VarLenValueTraits<String> {
         @Override
         public String readValue(RawValueReader reader) throws IOException {
             return reader.readStringWithLengthHeader();
@@ -194,7 +170,7 @@ public final class AllValueTraits {
     /**
      * Traits for variable-length binary data (java-byte[]).
      */
-    public static final class VarbinValueTraits extends VarLenValueTraits<byte[]> {
+    public static final class VarbinValueTraits implements VarLenValueTraits<byte[]> {
         @Override
         public byte[] readValue(RawValueReader reader) throws IOException {
             return reader.readBytesWithLengthHeader();

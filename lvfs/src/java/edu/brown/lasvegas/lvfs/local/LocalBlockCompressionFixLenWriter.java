@@ -51,7 +51,6 @@ public final class LocalBlockCompressionFixLenWriter<T, AT> extends LocalBlockCo
     @Override
     public void writeValues (AT values, int off, int len) throws IOException {
         flushBlockIfNeeded();
-        ProxyValueWriter writer = new ProxyValueWriter();
         // in case len is really large, we split values to a few blocks
         int threshold = super.blockSizeInKB << 10;
         int curoff = off;
@@ -60,20 +59,20 @@ public final class LocalBlockCompressionFixLenWriter<T, AT> extends LocalBlockCo
             int count = (threshold - super.currentBlockUsed) * 8 /  traits.getBitsPerValue();
             assert (count >= 0);
             if (count > 0) {
-                traits.writeValues(writer, values, curoff, count);
+                traits.writeValues(getProxyValueWriter(), values, curoff, count);
             }
             curoff += count;
             curlen -= count;
             super.curTuple += count;
             flushBlock();
         }
-        traits.writeValues(writer, values, curoff, curlen);
+        traits.writeValues(getProxyValueWriter(), values, curoff, curlen);
         super.curTuple += curlen;
     }
     @Override
     public void writeValue(T value) throws IOException {
         flushBlockIfNeeded();
-        traits.writeValue(new ProxyValueWriter(), value);
+        traits.writeValue(getProxyValueWriter(), value);
         ++super.curTuple;
     }
 }

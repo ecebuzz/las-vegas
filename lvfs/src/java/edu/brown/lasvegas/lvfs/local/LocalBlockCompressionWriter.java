@@ -50,6 +50,10 @@ public class LocalBlockCompressionWriter extends LocalRawFileWriter {
     private final ArrayList<Long> blockPositions = new ArrayList<Long>();
     /** List of the byte length (in compressed form) of each block. */
     private final ArrayList<Long> blockLengthes = new ArrayList<Long>();
+    private final ProxyValueWriter proxyWriter;
+    protected final ProxyValueWriter getProxyValueWriter () {
+        return proxyWriter;
+    }
 
     public LocalBlockCompressionWriter(File file, CompressionType compressionType) throws IOException {
         super (file, 0); // all writes are batched, so we don't need buffering.
@@ -63,10 +67,11 @@ public class LocalBlockCompressionWriter extends LocalRawFileWriter {
         }
         currentBlock = new byte[(blockSizeInKB << 10) * 12 / 10]; // 20% margin
         compressionBuffer = new byte[(blockSizeInKB << 10) * 12 / 10]; // 20% margin
+        proxyWriter = new ProxyValueWriter();
     }
 
     /**
-     * Proxy object to receive writeXxx from internal FixLen/VarLen writers.
+     * Proxy writer to buffer writeXxx in currentBlock.
      */
     protected class ProxyValueWriter extends RawValueWriter {
         @Override

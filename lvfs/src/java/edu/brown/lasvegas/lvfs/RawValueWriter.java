@@ -1,6 +1,7 @@
 package edu.brown.lasvegas.lvfs;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
 /**
@@ -63,10 +64,12 @@ public abstract class RawValueWriter {
         writeLong(Double.doubleToLongBits(v));
     }
 
+    /** Write a variable-length String with length header. */
     public final void writeStringWithLengthHeader (String v) throws IOException {
         byte[] bytes = v.getBytes(CHARSET);
         writeBytesWithLengthHeader (bytes);
     }
+    /** Write a variable-length byte[] with length header. */
     public final void writeBytesWithLengthHeader (byte[] bytes) throws IOException {
         if (bytes.length < (1 << 7)) {
             // 1 byte length header
@@ -88,5 +91,44 @@ public abstract class RawValueWriter {
         writeBytes(bytes, 0, bytes.length);
     }
 
+    /** temporary buffer to do batch conversion. */
+    private byte[] conversionBuffer = new byte[1024];
+    private void reserveConversionBufferSize(int bytesToReserve) {
+        if (bytesToReserve > conversionBuffer.length) {
+            conversionBuffer = new byte[bytesToReserve];
+        }
+    }
+
+    /** Writes arbitrary number of 2-byte integers at once. */
+    public void writeShorts(short[] values, int off, int len) throws IOException {
+        reserveConversionBufferSize(len * 2);
+        ByteBuffer.wrap(conversionBuffer).asShortBuffer().put(values, off, len);
+        writeBytes(conversionBuffer, 0, len * 2);
+    }
+    /** Writes arbitrary number of 4-byte integers at once. */
+    public void writeInts(int[] values, int off, int len) throws IOException {
+        reserveConversionBufferSize(len * 4);
+        ByteBuffer.wrap(conversionBuffer).asIntBuffer().put(values, off, len);
+        writeBytes(conversionBuffer, 0, len * 4);
+    }
+    /** Writes arbitrary number of 8-byte integers at once. */
+    public void writeLongs(long[] values, int off, int len) throws IOException {
+        reserveConversionBufferSize(len * 8);
+        ByteBuffer.wrap(conversionBuffer).asLongBuffer().put(values, off, len);
+        writeBytes(conversionBuffer, 0, len * 8);
+    }
+    /** Writes arbitrary number of 4-byte floats at once. */
+    public void writeFloats(float[] values, int off, int len) throws IOException {
+        reserveConversionBufferSize(len * 4);
+        ByteBuffer.wrap(conversionBuffer).asFloatBuffer().put(values, off, len);
+        writeBytes(conversionBuffer, 0, len * 4);
+    }
+    /** Writes arbitrary number of 8-byte floats at once. */
+    public void writeDoubles(double[] values, int off, int len) throws IOException {
+        reserveConversionBufferSize(len * 8);
+        ByteBuffer.wrap(conversionBuffer).asDoubleBuffer().put(values, off, len);
+        writeBytes(conversionBuffer, 0, len * 8);
+    }
+    
     public static final Charset CHARSET = Charset.forName("UTF-8");
 }

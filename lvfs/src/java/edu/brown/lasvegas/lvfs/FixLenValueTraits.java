@@ -8,16 +8,11 @@ import java.io.IOException;
  * @param <T> Value type
  * @param <AT> Array type 
  */
-public abstract class FixLenValueTraits<T, AT> {
+public interface FixLenValueTraits<T, AT> {
     /**
      * Reads one value from the given stream.
      */
-    public abstract T readValue (RawValueReader reader) throws IOException;
-    
-    /** Use this if you don't care about types. */
-    public Object readValueAsObject(RawValueReader reader) throws IOException {
-        return readValue (reader);
-    }
+    T readValue (RawValueReader reader) throws IOException;
     
     /**
      * Reads arbitrary number of values at once.
@@ -26,17 +21,17 @@ public abstract class FixLenValueTraits<T, AT> {
      * @param len maximum number of values to read
      * @return number of values read
      */
-    public abstract int readValues (RawValueReader reader, AT buffer, int off, int len) throws IOException;
+    int readValues (RawValueReader reader, AT buffer, int off, int len) throws IOException;
 
     /**
      * Returns the number of bits to represent one value.
      */
-    public abstract short getBitsPerValue ();
+    short getBitsPerValue ();
     
     /**
      * Writes one value. This method should be mainly used for testcases as it'd be slow.
      */
-    public abstract void writeValue (RawValueWriter writer, T value) throws IOException;
+    void writeValue (RawValueWriter writer, T value) throws IOException;
     
     /**
      * Writes arbitrary number of values at once.
@@ -46,20 +41,5 @@ public abstract class FixLenValueTraits<T, AT> {
      * @param len number of values to write
      * @throws IOException
      */
-    public abstract void writeValues (RawValueWriter writer, AT values, int off, int len) throws IOException;
-
-    protected byte[] conversionBuffer = new byte[1024];
-    protected int readIntoConversionBuffer(RawValueReader reader, int len) throws IOException {
-        int bytesPerValue = getBitsPerValue() / 8;
-        reserveConversionBufferSize (len);
-        int read = reader.readBytes(conversionBuffer, 0, len * bytesPerValue);
-        return read / bytesPerValue;
-    }
-    protected int reserveConversionBufferSize(int len) {
-        int bytesPerValue = getBitsPerValue() / 8;
-        if (len * bytesPerValue > conversionBuffer.length) {
-            conversionBuffer = new byte[len * bytesPerValue];
-        }
-        return len * bytesPerValue;
-    }
+    void writeValues (RawValueWriter writer, AT values, int off, int len) throws IOException;
 }

@@ -1,6 +1,7 @@
 package edu.brown.lasvegas.lvfs;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 
 /**
@@ -72,9 +73,11 @@ public abstract class RawValueReader {
         return Double.longBitsToDouble(readLong());
     }
 
+    /** Read a variable-length String with length header. */
     public final String readStringWithLengthHeader () throws IOException {
         return new String (readBytesWithLengthHeader(), CHARSET);
     }
+    /** Read a variable-length byte[] with length header. */
     public final byte[] readBytesWithLengthHeader () throws IOException {
         int length = readLengthHeader();
         byte[] buf = new byte[length];
@@ -84,6 +87,7 @@ public abstract class RawValueReader {
         }
         return buf;
     }
+    /** Read a length header. */
     public final int readLengthHeader () throws IOException {
         byte lengthSize = readByte();
         int length;
@@ -100,5 +104,49 @@ public abstract class RawValueReader {
         return length;
     }
 
+    /** temporary buffer to do batch conversion. */
+    private byte[] conversionBuffer = new byte[1024];
+    private int readIntoConversionBuffer(int bytesToRead) throws IOException {
+        if (bytesToRead > conversionBuffer.length) {
+            conversionBuffer = new byte[bytesToRead];
+        }
+        return readBytes(conversionBuffer, 0, bytesToRead);
+    }
+
+    /** Reads arbitrary number of 2-byte integers at once. */
+    public final int readShorts(short[] buffer, int off, int len) throws IOException {
+        len = readIntoConversionBuffer(len * 2) / 2;
+        ByteBuffer.wrap(conversionBuffer).asShortBuffer().get(buffer, off, len);
+        return len;
+    }
+
+    /** Reads arbitrary number of 4-byte integers at once. */
+    public final int readInts(int[] buffer, int off, int len) throws IOException {
+        len = readIntoConversionBuffer(len * 4) / 4;
+        ByteBuffer.wrap(conversionBuffer).asIntBuffer().get(buffer, off, len);
+        return len;
+    }
+
+    /** Reads arbitrary number of 8-byte integers at once. */
+    public final int readLongs(long[] buffer, int off, int len) throws IOException {
+        len = readIntoConversionBuffer(len * 8) / 8;
+        ByteBuffer.wrap(conversionBuffer).asLongBuffer().get(buffer, off, len);
+        return len;
+    }
+    
+    /** Reads arbitrary number of 4-byte floats at once. */
+    public final int readFloats(float[] buffer, int off, int len) throws IOException {
+        len = readIntoConversionBuffer(len * 4) / 4;
+        ByteBuffer.wrap(conversionBuffer).asFloatBuffer().get(buffer, off, len);
+        return len;
+    }
+
+    /** Reads arbitrary number of 8-byte floats at once. */
+    public final int readDoubles(double[] buffer, int off, int len) throws IOException {
+        len = readIntoConversionBuffer(len * 8) / 8;
+        ByteBuffer.wrap(conversionBuffer).asDoubleBuffer().get(buffer, off, len);
+        return len;
+    }
+    
     public static final Charset CHARSET = Charset.forName("UTF-8");
 }
