@@ -49,7 +49,7 @@ public final class LocalVarLenWriter<T> extends LocalRawFileWriter implements Ty
     @Override
     public void writeValue (T value) throws IOException {
         collectTuplePosition();
-        traits.writeValue(getValueWriter(), value);
+        traits.writeValue(getRawValueWriter(), value);
         ++curTuple;
     }
 

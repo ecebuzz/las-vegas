@@ -52,10 +52,13 @@ public final class LocalFixLenReader<T, AT> extends LocalRawFileReader implement
         return new LocalFixLenReader<Double, double[]>(rawFile, new AllValueTraits.DoubleValueTraits());
     }
 
-    public LocalFixLenReader(File rawFile, FixLenValueTraits<T, AT> traits) throws IOException {
-        super (rawFile);
+    public LocalFixLenReader(File rawFile, FixLenValueTraits<T, AT> traits, int streamBufferSize) throws IOException {
+        super (rawFile, streamBufferSize);
         this.bitsPerValue = traits.getBitsPerValue();
         this.traits = traits;
+    }
+    public LocalFixLenReader(File rawFile, FixLenValueTraits<T, AT> traits) throws IOException {
+        this (rawFile, traits, 1 << 16);
     }
 
     /**
@@ -80,11 +83,11 @@ public final class LocalFixLenReader<T, AT> extends LocalRawFileReader implement
     
     @Override
     public T readValue() throws IOException {
-        return traits.readValue(getValueReader());
+        return traits.readValue(getRawValueReader());
     }
     @Override
     public int readValues(AT buffer, int off, int len) throws IOException {
-        return traits.readValues(getValueReader(), buffer, off, len);
+        return traits.readValues(getRawValueReader(), buffer, off, len);
     }
     @Override
     public void skipValue() throws IOException {

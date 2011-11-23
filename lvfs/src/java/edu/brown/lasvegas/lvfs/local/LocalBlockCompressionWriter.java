@@ -22,9 +22,9 @@ import edu.brown.lasvegas.lvfs.RawValueWriter;
  * it's impossible to jump to each tuple without compression. So, position
  * indexes are included in the compressed file too.</p>
  * 
- * <p>At the end of the file, a 8-byte integer specifies how many blocks
- * this file has. Let the number be n. 3n 8-byte integers precede the end-of-file
- * value. These integers are triplets of the tuple number, byte position and length of each block in this file.
+ * <p>At the end of the file, two 8-byte integers specifies how many blocks and tuples
+ * this file has. Let the number of blocks be n. 3n 8-byte integers precede the end-of-file
+ * values. These integers are triplets of the tuple number, byte position and length of each block in this file.
  * For example, "12345,9000000,500000" means that a block starting with 12345-th tuple is located from
  * 9000000-th bytes to 9500000 in the compressed file.</p>
  * 
@@ -41,15 +41,15 @@ public class LocalBlockCompressionWriter extends LocalRawFileWriter {
     private byte[] currentBlock;
     /** how many bytes of currentBlock are filled out. */
     protected int currentBlockUsed = 0;
-    protected long curTuple = 0L;
+    protected int curTuple = 0;
     private byte[] compressionBuffer;
 
     /** List of the tuples to start each block. */
-    private final ArrayList<Long> blockStartTuples = new ArrayList<Long>();
+    private final ArrayList<Integer> blockStartTuples = new ArrayList<Integer>();
     /** List of the byte position (in compressed form) of each block. */
     private final ArrayList<Long> blockPositions = new ArrayList<Long>();
     /** List of the byte length (in compressed form) of each block. */
-    private final ArrayList<Long> blockLengthes = new ArrayList<Long>();
+    private final ArrayList<Integer> blockLengthes = new ArrayList<Integer>();
     private final ProxyValueWriter proxyWriter;
     protected final ProxyValueWriter getProxyValueWriter () {
         return proxyWriter;
@@ -117,7 +117,7 @@ public class LocalBlockCompressionWriter extends LocalRawFileWriter {
                 // this might happen, but not sure how Snappy-java handles exceptional cases..
                 throw new IOException ("compresion buffer too small???");
             }
-            super.getValueWriter().writeBytes(compressionBuffer, 0, sizeAfterCompression);
+            super.getRawValueWriter().writeBytes(compressionBuffer, 0, sizeAfterCompression);
         } else {
             assert (compressionType == CompressionType.GZIP_BEST_COMPRESSION);
             RawByteArrayOutputStream rawBuffer = new RawByteArrayOutputStream(compressionBuffer);
@@ -128,9 +128,9 @@ public class LocalBlockCompressionWriter extends LocalRawFileWriter {
             gzip.flush();
             compressionBuffer = rawBuffer.getRawBuffer(); // in case ByteArrayOutputStream expanded it
             sizeAfterCompression = rawBuffer.size();
-            super.getValueWriter().writeBytes(compressionBuffer, 0, sizeAfterCompression);
+            super.getRawValueWriter().writeBytes(compressionBuffer, 0, sizeAfterCompression);
         }
-        blockLengthes.add((long) sizeAfterCompression);
+        blockLengthes.add(sizeAfterCompression);
         currentBlockUsed = 0;
     }
 
@@ -141,7 +141,22 @@ public class LocalBlockCompressionWriter extends LocalRawFileWriter {
     @Override
     public final void flush (boolean sync) throws IOException {
         flushBlock();
+        appendFileFooter();
         super.flush(sync);
+    }
+    /**
+     * write out the end-of-file footer.
+     */
+    private void appendFileFooter () throws IOException {
+        int blockCount = blockStartTuples.size();
+        long[] footer = new long[blockCount * 3 + 2];
+        for (int i = 0; i < blockCount; ++i) {
+            footer[3 * i] = blockStartTuples.get(i);
+            footer[3 * i + 1] = blockPositions.get(i);
+            footer[3 * i + 2] = blockLengthes.get(i);
+        }
+        footer[footer.length - 2] = blockCount;
+        footer[footer.length - 1] = curTuple;
     }
 
     /**

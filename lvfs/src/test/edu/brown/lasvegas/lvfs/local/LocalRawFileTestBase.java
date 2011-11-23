@@ -23,8 +23,8 @@ public abstract class LocalRawFileTestBase {
     
     @Before
     public void setUp() throws Exception {
-        rawReader = new LocalRawFileReader(file);
-        reader = rawReader.getValueReader();
+        rawReader = new LocalRawFileReader(file, 1024);
+        reader = rawReader.getRawValueReader();
     }
 
     @After

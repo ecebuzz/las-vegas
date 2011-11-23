@@ -2,7 +2,6 @@ package edu.brown.lasvegas.lvfs.local;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
 import edu.brown.lasvegas.CompressionType;
@@ -11,7 +10,7 @@ import edu.brown.lasvegas.lvfs.TypedWriter;
 import edu.brown.lasvegas.lvfs.VarLenValueTraits;
 
 /**
- * Implementation of block-compressed files for variable-length columns.
+ * Writer implementation of block-compressed files for variable-length columns.
  * <p>As this is variable-length, seeking in each block is not trivial.
  * Thus, each block ends with a list of position indexes just like
  * a position file for variable-length file. However, as this is 
@@ -77,6 +76,7 @@ public final class LocalBlockCompressionVarLenWriter<T> extends LocalBlockCompre
     }
     @Override
     protected void appendBlockFooter() throws IOException {
+        // append position indexes as a footer
         final int count = collectedTuples.size();
         int[] intBuf = new int[count * 2 + 1];
         for (int i = 0; i < count; ++i) {
@@ -84,9 +84,7 @@ public final class LocalBlockCompressionVarLenWriter<T> extends LocalBlockCompre
             intBuf[i * 2 + 1] = collectedPositions.get(i);
         }
         intBuf[intBuf.length - 1] = count;
-        byte[] buf = new byte[4 * intBuf.length];
-        ByteBuffer.wrap(buf).asIntBuffer().put(intBuf);
-
+        getRawValueWriter().writeInts(intBuf, 0, intBuf.length);
 
         // clear objects about current blocks
         prevCollectPosition = -1;

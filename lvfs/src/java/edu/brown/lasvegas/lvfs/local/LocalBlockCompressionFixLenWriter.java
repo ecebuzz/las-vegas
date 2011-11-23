@@ -9,7 +9,7 @@ import edu.brown.lasvegas.lvfs.FixLenValueTraits;
 import edu.brown.lasvegas.lvfs.TypedWriter;
 
 /**
- * Implementation of block-compressed files for fixed-length columns.
+ * Writer implementation of block-compressed files for fixed-length columns.
  * As this is fixed-length, each block is simply an array of values.
  * No footer at the end of block.
  * @param <T> Value type (e.g., Integer)

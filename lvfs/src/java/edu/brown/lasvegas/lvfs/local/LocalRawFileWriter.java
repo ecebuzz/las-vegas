@@ -32,7 +32,7 @@ public class LocalRawFileWriter {
      * Returns the internal writer object to receive written values.
      * Usually this is only used from derived classes, but testcases also use it.
      */
-    public final RawValueWriter getValueWriter () {
+    public final RawValueWriter getRawValueWriter () {
         return writer;
     }
 

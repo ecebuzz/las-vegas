@@ -36,13 +36,16 @@ public final class LocalVarLenReader<T> extends LocalRawFileReader implements Ty
     }
 
     public LocalVarLenReader(File rawFile, VarLenValueTraits<T> traits) throws IOException {
-        super (rawFile);
+        this (rawFile, traits, 1 << 16);
+    }
+    public LocalVarLenReader(File rawFile, VarLenValueTraits<T> traits, int streamBufferSize) throws IOException {
+        super (rawFile, streamBufferSize);
         this.traits = traits;
     }
 
     @Override
     public T readValue () throws IOException {
-        return traits.readValue(getValueReader());
+        return traits.readValue(getRawValueReader());
     }
     @Override
     public int readValues(T[] buffer, int off, int len) throws IOException {
@@ -57,8 +60,8 @@ public final class LocalVarLenReader<T> extends LocalRawFileReader implements Ty
 
     @Override
     public void skipValue () throws IOException {
-        int length = getValueReader(). readLengthHeader();
-        getValueReader().skipBytes(length);
+        int length = getRawValueReader(). readLengthHeader();
+        getRawValueReader().skipBytes(length);
     }
     @Override
     public void skipValues(int skip) throws IOException {

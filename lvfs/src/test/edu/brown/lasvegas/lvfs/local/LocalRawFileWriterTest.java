@@ -20,7 +20,7 @@ public class LocalRawFileWriterTest extends LocalRawFileTestBase {
         }
         file.delete();
         LocalRawFileWriter rawWriter = new LocalRawFileWriter(file, 0);
-        RawValueWriter out = rawWriter.getValueWriter();
+        RawValueWriter out = rawWriter.getRawValueWriter();
 
         out.writeBytes(new byte[] { (byte)-120, (byte)0, (byte)40}, 0, 3);//0-3
         out.writeBoolean(false);//3-4

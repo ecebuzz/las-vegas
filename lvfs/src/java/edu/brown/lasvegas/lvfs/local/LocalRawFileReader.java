@@ -4,6 +4,7 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
 import org.apache.log4j.Logger;
 
@@ -22,23 +23,22 @@ public class LocalRawFileReader {
     /** underlying file handle. */
     private final File rawFile;
     /** actual size of underlying file. */
-    private final long rawFileSize;
+    protected final long rawFileSize;
     
     private final RawValueReader reader;
     /**
      * Returns the internal reader object to given read values.
      * Usually this is only used from derived classes, but testcases also use it.
      */
-    public final RawValueReader getValueReader () {
+    public final RawValueReader getRawValueReader () {
         return reader;
     }
 
+    private final int streamBufferSize;
     /** input stream of the raw file. */
-    private BufferedInputStream rawStream;
+    private InputStream rawStream;
     /** current byte position of the input stream. */
     private long curPosition;
-    
-    private final static int STREAM_BUFFER_SIZE = 1 << 16;
     
     /**
      * Instantiates a new local raw file reader.
@@ -46,10 +46,15 @@ public class LocalRawFileReader {
      * @param rawFile the raw file
      * @throws IOException Signals that an I/O exception has occurred.
      */
-    public LocalRawFileReader (File rawFile) throws IOException {
+    public LocalRawFileReader (File rawFile, int streamBufferSize) throws IOException {
         this.rawFile = rawFile;
         rawFileSize = rawFile.length();
-        rawStream = new BufferedInputStream(new FileInputStream(rawFile), STREAM_BUFFER_SIZE);
+        this.streamBufferSize = streamBufferSize;
+        if (streamBufferSize > 0) {
+            rawStream = new BufferedInputStream(new FileInputStream(rawFile), streamBufferSize);
+        } else {
+            rawStream = new FileInputStream(rawFile);
+        }
         curPosition = 0;
         reader = new RawValueReader() {
             @Override
@@ -94,7 +99,11 @@ public class LocalRawFileReader {
     
     private void reopenStream () throws IOException {
         rawStream.close();
-        rawStream = new BufferedInputStream(new FileInputStream(rawFile), STREAM_BUFFER_SIZE);
+        if (streamBufferSize > 0) {
+            rawStream = new BufferedInputStream(new FileInputStream(rawFile), streamBufferSize);
+        } else {
+            rawStream = new FileInputStream(rawFile);
+        }
         curPosition = 0;
     }
     
@@ -145,32 +154,5 @@ public class LocalRawFileReader {
     @Override
     public String toString() {
         return "RawFileReader (" + rawFile.getAbsolutePath() + ", " + rawFileSize + ") curPos=" + curPosition;
-    }
-
-    /**
-     * Gets the underlying file handle.
-     *
-     * @return the underlying file handle
-     */
-    public File getRawFile() {
-        return rawFile;
-    }
-
-    /**
-     * Gets the actual size of underlying file.
-     *
-     * @return the actual size of underlying file
-     */
-    public long getRawFileSize() {
-        return rawFileSize;
-    }
-
-    /**
-     * Gets the current byte position of the input stream.
-     *
-     * @return the current byte position of the input stream
-     */
-    public long getCurPosition() {
-        return curPosition;
     }
 }
