@@ -71,6 +71,7 @@ public class LocalVarLenWriterTest {
         
         // test position file indexing
         LocalPosFile positions = new LocalPosFile(posFile);
+        assertEquals(COUNT, positions.getTotalTuples());
         final long[] tuplesToSearch = new long[]{1500, 234, 555, 0, 6000, 12344};
         for (long tupleToSearch : tuplesToSearch) {
             Pos pos = positions.searchPosition(tupleToSearch);

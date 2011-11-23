@@ -82,4 +82,5 @@
 	</target>
 	
 	<target name="all" depends="compile,test,doc" description="Do all compilation and tests" />
+	<target name="cleanall" depends="clean,compile,test,doc" description="Do all compilation and tests after cleaning" />
 </project>

@@ -8,6 +8,8 @@ import java.io.InputStream;
 
 import org.apache.log4j.Logger;
 
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
+
 import edu.brown.lasvegas.lvfs.RawValueReader;
 
 /**
@@ -111,8 +113,10 @@ public class LocalRawFileReader {
      * Close the file handle and release all resources.
      */
     public final void close() throws IOException {
-        rawStream.close();
-        rawStream = null;
+        if (rawStream != null) {
+            rawStream.close();
+            rawStream = null;
+        }
     }
     
     /**
@@ -146,6 +150,17 @@ public class LocalRawFileReader {
      */
     public final void seekToByteRelative (long bytesToSkip) throws IOException {
         seekToByteAbsolute (curPosition + bytesToSkip);
+    }
+    
+    /**
+     * Returns the total number of tuples in this file. Most of readers
+     * implements this function, but {@link LocalVarLenReader} cannot provide this
+     * by itself because of variable-length nature.
+     * For that class, load its position file with LocalPosFile and call its getTotalTuples(). 
+     * @return the total number of tuples in this file
+     */
+    public int getTotalTuples () {
+        throw new NotImplementedException();
     }
 
     /**

@@ -189,4 +189,9 @@ public class LocalBlockCompressionReader extends LocalRawFileReader {
         assert (ret == blockCount - 1 || blockStartTuples[ret + 1] > tupleToFind);
         return ret;
     }
+    
+    @Override
+    public int getTotalTuples() {
+        return totalTuples;
+    }
 }

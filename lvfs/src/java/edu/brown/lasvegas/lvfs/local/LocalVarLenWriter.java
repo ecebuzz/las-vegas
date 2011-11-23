@@ -52,7 +52,7 @@ public final class LocalVarLenWriter<T> extends LocalRawFileWriter implements Ty
         traits.writeValue(getRawValueWriter(), value);
         ++curTuple;
     }
-
+    
     private void collectTuplePosition () {
         if (prevCollectPosition < 0 || getCurPosition() - prevCollectPosition >= collectPerBytes) {
             collectedTuples.add(curTuple);
@@ -66,6 +66,6 @@ public final class LocalVarLenWriter<T> extends LocalRawFileWriter implements Ty
      * Writes out the collected positions to a position file.
      */
     public void writePositionFile (File posFile) throws IOException {
-        LocalPosFile.createPosFile(posFile, collectedTuples, collectedPositions);
+        LocalPosFile.createPosFile(posFile, collectedTuples, collectedPositions, curTuple, getCurPosition());
     }
 }

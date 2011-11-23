@@ -163,4 +163,8 @@ public abstract class LocalFixLenReaderTestBase<T, AT> {
             assertEquals(generateValue(13 + 5 - 4 + i), value);
         }
     }
+    @Test
+    public void testGetTotalTuples() throws IOException {
+        assertEquals (VALUE_COUNT, reader.getTotalTuples());
+    }
 }

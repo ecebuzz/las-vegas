@@ -97,4 +97,9 @@ public final class LocalFixLenReader<T, AT> extends LocalRawFileReader implement
     public void skipValues(int skip) throws IOException {
         seekToTupleRelative(skip);
     }
+    
+    @Override
+    public int getTotalTuples() {
+        return (int) (rawFileSize * 8 / bitsPerValue);
+    }
 }

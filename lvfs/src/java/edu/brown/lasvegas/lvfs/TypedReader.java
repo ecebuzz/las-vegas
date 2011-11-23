@@ -4,6 +4,10 @@ import java.io.IOException;
 
 /**
  * A reader that provides methods to read typed values.
+ * This object allows per-tuple and tuple-aware operations unlike {@link RawValueReader}.
+ * However, also unlike {@link RawValueReader}, this object does not provide
+ * raw operations such as readBytes() and skipBytes() which will break how tuple is
+ * managed in this object.
  * @param <T> Value type
  * @param <AT> Array type 
  */
@@ -40,4 +44,14 @@ public interface TypedReader<T, AT> {
      * @param skip number of entries to skip. must be positive values.
      */
     void skipValues (int skip) throws IOException;
+
+    /**
+     * Close the file handle and release all resources.
+     */
+    void close() throws IOException;
+
+    /**
+     * Returns the total number of tuples in this file.
+     */
+    int getTotalTuples ();
 }

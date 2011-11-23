@@ -21,6 +21,9 @@ import org.apache.log4j.Logger;
  * 1) tuple-num of the pointed tuple.
  * 2) byte position of the tuple.</p>
  * 
+ * <p>Additionally, it's guaranteed that the first pair points to the first tuple
+ * in the file, the last pair points to the last tuple + 1 (=the total number of tuples).</p>
+ * 
  * <p>Writing is simply to dump the bunch of long-values. Reading
  * is a binary-search on the tuple-num.</p>
  */
@@ -32,15 +35,18 @@ public final class LocalPosFile {
      * @param file the file to write.
      * @param tuples The tuple numbers (in the data file alone, so always starts with 0)
      * @param positions byte positions of the tuples.
+     * @param totalTuples total number of tuples in the file
+     * @param totalBytes total byte size of the file
      * @throws IOException
      */
-    public static void createPosFile (File file, ArrayList<Long> tuples, ArrayList<Long> positions) throws IOException {
+    public static void createPosFile (File file, ArrayList<Long> tuples, ArrayList<Long> positions,
+                    long totalTuples, long totalBytes) throws IOException {
         assert (tuples.size() == positions.size());
         if (LOG.isDebugEnabled()) {
             LOG.debug("writing " + tuples.size() + " positions into a position file " + file.getAbsolutePath());
         }
         long startTime = LOG.isDebugEnabled() ? System.nanoTime() : 0L;
-        long[] array = new long[tuples.size() * 2];
+        long[] array = new long[(tuples.size() + 1) * 2];
         for (int i = 0; i < tuples.size(); ++i) {
             array[i * 2] = tuples.get(i);
             array[i * 2 + 1] = positions.get(i);
@@ -51,6 +57,9 @@ public final class LocalPosFile {
                 assert (array[i * 2 + 1] > array[(i - 1) * 2 + 1]); 
             }
         }
+        // last entry always gives the total number of tuples and end of file position 
+        array[tuples.size() * 2] = totalTuples;
+        array[tuples.size() * 2 + 1] = totalBytes;
         byte[] bytes = new byte[array.length * 8];
         ByteBuffer.wrap(bytes).asLongBuffer().put(array);
         long midTime = LOG.isDebugEnabled() ? System.nanoTime() : 0L; // after CPU intensive stuffs
@@ -128,14 +137,15 @@ public final class LocalPosFile {
      * @return the best position to <b>start</b> reading the file.
      */
     public Pos searchPosition (long tupleToFind) {
+        if (tupleToFind < 0 || tupleToFind  >= getTotalTuples()) { 
+            throw new IllegalArgumentException("this tuple position does not exist in this file:" + tupleToFind);
+        }
+        assert (array[0] == 0);
         // first, assure the first entry is strictly smaller than the searched tuple
-        if (array[0] >= tupleToFind) {
+        if (tupleToFind == 0) {
             return new Pos (array[0], array[1]);
         }
-        // also, assure the last entry is strictly larger than the searched tuple
-        if (array[array.length - 2] <= tupleToFind) {
-            return new Pos (array[array.length - 2], array[array.length - 1]);
-        }
+        // the last entry is always strictly larger than the searched tuple
         
         // then, binary search
         int low = 0; // the entry we know strictly smaller
@@ -159,5 +169,21 @@ public final class LocalPosFile {
         assert (array[ret * 2] < tupleToFind);
         assert (ret == (array.length / 2) - 1 || array[(ret + 1) * 2] > tupleToFind);
         return new Pos (array[ret * 2], array[ret * 2 + 1]);
+    }
+    
+    /**
+     * Returns the total number of tuples in the data file.
+     * @see LocalRawFileReader#getTotalTuples()
+     */
+    public int getTotalTuples () {
+        // the last tuple must point to the end of the file (non existing tuple)
+        return (int) array[array.length - 2];
+    }
+
+    /**
+     * Returns the total byte size of the data file.
+     */
+    public long getTotalBytes () {
+        return array[array.length - 1];
     }
 }

@@ -85,6 +85,9 @@ public class LocalRawFileWriter {
             LOG.debug("flushed file:" + file.getAbsolutePath());
         }
     }
+    /**
+     * Close the file.
+     */
     public final void close () throws IOException {
         stream.close();
         if (LOG.isDebugEnabled()) {
