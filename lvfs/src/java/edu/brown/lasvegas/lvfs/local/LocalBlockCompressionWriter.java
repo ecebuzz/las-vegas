@@ -8,6 +8,7 @@ import java.util.Arrays;
 import java.util.zip.Deflater;
 import java.util.zip.GZIPOutputStream;
 
+import org.apache.log4j.Logger;
 import org.xerial.snappy.Snappy;
 
 import edu.brown.lasvegas.CompressionType;
@@ -33,6 +34,8 @@ import edu.brown.lasvegas.lvfs.RawValueWriter;
  * However, each block might have a per-block footer. See the implementation class for more details.</p>
  */
 public class LocalBlockCompressionWriter extends LocalRawFileWriter {
+    private static Logger LOG = Logger.getLogger(LocalBlockCompressionWriter.class);
+
     /** compression type for the file. */
     private final CompressionType compressionType;
     /** byte size of uncompressed block to compress together (actual block size might exceed this). */
@@ -43,6 +46,7 @@ public class LocalBlockCompressionWriter extends LocalRawFileWriter {
     protected int currentBlockUsed = 0;
     protected int curTuple = 0;
     private byte[] compressionBuffer;
+    private int currentBlockStartTuple = 0;
 
     /** List of the tuples to start each block. */
     private final ArrayList<Integer> blockStartTuples = new ArrayList<Integer>();
@@ -99,7 +103,7 @@ public class LocalBlockCompressionWriter extends LocalRawFileWriter {
         }
     }
     /** if the implementation needs a footer for each block, override this. */
-    protected void appendBlockFooter () throws IOException {}
+    protected void writeBlockFooter () throws IOException {}
     /**
      * Compress and write out current block.
      */
@@ -107,8 +111,8 @@ public class LocalBlockCompressionWriter extends LocalRawFileWriter {
         if (currentBlockUsed == 0) {
             return;
         }
-        appendBlockFooter ();
-        blockStartTuples.add(curTuple);
+        writeBlockFooter ();
+        blockStartTuples.add(currentBlockStartTuple);
         blockPositions.add(getCurPosition());
         int sizeAfterCompression;
         if (compressionType == CompressionType.SNAPPY) {
@@ -117,7 +121,6 @@ public class LocalBlockCompressionWriter extends LocalRawFileWriter {
                 // this might happen, but not sure how Snappy-java handles exceptional cases..
                 throw new IOException ("compresion buffer too small???");
             }
-            super.getRawValueWriter().writeBytes(compressionBuffer, 0, sizeAfterCompression);
         } else {
             assert (compressionType == CompressionType.GZIP_BEST_COMPRESSION);
             RawByteArrayOutputStream rawBuffer = new RawByteArrayOutputStream(compressionBuffer);
@@ -125,13 +128,19 @@ public class LocalBlockCompressionWriter extends LocalRawFileWriter {
             GZIPOutputStream gzip = new GZIPOutputStream(rawBuffer) {{
                 def.setLevel(Deflater.BEST_COMPRESSION);
             }};
+            gzip.write(currentBlock, 0, currentBlockUsed);
             gzip.flush();
+            gzip.close();
             compressionBuffer = rawBuffer.getRawBuffer(); // in case ByteArrayOutputStream expanded it
             sizeAfterCompression = rawBuffer.size();
-            super.getRawValueWriter().writeBytes(compressionBuffer, 0, sizeAfterCompression);
         }
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("compressed and wrote a block: " + currentBlockUsed + "bytes to " + sizeAfterCompression + "bytes");
+        }
+        super.getRawValueWriter().writeBytes(compressionBuffer, 0, sizeAfterCompression);
         blockLengthes.add(sizeAfterCompression);
         currentBlockUsed = 0;
+        currentBlockStartTuple = curTuple;
     }
 
     /**
@@ -141,13 +150,16 @@ public class LocalBlockCompressionWriter extends LocalRawFileWriter {
     @Override
     public final void flush (boolean sync) throws IOException {
         flushBlock();
-        appendFileFooter();
         super.flush(sync);
     }
-    /**
-     * write out the end-of-file footer.
-     */
-    private void appendFileFooter () throws IOException {
+    private boolean footerWritten = false;
+    @Override
+    public final void writeFileFooter () throws IOException {
+        if (footerWritten) {
+            throw new IOException ("file footer already written");
+        }
+        flushBlock();
+        // write out the end-of-file footer.
         int blockCount = blockStartTuples.size();
         long[] footer = new long[blockCount * 3 + 2];
         for (int i = 0; i < blockCount; ++i) {
@@ -157,6 +169,20 @@ public class LocalBlockCompressionWriter extends LocalRawFileWriter {
         }
         footer[footer.length - 2] = blockCount;
         footer[footer.length - 1] = curTuple;
+        getRawValueWriter().writeLongs(footer, 0, footer.length);
+        footerWritten = true;
+    }
+    @Override
+    public final void close() throws IOException {
+        if (!footerWritten) {
+            // just warn. the user might have simply canceled writing this file 
+            LOG.warn("this file format needs a file-footer but close() was called before writeFileFooter(). : " + this);
+        }
+        if (currentBlockUsed > 0) {
+            // just warn too. 
+            LOG.warn("this file format has a non-flushed block but close() was called before flush(). the block will be lost: " + this);
+        }
+        super.close();
     }
 
     /**

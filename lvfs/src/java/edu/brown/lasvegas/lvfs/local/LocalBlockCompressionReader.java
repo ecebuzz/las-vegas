@@ -1,10 +1,12 @@
 package edu.brown.lasvegas.lvfs.local;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.zip.GZIPInputStream;
 
+import org.apache.log4j.Logger;
 import org.xerial.snappy.Snappy;
 
 import edu.brown.lasvegas.CompressionType;
@@ -14,7 +16,9 @@ import edu.brown.lasvegas.lvfs.RawValueReader;
  * File reader for a block-compressed file such as Snappy and LZO.
  * <p>For the format of block-coompressed files, see {@link LocalBlockCompressionWriter}</p>
  */
-public class LocalBlockCompressionReader extends LocalRawFileReader {
+public abstract class LocalBlockCompressionReader extends LocalRawFileReader {
+    private static Logger LOG = Logger.getLogger(LocalBlockCompressionReader.class);
+
     /** compression type for the file. */
     private final CompressionType compressionType;
     /** number of compressed blocks in this file. */
@@ -74,7 +78,9 @@ public class LocalBlockCompressionReader extends LocalRawFileReader {
             blockLengthes[i] = (int) longBuf[3 * i + 2];
             if (i == 0) {
                 if (blockStartTuples[i] != 0 || blockPositions[i] != 0) {
-                    throw new IOException ("invalid footer. corrupted file? file="+ this);
+                    throw new IOException ("invalid footer. "
+                       + "blockStartTuples["+i+"]=" + blockStartTuples[i]
+                       + ",blockPositions["+i+"]="+blockPositions[i]+" corrupted file? file="+ this);
                 }
             } else {
                 if (blockStartTuples[i] <= blockStartTuples[i - 1] ||
@@ -92,7 +98,8 @@ public class LocalBlockCompressionReader extends LocalRawFileReader {
         seekToByteAbsolute(0L); // reset to the beginning of the file
         currentBlockIndex = -1; // in no block
     }
-    
+    /** Returns the byte size of block-footer in the current block. */
+    protected abstract int getCurrentBlockFooterByteSize ();
     /**
      * Proxy reader to reader from currentBlock.
      */
@@ -101,7 +108,7 @@ public class LocalBlockCompressionReader extends LocalRawFileReader {
         public int readBytes(byte[] buf, int off, int len) throws IOException {
             // this should never happen. the derived classes make sure
             // we don't go beyond the end of the block.
-            if (currentBlockCursor + len + (2 * blockTupleCounts[currentBlockIndex] + 1) * 4 > currentBlock.length) {
+            if (currentBlockCursor + len + getCurrentBlockFooterByteSize() > currentBlock.length) {
                 throw new IOException ("cannot go beyond the end of current block: currentBlockCursor=" + currentBlockCursor
                                 + ", requested len=" + len + ", currentBlock.length=" + currentBlock.length);
             }
@@ -112,7 +119,7 @@ public class LocalBlockCompressionReader extends LocalRawFileReader {
         @Override
         public void skipBytes(long length) throws IOException {
             // same as above
-            if (currentBlockCursor + length + (2 * blockTupleCounts[currentBlockIndex] + 1) * 4 > currentBlock.length) {
+            if (currentBlockCursor + length + getCurrentBlockFooterByteSize() > currentBlock.length) {
                 throw new IOException ("cannot skip beyond the end of current block: currentBlockCursor=" + currentBlockCursor
                                 + ", requested skip=" + length + ", currentBlock.length=" + currentBlock.length);
             }
@@ -122,7 +129,7 @@ public class LocalBlockCompressionReader extends LocalRawFileReader {
     /**
      * override this to read footer of newly loaded block.
      */
-    protected void readBlockFooter () throws IOException {}
+    protected abstract void readBlockFooter () throws IOException;
     /**
      * Moves to the specified block, decompresses it and sets the cursor to the beginning of the block.
      */
@@ -138,16 +145,28 @@ public class LocalBlockCompressionReader extends LocalRawFileReader {
             if (compressionType == CompressionType.SNAPPY) {
                 currentBlock = Snappy.uncompress(buf);
             } else {
+                // GZipInputStream doesn't provide the uncompressed size.
+                // so, we simply use ByteArrayOutputStream, which might be inefficient.
+                // but, the point of CompressionType.GZIP_BEST_COMPRESSION is not performance...
                 assert (compressionType == CompressionType.GZIP_BEST_COMPRESSION);
-                GZIPInputStream gzip = new GZIPInputStream(new ByteArrayInputStream(buf));
-                int uncompressedLen = gzip.available();
-                currentBlock = new byte[uncompressedLen];
-                int uncompressedRead = gzip.read(currentBlock);
-                assert (uncompressedRead == uncompressedLen);
+                GZIPInputStream gzip = new GZIPInputStream(new ByteArrayInputStream(buf), 1 << 16);
+                ByteArrayOutputStream result = new ByteArrayOutputStream(1 << 16);
+                byte[] gzipBuf = new byte[1 << 16];
+                while (true) {
+                    int uncompressedRead = gzip.read(gzipBuf);
+                    if (uncompressedRead < 0) {
+                        break;
+                    }
+                    result.write(gzipBuf, 0, uncompressedRead);
+                }
+                currentBlock = result.toByteArray();
                 gzip.close();
             }
             currentBlockIndex = block;
             readBlockFooter ();
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("read and decompressed a block(" + block + "): " + buf.length + "bytes to " + currentBlock.length + "bytes.");
+            }
         }
         currentBlockCursor = 0;
     }

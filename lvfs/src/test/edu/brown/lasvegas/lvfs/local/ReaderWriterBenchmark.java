@@ -26,6 +26,7 @@ public class ReaderWriterBenchmark {
                     for (int i = 0; i < 20; ++i) {
                         writer.writeValues(buf, 0, buf.length);
                     }
+                    writer.writeFileFooter();
                     writer.flush();
                     writer.close();
                 }
@@ -44,6 +45,7 @@ public class ReaderWriterBenchmark {
             for (int i = 0; i < 1024; ++i) {
                 writer.writeValues(buf, 0, buf.length);
             }
+            writer.writeFileFooter();
             writer.flush(args[0].equalsIgnoreCase("writeonly_sync"));
             writer.close();
             long endTime = System.currentTimeMillis();

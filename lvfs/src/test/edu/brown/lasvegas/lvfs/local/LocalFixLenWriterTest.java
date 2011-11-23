@@ -31,6 +31,7 @@ public class LocalFixLenWriterTest {
             }
             writer.writeValues(buf, 0, buf.length);
         }
+        writer.writeFileFooter();
         writer.flush();
         writer.close();
         assertEquals ((25 << 14) * 4, file.length());

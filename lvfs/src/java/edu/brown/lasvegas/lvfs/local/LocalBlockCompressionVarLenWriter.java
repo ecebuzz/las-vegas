@@ -75,7 +75,7 @@ public final class LocalBlockCompressionVarLenWriter<T> extends LocalBlockCompre
         }
     }
     @Override
-    protected void appendBlockFooter() throws IOException {
+    protected void writeBlockFooter() throws IOException {
         // append position indexes as a footer
         final int count = collectedTuples.size();
         int[] intBuf = new int[count * 2 + 1];

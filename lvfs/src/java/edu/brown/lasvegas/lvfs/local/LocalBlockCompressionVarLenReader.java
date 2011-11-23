@@ -165,6 +165,11 @@ public class LocalBlockCompressionVarLenReader<T> extends LocalBlockCompressionR
         assert (ret == (array.length / 2) - 1 || array[(ret + 1) * 2] > tupleToFind);
         return new InBlockPos (array[ret * 2], array[ret * 2 + 1]);
     }
+    
+    @Override
+    protected int getCurrentBlockFooterByteSize() {
+        return (2 * blockTupleCounts[currentBlockIndex] + 1) * 4;
+    }
 
     @Override
     protected void readBlockFooter() throws IOException {

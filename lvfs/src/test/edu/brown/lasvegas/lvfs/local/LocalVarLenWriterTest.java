@@ -51,6 +51,7 @@ public class LocalVarLenWriterTest {
             // collect per 100 bytes. data is about 20-30bytes per value. position per 4-5 values.
             writer.writePositionFile(posFile);
             assertTrue (posFile.length() > 0);
+            writer.writeFileFooter();
             writer.flush();
             writer.close();
         }        

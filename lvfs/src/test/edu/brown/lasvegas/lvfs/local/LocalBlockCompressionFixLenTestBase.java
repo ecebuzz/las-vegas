@@ -1,6 +1,6 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.io.File;
 import java.io.IOException;
@@ -11,19 +11,20 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 
+import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.lvfs.FixLenValueTraits;
 
 /**
- * Base class of testcases for LocalFixLenReader.
+ * Base class of testcases for {@link LocalBlockCompressionFixLenReader} and {@link LocalBlockCompressionFixLenWriter}.
  * Name of this abstract class doesn't end with Test so that our ant script
  * would skip this. 
  */
-public abstract class LocalFixLenReaderTestBase<T, AT> {
+public abstract class LocalBlockCompressionFixLenTestBase<T, AT> {
     protected static File file;
     protected FixLenValueTraits<T, AT> traits;
-    protected LocalFixLenReader<T, AT> reader;
+    protected LocalBlockCompressionFixLenReader<T, AT> reader;
     
-    protected final static int VALUE_COUNT = 123;
+    protected final static int VALUE_COUNT = 12345;
     /** deterministically generate a value for index-th entry. */
     protected abstract T generateValue (int index);
     protected abstract FixLenValueTraits<T, AT> createTraits ();
@@ -31,6 +32,8 @@ public abstract class LocalFixLenReaderTestBase<T, AT> {
     protected abstract void setToArray (AT array, int index, T value);
     protected abstract T getFromArray (AT array, int index);
 
+    /** override this to change the compression algorithm to use. */
+    protected CompressionType getType () {return CompressionType.SNAPPY;}
     
     private static HashSet<Class<?>> inittedClasses = new HashSet<Class<?>>();
     /**
@@ -42,23 +45,24 @@ public abstract class LocalFixLenReaderTestBase<T, AT> {
             return;
         }
         inittedClasses.add(getClass());
-        // create the file to test
-        file = new File("test/local/typedfile.bin");
-        if (!file.getParentFile().exists() && !file.getParentFile().mkdirs()) {
-            throw new Exception ("Couldn't create test directory " + file.getParentFile().getAbsolutePath());
+        for (int type = 0; type < 2; ++type) {
+            // create the file to test
+            file = new File("test/local/block_comp.bin");
+            if (!file.getParentFile().exists() && !file.getParentFile().mkdirs()) {
+                throw new Exception ("Couldn't create test directory " + file.getParentFile().getAbsolutePath());
+            }
+            file.delete();
+            traits = createTraits();
+            AT buf = createArray(VALUE_COUNT);
+            for (int i = 0; i < VALUE_COUNT; ++i) {
+                setToArray(buf, i, generateValue(i));
+            }
+            LocalBlockCompressionFixLenWriter<T, AT> writer = new LocalBlockCompressionFixLenWriter<T, AT>(file, getType(), traits);
+            writer.writeValues(buf, 0, VALUE_COUNT);
+            writer.writeFileFooter();
+            writer.flush();
+            writer.close();
         }
-        file.delete();
-        traits = createTraits();
-        AT buf = createArray(VALUE_COUNT);
-        for (int i = 0; i < VALUE_COUNT; ++i) {
-            setToArray(buf, i, generateValue(i));
-            if (i % 50 == 0) System.out.println("generated value(" + i + ")=" + generateValue(i) + ":" + generateValue(i).getClass().getName());
-        }
-        LocalFixLenWriter<T, AT> writer = new LocalFixLenWriter<T, AT>(file, traits);
-        writer.writeValues(buf, 0, VALUE_COUNT);
-        writer.writeFileFooter();
-        writer.flush();
-        writer.close();
     }
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
@@ -70,7 +74,7 @@ public abstract class LocalFixLenReaderTestBase<T, AT> {
     public void setUp() throws Exception {
         initOnce();
         this.traits = createTraits();
-        this.reader = new LocalFixLenReader<T, AT>(file, traits);
+        this.reader = new LocalBlockCompressionFixLenReader<T, AT>(file, getType(), traits);
     }
     @After
     public void tearDown() throws Exception {
@@ -168,4 +172,5 @@ public abstract class LocalFixLenReaderTestBase<T, AT> {
     public void testGetTotalTuples() throws IOException {
         assertEquals (VALUE_COUNT, reader.getTotalTuples());
     }
+
 }

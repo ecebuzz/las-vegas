@@ -135,4 +135,13 @@ public final class LocalBlockCompressionFixLenReader<T, AT> extends LocalBlockCo
             seekToTupleAbsolute(blockStartTuples[currentBlockIndex] + currentBlockTuple + tuple);
         }
     }
+
+    // fix-length doesn't need block footer
+    @Override
+    protected int getCurrentBlockFooterByteSize() {
+        return 0;
+    }
+    @Override
+    protected void readBlockFooter() throws IOException {
+    }
 }

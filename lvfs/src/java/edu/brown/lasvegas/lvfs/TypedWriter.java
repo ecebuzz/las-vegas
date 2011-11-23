@@ -4,10 +4,13 @@ import java.io.IOException;
 
 /**
  * A writer that provides methods to write typed values.
- * This object allows per-tuple and tuple-aware operations unlike {@link RawValueWriter}.
+ * <p>This object allows per-tuple and tuple-aware operations unlike {@link RawValueWriter}.
  * However, also unlike {@link RawValueWriter}, this object does not provide
  * raw operations such as writeBytes() and writeLong() which will break how tuple is
- * managed in this object.
+ * managed in this object.</p>
+ * 
+ * <p>Note: the caller should make sure they call {@link #writeFileFooter()},
+ * {@link #flush()}, and then {@link #close()} to complete the write.</p>
  * @param <T> Value type
  * @param <AT> Array type 
  */
@@ -28,6 +31,15 @@ public interface TypedWriter<T, AT> {
      * @throws IOException
      */
     void writeValues (AT values, int off, int len) throws IOException;
+
+    /**
+     * Writes a footer for the file.
+     * This method should be called only once at the end of file creation.
+     * Failing to call this method results in a corrupted file without footer
+     * although only some files actually have a file-footer.
+     * @throws IOException
+     */
+    void writeFileFooter () throws IOException;
 
     /**
      * this version only flushes the underlying stream, does not call sync.

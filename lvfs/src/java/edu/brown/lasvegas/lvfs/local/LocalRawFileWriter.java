@@ -18,7 +18,7 @@ import edu.brown.lasvegas.lvfs.RawValueWriter;
  * stored in separate files.
  */
 public class LocalRawFileWriter {
-    protected static Logger LOG = Logger.getLogger(LocalRawFileWriter.class);
+    private static Logger LOG = Logger.getLogger(LocalRawFileWriter.class);
 
     /** underlying file handle. */
     protected final File file;
@@ -88,12 +88,15 @@ public class LocalRawFileWriter {
     /**
      * Close the file.
      */
-    public final void close () throws IOException {
+    public void close () throws IOException {
         stream.close();
         if (LOG.isDebugEnabled()) {
             LOG.debug("closed file:" + file.getAbsolutePath());
         }
     }
+
+    /** Override this method if the file format needs some per-file footer. */
+    public void writeFileFooter() throws IOException {}
 
     /**
      * @see java.lang.Object#toString()
