@@ -39,11 +39,17 @@ public interface TypedReader<T, AT> {
 
     /**
      * Skip arbitrary number of entries.
-     * NOTE: depending on the implementation class, this might be inefficient.
-     * Use index files and {@link #seekToByteAbsolute(long)} to speed-up jumps.
+     * NOTE: depending on the implementation or parameter, this might be inefficient.
      * @param skip number of entries to skip. must be positive values.
      */
     void skipValues (int skip) throws IOException;
+
+    /**
+     * Jump to the specified absolute tuple position.
+     * NOTE: depending on the implementation or parameter, this might be inefficient.
+     * @param tuple the tuple to locate.
+     */
+    void seekToTupleAbsolute (int tuple) throws IOException;
 
     /**
      * Close the file handle and release all resources.
@@ -52,6 +58,7 @@ public interface TypedReader<T, AT> {
 
     /**
      * Returns the total number of tuples in this file.
+     * NOTE: depending on the implementation or parameter, this might not be implemented.
      */
     int getTotalTuples ();
 }

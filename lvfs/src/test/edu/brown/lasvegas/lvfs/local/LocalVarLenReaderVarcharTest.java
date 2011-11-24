@@ -62,6 +62,16 @@ public class LocalVarLenReaderVarcharTest {
             String value = reader.readValue();
             assertEquals(generateValue(10 + 3 + i), value);
         }
+        reader.seekToTupleAbsolute(4);
+        for (int i = 0; i < 10; ++i) {
+            String value = reader.readValue();
+            assertEquals(generateValue(4 + i), value);
+        }
+        reader.seekToTupleAbsolute(25);
+        for (int i = 0; i < 10; ++i) {
+            String value = reader.readValue();
+            assertEquals(generateValue(25 + i), value);
+        }
     }
 
     @Test
@@ -76,6 +86,17 @@ public class LocalVarLenReaderVarcharTest {
         assertEquals(15, reader.readValues(buf, 0, 15));
         for (int i = 0; i < 15; ++i) {
             assertEquals(generateValue(7 + 2 + i), buf[i]);
+        }
+        reader.seekToTupleAbsolute(12);
+        assertEquals(15, reader.readValues(buf, 0, 15));
+        for (int i = 0; i < 15; ++i) {
+            assertEquals(generateValue(12 + i), buf[i]);
+        }
+        
+        reader.seekToTupleAbsolute(50);
+        assertEquals(10, reader.readValues(buf, 0, 10));
+        for (int i = 0; i < 10; ++i) {
+            assertEquals(generateValue(50 + i), buf[i]);
         }
     }
 }

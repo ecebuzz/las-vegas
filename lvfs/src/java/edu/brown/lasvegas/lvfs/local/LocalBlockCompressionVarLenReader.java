@@ -81,10 +81,31 @@ public class LocalBlockCompressionVarLenReader<T> extends LocalBlockCompressionR
             skipInBlock (skip);
         }
     }
+    @Override
+    public void seekToTupleAbsolute(int tuple) throws IOException {
+        // need to move to other block?
+        if (currentBlockIndex < 0 || tuple < blockStartTuples[currentBlockIndex]
+          || tuple >= blockStartTuples[currentBlockIndex] + blockTupleCounts[currentBlockIndex]) {
+            int block = searchBlock(tuple);
+            seekToBlock(block);
+            currentBlockTuple = 0;
+        }
+
+        // need to move back to the beginning of this block?
+        if (blockStartTuples[currentBlockIndex] + currentBlockTuple > tuple) {
+            currentBlockCursor = 0;
+            currentBlockTuple = 0;
+        }
+
+        // then just skip in the blcok, which might internally do binary search
+        skipInBlock(blockStartTuples[currentBlockIndex] + currentBlockTuple - tuple);
+    }
     
     /** skip specified number of values within this block. */
     private void skipInBlock (int skip) throws IOException {
-        assert (skip > 0);
+        if (skip == 0) {
+            return;
+        }
         assert (currentBlockIndex >= 0);
         assert (currentBlockTuple + skip < blockTupleCounts[currentBlockIndex]);
         if (skip < 100) {

@@ -66,6 +66,16 @@ public class LocalVarLenReaderVarbinTest {
             byte[] value = reader.readValue();
             assertArrayEquals(generateValue(10 + 3 + i), value);
         }
+        reader.seekToTupleAbsolute(30);
+        for (int i = 0; i < 7; ++i) {
+            byte[] value = reader.readValue();
+            assertArrayEquals(generateValue(30 + i), value);
+        }
+        reader.seekToTupleAbsolute(4);
+        for (int i = 0; i < 7; ++i) {
+            byte[] value = reader.readValue();
+            assertArrayEquals(generateValue(4 + i), value);
+        }
     }
 
     @Test
@@ -80,6 +90,18 @@ public class LocalVarLenReaderVarbinTest {
         assertEquals(15, reader.readValues(buf, 0, 15));
         for (int i = 0; i < 15; ++i) {
             assertArrayEquals(generateValue(7 + 2 + i), buf[i]);
+        }
+
+        reader.seekToTupleAbsolute(51);
+        assertEquals(15, reader.readValues(buf, 0, 15));
+        for (int i = 0; i < 15; ++i) {
+            assertArrayEquals(generateValue(51 + i), buf[i]);
+        }
+
+        reader.seekToTupleAbsolute(20);
+        assertEquals(15, reader.readValues(buf, 0, 15));
+        for (int i = 0; i < 15; ++i) {
+            assertArrayEquals(generateValue(20 + i), buf[i]);
         }
     }
 }

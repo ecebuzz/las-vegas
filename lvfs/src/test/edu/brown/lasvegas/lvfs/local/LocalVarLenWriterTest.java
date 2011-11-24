@@ -70,11 +70,16 @@ public class LocalVarLenWriterTest {
             reader.close();
         }
         
-        // test position file indexing
+        // test position file indexing (both directly and via LocalVarLenReader)
+        LocalVarLenReader<String> readerWithPos = LocalVarLenReader.getInstanceVarchar(dataFile, posFile);
+        assertEquals (COUNT, readerWithPos.getTotalTuples());
         LocalPosFile positions = new LocalPosFile(posFile);
         assertEquals(COUNT, positions.getTotalTuples());
         final long[] tuplesToSearch = new long[]{1500, 234, 555, 0, 6000, 12344};
         for (long tupleToSearch : tuplesToSearch) {
+            readerWithPos.seekToTupleAbsolute((int) tupleToSearch);
+            assertEquals (generateValue((int) tupleToSearch), readerWithPos.readValue());
+
             Pos pos = positions.searchPosition(tupleToSearch);
             assertTrue (pos.tuple <= tupleToSearch);
             assertTrue (pos.tuple >= tupleToSearch - 10); // as stated above, shouldn't be off more than 10 values
@@ -87,6 +92,7 @@ public class LocalVarLenWriterTest {
             assertEquals (generateValue((int) tupleToSearch), value);
             reader.close();
         }
+        readerWithPos.close();
     }
 
     @Test
@@ -120,11 +126,16 @@ public class LocalVarLenWriterTest {
             reader.close();
         }
         
-        // test position file indexing
+        // test position file indexing (both directly and via LocalVarLenReader)
+        LocalVarLenReader<byte[]> readerWithPos = LocalVarLenReader.getInstanceVarbin(dataFile, posFile);
+        assertEquals (COUNT, readerWithPos.getTotalTuples());
         LocalPosFile positions = new LocalPosFile(posFile);
         assertEquals(COUNT, positions.getTotalTuples());
         final long[] tuplesToSearch = new long[]{1500, 234, 555, 0, 6000, 12344};
         for (long tupleToSearch : tuplesToSearch) {
+            readerWithPos.seekToTupleAbsolute((int) tupleToSearch);
+            assertArrayEquals (generateValue((int) tupleToSearch).getBytes("UTF-8"), readerWithPos.readValue());
+
             Pos pos = positions.searchPosition(tupleToSearch);
             assertTrue (pos.tuple <= tupleToSearch);
             assertTrue (pos.tuple >= tupleToSearch - 10); // as stated above, shouldn't be off more than 10 values
@@ -137,5 +148,6 @@ public class LocalVarLenWriterTest {
             assertArrayEquals (generateValue((int) tupleToSearch).getBytes("UTF-8"), value);
             reader.close();
         }
+        readerWithPos.close();
     }
 }
