@@ -40,7 +40,7 @@ public class LocalBlockCompressionVarLenReader<T> extends LocalBlockCompressionR
         if (currentBlockIndex < 0) {
             seekToBlock(0);
         }
-        if (currentBlockTuple + 1 >= blockTupleCounts[currentBlockIndex]) {
+        if (currentBlockTuple >= blockTupleCounts[currentBlockIndex]) {
             // move to next block
             seekToBlock(currentBlockIndex + 1);
             currentBlockTuple = 0;
@@ -73,7 +73,9 @@ public class LocalBlockCompressionVarLenReader<T> extends LocalBlockCompressionR
             seekToBlock(block);
             currentBlockTuple = 0;
             int toSkip = tupleToFind - blockStartTuples[currentBlockIndex];
-            skipInBlock (toSkip);
+            if (toSkip > 0) {
+                skipInBlock (toSkip);
+            }
         } else {
             // we are in the desired block
             skipInBlock (skip);
@@ -105,6 +107,7 @@ public class LocalBlockCompressionVarLenReader<T> extends LocalBlockCompressionR
             assert (bytesToSkip >= 0);
             reader.skipBytes(bytesToSkip);
         }
+        currentBlockTuple += skip;
     }
     
     /**
@@ -166,11 +169,6 @@ public class LocalBlockCompressionVarLenReader<T> extends LocalBlockCompressionR
         return new InBlockPos (array[ret * 2], array[ret * 2 + 1]);
     }
     
-    @Override
-    protected int getCurrentBlockFooterByteSize() {
-        return (2 * blockTupleCounts[currentBlockIndex] + 1) * 4;
-    }
-
     @Override
     protected void readBlockFooter() throws IOException {
         currentBlockCursor = currentBlock.length - 4;

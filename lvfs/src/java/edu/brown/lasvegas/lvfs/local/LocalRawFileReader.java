@@ -82,20 +82,20 @@ public class LocalRawFileReader {
                 for (long totalSkipped = 0; totalSkipped < length;) {
                     long skippedByte = rawStream.skip(length - totalSkipped);
                     if (skippedByte < 0) {
-                        throw new IOException ("failed to skip??" + this);
+                        throw new IOException ("failed to skip??");
                     }
                     totalSkipped += skippedByte;
                     assert (totalSkipped <= length);
                 }
                 curPosition += length;
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("skipped " + length + " bytes: " + this);
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace("skipped " + length + " bytes");
                 }
                 
             }
         };
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("opened raw file:" + this);
+        if (LOG.isInfoEnabled()) {
+            LOG.info("opened raw file:" + this);
         }
     }
     
@@ -107,6 +107,7 @@ public class LocalRawFileReader {
             rawStream = new FileInputStream(rawFile);
         }
         curPosition = 0;
+        LOG.info("reopened stream");
     }
     
     /**

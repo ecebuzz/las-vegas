@@ -84,7 +84,7 @@ public final class LocalBlockCompressionVarLenWriter<T> extends LocalBlockCompre
             intBuf[i * 2 + 1] = collectedPositions.get(i);
         }
         intBuf[intBuf.length - 1] = count;
-        getRawValueWriter().writeInts(intBuf, 0, intBuf.length);
+        getProxyValueWriter().writeInts(intBuf, 0, intBuf.length);
 
         // clear objects about current blocks
         prevCollectPosition = -1;

@@ -33,7 +33,7 @@ public class LocalVarLenWriterTest {
     }
     @After
     public void tearDown() throws Exception {
-        //dataFile.delete();
+        dataFile.delete();
         dataFile = null;
         posFile.delete();
         posFile = null;
@@ -85,6 +85,56 @@ public class LocalVarLenWriterTest {
             }
             String value = reader.readValue();
             assertEquals (generateValue((int) tupleToSearch), value);
+            reader.close();
+        }
+    }
+
+    @Test
+    public void testBytesWriter() throws Exception {
+        final int COUNT = 12345;
+        {
+            LocalVarLenWriter<byte[]> writer
+                = LocalVarLenWriter.getInstanceVarbin(dataFile, 100); // collect often to test the position file easily
+            for (int i = 0; i < COUNT; ++i) {
+                writer.writeValue(generateValue(i).getBytes("UTF-8"));
+            }
+            // collect per 100 bytes. data is about 20-30bytes per value. position per 4-5 values.
+            writer.writePositionFile(posFile);
+            assertTrue (posFile.length() > 0);
+            writer.writeFileFooter();
+            writer.flush();
+            writer.close();
+        }        
+        
+        // test sequential scan
+        {
+            LocalVarLenReader<byte[]> reader = LocalVarLenReader.getInstanceVarbin(dataFile);
+            for (int i = 0; i < COUNT; ++i) {
+                if (i % 3 != 0) {
+                    byte[] value = reader.readValue();
+                    assertArrayEquals (generateValue(i).getBytes("UTF-8"), value);
+                } else {
+                    reader.skipValue();
+                }
+            }
+            reader.close();
+        }
+        
+        // test position file indexing
+        LocalPosFile positions = new LocalPosFile(posFile);
+        assertEquals(COUNT, positions.getTotalTuples());
+        final long[] tuplesToSearch = new long[]{1500, 234, 555, 0, 6000, 12344};
+        for (long tupleToSearch : tuplesToSearch) {
+            Pos pos = positions.searchPosition(tupleToSearch);
+            assertTrue (pos.tuple <= tupleToSearch);
+            assertTrue (pos.tuple >= tupleToSearch - 10); // as stated above, shouldn't be off more than 10 values
+            LocalVarLenReader<byte[]> reader = LocalVarLenReader.getInstanceVarbin(dataFile);
+            reader.seekToByteAbsolute(pos.bytePosition);
+            if (tupleToSearch - pos.tuple > 0) {
+                reader.skipValues((int) (tupleToSearch - pos.tuple));
+            }
+            byte[] value = reader.readValue();
+            assertArrayEquals (generateValue((int) tupleToSearch).getBytes("UTF-8"), value);
             reader.close();
         }
     }

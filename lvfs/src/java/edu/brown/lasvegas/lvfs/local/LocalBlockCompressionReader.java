@@ -98,8 +98,6 @@ public abstract class LocalBlockCompressionReader extends LocalRawFileReader {
         seekToByteAbsolute(0L); // reset to the beginning of the file
         currentBlockIndex = -1; // in no block
     }
-    /** Returns the byte size of block-footer in the current block. */
-    protected abstract int getCurrentBlockFooterByteSize ();
     /**
      * Proxy reader to reader from currentBlock.
      */
@@ -108,22 +106,28 @@ public abstract class LocalBlockCompressionReader extends LocalRawFileReader {
         public int readBytes(byte[] buf, int off, int len) throws IOException {
             // this should never happen. the derived classes make sure
             // we don't go beyond the end of the block.
-            if (currentBlockCursor + len + getCurrentBlockFooterByteSize() > currentBlock.length) {
+            if (currentBlockCursor + len > currentBlock.length) {
                 throw new IOException ("cannot go beyond the end of current block: currentBlockCursor=" + currentBlockCursor
                                 + ", requested len=" + len + ", currentBlock.length=" + currentBlock.length);
             }
             System.arraycopy(currentBlock, currentBlockCursor, buf, off, len);
             currentBlockCursor += len;
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("read in compressed block " + len + " bytes");
+            }
             return len;
         }
         @Override
         public void skipBytes(long length) throws IOException {
             // same as above
-            if (currentBlockCursor + length + getCurrentBlockFooterByteSize() > currentBlock.length) {
+            if (currentBlockCursor + length  > currentBlock.length) {
                 throw new IOException ("cannot skip beyond the end of current block: currentBlockCursor=" + currentBlockCursor
                                 + ", requested skip=" + length + ", currentBlock.length=" + currentBlock.length);
             }
             currentBlockCursor += (int) length;
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("skipped in compressed block " + length + " bytes");
+            }
         }
     }
     /**

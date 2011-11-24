@@ -166,6 +166,14 @@ public class LocalBlockCompressionWriter extends LocalRawFileWriter {
             footer[3 * i] = blockStartTuples.get(i);
             footer[3 * i + 1] = blockPositions.get(i);
             footer[3 * i + 2] = blockLengthes.get(i);
+            if (i == 0) {
+                assert (blockStartTuples.get(i) == 0);
+                assert (blockPositions.get(i) == 0);
+            } else {
+                assert (blockStartTuples.get(i) > blockStartTuples.get(i - 1));
+                assert (blockPositions.get(i) > blockPositions.get(i - 1));
+                assert (blockPositions.get(i) - blockPositions.get(i - 1) == blockLengthes.get(i - 1));
+            }
         }
         footer[footer.length - 2] = blockCount;
         footer[footer.length - 1] = curTuple;
