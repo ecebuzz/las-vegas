@@ -41,6 +41,10 @@ public class LocalRawFileReader {
     private InputStream rawStream;
     /** current byte position of the input stream. */
     private long curPosition;
+    /** returns current byte position of the input stream. */
+    public long getCurPosition() {
+        return curPosition;
+    }
     
     /**
      * Instantiates a new local raw file reader.

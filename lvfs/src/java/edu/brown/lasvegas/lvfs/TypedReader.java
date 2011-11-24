@@ -28,7 +28,7 @@ public interface TypedReader<T, AT> {
      * @param buffer the buffer to receive results
      * @param off offset of the buffer
      * @param len maximum number of values to read
-     * @return number of values read
+     * @return number of values actually read
      */
     int readValues (AT buffer, int off, int len) throws IOException;
 

@@ -72,6 +72,11 @@ public final class LocalDictFile {
             // second, construct the dictionary. This involves sorting.
             dict = distinctValues.toArray(new String[distinctValues.size()]);
             Arrays.sort(dict);
+            if (LOG.isDebugEnabled()) {
+                for (int i = 0; i < dict.length - 1; ++i) {
+                    assert(!dict[i].equals(dict[i + 1]));
+                }
+            }
             long endMillisec = System.currentTimeMillis();
             LOG.info("sorted the dictionary in " + (endMillisec - startMillisec) + "ms");
         }
@@ -83,7 +88,7 @@ public final class LocalDictFile {
             out.flush();
             out.close();
             long endMillisec = System.currentTimeMillis();
-            LOG.info("Created a dict file:" + dictFile.length() + " bytes, in " + (endMillisec - startMillisec) + "ms");
+            LOG.info("Wrote out a dict file:" + dict.length + " entries, " + dictFile.length() + " bytes, in " + (endMillisec - startMillisec) + "ms");
         }
     }
 
@@ -156,9 +161,7 @@ public final class LocalDictFile {
             assert (compresedValue >= -(1 << 15));
             return compresedValue + (1 << 15);
         case 4:
-            assert (compresedValue < 1 << 31);
-            assert (compresedValue >= -(1 << 31));
-            return compresedValue + (1 << 31);
+            return compresedValue ^ 0x80000000;
         default:
             assert (false);
             return -1;
@@ -176,7 +179,7 @@ public final class LocalDictFile {
         case 2:
             return dictionaryIndex - (1 << 15);
         case 4:
-            return dictionaryIndex - (1 << 31);
+            return dictionaryIndex ^ 0x80000000;
         default:
             assert (false);
             return -1;

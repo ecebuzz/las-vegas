@@ -34,25 +34,29 @@ public abstract class RawValueReader {
     }
     /** Reads 1 byte and returns it as byte. */
     public final byte readByte () throws IOException {
-        readBytes (smallBuf, 0, 1);
+        int read = readBytes (smallBuf, 0, 1);
+        assert (read == 1);
         return smallBuf[0];
     }
 
     /** Reads 2 bytes and returns it as short. */
     public final short readShort () throws IOException {
-        readBytes (smallBuf, 0, 2);
+        int read = readBytes (smallBuf, 0, 2);
+        assert (read == 2);
         return (short)((((int) smallBuf[0]) << 8) + ((int) smallBuf[1] & 255));
     }
     
     /** Reads 4 bytes and returns it as int. */
     public final int readInt () throws IOException {
-        readBytes (smallBuf, 0, 4);
+        int read = readBytes (smallBuf, 0, 4);
+        assert (read == 4);
         return ((((int) smallBuf[0]) << 24) + (((int) smallBuf[1] & 255) << 16) + (((int) smallBuf[2] & 255) << 8) + ((int) smallBuf[3] & 255));
     }
     
     /** Reads 8 bytes and returns it as long. */
     public final long readLong () throws IOException {
-        readBytes (smallBuf, 0, 8);
+        int read = readBytes (smallBuf, 0, 8);
+        assert (read == 8);
         return (((long) smallBuf[0] << 56) +
             ((long)(smallBuf[1] & 255) << 48) +
             ((long)(smallBuf[2] & 255) << 40) +

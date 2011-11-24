@@ -79,14 +79,15 @@ public abstract class RawValueWriter {
             // 2 byte length header
             writeByte((byte) 2);
             writeShort((short) bytes.length);
-        } else if (bytes.length < (1 << 31)) {
+        } else {
             // 4 byte length header
             writeByte((byte) 4);
             writeInt(bytes.length);
-        } else {
+            /*
             // 8 byte length header (this is not quite implemented as byte[1<<32] isn't possible)
             writeByte((byte) 8);
             writeLong(bytes.length);
+            */
         }
         writeBytes(bytes, 0, bytes.length);
     }

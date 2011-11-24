@@ -83,7 +83,7 @@ public final class LocalVarLenReader<T> extends LocalRawFileReader implements Ty
         // unlike fixed-len reader. there is no faster way to do this.
         // so, just call readValue for each value...
         int count = 0;
-        for (; count < len; ++count) {
+        for (; count < len && getCurPosition() < rawFileSize; ++count) {
             buffer[off + count] = readValue();
         }
         return count;
