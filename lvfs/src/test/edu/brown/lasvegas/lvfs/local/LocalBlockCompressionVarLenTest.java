@@ -55,9 +55,6 @@ public class LocalBlockCompressionVarLenTest {
         {
             LocalBlockCompressionVarLenReader<String> reader = LocalBlockCompressionVarLenReader.getInstanceVarchar(file, getType());
             for (int i = 0; i < COUNT; ++i) {
-                if (i == 1882) {
-                    i = i - 1 + 1;
-                }
                 if (i % 3 != 0) {
                     String value = reader.readValue();
                     assertEquals (generateValue(i), value);
@@ -65,6 +62,20 @@ public class LocalBlockCompressionVarLenTest {
                     reader.skipValue();
                 }
             }
+            reader.close();
+        }
+
+        // test seeking
+        {
+            LocalBlockCompressionVarLenReader<String> reader = LocalBlockCompressionVarLenReader.getInstanceVarchar(file, getType());
+            reader.seekToTupleAbsolute(3125);
+            assertEquals (generateValue(3125), reader.readValue());
+            reader.skipValue();
+            assertEquals (generateValue(3127), reader.readValue());
+            reader.seekToTupleAbsolute(33);
+            assertEquals (generateValue(33), reader.readValue());
+            reader.seekToTupleAbsolute(12344);
+            assertEquals (generateValue(12344), reader.readValue());
             reader.close();
         }
     }
@@ -95,6 +106,19 @@ public class LocalBlockCompressionVarLenTest {
                     reader.skipValue();
                 }
             }
+            reader.close();
+        }
+        // test seeking
+        {
+            LocalBlockCompressionVarLenReader<byte[]> reader = LocalBlockCompressionVarLenReader.getInstanceVarbin(file, getType());
+            reader.seekToTupleAbsolute(3125);
+            assertArrayEquals (generateValue(3125).getBytes("UTF-8"), reader.readValue());
+            reader.skipValue();
+            assertArrayEquals (generateValue(3127).getBytes("UTF-8"), reader.readValue());
+            reader.seekToTupleAbsolute(33);
+            assertArrayEquals (generateValue(33).getBytes("UTF-8"), reader.readValue());
+            reader.seekToTupleAbsolute(12344);
+            assertArrayEquals (generateValue(12344).getBytes("UTF-8"), reader.readValue());
             reader.close();
         }
     }

@@ -88,6 +88,7 @@ public class LocalBlockCompressionVarLenReader<T> extends LocalBlockCompressionR
           || tuple >= blockStartTuples[currentBlockIndex] + blockTupleCounts[currentBlockIndex]) {
             int block = searchBlock(tuple);
             seekToBlock(block);
+            assert (currentBlockCursor == 0);
             currentBlockTuple = 0;
         }
 
@@ -98,7 +99,7 @@ public class LocalBlockCompressionVarLenReader<T> extends LocalBlockCompressionR
         }
 
         // then just skip in the blcok, which might internally do binary search
-        skipInBlock(blockStartTuples[currentBlockIndex] + currentBlockTuple - tuple);
+        skipInBlock(tuple - blockStartTuples[currentBlockIndex] - currentBlockTuple);
     }
     
     /** skip specified number of values within this block. */
