@@ -13,8 +13,6 @@ import edu.brown.lasvegas.lvfs.VarLenValueTraits;
  */
 public class LocalBlockCompressionVarLenReader<T> extends LocalBlockCompressionReader<T, T[]> {
     private final VarLenValueTraits<T> traits;
-    /** current tuple number relative to the beginning of the block. */
-    private int currentBlockTuple = 0;
     /** Variable-length block has position indexes. See class comments of {@link LocalBlockCompressionVarLenWriter}. */
     private int[] currentBlockFooter;
     
@@ -39,10 +37,14 @@ public class LocalBlockCompressionVarLenReader<T> extends LocalBlockCompressionR
         if (currentBlockIndex < 0) {
             seekToBlock(0);
         }
+        if (!getProxyValueReader().hasMore()) {
+            throw new IOException("EOF");
+        }
         if (currentBlockTuple >= blockTupleCounts[currentBlockIndex]) {
             // move to next block
             seekToBlock(currentBlockIndex + 1);
-            currentBlockTuple = 0;
+            assert (currentBlockTuple == 0);
+            assert (currentBlockCursor == 0);
         }
         T value = traits.readValue(getProxyValueReader());
         ++currentBlockTuple;
@@ -51,6 +53,9 @@ public class LocalBlockCompressionVarLenReader<T> extends LocalBlockCompressionR
     @Override
     public int readValues(T[] buffer, int off, int len) throws IOException {
         for (int i = off; i < off + len; ++i) {
+            if (!getProxyValueReader().hasMore()) {
+                return i - off; // EOF
+            }
             buffer[i] = readValue();
         }
         return len;
@@ -70,7 +75,7 @@ public class LocalBlockCompressionVarLenReader<T> extends LocalBlockCompressionR
             int tupleToFind = blockStartTuples[currentBlockIndex] + currentBlockTuple + skip;
             int block = searchBlock(tupleToFind);
             seekToBlock(block);
-            currentBlockTuple = 0;
+            assert (currentBlockTuple == 0);
             int toSkip = tupleToFind - blockStartTuples[currentBlockIndex];
             if (toSkip > 0) {
                 skipInBlock (toSkip);
@@ -88,7 +93,7 @@ public class LocalBlockCompressionVarLenReader<T> extends LocalBlockCompressionR
             int block = searchBlock(tuple);
             seekToBlock(block);
             assert (currentBlockCursor == 0);
-            currentBlockTuple = 0;
+            assert (currentBlockTuple == 0);
         }
 
         // need to move back to the beginning of this block?
@@ -200,5 +205,9 @@ public class LocalBlockCompressionVarLenReader<T> extends LocalBlockCompressionR
         int intRead = getProxyValueReader().readInts(currentBlockFooter, 0, currentBlockFooter.length);
         assert (intRead == currentBlockFooter.length);
         currentBlockCursor = 0;
+    }
+    @Override
+    protected int getCurrentBlockFooterByteSize() {
+        return currentBlockFooter.length * 4 + 4;
     }
 }

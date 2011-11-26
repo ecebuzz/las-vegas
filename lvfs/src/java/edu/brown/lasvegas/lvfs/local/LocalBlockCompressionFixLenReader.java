@@ -17,8 +17,6 @@ import edu.brown.lasvegas.lvfs.FixLenValueTraits;
 public final class LocalBlockCompressionFixLenReader<T, AT> extends LocalBlockCompressionReader<T, AT> {
     private final FixLenValueTraits<T, AT> traits;
     private final short bitsPerValue;
-    /** current tuple number relative to the beginning of the block. */
-    private int currentBlockTuple = 0;
     
     /** Constructs an instance for 1-byte fixed length integer values. */
     public static LocalBlockCompressionFixLenReader<Byte, byte[]> getInstanceTinyint(File file, CompressionType compressionType) throws IOException {
@@ -58,8 +56,13 @@ public final class LocalBlockCompressionFixLenReader<T, AT> extends LocalBlockCo
         }
         int totalRead = 0;
         while (totalRead < len) {
+            if (!getProxyValueReader().hasMore()) {
+                return totalRead; //EOF
+            }
             if (currentBlockTuple >= blockTupleCounts[currentBlockIndex]) {
                 seekToBlock(currentBlockIndex + 1);
+                assert (currentBlockTuple == 0);
+                assert (currentBlockCursor == 0);
             }
             int nextRead = Math.min(blockTupleCounts[currentBlockIndex] - currentBlockTuple, len);
             int read = traits.readValues(getProxyValueReader(), values, off + totalRead, nextRead);
@@ -77,7 +80,7 @@ public final class LocalBlockCompressionFixLenReader<T, AT> extends LocalBlockCo
         if (currentBlockTuple + 1 >= blockTupleCounts[currentBlockIndex]) {
             // move to next block
             seekToBlock(currentBlockIndex + 1);
-            currentBlockTuple = 0;
+            assert (currentBlockTuple == 0);
         }
         T value = traits.readValue(getProxyValueReader());
         ++currentBlockTuple;
@@ -138,5 +141,9 @@ public final class LocalBlockCompressionFixLenReader<T, AT> extends LocalBlockCo
     // fix-length doesn't need block footer
     @Override
     protected void readBlockFooter() throws IOException {
+    }
+    @Override
+    protected int getCurrentBlockFooterByteSize() {
+        return 0;
     }
 }

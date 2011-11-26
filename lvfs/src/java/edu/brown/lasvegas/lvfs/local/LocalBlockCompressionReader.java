@@ -41,6 +41,8 @@ public abstract class LocalBlockCompressionReader<T, AT> extends LocalTypedReade
     protected byte[] currentBlock;
     /** where in currentBlock we are at in terms of byte position from the beginning of the block. */
     protected int currentBlockCursor = 0;
+    /** current tuple number relative to the beginning of the block. */
+    protected int currentBlockTuple = 0;
     private final ProxyValueReader proxyReader;
     protected final ProxyValueReader getProxyValueReader() {
         return proxyReader;
@@ -100,6 +102,7 @@ public abstract class LocalBlockCompressionReader<T, AT> extends LocalTypedReade
         getRawReader().seekToByteAbsolute(0L); // reset to the beginning of the file
         currentBlockIndex = -1; // in no block
     }
+    protected abstract int getCurrentBlockFooterByteSize ();
     /**
      * Proxy reader to reader from currentBlock.
      */
@@ -135,7 +138,7 @@ public abstract class LocalBlockCompressionReader<T, AT> extends LocalTypedReade
         public boolean hasMore() throws IOException {
             // if there is something in this block, return true.
             // even if not, if this is not the last block, we have more to read
-            return currentBlockCursor < currentBlock.length || currentBlockIndex < blockCount - 1;
+            return currentBlockCursor + getCurrentBlockFooterByteSize() < currentBlock.length || currentBlockIndex < blockCount - 1;
         }
     }
     /**
@@ -181,6 +184,7 @@ public abstract class LocalBlockCompressionReader<T, AT> extends LocalTypedReade
             }
         }
         currentBlockCursor = 0;
+        currentBlockTuple = 0;
     }
 
 
