@@ -71,7 +71,8 @@ public class LocalVarLenWriterTest {
         }
         
         // test position file indexing (both directly and via LocalVarLenReader)
-        LocalVarLenReader<String> readerWithPos = LocalVarLenReader.getInstanceVarchar(dataFile, posFile);
+        LocalVarLenReader<String> readerWithPos = LocalVarLenReader.getInstanceVarchar(dataFile);
+        readerWithPos.loadPositionFile(posFile);
         assertEquals (COUNT, readerWithPos.getTotalTuples());
         LocalPosFile positions = new LocalPosFile(posFile);
         assertEquals(COUNT, positions.getTotalTuples());
@@ -84,7 +85,7 @@ public class LocalVarLenWriterTest {
             assertTrue (pos.tuple <= tupleToSearch);
             assertTrue (pos.tuple >= tupleToSearch - 10); // as stated above, shouldn't be off more than 10 values
             LocalVarLenReader<String> reader = LocalVarLenReader.getInstanceVarchar(dataFile);
-            reader.seekToByteAbsolute(pos.bytePosition);
+            reader.getRawReader().seekToByteAbsolute(pos.bytePosition);
             if (tupleToSearch - pos.tuple > 0) {
                 reader.skipValues((int) (tupleToSearch - pos.tuple));
             }
@@ -127,7 +128,8 @@ public class LocalVarLenWriterTest {
         }
         
         // test position file indexing (both directly and via LocalVarLenReader)
-        LocalVarLenReader<byte[]> readerWithPos = LocalVarLenReader.getInstanceVarbin(dataFile, posFile);
+        LocalVarLenReader<byte[]> readerWithPos = LocalVarLenReader.getInstanceVarbin(dataFile);
+        readerWithPos.loadPositionFile(posFile);
         assertEquals (COUNT, readerWithPos.getTotalTuples());
         LocalPosFile positions = new LocalPosFile(posFile);
         assertEquals(COUNT, positions.getTotalTuples());
@@ -140,7 +142,7 @@ public class LocalVarLenWriterTest {
             assertTrue (pos.tuple <= tupleToSearch);
             assertTrue (pos.tuple >= tupleToSearch - 10); // as stated above, shouldn't be off more than 10 values
             LocalVarLenReader<byte[]> reader = LocalVarLenReader.getInstanceVarbin(dataFile);
-            reader.seekToByteAbsolute(pos.bytePosition);
+            reader.getRawReader().seekToByteAbsolute(pos.bytePosition);
             if (tupleToSearch - pos.tuple > 0) {
                 reader.skipValues((int) (tupleToSearch - pos.tuple));
             }

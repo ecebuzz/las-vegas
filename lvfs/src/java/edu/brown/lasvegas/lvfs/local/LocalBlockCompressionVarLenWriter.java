@@ -6,7 +6,6 @@ import java.util.ArrayList;
 
 import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.lvfs.AllValueTraits;
-import edu.brown.lasvegas.lvfs.TypedWriter;
 import edu.brown.lasvegas.lvfs.VarLenValueTraits;
 
 /**
@@ -25,7 +24,7 @@ import edu.brown.lasvegas.lvfs.VarLenValueTraits;
  * <b>IN THE BLOCK after decompression</b>.</p>
  * @param <T> Value type (e.g., String)
  */
-public final class LocalBlockCompressionVarLenWriter<T> extends LocalBlockCompressionWriter implements TypedWriter<T, T[]> {
+public final class LocalBlockCompressionVarLenWriter<T> extends LocalBlockCompressionWriter<T, T[]> {
     private final VarLenValueTraits<T> traits;
     private final int collectPerBytes;
 
@@ -38,16 +37,16 @@ public final class LocalBlockCompressionVarLenWriter<T> extends LocalBlockCompre
     /** Constructs an instance of varchar column. */
     public static LocalBlockCompressionVarLenWriter<String> getInstanceVarchar(
                     File file, CompressionType compressionType, int collectPerBytes) throws IOException {
-        return new LocalBlockCompressionVarLenWriter<String>(file, compressionType, new AllValueTraits.VarcharValueTraits(), collectPerBytes);
+        return new LocalBlockCompressionVarLenWriter<String>(file, new AllValueTraits.VarcharValueTraits(), compressionType, collectPerBytes);
     }
     /** Constructs an instance of varbinary column. */
     public static LocalBlockCompressionVarLenWriter<byte[]> getInstanceVarbin(
                     File file, CompressionType compressionType, int collectPerBytes) throws IOException {
-        return new LocalBlockCompressionVarLenWriter<byte[]>(file, compressionType, new AllValueTraits.VarbinValueTraits(), collectPerBytes);
+        return new LocalBlockCompressionVarLenWriter<byte[]>(file, new AllValueTraits.VarbinValueTraits(), compressionType, collectPerBytes);
     }
 
-    public LocalBlockCompressionVarLenWriter(File file, CompressionType compressionType, VarLenValueTraits<T> traits, int collectPerBytes) throws IOException {
-        super (file, compressionType);
+    public LocalBlockCompressionVarLenWriter(File file, VarLenValueTraits<T> traits, CompressionType compressionType, int collectPerBytes) throws IOException {
+        super (file, traits, compressionType);
         this.traits = traits;
         this.collectPerBytes = collectPerBytes;
     }

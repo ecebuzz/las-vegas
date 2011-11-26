@@ -13,6 +13,7 @@ import org.xerial.snappy.Snappy;
 
 import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.lvfs.RawValueWriter;
+import edu.brown.lasvegas.lvfs.ValueTraits;
 
 /**
  * File writer for a block-compressed file such as Snappy and LZO.
@@ -33,7 +34,7 @@ import edu.brown.lasvegas.lvfs.RawValueWriter;
  * After decompression, the block is equivalent to an independent column file (FixLen or VarLen).
  * However, each block might have a per-block footer. See the implementation class for more details.</p>
  */
-public class LocalBlockCompressionWriter extends LocalRawFileWriter {
+public abstract class LocalBlockCompressionWriter<T, AT> extends LocalTypedWriterBase<T, AT> {
     private static Logger LOG = Logger.getLogger(LocalBlockCompressionWriter.class);
 
     /** compression type for the file. */
@@ -59,8 +60,8 @@ public class LocalBlockCompressionWriter extends LocalRawFileWriter {
         return proxyWriter;
     }
 
-    public LocalBlockCompressionWriter(File file, CompressionType compressionType) throws IOException {
-        super (file, 0); // all writes are batched, so we don't need buffering.
+    public LocalBlockCompressionWriter(File file, ValueTraits<T, AT> traits, CompressionType compressionType) throws IOException {
+        super (file, traits, 0); // all writes are batched, so we don't need buffering.
         this.compressionType = compressionType;
         if (compressionType == CompressionType.SNAPPY) {
             blockSizeInKB = 32;
@@ -113,7 +114,7 @@ public class LocalBlockCompressionWriter extends LocalRawFileWriter {
         }
         writeBlockFooter ();
         blockStartTuples.add(currentBlockStartTuple);
-        blockPositions.add(getCurPosition());
+        blockPositions.add(getRawCurPosition());
         int sizeAfterCompression;
         if (compressionType == CompressionType.SNAPPY) {
             sizeAfterCompression = Snappy.compress(currentBlock, 0, currentBlockUsed, compressionBuffer, 0);
@@ -145,12 +146,10 @@ public class LocalBlockCompressionWriter extends LocalRawFileWriter {
 
     /**
      * Overrides it to compress and write out the current block.
-     * @see edu.brown.lasvegas.lvfs.local.LocalRawFileWriter#flush(boolean)
      */
     @Override
-    public final void flush (boolean sync) throws IOException {
+    protected void beforeFlush() throws IOException {
         flushBlock();
-        super.flush(sync);
     }
     private boolean footerWritten = false;
     @Override
@@ -181,7 +180,7 @@ public class LocalBlockCompressionWriter extends LocalRawFileWriter {
         footerWritten = true;
     }
     @Override
-    public final void close() throws IOException {
+    protected void beforeClose() throws IOException {
         if (!footerWritten) {
             // just warn. the user might have simply canceled writing this file 
             LOG.warn("this file format needs a file-footer but close() was called before writeFileFooter(). : " + this);
@@ -190,7 +189,6 @@ public class LocalBlockCompressionWriter extends LocalRawFileWriter {
             // just warn too. 
             LOG.warn("this file format has a non-flushed block but close() was called before flush(). the block will be lost: " + this);
         }
-        super.close();
     }
 
     /**

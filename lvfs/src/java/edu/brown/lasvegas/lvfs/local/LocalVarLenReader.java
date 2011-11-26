@@ -8,7 +8,6 @@ import org.apache.log4j.Logger;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import edu.brown.lasvegas.lvfs.AllValueTraits;
-import edu.brown.lasvegas.lvfs.TypedReader;
 import edu.brown.lasvegas.lvfs.VarLenValueTraits;
 import edu.brown.lasvegas.lvfs.local.LocalPosFile.Pos;
 
@@ -27,7 +26,7 @@ import edu.brown.lasvegas.lvfs.local.LocalPosFile.Pos;
  * <p>This file reader cannot jump to arbitrary tuple position by itself.
  * Give a position file ({@link LocalPosFileReader}) to the constructor to speed it up.</p>
  */
-public final class LocalVarLenReader<T> extends LocalRawFileReader implements TypedReader<T, T[]> {
+public final class LocalVarLenReader<T> extends LocalTypedReaderBase<T, T[]> {
     private static Logger LOG = Logger.getLogger(LocalVarLenReader.class);
     private final VarLenValueTraits<T> traits;
 
@@ -35,17 +34,9 @@ public final class LocalVarLenReader<T> extends LocalRawFileReader implements Ty
     public static LocalVarLenReader<String> getInstanceVarchar(File dataFile) throws IOException {
         return new LocalVarLenReader<String>(dataFile, new AllValueTraits.VarcharValueTraits());
     }
-    /** Constructs an instance of varchar column with position file. */
-    public static LocalVarLenReader<String> getInstanceVarchar(File dataFile, File posFile) throws IOException {
-        return new LocalVarLenReader<String>(dataFile, posFile, new AllValueTraits.VarcharValueTraits());
-    }
     /** Constructs an instance of varbinary column. */
     public static LocalVarLenReader<byte[]> getInstanceVarbin(File dataFile) throws IOException {
         return new LocalVarLenReader<byte[]>(dataFile, new AllValueTraits.VarbinValueTraits());
-    }
-    /** Constructs an instance of varbinary column with position file. */
-    public static LocalVarLenReader<byte[]> getInstanceVarbin(File dataFile, File posFile) throws IOException {
-        return new LocalVarLenReader<byte[]>(dataFile, posFile, new AllValueTraits.VarbinValueTraits());
     }
 
     public LocalVarLenReader(File dataFile, VarLenValueTraits<T> traits) throws IOException {
@@ -60,7 +51,7 @@ public final class LocalVarLenReader<T> extends LocalRawFileReader implements Ty
      * @param posFile optional. position file to speed up locating tuple. (without it, seeking will be terribly slow)
      */
     public LocalVarLenReader(File dataFile, File posFile, VarLenValueTraits<T> traits, int streamBufferSize) throws IOException {
-        super (dataFile, streamBufferSize);
+        super (dataFile, traits, streamBufferSize);
         assert (dataFile != null);
         this.traits = traits;
         if (posFile != null) {
@@ -69,7 +60,13 @@ public final class LocalVarLenReader<T> extends LocalRawFileReader implements Ty
             posIndex = null;
         }
     }
-    private final LocalPosFile posIndex;
+    /**
+     * Loads an optional position file to speed up seeks.
+     */
+    public void loadPositionFile (File posFile) throws IOException {
+        posIndex = new LocalPosFile(posFile);
+    }
+    private LocalPosFile posIndex;
     private int curTuple = 0;
 
     @Override
@@ -83,7 +80,7 @@ public final class LocalVarLenReader<T> extends LocalRawFileReader implements Ty
         // unlike fixed-len reader. there is no faster way to do this.
         // so, just call readValue for each value...
         int count = 0;
-        for (; count < len && getCurPosition() < rawFileSize; ++count) {
+        for (; count < len && getRawValueReader().hasMore(); ++count) {
             buffer[off + count] = readValue();
         }
         return count;
@@ -103,10 +100,12 @@ public final class LocalVarLenReader<T> extends LocalRawFileReader implements Ty
     @Override
     public void seekToTupleAbsolute (int tuple) throws IOException {
         if (posIndex == null) {
-            LOG.warn("seeking to " + tuple + "th tuple without position file. this will be terribly slow!");
+            if (tuple != 0) {
+                LOG.warn("seeking to " + tuple + "th tuple without position file. this will be terribly slow!");
+            }
             if (tuple < curTuple) {
                 // we have to first seek to the beginning
-                seekToByteAbsolute(0);
+                getRawReader().seekToByteAbsolute(0);
                 curTuple = 0;
             }
             while (tuple > curTuple) {
@@ -115,7 +114,7 @@ public final class LocalVarLenReader<T> extends LocalRawFileReader implements Ty
         } else {
             // seek using the position file
             Pos pos = posIndex.searchPosition(tuple);
-            seekToByteAbsolute(pos.bytePosition);
+            getRawReader().seekToByteAbsolute(pos.bytePosition);
             curTuple = (int) pos.tuple;
             // remaining is sequential search
             while (tuple > curTuple) {

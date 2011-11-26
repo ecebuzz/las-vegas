@@ -11,12 +11,13 @@ import org.xerial.snappy.Snappy;
 
 import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.lvfs.RawValueReader;
+import edu.brown.lasvegas.lvfs.ValueTraits;
 
 /**
  * File reader for a block-compressed file such as Snappy and LZO.
  * <p>For the format of block-coompressed files, see {@link LocalBlockCompressionWriter}</p>
  */
-public abstract class LocalBlockCompressionReader extends LocalRawFileReader {
+public abstract class LocalBlockCompressionReader<T, AT> extends LocalTypedReaderBase<T, AT> {
     private static Logger LOG = Logger.getLogger(LocalBlockCompressionReader.class);
 
     /** compression type for the file. */
@@ -45,15 +46,16 @@ public abstract class LocalBlockCompressionReader extends LocalRawFileReader {
         return proxyReader;
     }
     
-    public LocalBlockCompressionReader(File file, CompressionType compressionType) throws IOException {
-        super (file, 0); // as it's block-compressed, no point to buffer. 
+    public LocalBlockCompressionReader(File file, ValueTraits<T, AT> traits, CompressionType compressionType) throws IOException {
+        super (file, traits, 0); // as it's block-compressed, no point to buffer. 
         this.compressionType = compressionType;
         proxyReader = new ProxyValueReader();
 
         // Reads the block position footer at the end of the file.
         // This is done only once when this class is instantiated.
+        final long rawFileSize = getRawReader().getRawFileSize();
         assert (rawFileSize >= 16);
-        seekToByteAbsolute(rawFileSize - 16);
+        getRawReader().seekToByteAbsolute(rawFileSize - 16);
         blockCount = (int) getRawValueReader().readLong();
         if (blockCount < 0 || rawFileSize < 16 + 8 * 3 * blockCount) {
             throw new IOException ("invalid file footer. corrupted file? blockCount=" + blockCount + ". file="+ this);
@@ -62,7 +64,7 @@ public abstract class LocalBlockCompressionReader extends LocalRawFileReader {
         if (totalTuples < 0) {
             throw new IOException ("invalid file footer. corrupted file? blockCount=" + blockCount + ", totalTuples=" + totalTuples + ". file="+ this);
         }
-        seekToByteAbsolute(rawFileSize - 16 - 8 * 3 * blockCount);
+        getRawReader().seekToByteAbsolute(rawFileSize - 16 - 8 * 3 * blockCount);
         long[] longBuf = new long[3 * blockCount];
         int longRead = getRawValueReader().readLongs(longBuf, 0, longBuf.length);
         assert (longRead == longBuf.length);
@@ -95,7 +97,7 @@ public abstract class LocalBlockCompressionReader extends LocalRawFileReader {
         if (blockPositions[blockCount - 1] + blockLengthes[blockCount - 1] + 16L + 8L * 3 * blockCount != rawFileSize) {
             throw new IOException ("invalid footer. corrupted file? file="+ this);
         }
-        seekToByteAbsolute(0L); // reset to the beginning of the file
+        getRawReader().seekToByteAbsolute(0L); // reset to the beginning of the file
         currentBlockIndex = -1; // in no block
     }
     /**
@@ -129,6 +131,12 @@ public abstract class LocalBlockCompressionReader extends LocalRawFileReader {
                 LOG.trace("skipped in compressed block " + length + " bytes");
             }
         }
+        @Override
+        public boolean hasMore() throws IOException {
+            // if there is something in this block, return true.
+            // even if not, if this is not the last block, we have more to read
+            return currentBlockCursor < currentBlock.length || currentBlockIndex < blockCount - 1;
+        }
     }
     /**
      * override this to read footer of newly loaded block.
@@ -142,7 +150,7 @@ public abstract class LocalBlockCompressionReader extends LocalRawFileReader {
             throw new IOException ("invalid block specified: " + block);
         }
         if (currentBlockIndex != block) {
-            seekToByteAbsolute(blockPositions[block]);
+            getRawReader().seekToByteAbsolute(blockPositions[block]);
             byte[] buf = new byte[blockLengthes[block]];
             int read = getRawValueReader().readBytes(buf, 0, buf.length);
             assert (read == buf.length);

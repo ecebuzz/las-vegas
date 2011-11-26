@@ -2,17 +2,12 @@ package edu.brown.lasvegas.lvfs;
 
 import java.io.IOException;
 
-
 /**
  * Functor to read/write fixed-length java objects and primitive type arrays.
  * @param <T> Value type
  * @param <AT> Array type 
  */
-public interface FixLenValueTraits<T, AT> {
-    /**
-     * Reads one value from the given stream.
-     */
-    T readValue (RawValueReader reader) throws IOException;
+public interface FixLenValueTraits<T, AT> extends ValueTraits<T, AT> {
     
     /**
      * Reads arbitrary number of values at once.
@@ -22,16 +17,6 @@ public interface FixLenValueTraits<T, AT> {
      * @return number of values read
      */
     int readValues (RawValueReader reader, AT buffer, int off, int len) throws IOException;
-
-    /**
-     * Returns the number of bits to represent one value.
-     */
-    short getBitsPerValue ();
-    
-    /**
-     * Writes one value. This method should be mainly used for testcases as it'd be slow.
-     */
-    void writeValue (RawValueWriter writer, T value) throws IOException;
     
     /**
      * Writes arbitrary number of values at once.
@@ -42,4 +27,9 @@ public interface FixLenValueTraits<T, AT> {
      * @throws IOException
      */
     void writeValues (RawValueWriter writer, AT values, int off, int len) throws IOException;
+
+    /**
+     * Returns the number of bits to represent one value.
+     */
+    short getBitsPerValue ();
 }

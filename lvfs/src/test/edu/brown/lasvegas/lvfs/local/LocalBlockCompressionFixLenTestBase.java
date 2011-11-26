@@ -57,7 +57,7 @@ public abstract class LocalBlockCompressionFixLenTestBase<T, AT> {
             for (int i = 0; i < VALUE_COUNT; ++i) {
                 setToArray(buf, i, generateValue(i));
             }
-            LocalBlockCompressionFixLenWriter<T, AT> writer = new LocalBlockCompressionFixLenWriter<T, AT>(file, getType(), traits);
+            LocalBlockCompressionFixLenWriter<T, AT> writer = new LocalBlockCompressionFixLenWriter<T, AT>(file, traits, getType());
             writer.writeValues(buf, 0, VALUE_COUNT);
             writer.writeFileFooter();
             writer.flush();
@@ -74,7 +74,7 @@ public abstract class LocalBlockCompressionFixLenTestBase<T, AT> {
     public void setUp() throws Exception {
         initOnce();
         this.traits = createTraits();
-        this.reader = new LocalBlockCompressionFixLenReader<T, AT>(file, getType(), traits);
+        this.reader = new LocalBlockCompressionFixLenReader<T, AT>(file, traits, getType());
     }
     @After
     public void tearDown() throws Exception {

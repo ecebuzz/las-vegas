@@ -26,6 +26,11 @@ public abstract class RawValueReader {
      * @throws IOException
      */
     public abstract void skipBytes(long length) throws IOException;
+    
+    /**
+     * Returns whether there is still something to read.
+     */
+    public abstract boolean hasMore () throws IOException;
 
     /** Reads 1 byte  (so far we don't compress 8 booleans into 1 byte) and returns it as boolean. */
     public final boolean readBoolean () throws IOException {

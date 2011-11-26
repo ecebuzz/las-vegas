@@ -5,14 +5,13 @@ import java.io.IOException;
 
 import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.lvfs.AllValueTraits;
-import edu.brown.lasvegas.lvfs.TypedReader;
 import edu.brown.lasvegas.lvfs.VarLenValueTraits;
 
 /**
  * Reader implementation of block-compressed files for variable-length columns.
  * @param <T> Value type (e.g., String)
  */
-public class LocalBlockCompressionVarLenReader<T> extends LocalBlockCompressionReader implements TypedReader<T, T[]> {
+public class LocalBlockCompressionVarLenReader<T> extends LocalBlockCompressionReader<T, T[]> {
     private final VarLenValueTraits<T> traits;
     /** current tuple number relative to the beginning of the block. */
     private int currentBlockTuple = 0;
@@ -22,16 +21,16 @@ public class LocalBlockCompressionVarLenReader<T> extends LocalBlockCompressionR
     /** Constructs an instance of varchar column. */
     public static LocalBlockCompressionVarLenReader<String> getInstanceVarchar(
                     File file, CompressionType compressionType) throws IOException {
-        return new LocalBlockCompressionVarLenReader<String>(file, compressionType, new AllValueTraits.VarcharValueTraits());
+        return new LocalBlockCompressionVarLenReader<String>(file, new AllValueTraits.VarcharValueTraits(), compressionType);
     }
     /** Constructs an instance of varbinary column. */
     public static LocalBlockCompressionVarLenReader<byte[]> getInstanceVarbin(
                     File file, CompressionType compressionType) throws IOException {
-        return new LocalBlockCompressionVarLenReader<byte[]>(file, compressionType, new AllValueTraits.VarbinValueTraits());
+        return new LocalBlockCompressionVarLenReader<byte[]>(file, new AllValueTraits.VarbinValueTraits(), compressionType);
     }
 
-    public LocalBlockCompressionVarLenReader(File file, CompressionType compressionType, VarLenValueTraits<T> traits) throws IOException {
-        super (file, compressionType);
+    public LocalBlockCompressionVarLenReader(File file, VarLenValueTraits<T> traits, CompressionType compressionType) throws IOException {
+        super (file, traits, compressionType);
         this.traits = traits;
     }
     

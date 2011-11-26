@@ -5,7 +5,6 @@ import java.io.IOException;
 
 import edu.brown.lasvegas.lvfs.AllValueTraits;
 import edu.brown.lasvegas.lvfs.FixLenValueTraits;
-import edu.brown.lasvegas.lvfs.TypedWriter;
 
 /**
  * File writer that assumes fixed-length entries.
@@ -16,7 +15,7 @@ import edu.brown.lasvegas.lvfs.TypedWriter;
  * @param <T> Value type (e.g., Integer)
  * @param <AT> Array type (e.g., int[]).
  */
-public final class LocalFixLenWriter<T, AT> extends LocalRawFileWriter implements TypedWriter<T, AT> {
+public final class LocalFixLenWriter<T, AT> extends LocalTypedWriterBase<T, AT> {
     private final FixLenValueTraits<T, AT> traits;
     
     /** Constructs an instance for 1-byte fixed length integer values. */
@@ -45,7 +44,7 @@ public final class LocalFixLenWriter<T, AT> extends LocalRawFileWriter implement
     }
 
     public LocalFixLenWriter(File file, FixLenValueTraits<T, AT> traits) throws IOException {
-        super (file, 0); // the only API of this class is a batch-write. No buffering needed
+        super(file, traits, 0); // the only API of this class is a batch-write. No buffering needed
         this.traits = traits;
     }
 

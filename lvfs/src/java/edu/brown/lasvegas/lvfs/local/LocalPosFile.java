@@ -173,7 +173,6 @@ public final class LocalPosFile {
     
     /**
      * Returns the total number of tuples in the data file.
-     * @see LocalRawFileReader#getTotalTuples()
      */
     public int getTotalTuples () {
         // the last tuple must point to the end of the file (non existing tuple)

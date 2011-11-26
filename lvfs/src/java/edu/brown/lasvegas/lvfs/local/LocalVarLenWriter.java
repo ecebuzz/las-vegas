@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 import edu.brown.lasvegas.lvfs.AllValueTraits;
-import edu.brown.lasvegas.lvfs.TypedWriter;
 import edu.brown.lasvegas.lvfs.VarLenValueTraits;
 
 /**
@@ -16,7 +15,7 @@ import edu.brown.lasvegas.lvfs.VarLenValueTraits;
  * Thus, this writer also collects tuple positions
  * to produce a "position file" as a sparse index.
  */
-public final class LocalVarLenWriter<T> extends LocalRawFileWriter implements TypedWriter<T, T[]>  {
+public final class LocalVarLenWriter<T> extends LocalTypedWriterBase<T, T[]>  {
     /** Constructs an instance of varchar column. */
     public static LocalVarLenWriter<String> getInstanceVarchar(File rawFile, int collectPerBytes) throws IOException {
         return new LocalVarLenWriter<String>(rawFile, new AllValueTraits.VarcharValueTraits(), collectPerBytes);
@@ -34,7 +33,7 @@ public final class LocalVarLenWriter<T> extends LocalRawFileWriter implements Ty
     private ArrayList<Long> collectedTuples = new ArrayList<Long>();
     private ArrayList<Long> collectedPositions = new ArrayList<Long>();
     public LocalVarLenWriter(File file, VarLenValueTraits<T> traits, int collectPerBytes) throws IOException {
-        super (file, 1 << 18);
+        super(file, traits, 1 << 18);
         this.traits = traits;
         this.collectPerBytes = collectPerBytes;
     }
@@ -54,10 +53,10 @@ public final class LocalVarLenWriter<T> extends LocalRawFileWriter implements Ty
     }
     
     private void collectTuplePosition () {
-        if (prevCollectPosition < 0 || getCurPosition() - prevCollectPosition >= collectPerBytes) {
+        if (prevCollectPosition < 0 || getRawCurPosition() - prevCollectPosition >= collectPerBytes) {
             collectedTuples.add(curTuple);
-            collectedPositions.add(getCurPosition());
-            prevCollectPosition = getCurPosition();
+            collectedPositions.add(getRawCurPosition());
+            prevCollectPosition = getRawCurPosition();
             assert (collectedTuples.size() == collectedPositions.size());
         }
     }
@@ -66,6 +65,6 @@ public final class LocalVarLenWriter<T> extends LocalRawFileWriter implements Ty
      * Writes out the collected positions to a position file.
      */
     public void writePositionFile (File posFile) throws IOException {
-        LocalPosFile.createPosFile(posFile, collectedTuples, collectedPositions, curTuple, getCurPosition());
+        LocalPosFile.createPosFile(posFile, collectedTuples, collectedPositions, curTuple, getRawCurPosition());
     }
 }

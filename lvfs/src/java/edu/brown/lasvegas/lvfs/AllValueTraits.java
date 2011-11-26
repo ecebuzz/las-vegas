@@ -1,6 +1,8 @@
 package edu.brown.lasvegas.lvfs;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * Defines all value traits classes.
@@ -32,6 +34,27 @@ public final class AllValueTraits {
         public short getBitsPerValue() {
             return 8;
         }
+        // these utilize the fact that AT is a primitive array
+        @Override
+        public void extractRunLengthes(List<ValueRun<Byte>> results, byte[] values, int off, int len) {
+            if (len == 0) return;
+            ValueRun<Byte> cur = new ValueRun<Byte>(0, 1, values[off]);
+            byte curValue = values[off];
+            for (int i = off + 1; i < off + len; ++i) {
+                if (values[i] == curValue) {
+                    ++cur.runLength;
+                } else {
+                    results.add(cur);
+                    cur = new ValueRun<Byte>(0, 1, values[i]);
+                    curValue = values[i];
+                }
+            }
+            results.add(cur);
+        }
+        @Override
+        public void fillArray(Byte value, byte[] array, int off, int len) {
+            Arrays.fill(array, off, off + len, value);
+        }
     }
 
     public static final class SmallintValueTraits implements FixLenValueTraits<Short, short[]> {
@@ -54,6 +77,26 @@ public final class AllValueTraits {
         @Override
         public short getBitsPerValue() {
             return 16;
+        }
+        @Override
+        public void extractRunLengthes(List<ValueRun<Short>> results, short[] values, int off, int len) {
+            if (len == 0) return;
+            ValueRun<Short> cur = new ValueRun<Short>(0, 1, values[off]);
+            short curValue = values[off];
+            for (int i = off + 1; i < off + len; ++i) {
+                if (values[i] == curValue) {
+                    ++cur.runLength;
+                } else {
+                    results.add(cur);
+                    cur = new ValueRun<Short>(0, 1, values[i]);
+                    curValue = values[i];
+                }
+            }
+            results.add(cur);
+        }
+        @Override
+        public void fillArray(Short value, short[] array, int off, int len) {
+            Arrays.fill(array, off, off + len, value);
         }
     }
 
@@ -79,6 +122,26 @@ public final class AllValueTraits {
         public short getBitsPerValue() {
             return 32;
         }
+        @Override
+        public void extractRunLengthes(List<ValueRun<Integer>> results, int[] values, int off, int len) {
+            if (len == 0) return;
+            ValueRun<Integer> cur = new ValueRun<Integer>(0, 1, values[off]);
+            int curValue = values[off];
+            for (int i = off + 1; i < off + len; ++i) {
+                if (values[i] == curValue) {
+                    ++cur.runLength;
+                } else {
+                    results.add(cur);
+                    cur = new ValueRun<Integer>(0, 1, values[i]);
+                    curValue = values[i];
+                }
+            }
+            results.add(cur);
+        }
+        @Override
+        public void fillArray(Integer value, int[] array, int off, int len) {
+            Arrays.fill(array, off, off + len, value);
+        }
     }
 
     public static final class BigintValueTraits implements FixLenValueTraits<Long, long[]> {
@@ -101,6 +164,26 @@ public final class AllValueTraits {
         @Override
         public short getBitsPerValue() {
             return 64;
+        }
+        @Override
+        public void extractRunLengthes(List<ValueRun<Long>> results, long[] values, int off, int len) {
+            if (len == 0) return;
+            ValueRun<Long> cur = new ValueRun<Long>(0, 1, values[off]);
+            long curValue = values[off];
+            for (int i = off + 1; i < off + len; ++i) {
+                if (values[i] == curValue) {
+                    ++cur.runLength;
+                } else {
+                    results.add(cur);
+                    cur = new ValueRun<Long>(0, 1, values[i]);
+                    curValue = values[i];
+                }
+            }
+            results.add(cur);
+        }
+        @Override
+        public void fillArray(Long value, long[] array, int off, int len) {
+            Arrays.fill(array, off, off + len, value);
         }
     }
     
@@ -125,6 +208,26 @@ public final class AllValueTraits {
         public short getBitsPerValue() {
             return 32;
         }
+        @Override
+        public void extractRunLengthes(List<ValueRun<Float>> results, float[] values, int off, int len) {
+            if (len == 0) return;
+            ValueRun<Float> cur = new ValueRun<Float>(0, 1, values[off]);
+            float curValue = values[off];
+            for (int i = off + 1; i < off + len; ++i) {
+                if (values[i] == curValue) {
+                    ++cur.runLength;
+                } else {
+                    results.add(cur);
+                    cur = new ValueRun<Float>(0, 1, values[i]);
+                    curValue = values[i];
+                }
+            }
+            results.add(cur);
+        }
+        @Override
+        public void fillArray(Float value, float[] array, int off, int len) {
+            Arrays.fill(array, off, off + len, value);
+        }
     }
 
     public static final class DoubleValueTraits implements FixLenValueTraits<Double, double[]> {
@@ -148,6 +251,26 @@ public final class AllValueTraits {
         public short getBitsPerValue() {
             return 64;
         }
+        @Override
+        public void extractRunLengthes(List<ValueRun<Double>> results, double[] values, int off, int len) {
+            if (len == 0) return;
+            ValueRun<Double> cur = new ValueRun<Double>(0, 1, values[off]);
+            double curValue = values[off];
+            for (int i = off + 1; i < off + len; ++i) {
+                if (values[i] == curValue) {
+                    ++cur.runLength;
+                } else {
+                    results.add(cur);
+                    cur = new ValueRun<Double>(0, 1, values[i]);
+                    curValue = values[i];
+                }
+            }
+            results.add(cur);
+        }
+        @Override
+        public void fillArray(Double value, double[] array, int off, int len) {
+            Arrays.fill(array, off, off + len, value);
+        }
     }
 
     // traits for variable-len types.
@@ -165,6 +288,24 @@ public final class AllValueTraits {
         public void writeValue(RawValueWriter writer, String value) throws IOException {
             writer.writeBytesWithLengthHeader(value.getBytes(RawValueWriter.CHARSET));
         }
+        @Override
+        public void extractRunLengthes(List<ValueRun<String>> results, String[] values, int off, int len) {
+            if (len == 0) return;
+            ValueRun<String> cur = new ValueRun<String>(0, 1, values[off]);
+            for (int i = off + 1; i < off + len; ++i) {
+                if (values[i].equals(cur.value)) {
+                    ++cur.runLength;
+                } else {
+                    results.add(cur);
+                    cur = new ValueRun<String>(0, 1, values[i]);
+                }
+            }
+            results.add(cur);
+        }
+        @Override
+        public void fillArray(String value, String[] array, int off, int len) {
+            Arrays.fill(array, off, off + len, value);
+        }
     }
 
     /**
@@ -178,6 +319,28 @@ public final class AllValueTraits {
         @Override
         public void writeValue(RawValueWriter writer, byte[] value) throws IOException {
             writer.writeBytesWithLengthHeader(value);
+        }
+        @Override
+        public void extractRunLengthes(List<ValueRun<byte[]>> results, byte[][] values, int off, int len) {
+            if (len == 0) return;
+            ValueRun<byte[]> cur = new ValueRun<byte[]>(0, 1, values[off]);
+            for (int i = off + 1; i < off + len; ++i) {
+                if (values[i].equals(cur.value)) {
+                    ++cur.runLength;
+                } else {
+                    results.add(cur);
+                    cur = new ValueRun<byte[]>(0, 1, values[i]);
+                }
+            }
+            results.add(cur);
+        }
+        @Override
+        public void fillArray(byte[] value, byte[][] array, int off, int len) {
+            // only this object has to do clone() because byte[] is mutable.
+            // all the other objects work with immutable objects or primitives, so no worry.
+            for (int i = off; i < off + len; ++i) {
+                array[i] = value.clone();
+            }
         }
     }
 

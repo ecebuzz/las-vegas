@@ -7,7 +7,6 @@ import org.apache.log4j.Logger;
 
 import edu.brown.lasvegas.lvfs.AllValueTraits;
 import edu.brown.lasvegas.lvfs.FixLenValueTraits;
-import edu.brown.lasvegas.lvfs.TypedReader;
 
 /**
  * File reader that assumes fixed-length entries.
@@ -17,7 +16,7 @@ import edu.brown.lasvegas.lvfs.TypedReader;
  * @param <T> Value type (e.g., Integer)
  * @param <AT> Array type (e.g., int[]). used for fast batch accesses. 
  */
-public final class LocalFixLenReader<T, AT> extends LocalRawFileReader implements TypedReader<T, AT>{
+public final class LocalFixLenReader<T, AT> extends LocalTypedReaderBase<T, AT>{
     private static Logger LOG = Logger.getLogger(LocalFixLenReader.class);
 
     /**
@@ -53,7 +52,7 @@ public final class LocalFixLenReader<T, AT> extends LocalRawFileReader implement
     }
 
     public LocalFixLenReader(File rawFile, FixLenValueTraits<T, AT> traits, int streamBufferSize) throws IOException {
-        super (rawFile, streamBufferSize);
+        super (rawFile, traits, streamBufferSize);
         this.bitsPerValue = traits.getBitsPerValue();
         this.traits = traits;
     }
@@ -68,7 +67,7 @@ public final class LocalFixLenReader<T, AT> extends LocalRawFileReader implement
         if (LOG.isDebugEnabled()) {
             LOG.debug("seeking to " + tuple + "th tuple..");
         }
-        seekToByteAbsolute((long) bitsPerValue * (long) tuple / 8L);
+        getRawReader().seekToByteAbsolute((long) bitsPerValue * (long) tuple / 8L);
     }
 
     /**
@@ -78,7 +77,7 @@ public final class LocalFixLenReader<T, AT> extends LocalRawFileReader implement
         if (LOG.isDebugEnabled()) {
             LOG.debug("jumping over " + tuple + " tuples..");
         }
-        seekToByteRelative((long) bitsPerValue * (long) tuple / 8L);
+        getRawReader().seekToByteRelative((long) bitsPerValue * (long) tuple / 8L);
     }
     
     @Override
@@ -100,6 +99,6 @@ public final class LocalFixLenReader<T, AT> extends LocalRawFileReader implement
     
     @Override
     public int getTotalTuples() {
-        return (int) (rawFileSize * 8 / bitsPerValue);
+        return (int) (getRawReader().getRawFileSize() * 8 / bitsPerValue);
     }
 }

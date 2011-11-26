@@ -6,7 +6,6 @@ import java.io.IOException;
 import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.lvfs.AllValueTraits;
 import edu.brown.lasvegas.lvfs.FixLenValueTraits;
-import edu.brown.lasvegas.lvfs.TypedWriter;
 
 /**
  * Writer implementation of block-compressed files for fixed-length columns.
@@ -15,36 +14,36 @@ import edu.brown.lasvegas.lvfs.TypedWriter;
  * @param <T> Value type (e.g., Integer)
  * @param <AT> Array type (e.g., int[]).
  */
-public final class LocalBlockCompressionFixLenWriter<T, AT> extends LocalBlockCompressionWriter implements TypedWriter<T, AT> {
+public final class LocalBlockCompressionFixLenWriter<T, AT> extends LocalBlockCompressionWriter<T, AT> {
     private final FixLenValueTraits<T, AT> traits;
     
     /** Constructs an instance for 1-byte fixed length integer values. */
     public static LocalBlockCompressionFixLenWriter<Byte, byte[]> getInstanceTinyint(File file, CompressionType compressionType) throws IOException {
-        return new LocalBlockCompressionFixLenWriter<Byte, byte[]>(file, compressionType, new AllValueTraits.TinyintValueTraits());
+        return new LocalBlockCompressionFixLenWriter<Byte, byte[]>(file, new AllValueTraits.TinyintValueTraits(), compressionType);
     }
     /** Constructs an instance for 2-byte fixed length integer values. */
     public static LocalBlockCompressionFixLenWriter<Short, short[]> getInstanceSmallint(File file, CompressionType compressionType) throws IOException {
-        return new LocalBlockCompressionFixLenWriter<Short, short[]>(file, compressionType, new AllValueTraits.SmallintValueTraits());
+        return new LocalBlockCompressionFixLenWriter<Short, short[]>(file, new AllValueTraits.SmallintValueTraits(), compressionType);
     }
     /** Constructs an instance for 4-byte fixed length integer values. */
     public static LocalBlockCompressionFixLenWriter<Integer, int[]> getInstanceInteger(File file, CompressionType compressionType) throws IOException {
-        return new LocalBlockCompressionFixLenWriter<Integer, int[]>(file, compressionType, new AllValueTraits.IntegerValueTraits());
+        return new LocalBlockCompressionFixLenWriter<Integer, int[]>(file, new AllValueTraits.IntegerValueTraits(), compressionType);
     }
     /** Constructs an instance for 8-byte fixed length integer values. */
     public static LocalBlockCompressionFixLenWriter<Long, long[]> getInstanceBigint(File file, CompressionType compressionType) throws IOException {
-        return new LocalBlockCompressionFixLenWriter<Long, long[]>(file, compressionType, new AllValueTraits.BigintValueTraits());
+        return new LocalBlockCompressionFixLenWriter<Long, long[]>(file, new AllValueTraits.BigintValueTraits(), compressionType);
     }
     /** Constructs an instance for 4-byte fixed length float values. */
     public static LocalBlockCompressionFixLenWriter<Float, float[]> getInstanceFloat(File file, CompressionType compressionType) throws IOException {
-        return new LocalBlockCompressionFixLenWriter<Float, float[]>(file, compressionType, new AllValueTraits.FloatValueTraits());
+        return new LocalBlockCompressionFixLenWriter<Float, float[]>(file, new AllValueTraits.FloatValueTraits(), compressionType);
     }
     /** Constructs an instance for 8-byte fixed length float values. */
     public static LocalBlockCompressionFixLenWriter<Double, double[]> getInstanceDouble(File file, CompressionType compressionType) throws IOException {
-        return new LocalBlockCompressionFixLenWriter<Double, double[]>(file, compressionType, new AllValueTraits.DoubleValueTraits());
+        return new LocalBlockCompressionFixLenWriter<Double, double[]>(file, new AllValueTraits.DoubleValueTraits(), compressionType);
     }
 
-    public LocalBlockCompressionFixLenWriter(File file, CompressionType compressionType, FixLenValueTraits<T, AT> traits) throws IOException {
-        super (file, compressionType);
+    public LocalBlockCompressionFixLenWriter(File file, FixLenValueTraits<T, AT> traits, CompressionType compressionType) throws IOException {
+        super (file, traits, compressionType);
         this.traits = traits;
     }
 
