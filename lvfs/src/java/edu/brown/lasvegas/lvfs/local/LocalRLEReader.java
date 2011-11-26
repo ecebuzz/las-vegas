@@ -147,7 +147,7 @@ public final class LocalRLEReader<T, AT> extends LocalTypedReaderBase<T, AT> imp
         totalRead += len;
         curTuple += len;
         assert (curTuple >= curRun.startTuple);
-        assert (curTuple < curRun.startTuple + curRun.runLength);
+        assert (curTuple <= curRun.startTuple + curRun.runLength);
         return totalRead;
     }
     
@@ -166,7 +166,8 @@ public final class LocalRLEReader<T, AT> extends LocalTypedReaderBase<T, AT> imp
     public final void skipValues(int skip) throws IOException {
         assert (curTuple >= curRun.startTuple);
         while (curTuple + skip > curRun.startTuple + curRun.runLength) {
-            int remainingRun = (curTuple + skip) - (curRun.startTuple + curRun.runLength);
+            int remainingRun = (curRun.startTuple + curRun.runLength) - curTuple;
+            assert (remainingRun >= 0);
             ValueRun<T> next = getNextRun();
             if (next == null) {
                 throw new IOException ("EOF");
@@ -197,6 +198,12 @@ public final class LocalRLEReader<T, AT> extends LocalTypedReaderBase<T, AT> imp
             getRawReader().seekToByteAbsolute(pos.bytePosition);
             curTuple = (int) pos.tuple;
             assert (curTuple <= tuple);
+            // dummy run to do getNextRun()
+            curRun.startTuple = curTuple;
+            curRun.runLength = 0;
+            curRun.value = null;
+            ValueRun<T> next =  getNextRun();
+            assert (next.startTuple == curTuple);
             // remaining is sequential search
             skipValues(tuple - curTuple);
         }

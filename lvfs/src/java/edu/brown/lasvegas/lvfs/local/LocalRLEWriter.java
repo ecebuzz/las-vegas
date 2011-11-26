@@ -91,8 +91,10 @@ public final class LocalRLEWriter<T, AT> extends LocalTypedWriterBase<T, AT> {
     private void startNewRun (T value, int newRunLength) throws IOException {
         // write out current run
         collectTuplePosition(); // might collect
-        getRawValueWriter().writeInt(curRun.runLength);
-        traits.writeValue(getRawValueWriter(), curRun.value);
+        if (curRun.runLength > 0) {
+            getRawValueWriter().writeInt(curRun.runLength);
+            traits.writeValue(getRawValueWriter(), curRun.value);
+        }
 
         // start a new run
         int oldRunLength = curRun.runLength;
