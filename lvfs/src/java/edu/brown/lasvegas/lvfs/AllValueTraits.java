@@ -2,7 +2,6 @@ package edu.brown.lasvegas.lvfs;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.List;
 
 /**
  * Defines all value traits classes.
@@ -36,24 +35,29 @@ public final class AllValueTraits {
         }
         // these utilize the fact that AT is a primitive array
         @Override
-        public void extractRunLengthes(List<ValueRun<Byte>> results, byte[] values, int off, int len) {
-            if (len == 0) return;
-            ValueRun<Byte> cur = new ValueRun<Byte>(0, 1, values[off]);
-            byte curValue = values[off];
-            for (int i = off + 1; i < off + len; ++i) {
+        public void writeRunLengthes(TypedRLEWriter<Byte, byte[]> writer, byte[] values, int off, int len) throws IOException {
+            ValueRun<Byte> cur = writer.getCurrentRun();
+            byte curValue = cur.value;
+            for (int i = off; i < off + len; ++i) {
                 if (values[i] == curValue) {
                     ++cur.runLength;
                 } else {
-                    results.add(cur);
-                    cur = new ValueRun<Byte>(0, 1, values[i]);
+                    cur = writer.startNewRun(values[i], 1);
                     curValue = values[i];
                 }
             }
-            results.add(cur);
         }
         @Override
         public void fillArray(Byte value, byte[] array, int off, int len) {
             Arrays.fill(array, off, off + len, value);
+        }
+        @Override
+        public Byte get(byte[] array, int index) {
+            return array[index];
+        }
+        @Override
+        public void set(byte[] array, int index, Byte value) {
+            array [index] = value;
         }
     }
 
@@ -79,24 +83,29 @@ public final class AllValueTraits {
             return 16;
         }
         @Override
-        public void extractRunLengthes(List<ValueRun<Short>> results, short[] values, int off, int len) {
-            if (len == 0) return;
-            ValueRun<Short> cur = new ValueRun<Short>(0, 1, values[off]);
-            short curValue = values[off];
-            for (int i = off + 1; i < off + len; ++i) {
+        public void writeRunLengthes(TypedRLEWriter<Short, short[]> writer, short[] values, int off, int len) throws IOException {
+            ValueRun<Short> cur = writer.getCurrentRun();
+            short curValue = cur.value;
+            for (int i = off; i < off + len; ++i) {
                 if (values[i] == curValue) {
                     ++cur.runLength;
                 } else {
-                    results.add(cur);
-                    cur = new ValueRun<Short>(0, 1, values[i]);
+                    cur = writer.startNewRun(values[i], 1);
                     curValue = values[i];
                 }
             }
-            results.add(cur);
         }
         @Override
         public void fillArray(Short value, short[] array, int off, int len) {
             Arrays.fill(array, off, off + len, value);
+        }
+        @Override
+        public Short get(short[] array, int index) {
+            return array[index];
+        }
+        @Override
+        public void set(short[] array, int index, Short value) {
+            array[index] = value;
         }
     }
 
@@ -123,24 +132,29 @@ public final class AllValueTraits {
             return 32;
         }
         @Override
-        public void extractRunLengthes(List<ValueRun<Integer>> results, int[] values, int off, int len) {
-            if (len == 0) return;
-            ValueRun<Integer> cur = new ValueRun<Integer>(0, 1, values[off]);
-            int curValue = values[off];
-            for (int i = off + 1; i < off + len; ++i) {
+        public void writeRunLengthes(TypedRLEWriter<Integer, int[]> writer, int[] values, int off, int len) throws IOException {
+            ValueRun<Integer> cur = writer.getCurrentRun();
+            int curValue = cur.value;
+            for (int i = off; i < off + len; ++i) {
                 if (values[i] == curValue) {
                     ++cur.runLength;
                 } else {
-                    results.add(cur);
-                    cur = new ValueRun<Integer>(0, 1, values[i]);
+                    cur = writer.startNewRun(values[i], 1);
                     curValue = values[i];
                 }
             }
-            results.add(cur);
         }
         @Override
         public void fillArray(Integer value, int[] array, int off, int len) {
             Arrays.fill(array, off, off + len, value);
+        }
+        @Override
+        public Integer get(int[] array, int index) {
+            return array[index];
+        }
+        @Override
+        public void set(int[] array, int index, Integer value) {
+            array[index] = value;
         }
     }
 
@@ -166,24 +180,29 @@ public final class AllValueTraits {
             return 64;
         }
         @Override
-        public void extractRunLengthes(List<ValueRun<Long>> results, long[] values, int off, int len) {
-            if (len == 0) return;
-            ValueRun<Long> cur = new ValueRun<Long>(0, 1, values[off]);
-            long curValue = values[off];
-            for (int i = off + 1; i < off + len; ++i) {
+        public void writeRunLengthes(TypedRLEWriter<Long, long[]> writer, long[] values, int off, int len) throws IOException {
+            ValueRun<Long> cur = writer.getCurrentRun();
+            long curValue = cur.value;
+            for (int i = off; i < off + len; ++i) {
                 if (values[i] == curValue) {
                     ++cur.runLength;
                 } else {
-                    results.add(cur);
-                    cur = new ValueRun<Long>(0, 1, values[i]);
+                    cur = writer.startNewRun(values[i], 1);
                     curValue = values[i];
                 }
             }
-            results.add(cur);
         }
         @Override
         public void fillArray(Long value, long[] array, int off, int len) {
             Arrays.fill(array, off, off + len, value);
+        }
+        @Override
+        public Long get(long[] array, int index) {
+            return array[index];
+        }
+        @Override
+        public void set(long[] array, int index, Long value) {
+            array[index] = value;
         }
     }
     
@@ -209,24 +228,29 @@ public final class AllValueTraits {
             return 32;
         }
         @Override
-        public void extractRunLengthes(List<ValueRun<Float>> results, float[] values, int off, int len) {
-            if (len == 0) return;
-            ValueRun<Float> cur = new ValueRun<Float>(0, 1, values[off]);
-            float curValue = values[off];
-            for (int i = off + 1; i < off + len; ++i) {
+        public void writeRunLengthes(TypedRLEWriter<Float, float[]> writer, float[] values, int off, int len) throws IOException {
+            ValueRun<Float> cur = writer.getCurrentRun();
+            float curValue = cur.value;
+            for (int i = off; i < off + len; ++i) {
                 if (values[i] == curValue) {
                     ++cur.runLength;
                 } else {
-                    results.add(cur);
-                    cur = new ValueRun<Float>(0, 1, values[i]);
+                    cur = writer.startNewRun(values[i], 1);
                     curValue = values[i];
                 }
             }
-            results.add(cur);
         }
         @Override
         public void fillArray(Float value, float[] array, int off, int len) {
             Arrays.fill(array, off, off + len, value);
+        }
+        @Override
+        public Float get(float[] array, int index) {
+            return array[index];
+        }
+        @Override
+        public void set(float[] array, int index, Float value) {
+            array [index] = value;
         }
     }
 
@@ -252,24 +276,30 @@ public final class AllValueTraits {
             return 64;
         }
         @Override
-        public void extractRunLengthes(List<ValueRun<Double>> results, double[] values, int off, int len) {
-            if (len == 0) return;
-            ValueRun<Double> cur = new ValueRun<Double>(0, 1, values[off]);
-            double curValue = values[off];
-            for (int i = off + 1; i < off + len; ++i) {
+        public void writeRunLengthes(TypedRLEWriter<Double, double[]> writer, double[] values, int off, int len) throws IOException {
+            ValueRun<Double> cur = writer.getCurrentRun();
+            double curValue = cur.value;
+            for (int i = off; i < off + len; ++i) {
                 if (values[i] == curValue) {
                     ++cur.runLength;
                 } else {
-                    results.add(cur);
-                    cur = new ValueRun<Double>(0, 1, values[i]);
+                    cur = writer.startNewRun(values[i], 1);
                     curValue = values[i];
                 }
             }
-            results.add(cur);
+            
         }
         @Override
         public void fillArray(Double value, double[] array, int off, int len) {
             Arrays.fill(array, off, off + len, value);
+        }
+        @Override
+        public Double get(double[] array, int index) {
+            return array[index];
+        }
+        @Override
+        public void set(double[] array, int index, Double value) {
+            array[index] = value;
         }
     }
 
@@ -289,22 +319,29 @@ public final class AllValueTraits {
             writer.writeBytesWithLengthHeader(value.getBytes(RawValueWriter.CHARSET));
         }
         @Override
-        public void extractRunLengthes(List<ValueRun<String>> results, String[] values, int off, int len) {
-            if (len == 0) return;
-            ValueRun<String> cur = new ValueRun<String>(0, 1, values[off]);
-            for (int i = off + 1; i < off + len; ++i) {
-                if (values[i].equals(cur.value)) {
+        public void writeRunLengthes(TypedRLEWriter<String, String[]> writer, String[] values, int off, int len) throws IOException {
+            ValueRun<String> cur = writer.getCurrentRun();
+            String curValue = cur.value;
+            for (int i = off; i < off + len; ++i) {
+                if (values[i].equals(curValue)) {
                     ++cur.runLength;
                 } else {
-                    results.add(cur);
-                    cur = new ValueRun<String>(0, 1, values[i]);
+                    cur = writer.startNewRun(values[i], 1);
+                    curValue = values[i];
                 }
             }
-            results.add(cur);
         }
         @Override
         public void fillArray(String value, String[] array, int off, int len) {
             Arrays.fill(array, off, off + len, value);
+        }
+        @Override
+        public String get(String[] array, int index) {
+            return array[index];
+        }
+        @Override
+        public void set(String[] array, int index, String value) {
+            array[index] = value;
         }
     }
 
@@ -321,18 +358,17 @@ public final class AllValueTraits {
             writer.writeBytesWithLengthHeader(value);
         }
         @Override
-        public void extractRunLengthes(List<ValueRun<byte[]>> results, byte[][] values, int off, int len) {
-            if (len == 0) return;
-            ValueRun<byte[]> cur = new ValueRun<byte[]>(0, 1, values[off]);
-            for (int i = off + 1; i < off + len; ++i) {
-                if (values[i].equals(cur.value)) {
+        public void writeRunLengthes(TypedRLEWriter<byte[], byte[][]> writer, byte[][] values, int off, int len) throws IOException {
+            ValueRun<byte[]> cur = writer.getCurrentRun();
+            byte[] curValue = cur.value;
+            for (int i = off; i < off + len; ++i) {
+                if (values[i].equals(curValue)) {
                     ++cur.runLength;
                 } else {
-                    results.add(cur);
-                    cur = new ValueRun<byte[]>(0, 1, values[i]);
+                    cur = writer.startNewRun(values[i], 1);
+                    curValue = values[i];
                 }
             }
-            results.add(cur);
         }
         @Override
         public void fillArray(byte[] value, byte[][] array, int off, int len) {
@@ -341,6 +377,14 @@ public final class AllValueTraits {
             for (int i = off; i < off + len; ++i) {
                 array[i] = value.clone();
             }
+        }
+        @Override
+        public byte[] get(byte[][] array, int index) {
+            return array[index];
+        }
+        @Override
+        public void set(byte[][] array, int index, byte[] value) {
+            array[index] = value;
         }
     }
 

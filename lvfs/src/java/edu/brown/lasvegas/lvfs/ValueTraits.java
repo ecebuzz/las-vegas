@@ -1,8 +1,6 @@
 package edu.brown.lasvegas.lvfs;
 
 import java.io.IOException;
-import java.util.List;
-
 
 /**
  * Functor to read/write java objects and their arrays.
@@ -22,16 +20,19 @@ public interface ValueTraits<T, AT> {
 
 
     /**
-     * Scan the array and splits it to run-lengthes. Used to apply RLE.
+     * Scan the array and writes out run-lengthes in it. Used to apply RLE.
      * The implementation of this method might be much faster
      * when AT is not merely T[] but a primitive array because we can avoid
      * creating wrapper objects in the case.
-     * @param results extracted RunLength objects are appended to this list
+     * <p>Note, to shorten the implementation, this function assumes there IS
+     * a current run (not the first tuple). The caller has to make sure there
+     * is a run.</p>
+     * @param writer writer object to receive the value runs
      * @param values the values to compress
      * @param off offset of the values
      * @param len number of values to compress
      */
-    void extractRunLengthes (List<ValueRun<T>> results, AT values, int off, int len);
+    void writeRunLengthes (TypedRLEWriter<T, AT> writer, AT values, int off, int len) throws IOException;
     
     /**
      * Sets the value to the array at once. Used to efficiently get values
@@ -43,4 +44,14 @@ public interface ValueTraits<T, AT> {
      * @param len the number of elements of the array to receive the value
      */
     void fillArray (T value, AT array, int off, int len);
+    
+    /**
+     * Get from the array (return array[index]). Minimize the use of this function as it's slow.
+     */
+    T get (AT array, int index);
+
+    /**
+     * Put to the array (array[index]=value). Minimize the use of this function as it's slow.
+     */
+    void set (AT array, int index, T value);
 }

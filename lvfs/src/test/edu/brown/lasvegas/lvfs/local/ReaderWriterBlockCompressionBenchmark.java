@@ -56,10 +56,19 @@ public class ReaderWriterBlockCompressionBenchmark {
         if (!file.getParentFile().exists() && !file.getParentFile().mkdirs()) {
             throw new Exception ("Couldn't create test directory " + file.getParentFile().getAbsolutePath());
         }
+        boolean longRun = false;
+        if (args.length >= 3) {
+            longRun = args[2].equalsIgnoreCase("longrun");
+        }
+        System.out.println("long run=" + longRun);
         short[] buf = new short[1 << 17];
         Random random = new Random(123456L) ; // fixed seed
         for (int j = 0; j < buf.length; ++j) {
-            buf[j] = (short) random.nextInt();
+            if (longRun) {
+                buf[j] = (j % 128 == 0 ? (short) random.nextInt() : buf[j - 1]);
+            } else {
+                buf[j] = (short) random.nextInt();
+            }
         }
         {
             // JVM warm-up

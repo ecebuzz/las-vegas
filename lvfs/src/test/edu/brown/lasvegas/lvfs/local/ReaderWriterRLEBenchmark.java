@@ -14,9 +14,18 @@ public class ReaderWriterRLEBenchmark {
         if (!file.getParentFile().exists() && !file.getParentFile().mkdirs()) {
             throw new Exception ("Couldn't create test directory " + file.getParentFile().getAbsolutePath());
         }
+        boolean longRun = false;
+        if (args.length >= 2) {
+            longRun = args[1].equalsIgnoreCase("longrun");
+        }
+        System.out.println("long run=" + longRun);
         int[] buf = new int[1 << 16];
         for (int j = 0; j < buf.length; ++j) {
-            buf[j] = (int) j; // no runs
+            if (longRun) {
+                buf[j] = j / 128; // long run
+            } else {
+                buf[j] = (int) j; // no runs
+            }
         }
         {
             // JVM warm-up

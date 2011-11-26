@@ -3,7 +3,7 @@ package edu.brown.lasvegas.lvfs;
 import java.io.IOException;
 
 /**
- * The additional methods for RLE-compressed file.
+ * The additional reader methods for RLE-compressed file.
  * These can be used for in-situ query execution. 
  */
 public interface TypedRLEReader<T, AT> extends TypedReader<T, AT> {

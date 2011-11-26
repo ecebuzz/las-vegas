@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import org.apache.log4j.Logger;
 
 import edu.brown.lasvegas.lvfs.AllValueTraits;
+import edu.brown.lasvegas.lvfs.TypedRLEWriter;
 import edu.brown.lasvegas.lvfs.ValueRun;
 import edu.brown.lasvegas.lvfs.ValueTraits;
 
@@ -18,7 +19,7 @@ import edu.brown.lasvegas.lvfs.ValueTraits;
  * <p>In either case, it is not trivial to seek or tell the total tuple count
  * by this file itself. So, just like LocalVarLenWriter, RLE file also outputs a position file.</p>
  */
-public final class LocalRLEWriter<T, AT> extends LocalTypedWriterBase<T, AT> {
+public final class LocalRLEWriter<T, AT> extends LocalTypedWriterBase<T, AT> implements TypedRLEWriter<T, AT> {
     /** Constructs an instance for 1-byte fixed length integer values. */
     public static LocalRLEWriter<Byte, byte[]> getInstanceTinyint(File rawFile) throws IOException {
         return new LocalRLEWriter<Byte, byte[]>(rawFile, new AllValueTraits.TinyintValueTraits());
@@ -87,8 +88,9 @@ public final class LocalRLEWriter<T, AT> extends LocalTypedWriterBase<T, AT> {
             assert (collectedTuples.size() == collectedPositions.size());
         }
     }
-    
-    private void startNewRun (T value, int newRunLength) throws IOException {
+
+    @Override
+    public ValueRun<T> startNewRun (T value, int newRunLength) throws IOException {
         // write out current run
         collectTuplePosition(); // might collect
         if (curRun.runLength > 0) {
@@ -104,6 +106,11 @@ public final class LocalRLEWriter<T, AT> extends LocalTypedWriterBase<T, AT> {
         // then increment curTuple (_after_ collectTuplePosition(). notice we don't do this in writeValue())
         curTuple += oldRunLength;
         ++runCount;
+        return curRun;
+    }
+    @Override
+    public ValueRun<T> getCurrentRun() {
+        return curRun;
     }
     
     @Override
@@ -115,27 +122,17 @@ public final class LocalRLEWriter<T, AT> extends LocalTypedWriterBase<T, AT> {
         }
     }
     
-    /** just to avoid allocating list repeatedly. */
-    private final ArrayList<ValueRun<T>> runBuffer = new ArrayList<ValueRun<T>>(1 << 10); 
     @Override
     public final void writeValues(AT values, int off, int len) throws IOException {
         if (len == 0) return;
-        runBuffer.clear();
-        traits.extractRunLengthes(runBuffer, values, off, len);
-        assert (len > 0);
-        // only the first result might be the same as current run
-        ValueRun<T> first = runBuffer.get(0);
-        if (curRun.value == null || !curRun.value.equals(first.value)) {
-            startNewRun(first.value, first.runLength);
-        } else {
-            curRun.runLength += runBuffer.get(0).runLength;
+        if (curRun.runLength == 0) {
+            // make sure there is a current run
+            startNewRun(traits.get(values, off), 1);
+            ++off;
+            --len;
         }
-        
-        // subsequent results are simply appended
-        for (int i = 1; i < runBuffer.size(); ++i) {
-            ValueRun<T> result = runBuffer.get(i);
-            startNewRun(result.value, result.runLength);
-        }
+        if (len == 0) return;
+        traits.writeRunLengthes(this, values, off, len);
     }
 
     @Override
