@@ -93,6 +93,16 @@ public abstract class LocalBlockCompressionWriter<T, AT> extends LocalTypedWrite
             System.arraycopy(buf, off, currentBlock, currentBlockUsed, len);
             currentBlockUsed += len;
         }
+        @Override
+        public void writeByte(byte v) throws IOException {
+            if (currentBlock.length - currentBlockUsed < 1) {
+                int newSize = (currentBlock.length + 1) * 12 / 10; //assure the len with 20% margin
+                LOG.warn("As an unlucky (only in terms of performance) incident, we had to expand currentBlock from " + currentBlock.length + " to " + newSize);
+                currentBlock = Arrays.copyOf(currentBlock, newSize);
+            }
+            currentBlock[currentBlockUsed] = v;
+            ++currentBlockUsed;
+        }
     }
     /**
      * Check how full the current buffer is, and compress it and write it out

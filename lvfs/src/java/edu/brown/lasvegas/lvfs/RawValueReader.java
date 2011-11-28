@@ -38,11 +38,7 @@ public abstract class RawValueReader {
         return b != (byte) 0;
     }
     /** Reads 1 byte and returns it as byte. */
-    public final byte readByte () throws IOException {
-        int read = readBytes (smallBuf, 0, 1);
-        assert (read == 1);
-        return smallBuf[0];
-    }
+    public abstract byte readByte () throws IOException;
 
     /** Reads 2 bytes and returns it as short. */
     public final short readShort () throws IOException {

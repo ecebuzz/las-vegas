@@ -108,6 +108,21 @@ public abstract class LocalBlockCompressionReader<T, AT> extends LocalTypedReade
      */
     protected class ProxyValueReader extends RawValueReader {
         @Override
+        public byte readByte() throws IOException {
+            // this should never happen. the derived classes make sure
+            // we don't go beyond the end of the block.
+            if (currentBlockCursor + 1 > currentBlock.length) {
+                throw new IOException ("cannot go beyond the end of current block: currentBlockCursor=" + currentBlockCursor
+                                + ", requested len=1, currentBlock.length=" + currentBlock.length);
+            }
+            byte ret = currentBlock[currentBlockCursor];
+            ++currentBlockCursor;
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("read in compressed block 1 byte");
+            }
+            return ret;
+        }
+        @Override
         public int readBytes(byte[] buf, int off, int len) throws IOException {
             // this should never happen. the derived classes make sure
             // we don't go beyond the end of the block.

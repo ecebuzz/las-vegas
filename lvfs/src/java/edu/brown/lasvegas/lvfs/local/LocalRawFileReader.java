@@ -62,6 +62,15 @@ public class LocalRawFileReader {
         curPosition = 0;
         reader = new RawValueReader() {
             @Override
+            public byte readByte() throws IOException {
+                int read = rawStream.read();
+                if (read < 0) {
+                    throw new IOException ("EOF " + this);
+                }
+                ++curPosition;
+                return (byte) read;
+            }
+            @Override
             public int readBytes(byte[] buf, int off, int len) throws IOException {
                 int read = rawStream.read(buf, off, len);
                 if (read < 0) {

@@ -59,6 +59,11 @@ public class LocalRawFileWriter {
                 stream.write(buf, off, len);
                 curPosition += len;
             }
+            @Override
+            public void writeByte(byte v) throws IOException {
+                stream.write(v);
+                ++curPosition;
+            }
         };
         if (LOG.isDebugEnabled()) {
             LOG.debug("created file:" + file.getAbsolutePath());

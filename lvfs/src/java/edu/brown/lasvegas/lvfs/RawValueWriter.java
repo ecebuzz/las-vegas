@@ -15,10 +15,7 @@ public abstract class RawValueWriter {
     public abstract void writeBytes (byte[] buf, int off, int len) throws IOException;
 
     /** Writes 1 byte. */
-    public final void writeByte (byte v) throws IOException {
-        smallBuf[0] = v;
-        writeBytes (smallBuf, 0, 1);
-    }
+    public abstract void writeByte (byte v) throws IOException;
 
     /** Writes 1 byte  (so far we don't compress 8 booleans into 1 byte) as boolean. */
     public final void writeBoolean (boolean v) throws IOException {
