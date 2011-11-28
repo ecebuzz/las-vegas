@@ -107,6 +107,16 @@ public abstract class LocalFixLenReaderTestBase<T, AT> {
     }
 
     @Test
+    public void testReadValuesEnd() throws IOException {
+        AT buf = createArray(15);
+        reader.seekToTupleAbsolute(VALUE_COUNT - 5);
+        assertEquals(5, reader.readValues(buf, 0, 15));
+        for (int i = 0; i < 5; ++i) {
+            assertEquals(generateValue(VALUE_COUNT - 5 + i), getFromArray(buf, i));
+        }
+    }
+
+    @Test
     public void testSkipValue() throws IOException {
         reader.skipValue();
         reader.skipValue();

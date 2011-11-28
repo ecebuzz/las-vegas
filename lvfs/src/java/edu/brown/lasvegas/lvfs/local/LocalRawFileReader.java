@@ -74,9 +74,8 @@ public class LocalRawFileReader {
             public int readBytes(byte[] buf, int off, int len) throws IOException {
                 int read = rawStream.read(buf, off, len);
                 if (read < 0) {
-                    throw new IOException ("EOF " + this);
+                    return 0;
                 }
-                assert (read == len);
                 curPosition += read;
                 return read;
             }

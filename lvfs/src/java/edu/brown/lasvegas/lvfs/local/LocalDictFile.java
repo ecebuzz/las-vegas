@@ -41,6 +41,9 @@ public final class LocalDictFile {
 
     /**
      * Scans the given (uncompressed) data file and constructs a dictionary file. 
+     * This method is not the fastest way to create dictionary-compressed file because
+     * one needs to first write-out non-compressed file and then read it again.
+     * For must faster file creation, use {@link LocalDictCompressionStringWriter}.
      * @param dictFile the dictionary file to be made
      * @param dataReader interface to read the data file
      */

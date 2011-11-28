@@ -99,4 +99,13 @@ public class LocalVarLenReaderVarcharTest {
             assertEquals(generateValue(50 + i), buf[i]);
         }
     }
+    @Test
+    public void testReadValuesEnd() throws IOException {
+        String[] buf = new String[15];
+        reader.seekToTupleAbsolute(VALUE_COUNT - 5);
+        assertEquals(5, reader.readValues(buf, 0, 15));
+        for (int i = 0; i < 5; ++i) {
+            assertEquals(generateValue(VALUE_COUNT - 5 + i), buf[i]);
+        }
+    }
 }
