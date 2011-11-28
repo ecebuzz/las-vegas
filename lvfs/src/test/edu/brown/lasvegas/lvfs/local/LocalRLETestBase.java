@@ -64,7 +64,9 @@ public abstract class LocalRLETestBase<T, AT> {
         writer.flush();
         writer.close();
         writer.writePositionFile(pos);
+        runCount = writer.getRunCount();
     }
+    protected int runCount;
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
         file.delete();

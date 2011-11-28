@@ -96,6 +96,7 @@ public final class LocalRLEWriter<T, AT> extends LocalTypedWriterBase<T, AT> imp
         if (curRun.runLength > 0) {
             getRawValueWriter().writeInt(curRun.runLength);
             traits.writeValue(getRawValueWriter(), curRun.value);
+            ++runCount;
         }
 
         // start a new run
@@ -105,7 +106,6 @@ public final class LocalRLEWriter<T, AT> extends LocalTypedWriterBase<T, AT> imp
         
         // then increment curTuple (_after_ collectTuplePosition(). notice we don't do this in writeValue())
         curTuple += oldRunLength;
-        ++runCount;
         return curRun;
     }
     @Override

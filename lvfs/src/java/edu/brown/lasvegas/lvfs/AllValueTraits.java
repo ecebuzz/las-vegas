@@ -362,7 +362,9 @@ public final class AllValueTraits {
             ValueRun<byte[]> cur = writer.getCurrentRun();
             byte[] curValue = cur.value;
             for (int i = off; i < off + len; ++i) {
-                if (values[i].equals(curValue)) {
+                // notice that it's not Object#equals() but Arrays.equals()
+                // otherwise it's a pointer comparison!!
+                if (Arrays.equals(values[i], curValue)) {
                     ++cur.runLength;
                 } else {
                     cur = writer.startNewRun(values[i], 1);

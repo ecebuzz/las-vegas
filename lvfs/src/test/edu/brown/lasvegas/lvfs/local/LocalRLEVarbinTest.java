@@ -1,6 +1,12 @@
 package edu.brown.lasvegas.lvfs.local;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+
+import java.io.IOException;
+
+import org.junit.Test;
+
 import edu.brown.lasvegas.lvfs.AllValueTraits;
 import edu.brown.lasvegas.lvfs.VarLenValueTraits;
 
@@ -20,4 +26,10 @@ public class LocalRLEVarbinTest extends LocalRLETestBase<byte[], byte[][]> {
     protected void setToArray(byte[][] array, int index, byte[] value){ array[index] = value; }
     @Override
     protected byte[] getFromArray(byte[][] array, int index) { return array[index]; }
+
+    @SuppressWarnings("unused")
+    @Test
+    public void testRunCount() throws IOException {
+        assertEquals(VALUE_COUNT / 8 + (VALUE_COUNT % 8 == 0 ? 0 : 1), super.runCount);
+    }
 }
