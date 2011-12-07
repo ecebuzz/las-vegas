@@ -44,6 +44,10 @@ public final class LocalVirtualFile implements VirtualFile {
         return file.getAbsolutePath();
     }
     @Override
+    public String getName() {
+        return file.getName();
+    }
+    @Override
     public boolean delete() throws IOException {
         return delete (false);
     }
@@ -56,8 +60,16 @@ public final class LocalVirtualFile implements VirtualFile {
         return file.exists();
     }
     @Override
+    public boolean isDirectory() throws IOException {
+        return file.isDirectory();
+    }
+    @Override
     public VirtualFile getParentFile() {
-        return new LocalVirtualFile(file.getParentFile());
+        File parentFile = file.getParentFile();
+        if (parentFile == null) {
+            return null;
+        }
+        return new LocalVirtualFile(parentFile);
     }
     @Override
     public boolean mkdirs() {

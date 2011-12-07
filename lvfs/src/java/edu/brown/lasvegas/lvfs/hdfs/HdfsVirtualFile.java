@@ -5,7 +5,6 @@ import java.io.IOException;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hdfs.DistributedFileSystem;
 
 import edu.brown.lasvegas.lvfs.VirtualFile;
 import edu.brown.lasvegas.lvfs.VirtualFileInputStream;
@@ -21,14 +20,14 @@ public final class HdfsVirtualFile implements VirtualFile {
         this.hdfs = hdfs;
         this.path = path;
     }
-    public HdfsVirtualFile (Path path) throws IOException {
-        this.hdfs = path.getFileSystem(new Configuration());
-        this.path = path;
+    public HdfsVirtualFile (FileSystem hdfs, String path) {
+        this (hdfs, new Path(path));
     }
-
-    /** @see DistributedFileSystem#close() */
-    public void close () throws IOException {
-        hdfs.close();
+    public HdfsVirtualFile (String path) throws IOException {
+        this (new Path(path));
+    }
+    public HdfsVirtualFile (Path path) throws IOException {
+        this (path.getFileSystem(new Configuration()), path);
     }
     
     private final static int INPUT_BUFFER_SIZE = 1 << 20;
@@ -57,6 +56,10 @@ public final class HdfsVirtualFile implements VirtualFile {
         return hdfs.exists(path);
     }
     @Override
+    public boolean isDirectory() throws IOException {
+        return hdfs.isDirectory(path);
+    }
+    @Override
     public boolean delete() throws IOException {
         return delete (false);
     }
@@ -67,7 +70,11 @@ public final class HdfsVirtualFile implements VirtualFile {
 
     @Override
     public VirtualFile getParentFile() {
-        return new HdfsVirtualFile(hdfs, path.getParent());
+        Path parentPath = path.getParent();
+        if (parentPath == null) {
+            return null;
+        }
+        return new HdfsVirtualFile(hdfs, parentPath);
     }
 
     @Override
@@ -78,5 +85,9 @@ public final class HdfsVirtualFile implements VirtualFile {
     @Override
     public String getAbsolutePath() {
         return path.toString();
+    }
+    @Override
+    public String getName() {
+        return path.getName();
     }
 }

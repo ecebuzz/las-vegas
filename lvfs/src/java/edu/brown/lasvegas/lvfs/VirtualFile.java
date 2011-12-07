@@ -28,6 +28,11 @@ public interface VirtualFile {
     boolean exists() throws IOException;
     
     /**
+     * Returns if the file is a folder.
+     */
+    boolean isDirectory() throws IOException;
+    
+    /**
      * Deletes the file from the underlying filesystem and returns if the file is actually deleted.
      * @param recursive if the file is a folder, whether to recursively deletes the content.
      */
@@ -39,6 +44,7 @@ public interface VirtualFile {
     
     /**
      * Returns the parent file object.
+     * If the current file is root, returns null.
      */
     VirtualFile getParentFile ();
     
@@ -52,4 +58,9 @@ public interface VirtualFile {
      * It might be a path in actual file system, or a path in HDFS.
      */
     String getAbsolutePath ();
+
+    /**
+     * Returns the file name of the file itself (not full path).
+     */
+    String getName();
 }
