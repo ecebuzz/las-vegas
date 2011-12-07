@@ -1,11 +1,14 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.util.Random;
 
 import org.junit.Test;
+
+import edu.brown.lasvegas.lvfs.VirtualFile;
 
 /**
  * Testcases for {@link LocalDictCompressionStringWriter}.
@@ -13,16 +16,16 @@ import org.junit.Test;
 public class LocalDictCompressionStringWriterTest {
 
     private int distinctValues;
-    private File dataFile, dictFile;
+    private VirtualFile dataFile, dictFile;
     private void init(int distinctValues) throws Exception {
         this.distinctValues = distinctValues;
 
-        dataFile = new File("test/local/str_dict.dat");
+        dataFile = new LocalVirtualFile("test/local/str_dict.dat");
         if (!dataFile.getParentFile().exists() && !dataFile.getParentFile().mkdirs()) {
             throw new Exception ("Couldn't create test directory " + dataFile.getParentFile().getAbsolutePath());
         }
         dataFile.delete();
-        dictFile = new File("test/local/str_dict.dat.dict");
+        dictFile = new LocalVirtualFile("test/local/str_dict.dat.dict");
         dictFile.delete();
         File tmp = new File("test/local/str_dict.dat.tmp");
         tmp.delete();

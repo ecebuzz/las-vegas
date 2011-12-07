@@ -1,7 +1,7 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import edu.brown.lasvegas.lvfs.FixLenValueTraits;
 import edu.brown.lasvegas.lvfs.AllValueTraits.IntegerValueTraits;
+import edu.brown.lasvegas.lvfs.FixLenValueTraits;
 
 public class LocalRLEIntegerTest extends LocalRLETestBase<Integer, int[]> {
     @Override

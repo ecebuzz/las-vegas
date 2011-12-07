@@ -1,11 +1,11 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import java.io.File;
 import java.io.IOException;
 
 import edu.brown.lasvegas.lvfs.RawValueWriter;
 import edu.brown.lasvegas.lvfs.TypedWriter;
 import edu.brown.lasvegas.lvfs.ValueTraits;
+import edu.brown.lasvegas.lvfs.VirtualFile;
 
 /**
  * Base implementation of TypedWriter. Doesn't do much. 
@@ -13,7 +13,7 @@ import edu.brown.lasvegas.lvfs.ValueTraits;
 public abstract class LocalTypedWriterBase<T, AT> implements TypedWriter<T, AT> {
     private final LocalRawFileWriter rawWriter;
     //private final ValueTraits<T, AT> traits;
-    protected LocalTypedWriterBase (File file, ValueTraits<T, AT> traits, int streamBufferSize) throws IOException {
+    protected LocalTypedWriterBase (VirtualFile file, ValueTraits<T, AT> traits, int streamBufferSize) throws IOException {
         this.rawWriter = new LocalRawFileWriter(file, streamBufferSize);
         //this.traits = traits;
     }

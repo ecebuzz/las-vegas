@@ -1,8 +1,7 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 
@@ -12,6 +11,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import edu.brown.lasvegas.lvfs.FixLenValueTraits;
+import edu.brown.lasvegas.lvfs.VirtualFile;
 
 /**
  * Base class of testcases for LocalFixLenReader.
@@ -19,7 +19,7 @@ import edu.brown.lasvegas.lvfs.FixLenValueTraits;
  * would skip this. 
  */
 public abstract class LocalFixLenReaderTestBase<T, AT> {
-    protected static File file;
+    protected static VirtualFile file;
     protected FixLenValueTraits<T, AT> traits;
     protected LocalFixLenReader<T, AT> reader;
     
@@ -43,7 +43,7 @@ public abstract class LocalFixLenReaderTestBase<T, AT> {
         }
         inittedClasses.add(getClass());
         // create the file to test
-        file = new File("test/local/typedfile.bin");
+        file = new LocalVirtualFile("test/local/typedfile.bin");
         if (!file.getParentFile().exists() && !file.getParentFile().mkdirs()) {
             throw new Exception ("Couldn't create test directory " + file.getParentFile().getAbsolutePath());
         }

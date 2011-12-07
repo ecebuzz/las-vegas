@@ -1,11 +1,11 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
 import edu.brown.lasvegas.lvfs.AllValueTraits;
 import edu.brown.lasvegas.lvfs.VarLenValueTraits;
+import edu.brown.lasvegas.lvfs.VirtualFile;
 
 /**
  * File writer for variable-length values.
@@ -17,11 +17,11 @@ import edu.brown.lasvegas.lvfs.VarLenValueTraits;
  */
 public final class LocalVarLenWriter<T> extends LocalTypedWriterBase<T, T[]>  {
     /** Constructs an instance of varchar column. */
-    public static LocalVarLenWriter<String> getInstanceVarchar(File rawFile, int collectPerBytes) throws IOException {
+    public static LocalVarLenWriter<String> getInstanceVarchar(VirtualFile rawFile, int collectPerBytes) throws IOException {
         return new LocalVarLenWriter<String>(rawFile, new AllValueTraits.VarcharValueTraits(), collectPerBytes);
     }
     /** Constructs an instance of varbinary column. */
-    public static LocalVarLenWriter<byte[]> getInstanceVarbin(File rawFile, int collectPerBytes) throws IOException {
+    public static LocalVarLenWriter<byte[]> getInstanceVarbin(VirtualFile rawFile, int collectPerBytes) throws IOException {
         return new LocalVarLenWriter<byte[]>(rawFile, new AllValueTraits.VarbinValueTraits(), collectPerBytes);
     }
 
@@ -32,7 +32,7 @@ public final class LocalVarLenWriter<T> extends LocalTypedWriterBase<T, T[]>  {
     private long curTuple = 0L;
     private ArrayList<Long> collectedTuples = new ArrayList<Long>();
     private ArrayList<Long> collectedPositions = new ArrayList<Long>();
-    public LocalVarLenWriter(File file, VarLenValueTraits<T> traits, int collectPerBytes) throws IOException {
+    public LocalVarLenWriter(VirtualFile file, VarLenValueTraits<T> traits, int collectPerBytes) throws IOException {
         super(file, traits, 1 << 18);
         this.traits = traits;
         this.collectPerBytes = collectPerBytes;
@@ -64,7 +64,7 @@ public final class LocalVarLenWriter<T> extends LocalTypedWriterBase<T, T[]>  {
     /**
      * Writes out the collected positions to a position file.
      */
-    public void writePositionFile (File posFile) throws IOException {
+    public void writePositionFile (VirtualFile posFile) throws IOException {
         LocalPosFile.createPosFile(posFile, collectedTuples, collectedPositions, curTuple, getRawCurPosition());
     }
 }

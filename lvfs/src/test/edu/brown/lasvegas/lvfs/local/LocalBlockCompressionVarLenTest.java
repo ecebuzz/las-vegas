@@ -1,14 +1,14 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import static org.junit.Assert.*;
-
-import java.io.File;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import edu.brown.lasvegas.CompressionType;
+import edu.brown.lasvegas.lvfs.VirtualFile;
 
 /**
  * Testcase for {@link LocalBlockCompressionVarLenWriter} and {@link LocalBlockCompressionVarLenReader}.
@@ -22,10 +22,10 @@ public class LocalBlockCompressionVarLenTest {
     /** override this to change the compression algorithm to use. */
     protected CompressionType getType () {return CompressionType.SNAPPY;}
 
-    private File file;
+    private VirtualFile file;
     @Before
     public void setUp() throws Exception {
-        file = new File("test/local/strfile.comp.bin");
+        file = new LocalVirtualFile("test/local/strfile.comp.bin");
         if (!file.getParentFile().exists() && !file.getParentFile().mkdirs()) {
             throw new Exception ("Couldn't create test directory " + file.getParentFile().getAbsolutePath());
         }

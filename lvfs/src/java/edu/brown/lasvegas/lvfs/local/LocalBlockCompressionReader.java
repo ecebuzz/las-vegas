@@ -2,7 +2,6 @@ package edu.brown.lasvegas.lvfs.local;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.util.zip.GZIPInputStream;
 
@@ -12,6 +11,7 @@ import org.xerial.snappy.Snappy;
 import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.lvfs.RawValueReader;
 import edu.brown.lasvegas.lvfs.ValueTraits;
+import edu.brown.lasvegas.lvfs.VirtualFile;
 
 /**
  * File reader for a block-compressed file such as Snappy and LZO.
@@ -48,7 +48,7 @@ public abstract class LocalBlockCompressionReader<T, AT> extends LocalTypedReade
         return proxyReader;
     }
     
-    public LocalBlockCompressionReader(File file, ValueTraits<T, AT> traits, CompressionType compressionType) throws IOException {
+    public LocalBlockCompressionReader(VirtualFile file, ValueTraits<T, AT> traits, CompressionType compressionType) throws IOException {
         super (file, traits, 0); // as it's block-compressed, no point to buffer. 
         this.compressionType = compressionType;
         proxyReader = new ProxyValueReader();

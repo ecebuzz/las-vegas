@@ -1,10 +1,9 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 
 import org.junit.After;
@@ -12,9 +11,10 @@ import org.junit.Before;
 import org.junit.Test;
 
 import edu.brown.lasvegas.lvfs.AllValueTraits;
+import edu.brown.lasvegas.lvfs.VirtualFile;
 
 public class LocalVarLenReaderVarbinTest {
-    private File file;
+    private VirtualFile file;
     private LocalVarLenReader<byte[]> reader;
     
     private final static int VALUE_COUNT = 123;
@@ -30,12 +30,12 @@ public class LocalVarLenReaderVarbinTest {
     @Before
     public void setUp() throws Exception {
         // create the file to test
-        file = new File("test/local/binfile.bin");
+        file = new LocalVirtualFile("test/local/binfile.bin");
         if (!file.getParentFile().exists() && !file.getParentFile().mkdirs()) {
             throw new Exception ("Couldn't create test directory " + file.getParentFile().getAbsolutePath());
         }
         file.delete();
-        DataOutputStream out = new DataOutputStream(new FileOutputStream(file));
+        DataOutputStream out = new DataOutputStream(file.getOutputStream());
         for (int i = 0; i < VALUE_COUNT; ++i) {
             byte[] bytes = generateValue(i);
             out.writeByte((byte) 4);

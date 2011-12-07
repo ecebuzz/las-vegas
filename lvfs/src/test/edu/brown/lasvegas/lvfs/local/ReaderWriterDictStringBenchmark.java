@@ -2,17 +2,19 @@ package edu.brown.lasvegas.lvfs.local;
 
 import java.io.File;
 
+import edu.brown.lasvegas.lvfs.VirtualFile;
+
 /**
  * Tests the performance of bulk reading and writing for variable-length string with dictionary compression.
  * This is not a testcase.
  */
 public class ReaderWriterDictStringBenchmark {
     public static void main(String[] args) throws Exception {
-        File file = new File("test/local/string");
+        VirtualFile file = new LocalVirtualFile("test/local/string");
         if (!file.getParentFile().exists() && !file.getParentFile().mkdirs()) {
             throw new Exception ("Couldn't create test directory " + file.getParentFile().getAbsolutePath());
         }
-        File dictFile = new File("test/local/string.dict");
+        VirtualFile dictFile = new LocalVirtualFile("test/local/string.dict");
         File tmpFile = new File("test/local/string.tmp");
         String[] buf = new String[1 << 15]; // 32K * 16 = 500k bytes
         for (int j = 0; j < buf.length; ++j) {
@@ -21,8 +23,8 @@ public class ReaderWriterDictStringBenchmark {
         short[] readBuf = new short[1 << 15];
         {
             // JVM warm-up
-            File dummy = new File("test/local/dummy");
-            File dummyDict = new File("test/local/dummy.dict");
+            VirtualFile dummy = new LocalVirtualFile("test/local/dummy");
+            VirtualFile dummyDict = new LocalVirtualFile("test/local/dummy.dict");
             File dummyTmp = new File("test/local/dummy.tmp");
             for (int rep = 0; rep < 3; ++rep) {
                 {

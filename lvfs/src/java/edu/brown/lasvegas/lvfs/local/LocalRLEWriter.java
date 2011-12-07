@@ -1,6 +1,5 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
@@ -10,6 +9,7 @@ import edu.brown.lasvegas.lvfs.AllValueTraits;
 import edu.brown.lasvegas.lvfs.TypedRLEWriter;
 import edu.brown.lasvegas.lvfs.ValueRun;
 import edu.brown.lasvegas.lvfs.ValueTraits;
+import edu.brown.lasvegas.lvfs.VirtualFile;
 
 /**
  * File writer for RLE compressed column.
@@ -21,36 +21,36 @@ import edu.brown.lasvegas.lvfs.ValueTraits;
  */
 public final class LocalRLEWriter<T, AT> extends LocalTypedWriterBase<T, AT> implements TypedRLEWriter<T, AT> {
     /** Constructs an instance for 1-byte fixed length integer values. */
-    public static LocalRLEWriter<Byte, byte[]> getInstanceTinyint(File rawFile) throws IOException {
+    public static LocalRLEWriter<Byte, byte[]> getInstanceTinyint(VirtualFile rawFile) throws IOException {
         return new LocalRLEWriter<Byte, byte[]>(rawFile, new AllValueTraits.TinyintValueTraits());
     }
     /** Constructs an instance for 2-byte fixed length integer values. */
-    public static LocalRLEWriter<Short, short[]> getInstanceSmallint(File rawFile) throws IOException {
+    public static LocalRLEWriter<Short, short[]> getInstanceSmallint(VirtualFile rawFile) throws IOException {
         return new LocalRLEWriter<Short, short[]>(rawFile, new AllValueTraits.SmallintValueTraits());
     }
     /** Constructs an instance for 4-byte fixed length integer values. */
-    public static LocalRLEWriter<Integer, int[]> getInstanceInteger(File rawFile) throws IOException {
+    public static LocalRLEWriter<Integer, int[]> getInstanceInteger(VirtualFile rawFile) throws IOException {
         return new LocalRLEWriter<Integer, int[]>(rawFile, new AllValueTraits.IntegerValueTraits());
     }
     /** Constructs an instance for 8-byte fixed length integer values. */
-    public static LocalRLEWriter<Long, long[]> getInstanceBigint(File rawFile) throws IOException {
+    public static LocalRLEWriter<Long, long[]> getInstanceBigint(VirtualFile rawFile) throws IOException {
         return new LocalRLEWriter<Long, long[]>(rawFile, new AllValueTraits.BigintValueTraits());
     }
     /** Constructs an instance for 4-byte fixed length float values. */
-    public static LocalRLEWriter<Float, float[]> getInstanceFloat(File rawFile) throws IOException {
+    public static LocalRLEWriter<Float, float[]> getInstanceFloat(VirtualFile rawFile) throws IOException {
         return new LocalRLEWriter<Float, float[]>(rawFile, new AllValueTraits.FloatValueTraits());
     }
     /** Constructs an instance for 8-byte fixed length float values. */
-    public static LocalRLEWriter<Double, double[]> getInstanceDouble(File rawFile) throws IOException {
+    public static LocalRLEWriter<Double, double[]> getInstanceDouble(VirtualFile rawFile) throws IOException {
         return new LocalRLEWriter<Double, double[]>(rawFile, new AllValueTraits.DoubleValueTraits());
     }
 
     /** Constructs an instance of varchar column. */
-    public static LocalRLEWriter<String, String[]> getInstanceVarchar(File dataFile) throws IOException {
+    public static LocalRLEWriter<String, String[]> getInstanceVarchar(VirtualFile dataFile) throws IOException {
         return new LocalRLEWriter<String, String[]>(dataFile, new AllValueTraits.VarcharValueTraits());
     }
     /** Constructs an instance of varbinary column. */
-    public static LocalRLEWriter<byte[], byte[][]> getInstanceVarbin(File dataFile) throws IOException {
+    public static LocalRLEWriter<byte[], byte[][]> getInstanceVarbin(VirtualFile dataFile) throws IOException {
         return new LocalRLEWriter<byte[], byte[][]>(dataFile, new AllValueTraits.VarbinValueTraits());
     }
 
@@ -68,13 +68,13 @@ public final class LocalRLEWriter<T, AT> extends LocalTypedWriterBase<T, AT> imp
     /** just a statistics. */
     private int runCount = 0;
 
-    public LocalRLEWriter(File file, ValueTraits<T, AT> traits) throws IOException {
+    public LocalRLEWriter(VirtualFile file, ValueTraits<T, AT> traits) throws IOException {
         this (file, traits, 1 << 10);
     }
-    public LocalRLEWriter(File file, ValueTraits<T, AT> traits, int collectPerBytes) throws IOException {
+    public LocalRLEWriter(VirtualFile file, ValueTraits<T, AT> traits, int collectPerBytes) throws IOException {
         this (file, traits, collectPerBytes, 1 << 16);
     }
-    public LocalRLEWriter(File file, ValueTraits<T, AT> traits, int collectPerBytes, int streamBufferSize) throws IOException {
+    public LocalRLEWriter(VirtualFile file, ValueTraits<T, AT> traits, int collectPerBytes, int streamBufferSize) throws IOException {
         super (file, traits, streamBufferSize);
         this.traits = traits;
         this.collectPerBytes = collectPerBytes;
@@ -164,7 +164,7 @@ public final class LocalRLEWriter<T, AT> extends LocalTypedWriterBase<T, AT> imp
     /**
      * Writes out the collected positions to a position file.
      */
-    public void writePositionFile (File posFile) throws IOException {
+    public void writePositionFile (VirtualFile posFile) throws IOException {
         LocalPosFile.createPosFile(posFile, collectedTuples, collectedPositions, curTuple, getRawCurPosition());
     }
 }

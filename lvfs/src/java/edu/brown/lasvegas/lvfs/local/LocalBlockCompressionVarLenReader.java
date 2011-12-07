@@ -1,11 +1,11 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import java.io.File;
 import java.io.IOException;
 
 import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.lvfs.AllValueTraits;
 import edu.brown.lasvegas.lvfs.VarLenValueTraits;
+import edu.brown.lasvegas.lvfs.VirtualFile;
 
 /**
  * Reader implementation of block-compressed files for variable-length columns.
@@ -18,16 +18,16 @@ public class LocalBlockCompressionVarLenReader<T> extends LocalBlockCompressionR
     
     /** Constructs an instance of varchar column. */
     public static LocalBlockCompressionVarLenReader<String> getInstanceVarchar(
-                    File file, CompressionType compressionType) throws IOException {
+                    VirtualFile file, CompressionType compressionType) throws IOException {
         return new LocalBlockCompressionVarLenReader<String>(file, new AllValueTraits.VarcharValueTraits(), compressionType);
     }
     /** Constructs an instance of varbinary column. */
     public static LocalBlockCompressionVarLenReader<byte[]> getInstanceVarbin(
-                    File file, CompressionType compressionType) throws IOException {
+                    VirtualFile file, CompressionType compressionType) throws IOException {
         return new LocalBlockCompressionVarLenReader<byte[]>(file, new AllValueTraits.VarbinValueTraits(), compressionType);
     }
 
-    public LocalBlockCompressionVarLenReader(File file, VarLenValueTraits<T> traits, CompressionType compressionType) throws IOException {
+    public LocalBlockCompressionVarLenReader(VirtualFile file, VarLenValueTraits<T> traits, CompressionType compressionType) throws IOException {
         super (file, traits, compressionType);
         this.traits = traits;
     }

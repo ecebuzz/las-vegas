@@ -1,13 +1,14 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 
 import org.apache.log4j.Logger;
+
+import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.lvfs.VirtualFileOutputStream;
 
 /**
  * A position file is a sparse tuple-position index file for variable-length values
@@ -39,7 +40,7 @@ public final class LocalPosFile {
      * @param totalBytes total byte size of the file
      * @throws IOException
      */
-    public static void createPosFile (File file, ArrayList<Long> tuples, ArrayList<Long> positions,
+    public static void createPosFile (VirtualFile file, ArrayList<Long> tuples, ArrayList<Long> positions,
                     long totalTuples, long totalBytes) throws IOException {
         assert (tuples.size() == positions.size());
         if (LOG.isDebugEnabled()) {
@@ -66,7 +67,7 @@ public final class LocalPosFile {
         if (file.exists()) {
             file.delete();
         }
-        FileOutputStream stream = new FileOutputStream(file, false);
+        VirtualFileOutputStream stream = file.getOutputStream();
         stream.write(bytes);
         stream.flush();
         stream.close();
@@ -87,7 +88,7 @@ public final class LocalPosFile {
      * such as disk-seek and reading the data file should be the dominant cost.
      * Adding complexity wouldn't worth it.
      */
-    public LocalPosFile(File file) throws IOException {
+    public LocalPosFile(VirtualFile file) throws IOException {
         assert (file.length() % 16 == 0);
         if (file.length() > (1 << 22)) {
             throw new IOException ("this file seems too large as a position file:"
@@ -97,7 +98,7 @@ public final class LocalPosFile {
         long startTime = LOG.isDebugEnabled() ? System.nanoTime() : 0L;
         array = new long[(int) file.length() / 8];
         byte[] bytes = new byte[(int) file.length()];
-        FileInputStream stream = new FileInputStream(file);
+        InputStream stream = file.getInputStream();
         int read = stream.read(bytes);
         stream.close();
         assert (read == bytes.length);

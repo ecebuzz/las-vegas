@@ -1,14 +1,14 @@
 package edu.brown.lasvegas.lvfs.local;
 
 import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
 import org.apache.log4j.Logger;
 
 import edu.brown.lasvegas.lvfs.RawValueWriter;
+import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.lvfs.VirtualFileOutputStream;
 
 /**
  * Writes a write-once local data file.
@@ -17,15 +17,15 @@ import edu.brown.lasvegas.lvfs.RawValueWriter;
  * no index whatever. Those additional things are
  * stored in separate files.
  */
-public class LocalRawFileWriter {
+public final class LocalRawFileWriter {
     private static Logger LOG = Logger.getLogger(LocalRawFileWriter.class);
 
     /** underlying file handle. */
-    protected final File file;
+    private final VirtualFile file;
     
     /** output stream of the raw file. */
     private final OutputStream stream;
-    private final FileOutputStream fo;
+    private final VirtualFileOutputStream fo;
 
     private final RawValueWriter writer;
     /**
@@ -42,12 +42,12 @@ public class LocalRawFileWriter {
     }
     // no setter because only this class should maintain it
 
-    public LocalRawFileWriter (File file, int bufferSize) throws IOException {
+    public LocalRawFileWriter (VirtualFile file, int bufferSize) throws IOException {
         this.file = file;
         if (file.exists()) {
             file.delete();
         }
-        fo = new FileOutputStream (file, false);
+        fo = file.getOutputStream();
         if (bufferSize <= 0) {
             stream = fo;
         } else {
@@ -84,10 +84,10 @@ public class LocalRawFileWriter {
     public void flush (boolean sync) throws IOException {
         stream.flush(); // this flushes out the buffer, but still the stream might not be written out
         if (sync) {
-            fo.getFD().sync(); // this really ensures the written data is durable.
+            fo.syncDurable(); // this really ensures the written data is durable.
         }
         if (LOG.isDebugEnabled()) {
-            LOG.debug("flushed file:" + file.getAbsolutePath());
+            LOG.debug("flushed file:" + this);
         }
     }
     /**
@@ -96,12 +96,9 @@ public class LocalRawFileWriter {
     public void close () throws IOException {
         stream.close();
         if (LOG.isDebugEnabled()) {
-            LOG.debug("closed file:" + file.getAbsolutePath());
+            LOG.debug("closed file:" + this);
         }
     }
-
-    /** Override this method if the file format needs some per-file footer. */
-    public void writeFileFooter() throws IOException {}
 
     /**
      * @see java.lang.Object#toString()

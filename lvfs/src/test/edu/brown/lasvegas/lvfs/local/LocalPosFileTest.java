@@ -1,12 +1,13 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
-import java.io.File;
 import java.util.ArrayList;
 
 import org.junit.Test;
 
+import edu.brown.lasvegas.lvfs.VirtualFile;
 import edu.brown.lasvegas.lvfs.local.LocalPosFile.Pos;
 
 /**
@@ -15,7 +16,7 @@ import edu.brown.lasvegas.lvfs.local.LocalPosFile.Pos;
 public class LocalPosFileTest {
     @Test
     public void testAll() throws Exception {
-        File file = new File("test/local/test.pos");
+        VirtualFile file = new LocalVirtualFile("test/local/test.pos");
         if (!file.getParentFile().exists() && !file.getParentFile().mkdirs()) {
             throw new Exception ("Couldn't create test directory " + file.getParentFile().getAbsolutePath());
         }

@@ -2,7 +2,6 @@ package edu.brown.lasvegas.lvfs.local;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 
@@ -13,6 +12,7 @@ import org.junit.Test;
 
 import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.lvfs.FixLenValueTraits;
+import edu.brown.lasvegas.lvfs.VirtualFile;
 
 /**
  * Base class of testcases for {@link LocalBlockCompressionFixLenReader} and {@link LocalBlockCompressionFixLenWriter}.
@@ -20,7 +20,7 @@ import edu.brown.lasvegas.lvfs.FixLenValueTraits;
  * would skip this. 
  */
 public abstract class LocalBlockCompressionFixLenTestBase<T, AT> {
-    protected static File file;
+    protected static VirtualFile file;
     protected FixLenValueTraits<T, AT> traits;
     protected LocalBlockCompressionFixLenReader<T, AT> reader;
     
@@ -46,7 +46,7 @@ public abstract class LocalBlockCompressionFixLenTestBase<T, AT> {
         }
         inittedClasses.add(getClass());
         // create the file to test
-        file = new File("test/local/block_comp.bin");
+        file = new LocalVirtualFile("test/local/block_comp.bin");
         if (!file.getParentFile().exists() && !file.getParentFile().mkdirs()) {
             throw new Exception ("Couldn't create test directory " + file.getParentFile().getAbsolutePath());
         }

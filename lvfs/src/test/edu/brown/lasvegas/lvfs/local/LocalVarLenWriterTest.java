@@ -1,13 +1,14 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import static org.junit.Assert.*;
-
-import java.io.File;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import edu.brown.lasvegas.lvfs.VirtualFile;
 import edu.brown.lasvegas.lvfs.local.LocalPosFile.Pos;
 
 /**
@@ -19,16 +20,16 @@ public class LocalVarLenWriterTest {
         return ("str" + index + "ab\u6728\u6751c"); // also use some unicode
     }
 
-    private File dataFile;
-    private File posFile;
+    private VirtualFile dataFile;
+    private VirtualFile posFile;
     @Before
     public void setUp() throws Exception {
-        dataFile = new File("test/local/strfile.data");
+        dataFile = new LocalVirtualFile("test/local/strfile.data");
         if (!dataFile.getParentFile().exists() && !dataFile.getParentFile().mkdirs()) {
             throw new Exception ("Couldn't create test directory " + dataFile.getParentFile().getAbsolutePath());
         }
         dataFile.delete();
-        posFile = new File("test/local/strfile.data.pos");
+        posFile = new LocalVirtualFile("test/local/strfile.data.pos");
         posFile.delete();
     }
     @After

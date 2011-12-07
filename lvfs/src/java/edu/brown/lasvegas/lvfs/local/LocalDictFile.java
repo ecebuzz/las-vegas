@@ -1,8 +1,5 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -14,6 +11,7 @@ import org.apache.log4j.Logger;
 
 import edu.brown.lasvegas.lvfs.TypedReader;
 import edu.brown.lasvegas.lvfs.TypedWriter;
+import edu.brown.lasvegas.lvfs.VirtualFile;
 
 /**
  * Represents a dictionary file for dictionary compression.
@@ -47,7 +45,7 @@ public final class LocalDictFile {
      * @param dictFile the dictionary file to be made
      * @param dataReader interface to read the data file
      */
-    public static void createVarcharDictFile (File dictFile, TypedReader<String, String[]> dataReader) throws IOException {
+    public static void createVarcharDictFile (VirtualFile dictFile, TypedReader<String, String[]> dataReader) throws IOException {
         LOG.info("Creating a dict file...");
         HashSet<String> distinctValues;
         {
@@ -86,7 +84,7 @@ public final class LocalDictFile {
         {
             long startMillisec = System.currentTimeMillis();
             // last, output it into the file
-            ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(dictFile));
+            ObjectOutputStream out = new ObjectOutputStream(dictFile.getOutputStream());
             out.writeObject(dict);
             out.flush();
             out.close();
@@ -98,8 +96,8 @@ public final class LocalDictFile {
     /**
      * Loads an existing dictionary file.
      */
-    public LocalDictFile(File dictFile) throws IOException {
-        ObjectInputStream in = new ObjectInputStream(new FileInputStream(dictFile));
+    public LocalDictFile(VirtualFile dictFile) throws IOException {
+        ObjectInputStream in = new ObjectInputStream(dictFile.getInputStream());
         try {
             dict = (String[]) in.readObject();
         } catch (Exception ex) {

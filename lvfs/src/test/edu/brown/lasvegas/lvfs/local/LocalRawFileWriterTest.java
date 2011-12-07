@@ -1,7 +1,5 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import java.io.File;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -14,7 +12,7 @@ public class LocalRawFileWriterTest extends LocalRawFileTestBase {
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
         // create the file to test
-        file = new File("test/local/rawfile.bin");
+        file = new LocalVirtualFile("test/local/rawfile.bin");
         if (!file.getParentFile().exists() && !file.getParentFile().mkdirs()) {
             throw new Exception ("Couldn't create test directory " + file.getParentFile().getAbsolutePath());
         }

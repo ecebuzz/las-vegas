@@ -1,11 +1,11 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import java.io.File;
 import java.io.IOException;
 
 import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.lvfs.AllValueTraits;
 import edu.brown.lasvegas.lvfs.FixLenValueTraits;
+import edu.brown.lasvegas.lvfs.VirtualFile;
 
 /**
  * Reader implementation of block-compressed files for fixed-length columns.
@@ -19,31 +19,31 @@ public final class LocalBlockCompressionFixLenReader<T, AT> extends LocalBlockCo
     private final short bitsPerValue;
     
     /** Constructs an instance for 1-byte fixed length integer values. */
-    public static LocalBlockCompressionFixLenReader<Byte, byte[]> getInstanceTinyint(File file, CompressionType compressionType) throws IOException {
+    public static LocalBlockCompressionFixLenReader<Byte, byte[]> getInstanceTinyint(VirtualFile file, CompressionType compressionType) throws IOException {
         return new LocalBlockCompressionFixLenReader<Byte, byte[]>(file, new AllValueTraits.TinyintValueTraits(), compressionType);
     }
     /** Constructs an instance for 2-byte fixed length integer values. */
-    public static LocalBlockCompressionFixLenReader<Short, short[]> getInstanceSmallint(File file, CompressionType compressionType) throws IOException {
+    public static LocalBlockCompressionFixLenReader<Short, short[]> getInstanceSmallint(VirtualFile file, CompressionType compressionType) throws IOException {
         return new LocalBlockCompressionFixLenReader<Short, short[]>(file, new AllValueTraits.SmallintValueTraits(), compressionType);
     }
     /** Constructs an instance for 4-byte fixed length integer values. */
-    public static LocalBlockCompressionFixLenReader<Integer, int[]> getInstanceInteger(File file, CompressionType compressionType) throws IOException {
+    public static LocalBlockCompressionFixLenReader<Integer, int[]> getInstanceInteger(VirtualFile file, CompressionType compressionType) throws IOException {
         return new LocalBlockCompressionFixLenReader<Integer, int[]>(file, new AllValueTraits.IntegerValueTraits(), compressionType);
     }
     /** Constructs an instance for 8-byte fixed length integer values. */
-    public static LocalBlockCompressionFixLenReader<Long, long[]> getInstanceBigint(File file, CompressionType compressionType) throws IOException {
+    public static LocalBlockCompressionFixLenReader<Long, long[]> getInstanceBigint(VirtualFile file, CompressionType compressionType) throws IOException {
         return new LocalBlockCompressionFixLenReader<Long, long[]>(file, new AllValueTraits.BigintValueTraits(), compressionType);
     }
     /** Constructs an instance for 4-byte fixed length float values. */
-    public static LocalBlockCompressionFixLenReader<Float, float[]> getInstanceFloat(File file, CompressionType compressionType) throws IOException {
+    public static LocalBlockCompressionFixLenReader<Float, float[]> getInstanceFloat(VirtualFile file, CompressionType compressionType) throws IOException {
         return new LocalBlockCompressionFixLenReader<Float, float[]>(file, new AllValueTraits.FloatValueTraits(), compressionType);
     }
     /** Constructs an instance for 8-byte fixed length float values. */
-    public static LocalBlockCompressionFixLenReader<Double, double[]> getInstanceDouble(File file, CompressionType compressionType) throws IOException {
+    public static LocalBlockCompressionFixLenReader<Double, double[]> getInstanceDouble(VirtualFile file, CompressionType compressionType) throws IOException {
         return new LocalBlockCompressionFixLenReader<Double, double[]>(file, new AllValueTraits.DoubleValueTraits(), compressionType);
     }
 
-    public LocalBlockCompressionFixLenReader(File file, FixLenValueTraits<T, AT> traits, CompressionType compressionType) throws IOException {
+    public LocalBlockCompressionFixLenReader(VirtualFile file, FixLenValueTraits<T, AT> traits, CompressionType compressionType) throws IOException {
         super (file, traits, compressionType);
         this.traits = traits;
         this.bitsPerValue = traits.getBitsPerValue();

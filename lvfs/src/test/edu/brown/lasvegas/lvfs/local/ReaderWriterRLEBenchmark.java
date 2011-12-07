@@ -1,6 +1,6 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import java.io.File;
+import edu.brown.lasvegas.lvfs.VirtualFile;
 
 /**
  * Tests the performance of bulk reading and writing for RLE.
@@ -10,7 +10,7 @@ import java.io.File;
  */
 public class ReaderWriterRLEBenchmark {
     public static void main(String[] args) throws Exception {
-        File file = new File("test/local/bench.bin");
+        VirtualFile file = new LocalVirtualFile("test/local/bench.bin");
         if (!file.getParentFile().exists() && !file.getParentFile().mkdirs()) {
             throw new Exception ("Couldn't create test directory " + file.getParentFile().getAbsolutePath());
         }
@@ -29,7 +29,7 @@ public class ReaderWriterRLEBenchmark {
         }
         {
             // JVM warm-up
-            File dummy = new File("test/local/dummy.bin");
+            VirtualFile dummy = new LocalVirtualFile("test/local/dummy.bin");
             for (int rep = 0; rep < 3; ++rep) {
                 {
                     System.currentTimeMillis();

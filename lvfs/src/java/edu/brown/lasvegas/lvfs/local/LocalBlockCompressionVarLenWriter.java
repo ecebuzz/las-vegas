@@ -1,12 +1,12 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
 import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.lvfs.AllValueTraits;
 import edu.brown.lasvegas.lvfs.VarLenValueTraits;
+import edu.brown.lasvegas.lvfs.VirtualFile;
 
 /**
  * Writer implementation of block-compressed files for variable-length columns.
@@ -36,16 +36,16 @@ public final class LocalBlockCompressionVarLenWriter<T> extends LocalBlockCompre
 
     /** Constructs an instance of varchar column. */
     public static LocalBlockCompressionVarLenWriter<String> getInstanceVarchar(
-                    File file, CompressionType compressionType, int collectPerBytes) throws IOException {
+                    VirtualFile file, CompressionType compressionType, int collectPerBytes) throws IOException {
         return new LocalBlockCompressionVarLenWriter<String>(file, new AllValueTraits.VarcharValueTraits(), compressionType, collectPerBytes);
     }
     /** Constructs an instance of varbinary column. */
     public static LocalBlockCompressionVarLenWriter<byte[]> getInstanceVarbin(
-                    File file, CompressionType compressionType, int collectPerBytes) throws IOException {
+                    VirtualFile file, CompressionType compressionType, int collectPerBytes) throws IOException {
         return new LocalBlockCompressionVarLenWriter<byte[]>(file, new AllValueTraits.VarbinValueTraits(), compressionType, collectPerBytes);
     }
 
-    public LocalBlockCompressionVarLenWriter(File file, VarLenValueTraits<T> traits, CompressionType compressionType, int collectPerBytes) throws IOException {
+    public LocalBlockCompressionVarLenWriter(VirtualFile file, VarLenValueTraits<T> traits, CompressionType compressionType, int collectPerBytes) throws IOException {
         super (file, traits, compressionType);
         this.traits = traits;
         this.collectPerBytes = collectPerBytes;

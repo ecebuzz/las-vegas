@@ -1,14 +1,16 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Random;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import edu.brown.lasvegas.lvfs.VirtualFile;
 /**
  * Testcase for {@link LocalDictFile}.
  */
@@ -34,9 +36,9 @@ public class LocalDictFileTest {
     
     @Before
     public void setUp() throws Exception {
-        dataFile = new File("test/local/test.data");
-        compDataFile = new File("test/local/test.data.comp");
-        dictFile = new File("test/local/test.dict");
+        dataFile = new LocalVirtualFile("test/local/test.data");
+        compDataFile = new LocalVirtualFile("test/local/test.data.comp");
+        dictFile = new LocalVirtualFile("test/local/test.dict");
         if (!dictFile.getParentFile().exists() && !dictFile.getParentFile().mkdirs()) {
             throw new Exception ("Couldn't create test directory " + dictFile.getParentFile().getAbsolutePath());
         }
@@ -44,9 +46,9 @@ public class LocalDictFileTest {
         compDataFile.delete();
         dictFile.delete();
     }
-    private File dataFile;
-    private File compDataFile;
-    private File dictFile;
+    private VirtualFile dataFile;
+    private VirtualFile compDataFile;
+    private VirtualFile dictFile;
 
     private void createOriginalFile (int count, int dv) throws IOException {
         LocalVarLenWriter<String> writer = LocalVarLenWriter.getInstanceVarchar(dataFile, 1024);

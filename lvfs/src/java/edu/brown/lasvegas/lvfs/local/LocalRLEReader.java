@@ -1,16 +1,15 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import java.io.File;
 import java.io.IOException;
 
 import org.apache.log4j.Logger;
 
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
-
 import edu.brown.lasvegas.lvfs.AllValueTraits;
 import edu.brown.lasvegas.lvfs.TypedRLEReader;
 import edu.brown.lasvegas.lvfs.ValueRun;
 import edu.brown.lasvegas.lvfs.ValueTraits;
+import edu.brown.lasvegas.lvfs.VirtualFile;
 import edu.brown.lasvegas.lvfs.local.LocalPosFile.Pos;
 
 /**
@@ -22,42 +21,42 @@ public final class LocalRLEReader<T, AT> extends LocalTypedReaderBase<T, AT> imp
     private final ValueTraits<T, AT> traits;
 
     /** Constructs an instance for 1-byte fixed length integer values. */
-    public static LocalRLEReader<Byte, byte[]> getInstanceTinyint(File rawFile) throws IOException {
+    public static LocalRLEReader<Byte, byte[]> getInstanceTinyint(VirtualFile rawFile) throws IOException {
         return new LocalRLEReader<Byte, byte[]>(rawFile, new AllValueTraits.TinyintValueTraits());
     }
     /** Constructs an instance for 2-byte fixed length integer values. */
-    public static LocalRLEReader<Short, short[]> getInstanceSmallint(File rawFile) throws IOException {
+    public static LocalRLEReader<Short, short[]> getInstanceSmallint(VirtualFile rawFile) throws IOException {
         return new LocalRLEReader<Short, short[]>(rawFile, new AllValueTraits.SmallintValueTraits());
     }
     /** Constructs an instance for 4-byte fixed length integer values. */
-    public static LocalRLEReader<Integer, int[]> getInstanceInteger(File rawFile) throws IOException {
+    public static LocalRLEReader<Integer, int[]> getInstanceInteger(VirtualFile rawFile) throws IOException {
         return new LocalRLEReader<Integer, int[]>(rawFile, new AllValueTraits.IntegerValueTraits());
     }
     /** Constructs an instance for 8-byte fixed length integer values. */
-    public static LocalRLEReader<Long, long[]> getInstanceBigint(File rawFile) throws IOException {
+    public static LocalRLEReader<Long, long[]> getInstanceBigint(VirtualFile rawFile) throws IOException {
         return new LocalRLEReader<Long, long[]>(rawFile, new AllValueTraits.BigintValueTraits());
     }
     /** Constructs an instance for 4-byte fixed length float values. */
-    public static LocalRLEReader<Float, float[]> getInstanceFloat(File rawFile) throws IOException {
+    public static LocalRLEReader<Float, float[]> getInstanceFloat(VirtualFile rawFile) throws IOException {
         return new LocalRLEReader<Float, float[]>(rawFile, new AllValueTraits.FloatValueTraits());
     }
     /** Constructs an instance for 8-byte fixed length float values. */
-    public static LocalRLEReader<Double, double[]> getInstanceDouble(File rawFile) throws IOException {
+    public static LocalRLEReader<Double, double[]> getInstanceDouble(VirtualFile rawFile) throws IOException {
         return new LocalRLEReader<Double, double[]>(rawFile, new AllValueTraits.DoubleValueTraits());
     }
     /** Constructs an instance of varchar column. */
-    public static LocalRLEReader<String, String[]> getInstanceVarchar(File dataFile) throws IOException {
+    public static LocalRLEReader<String, String[]> getInstanceVarchar(VirtualFile dataFile) throws IOException {
         return new LocalRLEReader<String, String[]>(dataFile, new AllValueTraits.VarcharValueTraits());
     }
     /** Constructs an instance of varbinary column. */
-    public static LocalRLEReader<byte[], byte[][]> getInstanceVarbin(File dataFile) throws IOException {
+    public static LocalRLEReader<byte[], byte[][]> getInstanceVarbin(VirtualFile dataFile) throws IOException {
         return new LocalRLEReader<byte[], byte[][]>(dataFile, new AllValueTraits.VarbinValueTraits());
     }
 
-    public LocalRLEReader(File dataFile, ValueTraits<T, AT> traits) throws IOException {
+    public LocalRLEReader(VirtualFile dataFile, ValueTraits<T, AT> traits) throws IOException {
         this (dataFile, null, traits);
     }
-    public LocalRLEReader(File dataFile, File posFile, ValueTraits<T, AT> traits) throws IOException {
+    public LocalRLEReader(VirtualFile dataFile, VirtualFile posFile, ValueTraits<T, AT> traits) throws IOException {
         this (dataFile, posFile, traits, 1 << 16);
     }
     /**
@@ -65,7 +64,7 @@ public final class LocalRLEReader<T, AT> extends LocalTypedReaderBase<T, AT> imp
      * @param dataFile required. the main data file
      * @param posFile optional. position file to speed up locating tuple. (without it, seeking might be slow, but not as much as non-compressed file)
      */
-    public LocalRLEReader(File dataFile, File posFile, ValueTraits<T, AT> traits, int streamBufferSize) throws IOException {
+    public LocalRLEReader(VirtualFile dataFile, VirtualFile posFile, ValueTraits<T, AT> traits, int streamBufferSize) throws IOException {
         super (dataFile, traits, streamBufferSize);
         this.traits = traits;
         if (posFile != null) {
@@ -77,7 +76,7 @@ public final class LocalRLEReader<T, AT> extends LocalTypedReaderBase<T, AT> imp
     /**
      * Loads an optional position file to speed up seeks.
      */
-    public void loadPositionFile (File posFile) throws IOException {
+    public void loadPositionFile (VirtualFile posFile) throws IOException {
         posIndex = new LocalPosFile(posFile);
     }
     

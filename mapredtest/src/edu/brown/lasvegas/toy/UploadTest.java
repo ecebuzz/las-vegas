@@ -35,6 +35,7 @@ public class UploadTest {
         }
         long etime = System.nanoTime();
         LOG.info("wrote in " + ((etime - stime) / 1000000.0d) + " ms");
+        out.hsync();
         out.close();
         LOG.info("closed..");
     }

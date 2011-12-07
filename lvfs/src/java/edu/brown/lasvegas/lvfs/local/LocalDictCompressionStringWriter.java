@@ -1,7 +1,6 @@
 package edu.brown.lasvegas.lvfs.local;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
@@ -11,6 +10,8 @@ import java.util.HashMap;
 import org.apache.log4j.Logger;
 
 import edu.brown.lasvegas.lvfs.TypedWriter;
+import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.lvfs.VirtualFileOutputStream;
 
 /**
  * A special File writer for a dictionary-compressed
@@ -35,7 +36,7 @@ public class LocalDictCompressionStringWriter implements TypedWriter<String, Str
     private LocalFixLenWriter<Integer, int[]> finalIntWriter =  null;
     
     /** final dict file. */
-    private final FileOutputStream finalDictWriter;
+    private final VirtualFileOutputStream finalDictWriter;
     
     /** tentatively compressed file. */
     private final LocalFixLenWriter<Integer, int[]> tentativeIntWriter;
@@ -49,8 +50,8 @@ public class LocalDictCompressionStringWriter implements TypedWriter<String, Str
     private final HashMap<String, Integer> tentativeDict;
     private final ArrayList<String> tentativeDictArray;
     
-    private final File finalDataFile;
-    private final File finalDictFile;
+    private final VirtualFile finalDataFile;
+    private final VirtualFile finalDictFile;
     private final File tmpFile;
     
     /**
@@ -58,14 +59,14 @@ public class LocalDictCompressionStringWriter implements TypedWriter<String, Str
      * @param finalDictFile the final dictionary file
      * @param tmpFile Used to tentatively write out data. Deleted after used.
      */
-    public LocalDictCompressionStringWriter(File finalDataFile, File finalDictFile, File tmpFile) throws IOException {
+    public LocalDictCompressionStringWriter(VirtualFile finalDataFile, VirtualFile finalDictFile, File tmpFile) throws IOException {
         this.finalDataFile = finalDataFile;
         this.finalDictFile = finalDictFile;
         this.tmpFile = tmpFile;
         tentativeDict = new HashMap<String, Integer> (1 << 16, 0.25f); // for performance, use low load factor
         tentativeDictArray = new ArrayList<String> (1 << 16);
-        tentativeIntWriter = LocalFixLenWriter.getInstanceInteger(tmpFile);
-        finalDictWriter = new FileOutputStream (finalDictFile, false);
+        tentativeIntWriter = LocalFixLenWriter.getInstanceInteger(new LocalVirtualFile(tmpFile));
+        finalDictWriter = finalDictFile.getOutputStream();
         
         if (LOG.isInfoEnabled()) {
             LOG.info("Creating dict-comp string file. finalDataFile=" + finalDataFile.getAbsolutePath()
@@ -109,7 +110,7 @@ public class LocalDictCompressionStringWriter implements TypedWriter<String, Str
         }
         finalDictWriter.flush();
         if (sync) {
-            finalDictWriter.getFD().sync(); // this really ensures the written data is durable.
+            finalDictWriter.syncDurable(); // this really ensures the written data is durable.
         }
     }
     private boolean wroteFileFooter = false;
@@ -179,7 +180,7 @@ public class LocalDictCompressionStringWriter implements TypedWriter<String, Str
         // finally, convert the tentative integer file to the final integer file.
         {
             long startMillisec = System.currentTimeMillis();
-            LocalFixLenReader<Integer, int[]> tentativeReader = LocalFixLenReader.getInstanceInteger(tmpFile);
+            LocalFixLenReader<Integer, int[]> tentativeReader = LocalFixLenReader.getInstanceInteger(new LocalVirtualFile(tmpFile));
             switch (bytesPerEntry) {
             case 1:
             {

@@ -2,7 +2,6 @@ package edu.brown.lasvegas.lvfs.local;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 
@@ -11,6 +10,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import edu.brown.lasvegas.lvfs.RawValueReader;
+import edu.brown.lasvegas.lvfs.VirtualFile;
 
 /**
  * Base testcase for both reader and writer.
@@ -19,7 +19,7 @@ import edu.brown.lasvegas.lvfs.RawValueReader;
  * would skip this. 
  */
 public abstract class LocalRawFileTestBase {
-    protected static File file;
+    protected static VirtualFile file;
     
     @Before
     public void setUp() throws Exception {

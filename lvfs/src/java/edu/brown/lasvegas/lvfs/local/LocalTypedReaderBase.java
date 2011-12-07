@@ -1,11 +1,11 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import java.io.File;
 import java.io.IOException;
 
 import edu.brown.lasvegas.lvfs.RawValueReader;
 import edu.brown.lasvegas.lvfs.TypedReader;
 import edu.brown.lasvegas.lvfs.ValueTraits;
+import edu.brown.lasvegas.lvfs.VirtualFile;
 
 /**
  * Base implementation of TypedReader. Doesn't do much. 
@@ -13,7 +13,7 @@ import edu.brown.lasvegas.lvfs.ValueTraits;
 public abstract class LocalTypedReaderBase<T, AT> implements TypedReader<T, AT> {
     private final LocalRawFileReader rawReader;
     //private final ValueTraits<T, AT> traits;
-    protected LocalTypedReaderBase (File file, ValueTraits<T, AT> traits, int streamBufferSize) throws IOException {
+    protected LocalTypedReaderBase (VirtualFile file, ValueTraits<T, AT> traits, int streamBufferSize) throws IOException {
         this.rawReader = new LocalRawFileReader(file, streamBufferSize);
         //this.traits = traits;
     }

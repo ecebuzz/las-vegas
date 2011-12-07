@@ -1,8 +1,7 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 
@@ -12,6 +11,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import edu.brown.lasvegas.lvfs.ValueTraits;
+import edu.brown.lasvegas.lvfs.VirtualFile;
 
 /**
  * Base class of testcases for {@link LocalRLEReader} and {@link LocalRLEWriter}.
@@ -19,7 +19,7 @@ import edu.brown.lasvegas.lvfs.ValueTraits;
  * would skip this. 
  */
 public abstract class LocalRLETestBase<T, AT> {
-    protected static File file, pos;
+    protected static VirtualFile file, pos;
     protected ValueTraits<T, AT> traits;
     protected LocalRLEReader<T, AT> reader;
     
@@ -46,12 +46,12 @@ public abstract class LocalRLETestBase<T, AT> {
         }
         inittedClasses.add(getClass());
         // create the file to test
-        file = new File("test/local/block_comp.bin");
+        file = new LocalVirtualFile("test/local/block_comp.bin");
         if (!file.getParentFile().exists() && !file.getParentFile().mkdirs()) {
             throw new Exception ("Couldn't create test directory " + file.getParentFile().getAbsolutePath());
         }
         file.delete();
-        pos = new File("test/local/block_comp.bin.pos");
+        pos = new LocalVirtualFile("test/local/block_comp.bin.pos");
         pos.delete();
         traits = createTraits();
         AT buf = createArray(VALUE_COUNT);

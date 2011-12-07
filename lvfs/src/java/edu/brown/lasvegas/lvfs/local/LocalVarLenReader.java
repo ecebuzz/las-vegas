@@ -1,14 +1,13 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import java.io.File;
 import java.io.IOException;
 
 import org.apache.log4j.Logger;
 
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
-
 import edu.brown.lasvegas.lvfs.AllValueTraits;
 import edu.brown.lasvegas.lvfs.VarLenValueTraits;
+import edu.brown.lasvegas.lvfs.VirtualFile;
 import edu.brown.lasvegas.lvfs.local.LocalPosFile.Pos;
 
 /**
@@ -31,18 +30,18 @@ public final class LocalVarLenReader<T> extends LocalTypedReaderBase<T, T[]> {
     private final VarLenValueTraits<T> traits;
 
     /** Constructs an instance of varchar column. */
-    public static LocalVarLenReader<String> getInstanceVarchar(File dataFile) throws IOException {
+    public static LocalVarLenReader<String> getInstanceVarchar(VirtualFile dataFile) throws IOException {
         return new LocalVarLenReader<String>(dataFile, new AllValueTraits.VarcharValueTraits());
     }
     /** Constructs an instance of varbinary column. */
-    public static LocalVarLenReader<byte[]> getInstanceVarbin(File dataFile) throws IOException {
+    public static LocalVarLenReader<byte[]> getInstanceVarbin(VirtualFile dataFile) throws IOException {
         return new LocalVarLenReader<byte[]>(dataFile, new AllValueTraits.VarbinValueTraits());
     }
 
-    public LocalVarLenReader(File dataFile, VarLenValueTraits<T> traits) throws IOException {
+    public LocalVarLenReader(VirtualFile dataFile, VarLenValueTraits<T> traits) throws IOException {
         this (dataFile, null, traits);
     }
-    public LocalVarLenReader(File dataFile, File posFile, VarLenValueTraits<T> traits) throws IOException {
+    public LocalVarLenReader(VirtualFile dataFile, VirtualFile posFile, VarLenValueTraits<T> traits) throws IOException {
         this (dataFile, posFile, traits, 1 << 16);
     }
     /**
@@ -50,7 +49,7 @@ public final class LocalVarLenReader<T> extends LocalTypedReaderBase<T, T[]> {
      * @param dataFile required. the main data file
      * @param posFile optional. position file to speed up locating tuple. (without it, seeking will be terribly slow)
      */
-    public LocalVarLenReader(File dataFile, File posFile, VarLenValueTraits<T> traits, int streamBufferSize) throws IOException {
+    public LocalVarLenReader(VirtualFile dataFile, VirtualFile posFile, VarLenValueTraits<T> traits, int streamBufferSize) throws IOException {
         super (dataFile, traits, streamBufferSize);
         assert (dataFile != null);
         this.traits = traits;
@@ -63,7 +62,7 @@ public final class LocalVarLenReader<T> extends LocalTypedReaderBase<T, T[]> {
     /**
      * Loads an optional position file to speed up seeks.
      */
-    public void loadPositionFile (File posFile) throws IOException {
+    public void loadPositionFile (VirtualFile posFile) throws IOException {
         posIndex = new LocalPosFile(posFile);
     }
     private LocalPosFile posIndex;

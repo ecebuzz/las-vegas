@@ -1,14 +1,13 @@
 package edu.brown.lasvegas.lvfs.local;
 
 import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
 import org.apache.log4j.Logger;
 
 import edu.brown.lasvegas.lvfs.RawValueReader;
+import edu.brown.lasvegas.lvfs.VirtualFile;
 
 /**
  * Reads a read-only local data file.
@@ -21,7 +20,7 @@ public class LocalRawFileReader {
     private static Logger LOG = Logger.getLogger(LocalRawFileReader.class);
 
     /** underlying file handle. */
-    private final File rawFile;
+    private final VirtualFile rawFile;
     /** actual size of underlying file. */
     private final long rawFileSize;
     
@@ -50,14 +49,14 @@ public class LocalRawFileReader {
      * @param rawFile the raw file
      * @throws IOException Signals that an I/O exception has occurred.
      */
-    public LocalRawFileReader (File rawFile, int streamBufferSize) throws IOException {
+    public LocalRawFileReader (VirtualFile rawFile, int streamBufferSize) throws IOException {
         this.rawFile = rawFile;
         rawFileSize = rawFile.length();
         this.streamBufferSize = streamBufferSize;
         if (streamBufferSize > 0) {
-            rawStream = new BufferedInputStream(new FileInputStream(rawFile), streamBufferSize);
+            rawStream = new BufferedInputStream(rawFile.getInputStream(), streamBufferSize);
         } else {
-            rawStream = new FileInputStream(rawFile);
+            rawStream = rawFile.getInputStream();
         }
         curPosition = 0;
         reader = new RawValueReader() {
@@ -116,9 +115,9 @@ public class LocalRawFileReader {
     private void reopenStream () throws IOException {
         rawStream.close();
         if (streamBufferSize > 0) {
-            rawStream = new BufferedInputStream(new FileInputStream(rawFile), streamBufferSize);
+            rawStream = new BufferedInputStream(rawFile.getInputStream(), streamBufferSize);
         } else {
-            rawStream = new FileInputStream(rawFile);
+            rawStream = rawFile.getInputStream();
         }
         curPosition = 0;
         LOG.info("reopened stream");

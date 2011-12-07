@@ -1,11 +1,11 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import java.io.File;
 import java.io.IOException;
 
 import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.lvfs.AllValueTraits;
 import edu.brown.lasvegas.lvfs.FixLenValueTraits;
+import edu.brown.lasvegas.lvfs.VirtualFile;
 
 /**
  * Writer implementation of block-compressed files for fixed-length columns.
@@ -18,31 +18,31 @@ public final class LocalBlockCompressionFixLenWriter<T, AT> extends LocalBlockCo
     private final FixLenValueTraits<T, AT> traits;
     
     /** Constructs an instance for 1-byte fixed length integer values. */
-    public static LocalBlockCompressionFixLenWriter<Byte, byte[]> getInstanceTinyint(File file, CompressionType compressionType) throws IOException {
+    public static LocalBlockCompressionFixLenWriter<Byte, byte[]> getInstanceTinyint(VirtualFile file, CompressionType compressionType) throws IOException {
         return new LocalBlockCompressionFixLenWriter<Byte, byte[]>(file, new AllValueTraits.TinyintValueTraits(), compressionType);
     }
     /** Constructs an instance for 2-byte fixed length integer values. */
-    public static LocalBlockCompressionFixLenWriter<Short, short[]> getInstanceSmallint(File file, CompressionType compressionType) throws IOException {
+    public static LocalBlockCompressionFixLenWriter<Short, short[]> getInstanceSmallint(VirtualFile file, CompressionType compressionType) throws IOException {
         return new LocalBlockCompressionFixLenWriter<Short, short[]>(file, new AllValueTraits.SmallintValueTraits(), compressionType);
     }
     /** Constructs an instance for 4-byte fixed length integer values. */
-    public static LocalBlockCompressionFixLenWriter<Integer, int[]> getInstanceInteger(File file, CompressionType compressionType) throws IOException {
+    public static LocalBlockCompressionFixLenWriter<Integer, int[]> getInstanceInteger(VirtualFile file, CompressionType compressionType) throws IOException {
         return new LocalBlockCompressionFixLenWriter<Integer, int[]>(file, new AllValueTraits.IntegerValueTraits(), compressionType);
     }
     /** Constructs an instance for 8-byte fixed length integer values. */
-    public static LocalBlockCompressionFixLenWriter<Long, long[]> getInstanceBigint(File file, CompressionType compressionType) throws IOException {
+    public static LocalBlockCompressionFixLenWriter<Long, long[]> getInstanceBigint(VirtualFile file, CompressionType compressionType) throws IOException {
         return new LocalBlockCompressionFixLenWriter<Long, long[]>(file, new AllValueTraits.BigintValueTraits(), compressionType);
     }
     /** Constructs an instance for 4-byte fixed length float values. */
-    public static LocalBlockCompressionFixLenWriter<Float, float[]> getInstanceFloat(File file, CompressionType compressionType) throws IOException {
+    public static LocalBlockCompressionFixLenWriter<Float, float[]> getInstanceFloat(VirtualFile file, CompressionType compressionType) throws IOException {
         return new LocalBlockCompressionFixLenWriter<Float, float[]>(file, new AllValueTraits.FloatValueTraits(), compressionType);
     }
     /** Constructs an instance for 8-byte fixed length float values. */
-    public static LocalBlockCompressionFixLenWriter<Double, double[]> getInstanceDouble(File file, CompressionType compressionType) throws IOException {
+    public static LocalBlockCompressionFixLenWriter<Double, double[]> getInstanceDouble(VirtualFile file, CompressionType compressionType) throws IOException {
         return new LocalBlockCompressionFixLenWriter<Double, double[]>(file, new AllValueTraits.DoubleValueTraits(), compressionType);
     }
 
-    public LocalBlockCompressionFixLenWriter(File file, FixLenValueTraits<T, AT> traits, CompressionType compressionType) throws IOException {
+    public LocalBlockCompressionFixLenWriter(VirtualFile file, FixLenValueTraits<T, AT> traits, CompressionType compressionType) throws IOException {
         super (file, traits, compressionType);
         this.traits = traits;
     }
