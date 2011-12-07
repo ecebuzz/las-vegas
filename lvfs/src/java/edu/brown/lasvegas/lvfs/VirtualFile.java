@@ -20,17 +20,22 @@ public interface VirtualFile {
     /**
      * Returns the length of the file.
      */
-    long length();
+    long length() throws IOException;
     
     /**
      * Returns if the file exists.
      */
-    boolean exists();
+    boolean exists() throws IOException;
     
     /**
      * Deletes the file from the underlying filesystem and returns if the file is actually deleted.
+     * @param recursive if the file is a folder, whether to recursively deletes the content.
      */
-    boolean delete();
+    boolean delete(boolean recursive) throws IOException;
+    /**
+     * Overload that assumes the file is not a folder (not recursive deletion).
+     */
+    boolean delete() throws IOException;
     
     /**
      * Returns the parent file object.
@@ -40,7 +45,7 @@ public interface VirtualFile {
     /**
      * If this file is a folder, creates all folders up to this folder.
      */
-    boolean mkdirs();
+    boolean mkdirs() throws IOException;
     
     /**
      * Returns the unique path to identify the file.

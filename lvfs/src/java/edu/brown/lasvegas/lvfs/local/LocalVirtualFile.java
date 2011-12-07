@@ -43,9 +43,12 @@ public final class LocalVirtualFile implements VirtualFile {
     public String getAbsolutePath() {
         return file.getAbsolutePath();
     }
-    
     @Override
-    public boolean delete() {
+    public boolean delete() throws IOException {
+        return delete (false);
+    }
+    @Override
+    public boolean delete(boolean recursive) throws IOException {
         return file.delete();
     }
     @Override
