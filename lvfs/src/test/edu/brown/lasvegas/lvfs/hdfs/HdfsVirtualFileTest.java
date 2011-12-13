@@ -6,11 +6,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.hdfs.MiniDFSCluster;
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 
 import edu.brown.lasvegas.lvfs.VirtualFile;
@@ -19,23 +15,7 @@ import edu.brown.lasvegas.lvfs.VirtualFileOutputStream;
 /**
  * Testcases for {@link HdfsVirtualFile}.
  */
-public class HdfsVirtualFileTest {
-    private MiniDFSCluster dfsCluster = null;
-
-    // TODO these should be initialized once and for all to reduce testcase runtime.
-    @Before
-    public void setUp() throws Exception {
-        dfsCluster = new MiniDFSCluster.Builder(new Configuration()).numDataNodes(2)
-            .format(true).racks(null).build();
-    }
-    
-    @After
-    public void tearDown() throws Exception {
-        if (dfsCluster != null) {
-            dfsCluster.shutdown();
-            dfsCluster = null;
-        }
-    }
+public class HdfsVirtualFileTest extends HdfsTestBase {
 
     @Test
     public void testCreate () throws IOException {
