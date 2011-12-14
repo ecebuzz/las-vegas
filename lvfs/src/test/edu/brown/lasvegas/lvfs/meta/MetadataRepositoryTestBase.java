@@ -17,6 +17,8 @@ import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.LVColumn;
 import edu.brown.lasvegas.LVColumnFile;
 import edu.brown.lasvegas.LVFracture;
+import edu.brown.lasvegas.LVRack;
+import edu.brown.lasvegas.LVRackNode;
 import edu.brown.lasvegas.LVReplica;
 import edu.brown.lasvegas.LVReplicaGroup;
 import edu.brown.lasvegas.LVReplicaPartition;
@@ -67,6 +69,8 @@ public abstract class MetadataRepositoryTestBase {
     /** 0=epoch, 1=intcol, 2=strcol, 3=floatcol, 4=tscol. */
     private LVColumn[] DEFAULT_COLUMNS;
     private LVFracture DEFAULT_FRACTURE;
+    private LVRack DEFAULT_RACK;
+    private LVRackNode DEFAULT_RACK_NODE;
     /** intcol partition. */
     private LVReplicaGroup DEFAULT_GROUP;
     /** intcol sort. */
@@ -81,9 +85,11 @@ public abstract class MetadataRepositoryTestBase {
     
     /** for ease of testing, create a few default objects. */
     private void initDefaultTestObjects () throws IOException {
-        LVTable existing = repository.getTable(DEFAULT_TABLE_NAME);
-        if (existing != null) {
+        for (LVTable existing : repository.getAllTables()) {
             repository.dropTable(existing);
+        }
+        for (LVRack existing : repository.getAllRacks()) {
+            repository.dropRack(existing);
         }
         DEFAULT_TABLE = repository.createNewTable(DEFAULT_TABLE_NAME, new LVColumn[]{
             new LVColumn("intcol", ColumnType.INTEGER),
@@ -92,6 +98,13 @@ public abstract class MetadataRepositoryTestBase {
             new LVColumn("tscol", ColumnType.TIMESTAMP),
         });
         assertTrue (DEFAULT_TABLE.getTableId() != 0);
+        
+        DEFAULT_RACK = repository.createNewRack("default_rack");
+        assertTrue (DEFAULT_RACK.getRackId() != 0);
+        
+        DEFAULT_RACK_NODE = repository.createNewRackNode(DEFAULT_RACK, "default_node.default_rack.dummy.org");
+        assertTrue (DEFAULT_RACK_NODE.getNodeId() != 0);
+        assertEquals(DEFAULT_RACK.getRackId(), DEFAULT_RACK_NODE.getRackId());
         
         DEFAULT_COLUMNS = repository.getAllColumns(DEFAULT_TABLE.getTableId());
         assertEquals (4 + 1, DEFAULT_COLUMNS.length);
@@ -108,6 +121,8 @@ public abstract class MetadataRepositoryTestBase {
         assertTrue (DEFAULT_GROUP.getGroupId() > 0);
         assertEquals(DEFAULT_TABLE.getTableId(), DEFAULT_GROUP.getTableId());
         assertEquals(DEFAULT_COLUMNS[1].getColumnId(), DEFAULT_GROUP.getPartitioningColumnId());
+        
+        repository.createNewRackAssignment(DEFAULT_RACK, DEFAULT_FRACTURE, DEFAULT_GROUP);
         
         DEFAULT_SUB_PARTITION_SCHEME = repository.createNewSubPartitionScheme(DEFAULT_FRACTURE, DEFAULT_GROUP);
         assertTrue (DEFAULT_SUB_PARTITION_SCHEME.getSubPartitionSchemeId() > 0);
@@ -137,7 +152,7 @@ public abstract class MetadataRepositoryTestBase {
             assertEquals(i, DEFAULT_REPLICA_PARTITIONS[i].getRange());
             assertEquals(DEFAULT_SUB_PARTITION_SCHEME.getSubPartitionSchemeId(), DEFAULT_REPLICA_PARTITIONS[i].getSubPartitionSchemeId());
             assertEquals(ReplicaPartitionStatus.BEING_RECOVERED, DEFAULT_REPLICA_PARTITIONS[i].getStatus());
-            DEFAULT_REPLICA_PARTITIONS[i] = repository.updateReplicaPartition(DEFAULT_REPLICA_PARTITIONS[i], ReplicaPartitionStatus.OK, "hdfs://dummy_url_" + i, "");
+            DEFAULT_REPLICA_PARTITIONS[i] = repository.updateReplicaPartition(DEFAULT_REPLICA_PARTITIONS[i], ReplicaPartitionStatus.OK, DEFAULT_RACK_NODE);
             assertEquals(ReplicaPartitionStatus.OK, DEFAULT_REPLICA_PARTITIONS[i].getStatus());
             DEFAULT_COLUMN_FILES[i] = new LVColumnFile[DEFAULT_COLUMNS.length];
             for (int j = 0; j < DEFAULT_COLUMNS.length; ++j) {
@@ -755,7 +770,7 @@ public abstract class MetadataRepositoryTestBase {
             assertEquals(i, partitions[i].getRange());
             assertEquals(DEFAULT_SUB_PARTITION_SCHEME.getSubPartitionSchemeId(), partitions[i].getSubPartitionSchemeId());
             assertEquals(ReplicaPartitionStatus.BEING_RECOVERED, partitions[i].getStatus());
-            partitions[i] = repository.updateReplicaPartition(partitions[i], ReplicaPartitionStatus.OK, "hdfs://dummy_url_" + i, "");
+            partitions[i] = repository.updateReplicaPartition(partitions[i], ReplicaPartitionStatus.OK, DEFAULT_RACK_NODE);
             assertEquals(ReplicaPartitionStatus.OK, partitions[i].getStatus());
         }
         {
@@ -765,10 +780,9 @@ public abstract class MetadataRepositoryTestBase {
             assertEquals(partitions[1].getPartitionId(), ret[1].getPartitionId());
         }
 
-        partitions[0] = repository.updateReplicaPartition(partitions[0], ReplicaPartitionStatus.LOST, "hdfs://dummy_url_" + 0, "hdfs://dummy_url_" + 1);
+        partitions[0] = repository.updateReplicaPartition(partitions[0], ReplicaPartitionStatus.LOST, DEFAULT_RACK_NODE);
         assertEquals(ReplicaPartitionStatus.LOST, partitions[0].getStatus());
-        assertEquals("hdfs://dummy_url_" + 0, partitions[0].getCurrentHdfsNodeUri());
-        assertEquals("hdfs://dummy_url_" + 1, partitions[0].getRecoveryHdfsNodeUri());
+        assertEquals(DEFAULT_RACK_NODE.getNodeId(), partitions[0].getNodeId().intValue());
         
         repository.dropReplicaPartition(partitions[0]);
 

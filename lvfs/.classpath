@@ -42,7 +42,7 @@
 	<classpathentry kind="lib" path="lib/jasper-runtime-5.5.23.jar"/>
 	<classpathentry kind="lib" path="lib/jaxb-api-2.2.2.jar"/>
 	<classpathentry kind="lib" path="lib/jaxb-impl-2.2.3-1.jar"/>
-	<classpathentry kind="lib" path="lib/je-4.1.10.jar"/>
+	<classpathentry kind="lib" path="lib/je-4.1.10.jar" sourcepath="/home/hkimura/Downloads/je-4.1.10/src"/>
 	<classpathentry kind="lib" path="lib/jersey-core-1.8.jar"/>
 	<classpathentry kind="lib" path="lib/jersey-json-1.8.jar"/>
 	<classpathentry kind="lib" path="lib/jersey-server-1.8.jar"/>

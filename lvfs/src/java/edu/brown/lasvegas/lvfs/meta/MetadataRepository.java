@@ -103,6 +103,13 @@ public interface MetadataRepository {
     LVTable getTable(String name) throws IOException;
 
     /**
+     * Returns all existing table objects. 
+     * @return table objects. in ID order.
+     * @throws IOException
+     */
+    LVTable[] getAllTables() throws IOException;
+
+    /**
      * Creates a new table with the given columns and base partitioning scheme.
      * This method itself does not create any replica scheme for this table.
      * You have to create at least one replica scheme to this table before importing fractures.
@@ -281,7 +288,7 @@ public interface MetadataRepository {
      * @return rack objects. in ID order.
      * @throws IOException
      */
-    LVReplicaGroup[] getAllRacks() throws IOException;
+    LVRack[] getAllRacks() throws IOException;
 
     /**
      * Creates a new rack in the given table with the specified name.
@@ -635,16 +642,13 @@ public interface MetadataRepository {
      * corrupted, recovered, migrated etc.
      * @param subPartition the sub-partition object to update
      * @param status new status of the sub-partition
-     * @param currentHdfsNodeUri new value for currentHdfsNodeUri 
-     * @param recoveryHdfsNodeUri new value for recoveryHdfsNodeUri
+     * @param node the node that physically stores the sub-partition. could be NULL, if the new status is LOST or BEING_RECOVERED. 
      * @return modified sub-partition
      * @throws IOException
      */
     LVReplicaPartition updateReplicaPartition(LVReplicaPartition subPartition,
         ReplicaPartitionStatus status,
-        String currentHdfsNodeUri,
-        String recoveryHdfsNodeUri
-        ) throws IOException;
+        LVRackNode node) throws IOException;
     
     /**
      * Deletes the sub-partition metadata object and related objects from this repository.

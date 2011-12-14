@@ -15,6 +15,8 @@ import edu.brown.lasvegas.util.CompositeIntKey;
  */
 @Entity
 public class LVReplicaPartition implements LVObject {
+    
+    /** The Constant IX_REPLICA_ID. */
     public static final String IX_REPLICA_ID = "IX_REPLICA_ID";
     /**
      * ID of the replica (Replicated Fracture) this replica partition belongs to.
@@ -34,6 +36,7 @@ public class LVReplicaPartition implements LVObject {
      */
     private int range;
 
+    /** The Constant IX_REPLICA_RANGE. */
     public static final String IX_REPLICA_RANGE = "IX_REPLICA_RANGE";
     /**
      * A hack to create a composite secondary index on Replica-ID and Range.
@@ -42,13 +45,28 @@ public class LVReplicaPartition implements LVObject {
     @SecondaryKey(name=IX_REPLICA_RANGE, relate=Relationship.MANY_TO_ONE)
     private CompositeIntKey replicaRange = new CompositeIntKey();
     
+    /**
+     * Gets the a hack to create a composite secondary index on Replica-ID and Range.
+     *
+     * @return the a hack to create a composite secondary index on Replica-ID and Range
+     */
     public CompositeIntKey getReplicaRange() {
         return replicaRange;
     }
+    
+    /**
+     * Sync replica range.
+     */
     private void syncReplicaRange() {
         replicaRange.setValue1(replicaId);
         replicaRange.setValue2(range);
     }
+    
+    /**
+     * Sets the a hack to create a composite secondary index on Replica-ID and Range.
+     *
+     * @param replicaRange the new a hack to create a composite secondary index on Replica-ID and Range
+     */
     public void setReplicaRange(CompositeIntKey replicaRange) {}
 
     /**
@@ -56,10 +74,16 @@ public class LVReplicaPartition implements LVObject {
      */
     @PrimaryKey
     private int partitionId;
+    
+    /**
+     * @see edu.brown.lasvegas.LVObject#getPrimaryKey()
+     */
     @Override
     public int getPrimaryKey() {
         return partitionId;
     }   
+    
+    /** The Constant IX_STATUS. */
     public static final String IX_STATUS = "IX_STATUS";
     /**
      * Current status of this replica partition.
@@ -67,22 +91,15 @@ public class LVReplicaPartition implements LVObject {
     @SecondaryKey(name=IX_STATUS, relate=Relationship.MANY_TO_ONE)
     private ReplicaPartitionStatus status;
 
-    public static final String IX_CURRENT_HDFS_NODE = "IX_CURRENT_HDFS_NODE";
+    /** The Constant IX_NODE_ID. */
+    public static final String IX_NODE_ID = "IX_NODE_ID";
     /**
-     * URI of the current HDFS node that contains this replica partition.
+     * The node that physically stores (will store) this replica partition.
+     * This value could be NULL, in which case it means the replica partition
+     * is not yet physically stored (or the node has been corrupted and it's being recovered).
      */
-    @SecondaryKey(name=IX_CURRENT_HDFS_NODE, relate=Relationship.MANY_TO_ONE)
-    private String currentHdfsNodeUri;
-
-    public static final String IX_RECOVERY_HDFS_NODE = "IX_RECOVERY_HDFS_NODE";
-    /**
-     * URI of the HDFS node that is trying to recovery this replica partition.
-     * As soon as the recovery is done, it becomes the new currentHdfsNodeUri
-     * and recoveryHdfsNodeUri will be set to an empty string.
-     * recoveryHdfsNodeUri is empty as far as the replica partition is intact.
-     */
-    @SecondaryKey(name=IX_RECOVERY_HDFS_NODE, relate=Relationship.MANY_TO_ONE)
-    private String recoveryHdfsNodeUri;
+    @SecondaryKey(name=IX_NODE_ID, relate=Relationship.MANY_TO_ONE, relatedEntity=LVRackNode.class)
+    private Integer nodeId;
     
     /**
      * To string.
@@ -96,8 +113,7 @@ public class LVReplicaPartition implements LVObject {
             + ", Range=" + range + ")"
             + " subPartitionSchemeId=" + subPartitionSchemeId
             + " Status=" + status
-            + " currentHdfsNodeUri=" + currentHdfsNodeUri
-            + " recoveryHdfsNodeUri=" + recoveryHdfsNodeUri
+            + " nodeId=" + nodeId
             ;
     }
 
@@ -158,42 +174,6 @@ public class LVReplicaPartition implements LVObject {
     }
 
     /**
-     * Gets the uRI of the current HDFS node that contains this replica partition.
-     *
-     * @return the uRI of the current HDFS node that contains this replica partition
-     */
-    public String getCurrentHdfsNodeUri() {
-        return currentHdfsNodeUri;
-    }
-
-    /**
-     * Sets the uRI of the current HDFS node that contains this replica partition.
-     *
-     * @param currentHdfsNodeUri the new uRI of the current HDFS node that contains this replica partition
-     */
-    public void setCurrentHdfsNodeUri(String currentHdfsNodeUri) {
-        this.currentHdfsNodeUri = currentHdfsNodeUri;
-    }
-
-    /**
-     * Gets the uRI of the HDFS node that is trying to recovery this replica partition.
-     *
-     * @return the uRI of the HDFS node that is trying to recovery this replica partition
-     */
-    public String getRecoveryHdfsNodeUri() {
-        return recoveryHdfsNodeUri;
-    }
-
-    /**
-     * Sets the uRI of the HDFS node that is trying to recovery this replica partition.
-     *
-     * @param recoveryHdfsNodeUri the new uRI of the HDFS node that is trying to recovery this replica partition
-     */
-    public void setRecoveryHdfsNodeUri(String recoveryHdfsNodeUri) {
-        this.recoveryHdfsNodeUri = recoveryHdfsNodeUri;
-    }
-    
-    /**
      * Gets the index in {@link LVSubPartitionScheme#getRanges()}.
      *
      * @return the index in {@link LVSubPartitionScheme#getRanges()}
@@ -229,4 +209,24 @@ public class LVReplicaPartition implements LVObject {
     public void setSubPartitionSchemeId(int subPartitionSchemeId) {
         this.subPartitionSchemeId = subPartitionSchemeId;
     }
+
+    /**
+     * Gets the node that physically stores (will store) this replica partition.
+     *
+     * @return the node that physically stores (will store) this replica partition
+     */
+    public Integer getNodeId() {
+        return nodeId;
+    }
+
+    /**
+     * Sets the node that physically stores (will store) this replica partition.
+     *
+     * @param nodeId the new node that physically stores (will store) this replica partition
+     */
+    public void setNodeId(Integer nodeId) {
+        this.nodeId = nodeId;
+    }
+
+    
 }

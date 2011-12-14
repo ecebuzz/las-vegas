@@ -165,6 +165,11 @@ public class MasterMetadataRepository implements MetadataRepository {
     public LVTable getTable(String name) throws IOException {
         return bdbTableAccessors.tableAccessor.IX_NAME.get(name);
     }
+    @Override
+    public LVTable[] getAllTables() throws IOException {
+        // ID order
+        return bdbTableAccessors.tableAccessor.PKX.sortedMap().values().toArray(new LVTable[0]);
+    }
 
     @Override
     public LVTable createNewTable(String name, LVColumn[] columns) throws IOException {
@@ -400,6 +405,10 @@ public class MasterMetadataRepository implements MetadataRepository {
         LVReplica[] replicas = getAllReplicasByFractureId(fracture.getFractureId());
         for (LVReplica replica : replicas) {
             dropReplica(replica);
+        }
+        // drop rack assignments
+        for (LVRackAssignment assignment : getAllRackAssignmentsByFracture(fracture.getFractureId())) {
+            dropRackAssignment(assignment);
         }
         boolean deleted = bdbTableAccessors.fractureAccessor.PKX.delete(fracture.getFractureId());
         if (!deleted) {
@@ -693,12 +702,17 @@ public class MasterMetadataRepository implements MetadataRepository {
 
     @Override
     public LVReplicaPartition updateReplicaPartition(LVReplicaPartition subPartition, ReplicaPartitionStatus status,
-                    String currentHdfsNodeUri, String recoveryHdfsNodeUri)
-                    throws IOException {
+                    LVRackNode node) throws IOException {
         assert (subPartition.getPartitionId() > 0);
+        if (status == ReplicaPartitionStatus.OK && node == null) {
+            throw new IOException ("a valid replica partition needs to be phisycally stored somewhere.");
+        }
         subPartition.setStatus(status);
-        subPartition.setCurrentHdfsNodeUri(currentHdfsNodeUri);
-        subPartition.setRecoveryHdfsNodeUri(recoveryHdfsNodeUri);
+        if (node == null) {
+            subPartition.setNodeId(null);
+        } else {
+            subPartition.setNodeId(node.getNodeId());
+        }
         bdbTableAccessors.replicaPartitionAccessor.PKX.putNoReturn(subPartition);
         return subPartition;
     }
@@ -768,9 +782,9 @@ public class MasterMetadataRepository implements MetadataRepository {
     }
 
     @Override
-    public LVReplicaGroup[] getAllRacks() throws IOException {
+    public LVRack[] getAllRacks() throws IOException {
         // ID order
-        return bdbTableAccessors.rackAccessor.PKX.sortedMap().values().toArray(new LVReplicaGroup[0]);
+        return bdbTableAccessors.rackAccessor.PKX.sortedMap().values().toArray(new LVRack[0]);
     }
 
     @Override
@@ -783,6 +797,7 @@ public class MasterMetadataRepository implements MetadataRepository {
             throw new IOException ("this rack name already exists:" + name);
         }
         LVRack rack = new LVRack();
+        rack.setRackId(bdbTableAccessors.rackAccessor.issueNewId());
         rack.setName(name);
         rack.setStatus(RackStatus.OK);
         bdbTableAccessors.rackAccessor.PKX.putNoReturn(rack);
@@ -839,6 +854,7 @@ public class MasterMetadataRepository implements MetadataRepository {
             throw new IOException ("this node name already exists:" + name);
         }
         LVRackNode node = new LVRackNode();
+        node.setNodeId(bdbTableAccessors.rackNodeAccessor.issueNewId());
         node.setName(name);
         node.setStatus(RackNodeStatus.OK);
         node.setRackId(rack.getRackId());
@@ -857,8 +873,16 @@ public class MasterMetadataRepository implements MetadataRepository {
 
     @Override
     public void dropRackNode(LVRackNode node) throws IOException {
-        // TODO Auto-generated method stub
-        // TODO nullify partition's assignments
+        assert (node.getNodeId() > 0);
+        // nullify partition's assignments on this node
+        for (LVReplicaPartition partition : bdbTableAccessors.replicaPartitionAccessor.IX_NODE_ID.subIndex(node.getNodeId()).map().values()) {
+            partition.setNodeId(null);
+            if (partition.getStatus() == ReplicaPartitionStatus.OK) {
+                partition.setStatus(ReplicaPartitionStatus.LOST);
+            }
+            bdbTableAccessors.replicaPartitionAccessor.PKX.put(partition);
+        }
+        bdbTableAccessors.rackNodeAccessor.PKX.delete(node.getNodeId());
     }
 
     @Override
@@ -901,6 +925,7 @@ public class MasterMetadataRepository implements MetadataRepository {
             throw new IOException ("an assignment for this rack and fracture already exists:" + assignment);
         }
         assignment = new LVRackAssignment();
+        assignment.setAssignmentId(bdbTableAccessors.rackAssignmentAccessor.issueNewId());
         assignment.setFractureId(fracture.getFractureId());
         assignment.setRackId(rack.getRackId());
         assignment.setOwnerReplicaGroupId(owner.getGroupId());

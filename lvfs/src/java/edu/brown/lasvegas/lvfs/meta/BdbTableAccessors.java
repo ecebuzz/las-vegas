@@ -207,10 +207,12 @@ class BdbTableAccessors {
             IX_REPLICA_ID = store.getSecondaryIndex(PKX, Integer.class, LVReplicaPartition.IX_REPLICA_ID);
             IX_REPLICA_RANGE = store.getSecondaryIndex(PKX, CompositeIntKey.class, LVReplicaPartition.IX_REPLICA_RANGE);
             IX_STATUS = store.getSecondaryIndex(PKX, ReplicaPartitionStatus.class, LVReplicaPartition.IX_STATUS);
+            IX_NODE_ID = store.getSecondaryIndex(PKX, Integer.class, LVReplicaPartition.IX_NODE_ID);
         }
         final SecondaryIndex<Integer, Integer, LVReplicaPartition> IX_REPLICA_ID;
         final SecondaryIndex<CompositeIntKey, Integer, LVReplicaPartition> IX_REPLICA_RANGE;
         final SecondaryIndex<ReplicaPartitionStatus, Integer, LVReplicaPartition> IX_STATUS;
+        final SecondaryIndex<Integer, Integer, LVReplicaPartition> IX_NODE_ID;
     }
 
     class ReplicaAccessor extends MetaTableAccessor<LVReplica> {
