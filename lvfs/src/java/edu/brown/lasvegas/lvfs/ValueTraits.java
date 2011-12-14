@@ -35,6 +35,11 @@ public interface ValueTraits<T, AT> {
     void writeRunLengthes (TypedRLEWriter<T, AT> writer, AT values, int off, int len) throws IOException;
     
     /**
+     * Creates an array of the specified size.
+     */
+    AT createArray (int size);
+    
+    /**
      * Sets the value to the array at once. Used to efficiently get values
      * from RLE-compressed file. However, even more efficient way to access
      * RLE-compressed file is the {@link TypedRLEReader#getCurrentRun()}.

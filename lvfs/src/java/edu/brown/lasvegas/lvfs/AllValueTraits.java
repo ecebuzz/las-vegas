@@ -48,6 +48,10 @@ public final class AllValueTraits {
             }
         }
         @Override
+        public byte[] createArray(int size) {
+            return new byte[size];
+        }
+        @Override
         public void fillArray(Byte value, byte[] array, int off, int len) {
             Arrays.fill(array, off, off + len, value);
         }
@@ -94,6 +98,10 @@ public final class AllValueTraits {
                     curValue = values[i];
                 }
             }
+        }
+        @Override
+        public short[] createArray(int size) {
+            return new short[size];
         }
         @Override
         public void fillArray(Short value, short[] array, int off, int len) {
@@ -145,6 +153,10 @@ public final class AllValueTraits {
             }
         }
         @Override
+        public int[] createArray(int size) {
+            return new int[size];
+        }
+        @Override
         public void fillArray(Integer value, int[] array, int off, int len) {
             Arrays.fill(array, off, off + len, value);
         }
@@ -191,6 +203,10 @@ public final class AllValueTraits {
                     curValue = values[i];
                 }
             }
+        }
+        @Override
+        public long[] createArray(int size) {
+            return new long[size];
         }
         @Override
         public void fillArray(Long value, long[] array, int off, int len) {
@@ -241,6 +257,10 @@ public final class AllValueTraits {
             }
         }
         @Override
+        public float[] createArray(int size) {
+            return new float[size];
+        }
+        @Override
         public void fillArray(Float value, float[] array, int off, int len) {
             Arrays.fill(array, off, off + len, value);
         }
@@ -274,6 +294,10 @@ public final class AllValueTraits {
         @Override
         public short getBitsPerValue() {
             return 64;
+        }
+        @Override
+        public double[] createArray(int size) {
+            return new double[size];
         }
         @Override
         public void writeRunLengthes(TypedRLEWriter<Double, double[]> writer, double[] values, int off, int len) throws IOException {
@@ -332,6 +356,10 @@ public final class AllValueTraits {
             }
         }
         @Override
+        public String[] createArray(int size) {
+            return new String[size];
+        }
+        @Override
         public void fillArray(String value, String[] array, int off, int len) {
             Arrays.fill(array, off, off + len, value);
         }
@@ -371,6 +399,10 @@ public final class AllValueTraits {
                     curValue = values[i];
                 }
             }
+        }
+        @Override
+        public byte[][] createArray(int size) {
+            return new byte[size][];
         }
         @Override
         public void fillArray(byte[] value, byte[][] array, int off, int len) {

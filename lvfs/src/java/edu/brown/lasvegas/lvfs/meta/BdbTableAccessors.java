@@ -10,6 +10,9 @@ import com.sleepycat.persist.SecondaryIndex;
 import com.sleepycat.persist.StoreConfig;
 
 import edu.brown.lasvegas.LVColumnFile;
+import edu.brown.lasvegas.LVRack;
+import edu.brown.lasvegas.LVRackAssignment;
+import edu.brown.lasvegas.LVRackNode;
 import edu.brown.lasvegas.LVReplica;
 import edu.brown.lasvegas.LVReplicaGroup;
 import edu.brown.lasvegas.LVReplicaPartition;
@@ -36,6 +39,9 @@ class BdbTableAccessors {
     final TableAccessor tableAccessor;
     final ColumnAccessor columnAccessor;
     final FractureAccessor fractureAccessor;
+    final RackAccessor rackAccessor;
+    final RackNodeAccessor rackNodeAccessor;
+    final RackAssignmentAccessor rackAssignmentAccessor;
     final ReplicaGroupAccessor replicaGroupAccessor;
     final ReplicaSchemeAccessor replicaSchemeAccessor;
     final SubPartitionSchemeAccessor subPartitionSchemeAccessor;
@@ -56,6 +62,9 @@ class BdbTableAccessors {
         tableAccessor = new TableAccessor();
         columnAccessor = new ColumnAccessor();
         fractureAccessor = new FractureAccessor();
+        rackAccessor = new RackAccessor();
+        rackNodeAccessor = new RackNodeAccessor();
+        rackAssignmentAccessor = new RackAssignmentAccessor();
         replicaGroupAccessor = new ReplicaGroupAccessor();
         replicaSchemeAccessor = new ReplicaSchemeAccessor();
         subPartitionSchemeAccessor = new SubPartitionSchemeAccessor();
@@ -142,6 +151,36 @@ class BdbTableAccessors {
             IX_TABLE_ID = store.getSecondaryIndex(PKX, Integer.class, LVReplicaGroup.IX_TABLE_ID);
         }
         final SecondaryIndex<Integer, Integer, LVReplicaGroup> IX_TABLE_ID;
+    }
+
+    class RackAccessor extends MetaTableAccessor<LVRack> {
+        RackAccessor () {
+            super(LVRack.class);
+            IX_NAME = store.getSecondaryIndex(PKX, String.class, LVRack.IX_NAME);
+        }
+        final SecondaryIndex<String, Integer, LVRack> IX_NAME;
+    }
+
+    class RackNodeAccessor extends MetaTableAccessor<LVRackNode> {
+        RackNodeAccessor () {
+            super(LVRackNode.class);
+            IX_NAME = store.getSecondaryIndex(PKX, String.class, LVRackNode.IX_NAME);
+            IX_RACK_ID = store.getSecondaryIndex(PKX, Integer.class, LVRackNode.IX_RACK_ID);
+        }
+        final SecondaryIndex<String, Integer, LVRackNode> IX_NAME;
+        final SecondaryIndex<Integer, Integer, LVRackNode> IX_RACK_ID;
+    }
+
+    class RackAssignmentAccessor extends MetaTableAccessor<LVRackAssignment> {
+        RackAssignmentAccessor () {
+            super(LVRackAssignment.class);
+            IX_FRACTURE_ID = store.getSecondaryIndex(PKX, Integer.class, LVRackAssignment.IX_FRACTURE_ID);
+            IX_RACK_ID = store.getSecondaryIndex(PKX, Integer.class, LVRackAssignment.IX_RACK_ID);
+            IX_OWNER = store.getSecondaryIndex(PKX, Integer.class, LVRackAssignment.IX_OWNER);
+        }
+        final SecondaryIndex<Integer, Integer, LVRackAssignment> IX_FRACTURE_ID;
+        final SecondaryIndex<Integer, Integer, LVRackAssignment> IX_RACK_ID;
+        final SecondaryIndex<Integer, Integer, LVRackAssignment> IX_OWNER;
     }
 
     class ReplicaSchemeAccessor extends MetaTableAccessor<LVReplicaScheme> {

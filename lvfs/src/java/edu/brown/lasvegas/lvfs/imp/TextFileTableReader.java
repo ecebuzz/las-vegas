@@ -37,7 +37,7 @@ public class TextFileTableReader implements LVTableReader {
             new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS"));
     }
     /**
-     * Fill constructor.
+     * Full constructor.
      * @param in file to read.
      * @param scheme scheme of the table
      * @param delimiter character(s) to tokenize columns

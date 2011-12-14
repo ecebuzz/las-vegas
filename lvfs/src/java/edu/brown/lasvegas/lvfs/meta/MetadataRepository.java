@@ -6,10 +6,15 @@ import java.util.Map;
 import edu.brown.lasvegas.LVColumnFile;
 import edu.brown.lasvegas.ColumnType;
 import edu.brown.lasvegas.CompressionType;
+import edu.brown.lasvegas.LVRack;
+import edu.brown.lasvegas.LVRackAssignment;
+import edu.brown.lasvegas.LVRackNode;
 import edu.brown.lasvegas.LVReplica;
 import edu.brown.lasvegas.LVReplicaGroup;
 import edu.brown.lasvegas.LVReplicaPartition;
 import edu.brown.lasvegas.LVSubPartitionScheme;
+import edu.brown.lasvegas.RackNodeStatus;
+import edu.brown.lasvegas.RackStatus;
 import edu.brown.lasvegas.ReplicaPartitionStatus;
 import edu.brown.lasvegas.LVReplicaScheme;
 import edu.brown.lasvegas.LVTable;
@@ -253,6 +258,165 @@ public interface MetadataRepository {
      * @throws IOException
      */
     void dropReplicaGroup (LVReplicaGroup group) throws IOException;
+
+    //////////////////////// Rack Methods : begin ////////////////////////////////
+    /**
+     * Returns the rack object with the given ID. 
+     * @param rackId Rack ID
+     * @return rack object. null if the ID is not found.
+     * @throws IOException
+     */
+    LVRack getRack (int rackId) throws IOException;
+
+    /**
+     * Returns the rack object with the given rack name. 
+     * @param rackName name of the rack
+     * @return rack object. null if the name is not found.
+     * @throws IOException
+     */
+    LVRack getRack (String rackName) throws IOException;
+
+    /**
+     * Returns all rack objects. 
+     * @return rack objects. in ID order.
+     * @throws IOException
+     */
+    LVReplicaGroup[] getAllRacks() throws IOException;
+
+    /**
+     * Creates a new rack in the given table with the specified name.
+     * @param name A unique name of the rack. Should be the same string as the rack names in HDFS.
+     * @return new Rack object
+     * @throws IOException
+     */
+    LVRack createNewRack(String name) throws IOException;
+
+    /**
+     * Changes the status of the given rack.
+     * @param rack Rack object to be modified.
+     * @param status new status of the rack.
+     * @return Rack object after modification
+     * @throws IOException
+     */
+    LVRack updateRackStatus(LVRack rack, RackStatus status) throws IOException;
+    
+    /**
+     * Deletes the rack object and related objects from this repository.
+     * @param rack the rack object to delete
+     * @throws IOException
+     */
+    void dropRack (LVRack rack) throws IOException;
+
+    //////////////////////// RackNode Methods : begin ////////////////////////////////
+
+    /**
+     * Returns the rack node object with the given ID. 
+     * @param nodeId Node ID
+     * @return rack node object. null if the ID is not found.
+     * @throws IOException
+     */
+    LVRackNode getRackNode(int nodeId) throws IOException;
+
+    /**
+     * Returns the rack node object with the given name. 
+     * @param name unique name of the node. probably FQDN.
+     * @return rack node object. null if the name is not found.
+     * @throws IOException
+     */
+    LVRackNode getRackNode(String nodeName) throws IOException;
+
+    /**
+     * Returns all rack nodes in the rack. 
+     * @param rackId Rack ID.
+     * @return rack node objects. in ID order.
+     * @throws IOException
+     */
+    LVRackNode[] getAllRackNodes(int rackId) throws IOException;
+
+    /**
+     * Creates a new rack node in the given rack with the specified name.
+     * @param rack the rack to which the new node will belong
+     * @param name unique name of the new node. probably FQDN.
+     * @return new RackNode object
+     * @throws IOException
+     */
+    LVRackNode createNewRackNode(LVRack rack, String name) throws IOException;
+
+    /**
+     * Changes the status of the given node.
+     * @param node Node object to be modified.
+     * @param status new status of the node.
+     * @return Node object after modification
+     * @throws IOException
+     */
+    LVRackNode updateRackNodeStatus(LVRackNode node, RackNodeStatus status) throws IOException;
+    
+    /**
+     * Deletes the rack node metadata object and related objects from this repository.
+     * @param node the node object to delete
+     * @throws IOException
+     */
+    void dropRackNode (LVRackNode node) throws IOException;
+
+    //////////////////////// RackAssignment Methods : begin ////////////////////////////////
+
+    /**
+     * Returns the rack assignment object with the given ID. 
+     * @param assignmentId Assignment ID
+     * @return rack assignment object. null if the ID is not found.
+     * @throws IOException
+     */
+    LVRackAssignment getRackAssignment(int assignmentId) throws IOException;
+
+    /**
+     * Returns the assignment object for the given rack and fracture. 
+     * @param rack specified Rack.
+     * @param fracture specified Fracture.
+     * @return rack assignment object. null if not assigned yet.
+     * @throws IOException
+     */
+    LVRackAssignment getRackAssignment(LVRack rack, LVFracture fracture) throws IOException;
+
+    /**
+     * Returns all rack assignments of the rack. 
+     * @param rackId Rack ID.
+     * @return rack assignment objects. in ID order.
+     * @throws IOException
+     */
+    LVRackAssignment[] getAllRackAssignmentsByRack(int rackId) throws IOException;
+    /**
+     * Returns all rack assignments of the fracture. 
+     * @param fractureId Fracture ID.
+     * @return rack assignment objects. in ID order.
+     * @throws IOException
+     */
+    LVRackAssignment[] getAllRackAssignmentsByFracture(int fractureId) throws IOException;
+
+    /**
+     * Creates a new rack assignment.
+     * @param rack the rack to assign
+     * @param fracture the fracture this assignment regards to
+     * @param owner the replica group that will exclusively own the rack regarding to the fracture 
+     * @return new RackAssignment object
+     * @throws IOException
+     */
+    LVRackAssignment createNewRackAssignment(LVRack rack, LVFracture fracture, LVReplicaGroup owner) throws IOException;
+
+    /**
+     * Changes the owner of the given assignment.
+     * @param assignment Assignment object to be modified.
+     * @param owner new owner of the assignment.
+     * @return Assignment object after modification
+     * @throws IOException
+     */
+    LVRackAssignment updateRackAssignmentOwner(LVRackAssignment assignment, LVReplicaGroup owner) throws IOException;
+    
+    /**
+     * Deletes the rack assignment metadata object.
+     * @param assignment the assignment object to delete
+     * @throws IOException
+     */
+    void dropRackAssignment (LVRackAssignment assignment) throws IOException;
 
     //////////////////////// Replica Scheme Methods : begin ////////////////////////////////
     /**

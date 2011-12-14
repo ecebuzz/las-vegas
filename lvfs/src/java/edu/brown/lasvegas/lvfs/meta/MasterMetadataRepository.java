@@ -24,10 +24,15 @@ import edu.brown.lasvegas.ColumnStatus;
 import edu.brown.lasvegas.LVColumnFile;
 import edu.brown.lasvegas.ColumnType;
 import edu.brown.lasvegas.CompressionType;
+import edu.brown.lasvegas.LVRack;
+import edu.brown.lasvegas.LVRackAssignment;
+import edu.brown.lasvegas.LVRackNode;
 import edu.brown.lasvegas.LVReplica;
 import edu.brown.lasvegas.LVReplicaGroup;
 import edu.brown.lasvegas.LVReplicaPartition;
 import edu.brown.lasvegas.LVSubPartitionScheme;
+import edu.brown.lasvegas.RackNodeStatus;
+import edu.brown.lasvegas.RackStatus;
 import edu.brown.lasvegas.ReplicaPartitionStatus;
 import edu.brown.lasvegas.LVReplicaScheme;
 import edu.brown.lasvegas.LVTable;
@@ -608,7 +613,7 @@ public class MasterMetadataRepository implements MetadataRepository {
 
     @Override
     public LVSubPartitionScheme getSubPartitionSchemeByFractureAndGroup(int fractureId, int groupId) throws IOException {
-        // #fractures * #groups should be large.. so, joining two indexes is not so slower than composite index
+        // #fractures * #groups shouldn't be large.. so, joining two indexes is not so slower than composite index
         Map<Integer, LVSubPartitionScheme> map1 = bdbTableAccessors.subPartitionSchemeAccessor.IX_FRACTURE_ID.subIndex(fractureId).map();
         Map<Integer, LVSubPartitionScheme> map2 = bdbTableAccessors.subPartitionSchemeAccessor.IX_GROUP_ID.subIndex(groupId).map();
         for (LVSubPartitionScheme value : map1.values()) {
@@ -751,4 +756,170 @@ public class MasterMetadataRepository implements MetadataRepository {
             LOG.warn("this column file has been already deleted?? :" + columnFile);
         }
     }
+
+    @Override
+    public LVRack getRack(int rackId) throws IOException {
+        return bdbTableAccessors.rackAccessor.PKX.get(rackId);
+    }
+
+    @Override
+    public LVRack getRack(String rackName) throws IOException {
+        return bdbTableAccessors.rackAccessor.IX_NAME.get(rackName);
+    }
+
+    @Override
+    public LVReplicaGroup[] getAllRacks() throws IOException {
+        // ID order
+        return bdbTableAccessors.rackAccessor.PKX.sortedMap().values().toArray(new LVReplicaGroup[0]);
+    }
+
+    @Override
+    public LVRack createNewRack(String name) throws IOException {
+        LOG.info("creating new rack " + name + "...");
+        if (name == null || name.length() == 0) {
+            throw new IOException ("empty rack name");
+        }
+        if (bdbTableAccessors.rackAccessor.IX_NAME.contains(name)) {
+            throw new IOException ("this rack name already exists:" + name);
+        }
+        LVRack rack = new LVRack();
+        rack.setName(name);
+        rack.setStatus(RackStatus.OK);
+        bdbTableAccessors.rackAccessor.PKX.putNoReturn(rack);
+        LOG.info("created new rack: " + rack);
+        return rack;
+    }
+
+    @Override
+    public LVRack updateRackStatus(LVRack rack, RackStatus status) throws IOException {
+        assert (status != null);
+        assert (rack.getRackId() > 0);
+        rack.setStatus(status);
+        bdbTableAccessors.rackAccessor.PKX.putNoReturn(rack);
+        return rack;
+    }
+
+    @Override
+    public void dropRack(LVRack rack) throws IOException {
+        assert (rack.getRackId() > 0);
+        LOG.info("dropping a rack: " + rack);
+        for (LVRackNode node : getAllRackNodes(rack.getRackId())) {
+            dropRackNode(node);
+        }
+        for (LVRackAssignment assignment : getAllRackAssignmentsByRack(rack.getRackId())) {
+            dropRackAssignment(assignment);
+        }
+        bdbTableAccessors.rackAccessor.PKX.delete(rack.getRackId());
+        LOG.info("dropped");
+    }
+
+    @Override
+    public LVRackNode getRackNode(int nodeId) throws IOException {
+        return bdbTableAccessors.rackNodeAccessor.PKX.get(nodeId);
+    }
+
+    @Override
+    public LVRackNode getRackNode(String nodeName) throws IOException {
+        return bdbTableAccessors.rackNodeAccessor.IX_NAME.get(nodeName);
+    }
+
+    @Override
+    public LVRackNode[] getAllRackNodes(int rackId) throws IOException {
+        // ID order
+        return bdbTableAccessors.rackNodeAccessor.IX_RACK_ID.subIndex(rackId).sortedMap().values().toArray(new LVRackNode[0]);
+    }
+
+    @Override
+    public LVRackNode createNewRackNode(LVRack rack, String name) throws IOException {
+        assert (rack.getRackId() > 0);
+        if (name == null || name.length() == 0) {
+            throw new IOException ("empty node name");
+        }
+        if (bdbTableAccessors.rackNodeAccessor.IX_NAME.contains(name)) {
+            throw new IOException ("this node name already exists:" + name);
+        }
+        LVRackNode node = new LVRackNode();
+        node.setName(name);
+        node.setStatus(RackNodeStatus.OK);
+        node.setRackId(rack.getRackId());
+        bdbTableAccessors.rackNodeAccessor.PKX.putNoReturn(node);
+        return node;
+    }
+
+    @Override
+    public LVRackNode updateRackNodeStatus(LVRackNode node, RackNodeStatus status) throws IOException {
+        assert (node.getNodeId() > 0);
+        assert (status != null);
+        node.setStatus(status);
+        bdbTableAccessors.rackNodeAccessor.PKX.putNoReturn(node);
+        return node;
+    }
+
+    @Override
+    public void dropRackNode(LVRackNode node) throws IOException {
+        // TODO Auto-generated method stub
+        // TODO nullify partition's assignments
+    }
+
+    @Override
+    public LVRackAssignment getRackAssignment(int assignmentId) throws IOException {
+        return bdbTableAccessors.rackAssignmentAccessor.PKX.get(assignmentId);
+    }
+    
+    @Override
+    public LVRackAssignment getRackAssignment(LVRack rack, LVFracture fracture) throws IOException {
+        // #assignments per fracture and rack shouldn't be large.. so, joining two indexes is not so slower than composite index
+        Map<Integer, LVRackAssignment> map2 = bdbTableAccessors.rackAssignmentAccessor.IX_RACK_ID.subIndex(rack.getRackId()).map();
+        Map<Integer, LVRackAssignment> map1 = bdbTableAccessors.rackAssignmentAccessor.IX_FRACTURE_ID.subIndex(fracture.getFractureId()).map();
+        for (LVRackAssignment value : map1.values()) {
+            if (map2.containsKey(value.getPrimaryKey())) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public LVRackAssignment[] getAllRackAssignmentsByRack(int rackId) throws IOException {
+        // ID order
+        return bdbTableAccessors.rackAssignmentAccessor.IX_RACK_ID.subIndex(rackId).sortedMap().values().toArray(new LVRackAssignment[0]);
+    }
+
+    @Override
+    public LVRackAssignment[] getAllRackAssignmentsByFracture(int fractureId) throws IOException {
+        // ID order
+        return bdbTableAccessors.rackAssignmentAccessor.IX_FRACTURE_ID.subIndex(fractureId).sortedMap().values().toArray(new LVRackAssignment[0]);
+    }
+
+    @Override
+    public LVRackAssignment createNewRackAssignment(LVRack rack, LVFracture fracture, LVReplicaGroup owner) throws IOException {
+        assert (rack.getRackId() > 0);
+        assert (fracture.getFractureId() > 0);
+        assert (owner.getGroupId() > 0);
+        LVRackAssignment assignment = getRackAssignment(rack, fracture);
+        if (assignment != null) {
+            throw new IOException ("an assignment for this rack and fracture already exists:" + assignment);
+        }
+        assignment = new LVRackAssignment();
+        assignment.setFractureId(fracture.getFractureId());
+        assignment.setRackId(rack.getRackId());
+        assignment.setOwnerReplicaGroupId(owner.getGroupId());
+        bdbTableAccessors.rackAssignmentAccessor.PKX.putNoReturn(assignment);
+        return assignment;
+    }
+
+    @Override
+    public LVRackAssignment updateRackAssignmentOwner(LVRackAssignment assignment, LVReplicaGroup owner) throws IOException {
+        assert (assignment.getAssignmentId() > 0);
+        assert (owner.getGroupId() > 0);
+        assignment.setOwnerReplicaGroupId(owner.getGroupId());
+        bdbTableAccessors.rackAssignmentAccessor.PKX.putNoReturn(assignment);
+        return assignment;
+    }
+
+    @Override
+    public void dropRackAssignment(LVRackAssignment assignment) throws IOException {
+        assert (assignment.getAssignmentId() > 0);
+        bdbTableAccessors.rackAssignmentAccessor.PKX.delete(assignment.getAssignmentId());
+    }    
 }
