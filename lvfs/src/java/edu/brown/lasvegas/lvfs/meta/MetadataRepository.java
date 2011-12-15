@@ -390,14 +390,14 @@ public interface MetadataRepository {
      * @return rack assignment objects. in ID order.
      * @throws IOException
      */
-    LVRackAssignment[] getAllRackAssignmentsByRack(int rackId) throws IOException;
+    LVRackAssignment[] getAllRackAssignmentsByRackId(int rackId) throws IOException;
     /**
      * Returns all rack assignments of the fracture. 
      * @param fractureId Fracture ID.
      * @return rack assignment objects. in ID order.
      * @throws IOException
      */
-    LVRackAssignment[] getAllRackAssignmentsByFracture(int fractureId) throws IOException;
+    LVRackAssignment[] getAllRackAssignmentsByFractureId(int fractureId) throws IOException;
 
     /**
      * Creates a new rack assignment.

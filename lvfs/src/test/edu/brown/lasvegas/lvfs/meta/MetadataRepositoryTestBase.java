@@ -18,6 +18,7 @@ import edu.brown.lasvegas.LVColumn;
 import edu.brown.lasvegas.LVColumnFile;
 import edu.brown.lasvegas.LVFracture;
 import edu.brown.lasvegas.LVRack;
+import edu.brown.lasvegas.LVRackAssignment;
 import edu.brown.lasvegas.LVRackNode;
 import edu.brown.lasvegas.LVReplica;
 import edu.brown.lasvegas.LVReplicaGroup;
@@ -25,6 +26,8 @@ import edu.brown.lasvegas.LVReplicaPartition;
 import edu.brown.lasvegas.LVReplicaScheme;
 import edu.brown.lasvegas.LVSubPartitionScheme;
 import edu.brown.lasvegas.LVTable;
+import edu.brown.lasvegas.RackNodeStatus;
+import edu.brown.lasvegas.RackStatus;
 import edu.brown.lasvegas.ReplicaPartitionStatus;
 import edu.brown.lasvegas.ReplicaStatus;
 import edu.brown.lasvegas.TableStatus;
@@ -65,12 +68,15 @@ public abstract class MetadataRepositoryTestBase {
     
     
     private final static String DEFAULT_TABLE_NAME = "deftable";
+    private final static String DEFAULT_RACK_NAME = "default_rack";
+    private final static String DEFAULT_RACK_NODE_NAME = "default_node.default_rack.dummy.org";
     private LVTable DEFAULT_TABLE;
     /** 0=epoch, 1=intcol, 2=strcol, 3=floatcol, 4=tscol. */
     private LVColumn[] DEFAULT_COLUMNS;
     private LVFracture DEFAULT_FRACTURE;
     private LVRack DEFAULT_RACK;
     private LVRackNode DEFAULT_RACK_NODE;
+    private LVRackAssignment DEFAULT_RACK_ASSIGNMENT;
     /** intcol partition. */
     private LVReplicaGroup DEFAULT_GROUP;
     /** intcol sort. */
@@ -99,10 +105,10 @@ public abstract class MetadataRepositoryTestBase {
         });
         assertTrue (DEFAULT_TABLE.getTableId() != 0);
         
-        DEFAULT_RACK = repository.createNewRack("default_rack");
+        DEFAULT_RACK = repository.createNewRack(DEFAULT_RACK_NAME);
         assertTrue (DEFAULT_RACK.getRackId() != 0);
         
-        DEFAULT_RACK_NODE = repository.createNewRackNode(DEFAULT_RACK, "default_node.default_rack.dummy.org");
+        DEFAULT_RACK_NODE = repository.createNewRackNode(DEFAULT_RACK, DEFAULT_RACK_NODE_NAME);
         assertTrue (DEFAULT_RACK_NODE.getNodeId() != 0);
         assertEquals(DEFAULT_RACK.getRackId(), DEFAULT_RACK_NODE.getRackId());
         
@@ -122,7 +128,7 @@ public abstract class MetadataRepositoryTestBase {
         assertEquals(DEFAULT_TABLE.getTableId(), DEFAULT_GROUP.getTableId());
         assertEquals(DEFAULT_COLUMNS[1].getColumnId(), DEFAULT_GROUP.getPartitioningColumnId());
         
-        repository.createNewRackAssignment(DEFAULT_RACK, DEFAULT_FRACTURE, DEFAULT_GROUP);
+        DEFAULT_RACK_ASSIGNMENT = repository.createNewRackAssignment(DEFAULT_RACK, DEFAULT_FRACTURE, DEFAULT_GROUP);
         
         DEFAULT_SUB_PARTITION_SCHEME = repository.createNewSubPartitionScheme(DEFAULT_FRACTURE, DEFAULT_GROUP);
         assertTrue (DEFAULT_SUB_PARTITION_SCHEME.getSubPartitionSchemeId() > 0);
@@ -443,6 +449,224 @@ public abstract class MetadataRepositoryTestBase {
         assertEquals (tupleCount, fracture.getTupleCount());
         assertEquals (start, fracture.getRange().getStartKey());
         assertEquals (end, fracture.getRange().getEndKey());
+    }
+
+    @Test
+    public void testRackAssorted() throws IOException {
+        int rackId1, rackId2;
+        {
+            LVRack rack = repository.createNewRack("rack1");
+            assertTrue (rack.getRackId() > 0);
+            validateRack (rack, rack.getRackId(), "rack1", RackStatus.OK);
+            rackId1 = rack.getRackId();
+        }
+        {
+            LVRack rack = repository.createNewRack("rack2");
+            assertTrue (rack.getRackId() > 0);
+            validateRack (rack, rack.getRackId(), "rack2", RackStatus.OK);
+            rackId2 = rack.getRackId();
+        }
+        assertTrue(rackId1 != rackId2);
+        try {
+            // duplicated name: should fail
+            repository.createNewRack("rack2");
+            fail();
+        } catch (IOException ex) {
+            //ok.
+        }
+
+        
+        LVRack[] racks = repository.getAllRacks();
+        assertEquals (3, racks.length);
+        validateRack (racks[0], DEFAULT_RACK.getRackId(), DEFAULT_RACK_NAME, RackStatus.OK);
+        validateRack (racks[1], rackId1, "rack1", RackStatus.OK);
+        validateRack (racks[2], rackId2, "rack2", RackStatus.OK);
+
+        reloadRepository();
+
+        validateRack (repository.getRack(rackId1), rackId1, "rack1", RackStatus.OK);
+        validateRack (repository.getRack(rackId2), rackId2, "rack2", RackStatus.OK);
+        racks = repository.getAllRacks();
+        assertEquals (3, racks.length);
+        validateRack (racks[0], DEFAULT_RACK.getRackId(), DEFAULT_RACK_NAME, RackStatus.OK);
+        validateRack (racks[1], rackId1, "rack1", RackStatus.OK);
+        validateRack (racks[2], rackId2, "rack2", RackStatus.OK);
+        
+        repository.dropRack(racks[1]);
+
+        assertNull (repository.getRack(rackId1));
+        assertNull (repository.getRack("rack1"));
+        validateRack (repository.getRack(rackId2), rackId2, "rack2", RackStatus.OK);
+        racks = repository.getAllRacks();
+        assertEquals (2, racks.length);
+        validateRack (racks[0], DEFAULT_RACK.getRackId(), DEFAULT_RACK_NAME, RackStatus.OK);
+        validateRack (racks[1], rackId2, "rack2", RackStatus.OK);
+        
+        repository.updateRackStatus(racks[1], RackStatus.LOST);
+
+        reloadRepository();
+
+        assertNull (repository.getRack(rackId1));
+        validateRack (repository.getRack(rackId2), rackId2, "rack2", RackStatus.LOST);
+        assertEquals (2, racks.length);
+        validateRack (racks[0], DEFAULT_RACK.getRackId(), DEFAULT_RACK_NAME, RackStatus.OK);
+        validateRack (racks[1], rackId2, "rack2", RackStatus.LOST);
+    }
+    private void validateRack (LVRack rack, int rackId, String name, RackStatus status) {
+        assertEquals(rackId, rack.getRackId());
+        assertEquals(status, rack.getStatus());
+        assertEquals(name, rack.getName());
+    }
+
+    @Test
+    public void testRackNodeAssorted() throws IOException {
+        int nodeId1, nodeId2;
+        {
+            LVRackNode node = repository.createNewRackNode(DEFAULT_RACK, "node1");
+            assertTrue (node.getNodeId() > 0);
+            assertEquals(DEFAULT_RACK.getRackId(), node.getRackId());
+            nodeId1 = node.getNodeId();
+        }
+        validateRackNode (repository.getRackNode(nodeId1), nodeId1, "node1", RackNodeStatus.OK);
+        validateRackNode (repository.getRackNode("node1"), nodeId1, "node1", RackNodeStatus.OK);
+        {
+            LVRackNode node = repository.createNewRackNode(DEFAULT_RACK, "node2");
+            assertTrue (node.getNodeId() > 0);
+            assertEquals(DEFAULT_RACK.getRackId(), node.getRackId());
+            nodeId2 = node.getNodeId();
+        }
+        validateRackNode (repository.getRackNode(nodeId2), nodeId2, "node2", RackNodeStatus.OK);
+        validateRackNode (repository.getRackNode("node2"), nodeId2, "node2", RackNodeStatus.OK);
+        assertTrue(nodeId1 != nodeId2);
+     
+        LVRackNode[] nodes = repository.getAllRackNodes(DEFAULT_RACK.getRackId());
+        assertEquals (3, nodes.length);
+        validateRackNode (nodes[0], DEFAULT_RACK_NODE.getNodeId(), DEFAULT_RACK_NODE_NAME, RackNodeStatus.OK);
+        validateRackNode (nodes[1], nodeId1, "node1", RackNodeStatus.OK);
+        validateRackNode (nodes[2], nodeId2, "node2", RackNodeStatus.OK);
+
+        reloadRepository();
+
+        validateRackNode (repository.getRackNode(nodeId1), nodeId1, "node1", RackNodeStatus.OK);
+        validateRackNode (repository.getRackNode("node1"), nodeId1, "node1", RackNodeStatus.OK);
+        validateRackNode (repository.getRackNode(nodeId2), nodeId2, "node2", RackNodeStatus.OK);
+        validateRackNode (repository.getRackNode("node2"), nodeId2, "node2", RackNodeStatus.OK);
+        nodes = repository.getAllRackNodes(DEFAULT_RACK.getRackId());
+        assertEquals (3, nodes.length);
+        validateRackNode (nodes[0], DEFAULT_RACK_NODE.getNodeId(), DEFAULT_RACK_NODE_NAME, RackNodeStatus.OK);
+        validateRackNode (nodes[1], nodeId1, "node1", RackNodeStatus.OK);
+        validateRackNode (nodes[2], nodeId2, "node2", RackNodeStatus.OK);
+        
+        repository.dropRackNode(nodes[1]);
+
+        assertNull (repository.getRackNode(nodeId1));
+        assertNull (repository.getRackNode("node1"));
+        validateRackNode (repository.getRackNode(nodeId2), nodeId2, "node2", RackNodeStatus.OK);
+        validateRackNode (repository.getRackNode("node2"), nodeId2, "node2", RackNodeStatus.OK);
+        nodes = repository.getAllRackNodes(DEFAULT_RACK.getRackId());
+        assertEquals (2, nodes.length);
+        validateRackNode (nodes[0], DEFAULT_RACK_NODE.getNodeId(), DEFAULT_RACK_NODE_NAME, RackNodeStatus.OK);
+        validateRackNode (nodes[1], nodeId2, "node2", RackNodeStatus.OK);
+        
+        repository.updateRackNodeStatus(nodes[1], RackNodeStatus.LOST);
+
+        reloadRepository();
+
+        assertNull (repository.getRackNode(nodeId1));
+        validateRackNode (repository.getRackNode(nodeId2), nodeId2, "node2", RackNodeStatus.LOST);
+        validateRackNode (repository.getRackNode("node2"), nodeId2, "node2", RackNodeStatus.LOST);
+        nodes = repository.getAllRackNodes(DEFAULT_RACK.getRackId());
+        assertEquals (2, nodes.length);
+        validateRackNode (nodes[0], DEFAULT_RACK_NODE.getNodeId(), DEFAULT_RACK_NODE_NAME, RackNodeStatus.OK);
+        validateRackNode (nodes[1], nodeId2, "node2", RackNodeStatus.LOST);
+    }
+    private void validateRackNode (LVRackNode node, int nodeId, String name, RackNodeStatus status) {
+        assertEquals (nodeId, node.getNodeId());
+        assertEquals (DEFAULT_RACK.getRackId(), node.getRackId());
+        assertEquals (name, node.getName());
+        assertEquals (status, node.getStatus());
+    }
+    
+    @Test
+    public void testRackAssignmentAssorted() throws IOException {
+        LVFracture fracture1 = DEFAULT_FRACTURE;
+        LVFracture fracture2 = repository.createNewFracture(DEFAULT_TABLE);
+
+        LVReplicaGroup group1 = DEFAULT_GROUP;
+        LVReplicaGroup group2 = repository.createNewReplicaGroup(DEFAULT_TABLE, DEFAULT_COLUMNS[3]);
+
+        LVRack rack1 = DEFAULT_RACK;
+        LVRack rack2 = repository.createNewRack("rack2");
+
+        int id11 = DEFAULT_RACK_ASSIGNMENT.getAssignmentId();
+        LVRackAssignment assignment11 = repository.getRackAssignment(DEFAULT_RACK_ASSIGNMENT.getAssignmentId());
+        validateRackAssignment (assignment11, id11, rack1, fracture1, group1);
+
+        {
+            LVRackAssignment[] assignments = repository.getAllRackAssignmentsByRackId(rack1.getRackId());
+            assertEquals(1, assignments.length);
+            validateRackAssignment (assignments[0], id11, rack1, fracture1, group1);
+        }
+        
+        LVRackAssignment assignment12 = repository.createNewRackAssignment(rack1, fracture2, group1);
+        LVRackAssignment assignment21 = repository.createNewRackAssignment(rack2, fracture1, group2);
+        LVRackAssignment assignment22 = repository.createNewRackAssignment(rack2, fracture2, group2);
+        int id12 = assignment12.getAssignmentId();
+        int id21 = assignment21.getAssignmentId();
+        int id22 = assignment22.getAssignmentId();
+        validateRackAssignment (assignment12, id12, rack1, fracture2, group1);
+        validateRackAssignment (assignment21, id21, rack2, fracture1, group2);
+        validateRackAssignment (assignment22, id22, rack2, fracture2, group2);
+        
+        {
+            LVRackAssignment[] assignments = repository.getAllRackAssignmentsByRackId(rack1.getRackId());
+            assertEquals(2, assignments.length);
+            validateRackAssignment (assignments[0], id11, rack1, fracture1, group1);
+            validateRackAssignment (assignments[1], id12, rack1, fracture2, group1);
+        }
+        {
+            LVRackAssignment[] assignments = repository.getAllRackAssignmentsByFractureId(fracture2.getFractureId());
+            assertEquals(2, assignments.length);
+            validateRackAssignment (assignments[0], id12, rack1, fracture2, group1);
+            validateRackAssignment (assignments[1], id22, rack2, fracture2, group2);
+        }
+        
+        repository.dropRackAssignment(assignment11);
+        
+        reloadRepository();
+
+        assertNull(repository.getRackAssignment(DEFAULT_RACK_ASSIGNMENT.getAssignmentId()));
+        assignment12 = repository.getRackAssignment(id12);
+        assignment21 = repository.getRackAssignment(id21);
+        assignment22 = repository.getRackAssignment(id22);
+        validateRackAssignment (assignment12, id12, rack1, fracture2, group1);
+        validateRackAssignment (assignment21, id21, rack2, fracture1, group2);
+        validateRackAssignment (assignment22, id22, rack2, fracture2, group2);
+
+        {
+            LVRackAssignment[] assignments = repository.getAllRackAssignmentsByRackId(rack1.getRackId());
+            assertEquals(1, assignments.length);
+            validateRackAssignment (assignments[0], id12, rack1, fracture2, group1);
+        }
+        {
+            LVRackAssignment[] assignments = repository.getAllRackAssignmentsByFractureId(fracture2.getFractureId());
+            assertEquals(2, assignments.length);
+            validateRackAssignment (assignments[0], id12, rack1, fracture2, group1);
+            validateRackAssignment (assignments[1], id22, rack2, fracture2, group2);
+        }
+        
+        assignment12 = repository.updateRackAssignmentOwner(assignment12, group2);
+        validateRackAssignment (assignment12, id12, rack1, fracture2, group2);
+
+        reloadRepository();
+        assignment12 = repository.getRackAssignment(id12);
+        validateRackAssignment (assignment12, id12, rack1, fracture2, group2);
+    }
+    private void validateRackAssignment(LVRackAssignment assignment, int assignmentId, LVRack rack, LVFracture fracture, LVReplicaGroup group) {
+        assertEquals (assignmentId, assignment.getAssignmentId());
+        assertEquals (rack.getRackId(), assignment.getRackId());
+        assertEquals (fracture.getFractureId(), assignment.getFractureId());
+        assertEquals (group.getGroupId(), assignment.getOwnerReplicaGroupId());
     }
 
     @Test

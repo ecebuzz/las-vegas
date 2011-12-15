@@ -407,7 +407,7 @@ public class MasterMetadataRepository implements MetadataRepository {
             dropReplica(replica);
         }
         // drop rack assignments
-        for (LVRackAssignment assignment : getAllRackAssignmentsByFracture(fracture.getFractureId())) {
+        for (LVRackAssignment assignment : getAllRackAssignmentsByFractureId(fracture.getFractureId())) {
             dropRackAssignment(assignment);
         }
         boolean deleted = bdbTableAccessors.fractureAccessor.PKX.delete(fracture.getFractureId());
@@ -821,7 +821,7 @@ public class MasterMetadataRepository implements MetadataRepository {
         for (LVRackNode node : getAllRackNodes(rack.getRackId())) {
             dropRackNode(node);
         }
-        for (LVRackAssignment assignment : getAllRackAssignmentsByRack(rack.getRackId())) {
+        for (LVRackAssignment assignment : getAllRackAssignmentsByRackId(rack.getRackId())) {
             dropRackAssignment(assignment);
         }
         bdbTableAccessors.rackAccessor.PKX.delete(rack.getRackId());
@@ -904,13 +904,13 @@ public class MasterMetadataRepository implements MetadataRepository {
     }
 
     @Override
-    public LVRackAssignment[] getAllRackAssignmentsByRack(int rackId) throws IOException {
+    public LVRackAssignment[] getAllRackAssignmentsByRackId(int rackId) throws IOException {
         // ID order
         return bdbTableAccessors.rackAssignmentAccessor.IX_RACK_ID.subIndex(rackId).sortedMap().values().toArray(new LVRackAssignment[0]);
     }
 
     @Override
-    public LVRackAssignment[] getAllRackAssignmentsByFracture(int fractureId) throws IOException {
+    public LVRackAssignment[] getAllRackAssignmentsByFractureId(int fractureId) throws IOException {
         // ID order
         return bdbTableAccessors.rackAssignmentAccessor.IX_FRACTURE_ID.subIndex(fractureId).sortedMap().values().toArray(new LVRackAssignment[0]);
     }
