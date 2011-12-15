@@ -364,6 +364,11 @@ public interface MetadataRepository {
      * @throws IOException
      */
     void dropRackNode (LVRackNode node) throws IOException;
+    
+    /**
+     * Returns the total number of replica partitions stored in this node.
+     */
+    int getReplicaPartitionCountInNode (LVRackNode node) throws IOException;
 
     //////////////////////// RackAssignment Methods : begin ////////////////////////////////
 

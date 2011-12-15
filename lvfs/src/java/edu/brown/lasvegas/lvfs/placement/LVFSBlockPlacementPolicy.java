@@ -1,4 +1,4 @@
-package edu.brown.lasvegas.lvfs.server;
+package edu.brown.lasvegas.lvfs.placement;
 
 import java.util.Collection;
 import java.util.HashMap;

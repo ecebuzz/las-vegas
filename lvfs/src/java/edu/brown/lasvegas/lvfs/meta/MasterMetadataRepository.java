@@ -884,6 +884,11 @@ public class MasterMetadataRepository implements MetadataRepository {
         }
         bdbTableAccessors.rackNodeAccessor.PKX.delete(node.getNodeId());
     }
+    
+    @Override
+    public int getReplicaPartitionCountInNode(LVRackNode node) throws IOException {
+        return (int) bdbTableAccessors.replicaPartitionAccessor.IX_NODE_ID.subIndex(node.getNodeId()).count();
+    }
 
     @Override
     public LVRackAssignment getRackAssignment(int assignmentId) throws IOException {
