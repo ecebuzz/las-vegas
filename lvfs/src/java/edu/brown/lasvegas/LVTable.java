@@ -17,10 +17,16 @@ public class LVTable implements LVObject {
      */
     @PrimaryKey
     private int tableId;
+    
+    /**
+     * @see edu.brown.lasvegas.LVObject#getPrimaryKey()
+     */
     @Override
     public int getPrimaryKey() {
         return tableId;
     }   
+    
+    /** The Constant IX_NAME. */
     public static final String IX_NAME = "IX_NAME";
     /**
      * The logical name of this table. Of course has to be unique.
@@ -42,13 +48,19 @@ public class LVTable implements LVObject {
      * As a default, epoch column is the fracturing column.
      */
     private int fracturingColumnId;
+    
+    /**
+     * Whether all files of this table will be replicated to all nodes.
+     * This flag is used for small tables to improve query runtime and recovery time.
+     */
+    private boolean pervasiveReplication;
 
     /**
      * @see java.lang.Object#toString()
      */
     @Override
     public String toString() {
-        return "Table-" + tableId + "(" + name + "): status=" + status + ", fracturingColumnId=" + fracturingColumnId;
+        return "Table-" + tableId + "(" + name + "): status=" + status + ", fracturingColumnId=" + fracturingColumnId + ", pervasiveReplication=" + pervasiveReplication;
     }
 
  // auto-generated getters/setters (comments by JAutodoc)
@@ -122,5 +134,23 @@ public class LVTable implements LVObject {
      */
     public void setFracturingColumnId(int fracturingColumnId) {
         this.fracturingColumnId = fracturingColumnId;
+    }
+
+    /**
+     * Checks if is whether all files of this table will be replicated to all nodes.
+     *
+     * @return the whether all files of this table will be replicated to all nodes
+     */
+    public boolean isPervasiveReplication() {
+        return pervasiveReplication;
+    }
+
+    /**
+     * Sets the whether all files of this table will be replicated to all nodes.
+     *
+     * @param pervasiveReplication the new whether all files of this table will be replicated to all nodes
+     */
+    public void setPervasiveReplication(boolean pervasiveReplication) {
+        this.pervasiveReplication = pervasiveReplication;
     }
 }

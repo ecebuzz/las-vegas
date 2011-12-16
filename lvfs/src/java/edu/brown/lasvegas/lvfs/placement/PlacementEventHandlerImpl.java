@@ -160,9 +160,12 @@ public final class PlacementEventHandlerImpl implements PlacementEventHandler {
         }
 
         LVSubPartitionScheme subPartitions = repository.getSubPartitionSchemeByFractureAndGroup(fracture.getFractureId(), group.getGroupId());
+        if (subPartitions == null) {
+            throw new IOException ("this fracture doesn't have sub-partition scheme yet, so cannot assign nodes. when you create a new fracture, first" +
+            		" determine the sub-partition scheme and create a sub-partition scheme!");
+        }
         int partitionCount = subPartitions.getRanges().length;
         for (int partition = 0; partition < partitionCount; ++partition) {
-            // repository.getReplicaPartitionCountInNode(node)
             // first, check which nodes already store some replica partitions
             HashSet<Integer> usedNodeIds = new HashSet<Integer>();
             HashSet<LVReplicaPartition> toBeStored = new HashSet<LVReplicaPartition>();

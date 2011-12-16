@@ -12,11 +12,15 @@ import edu.brown.lasvegas.LVRackNode;
  * We place a new file to the most vacant (least replica partitions) node
  * that does not violate the following rule.</p>
  * <b>Rule: The same sub-partition of two replica schemes must not reside in the same node.</b>
+ * 
+ * <p>As an optional rule, this queue returns the node with smaller ID if all the other conditions
+ * are the same. This is not quite a required property, but handy for testcases.</p>
  */
 public final class RackNodePriorityQueue {
     public RackNodePriorityQueue(Collection<RackNodeUsage> nodeCollection) {
         this.array = nodeCollection.toArray(new RackNodeUsage[0]);
-        Arrays.sort(array, new RackNodeUsage.UsageComparator());
+        comparator = new RackNodeUsage.UsageComparator();
+        Arrays.sort(array, comparator);
     }
 
     /**
@@ -56,7 +60,9 @@ public final class RackNodePriorityQueue {
         usedNodeIdsForCurrentPartition.add(node.node.getNodeId());
         int moveBefore;
         for (moveBefore = picked + 1; moveBefore < array.length; ++moveBefore) {
-            if (array[moveBefore].assignedCount >= node.assignedCount) {
+            int compared = comparator.compare(array[moveBefore], node);
+            assert (compared != 0); // because comparator also checks ID
+            if (compared > 0) {
                 break;
             }
         }
@@ -78,4 +84,6 @@ public final class RackNodePriorityQueue {
      * So, don't use an instance of this object over multiple replica groups!
      */
     private final HashSet<Integer> usedNodeIdsForCurrentPartition = new HashSet<Integer>();
+    
+    private final RackNodeUsage.UsageComparator comparator;
 }
