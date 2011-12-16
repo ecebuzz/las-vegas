@@ -1,5 +1,11 @@
 package edu.brown.lasvegas.lvfs.placement;
 
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+
+import edu.brown.lasvegas.LVRackNode;
+
 /**
  * A list of nodes sorted by priority to place new files.
  * <p>The priority is based on the number of replica partitions stored in each node.
@@ -8,47 +14,68 @@ package edu.brown.lasvegas.lvfs.placement;
  * <b>Rule: The same sub-partition of two replica schemes must not reside in the same node.</b>
  */
 public final class RackNodePriorityQueue {
+    public RackNodePriorityQueue(Collection<RackNodeUsage> nodeCollection) {
+        this.array = nodeCollection.toArray(new RackNodeUsage[0]);
+        Arrays.sort(array, new RackNodeUsage.UsageComparator());
+    }
+
+    /**
+     * Call this to clear usedNodeIdsForCurrentPartition.
+     * @param usedNodeIds IDs of Nodes that already store some replica partition of the partition.
+     * Such nodes are to not be assigned more replica partitions as much as possible. 
+     */
+    public void moveToNextPartition (Collection<Integer> usedNodeIds) {
+        this.usedNodeIdsForCurrentPartition.clear();
+        this.usedNodeIdsForCurrentPartition.addAll(usedNodeIds);
+    }
+    
     /**
      * Determines the node to store the replica partition
-     * @param partition the index of the partitioning key range of the new file. This parameter is used
-     * to avoid placing replicas of same partition to the same node.
      * @return the node to place the file. 
      */
-    public RackNodeUsage pickNode (int partition) {
-        assert (nodes.length > 0);
+    public LVRackNode pickNode () {
+        assert (array.length > 0);
         int picked = -1;
         // pick the most vacant node
-        for (int i = 0; i < nodes.length; ++i) {
+        for (int i = 0; i < array.length; ++i) {
             // but avoids the node that already stores the partition (even if for other replica scheme)
-            if (nodes[i].storedPartitions.contains(partition)) {
+            if (usedNodeIdsForCurrentPartition.contains(array[i].node.getNodeId())) {
                 continue;
             }
             picked = i;
             break;
         }
-        // if there isn't any other option, use the most vacant one
+        // if there isn't any other option, use the most vacant one (this violates the rule, but no other way)
         if (picked == -1) {
             picked = 0;
         }
         
         // increment the usage counter, and potentially push the element to the back
-        RackNodeUsage node = nodes[picked];
+        RackNodeUsage node = array[picked];
         ++node.assignedCount;
+        usedNodeIdsForCurrentPartition.add(node.node.getNodeId());
         int moveBefore;
-        for (moveBefore = picked + 1; moveBefore < nodes.length; ++moveBefore) {
-            if (nodes[moveBefore].assignedCount >= node.assignedCount) {
+        for (moveBefore = picked + 1; moveBefore < array.length; ++moveBefore) {
+            if (array[moveBefore].assignedCount >= node.assignedCount) {
                 break;
             }
         }
         
         // shift the array to keep it sorted by assignedCount
         for (int i = picked; i < moveBefore - 1; ++i) {
-            nodes[i] = nodes[i + 1];
+            array[i] = array[i + 1];
         }
-        nodes [moveBefore - 1] = node;
-        return node;
+        array [moveBefore - 1] = node;
+        return node.node;
     }
 
     /** the considered nodes sorted by the total number of replica partitions they store. */
-    private RackNodeUsage[] nodes;
+    private final RackNodeUsage[] array;
+
+    /**
+     * Represents which node already stores some replica partition.
+     * This is about a particular sub-partitioning scheme.
+     * So, don't use an instance of this object over multiple replica groups!
+     */
+    private final HashSet<Integer> usedNodeIdsForCurrentPartition = new HashSet<Integer>();
 }

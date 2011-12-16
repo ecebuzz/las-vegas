@@ -10,11 +10,15 @@ import edu.brown.lasvegas.LVFracture;
 import edu.brown.lasvegas.LVRack;
 import edu.brown.lasvegas.LVRackAssignment;
 import edu.brown.lasvegas.LVRackNode;
+import edu.brown.lasvegas.LVReplica;
 import edu.brown.lasvegas.LVReplicaGroup;
+import edu.brown.lasvegas.LVReplicaPartition;
+import edu.brown.lasvegas.LVReplicaScheme;
 import edu.brown.lasvegas.LVSubPartitionScheme;
 import edu.brown.lasvegas.LVTable;
 import edu.brown.lasvegas.RackNodeStatus;
 import edu.brown.lasvegas.RackStatus;
+import edu.brown.lasvegas.ReplicaPartitionStatus;
 import edu.brown.lasvegas.lvfs.meta.MetadataRepository;
 
 /**
@@ -124,24 +128,68 @@ public final class PlacementEventHandlerImpl implements PlacementEventHandler {
     private void rebalanceReplicas (LVFracture fracture, LVReplicaGroup group) throws IOException {
         LOG.info("materializing replicas for " + group + ", fracture=" + fracture);
         // we list all the active nodes in the assigned rack(s) and the number of replica partitions they store.
-        
-        // TODO implement....
+        HashMap<Integer, RackNodeUsage> nodeUsages = new HashMap<Integer, RackNodeUsage>();
         for (LVRackAssignment assignment : repository.getAllRackAssignmentsByFractureId(fracture.getFractureId())) {
             if (assignment.getOwnerReplicaGroupId() == group.getGroupId()) {
                 LVRack rack = repository.getRack(assignment.getRackId());
                 if (rack.getStatus() == RackStatus.OK) {
                     for (LVRackNode node : repository.getAllRackNodes(rack.getRackId())) {
+                        assert (!nodeUsages.containsKey(node.getNodeId()));
                         if (node.getStatus() == RackNodeStatus.OK) {
-                            
+                            int count = repository.getReplicaPartitionCountInNode(node);
+                            nodeUsages.put(node.getNodeId(), new RackNodeUsage(node, count));
+                            if (LOG.isDebugEnabled()) {
+                                LOG.debug("current node usage of " + node + ":" + count + " replica partitions");
+                            }
                         }
                     }
                 }
             }
         }
-        LVSubPartitionScheme subPartitionScheme = repository.getSubPartitionSchemeByFractureAndGroup(fracture.getFractureId(), group.getGroupId());
-        int rangeCount = subPartitionScheme.getRanges().length;
-        for (int i = 0; i < rangeCount; ++i) {
+        
+        
+        // then, assign each replica partition to some node, using RackNodePriorityQueue
+        RackNodePriorityQueue queue = new RackNodePriorityQueue(nodeUsages.values());
+        LVReplicaScheme[] schemes = repository.getAllReplicaSchemes(group.getGroupId());
+        LVReplica[] replicas = new LVReplica[schemes.length];
+        for (int i = 0; i < replicas.length; ++i) {
+            replicas[i] = repository.getReplicaFromSchemeAndFracture(schemes[i].getSchemeId(), fracture.getFractureId());
+            if (replicas[i] == null) {
+                replicas[i] = repository.createNewReplica(schemes[i], fracture);
+            }
+        }
+
+        LVSubPartitionScheme subPartitions = repository.getSubPartitionSchemeByFractureAndGroup(fracture.getFractureId(), group.getGroupId());
+        int partitionCount = subPartitions.getRanges().length;
+        for (int partition = 0; partition < partitionCount; ++partition) {
             // repository.getReplicaPartitionCountInNode(node)
+            // first, check which nodes already store some replica partitions
+            HashSet<Integer> usedNodeIds = new HashSet<Integer>();
+            HashSet<LVReplicaPartition> toBeStored = new HashSet<LVReplicaPartition>();
+            for (LVReplica replica : replicas) {
+                LVReplicaPartition replicaPartition = repository.getReplicaPartitionByReplicaAndRange(replica.getReplicaId(), partition);
+                if (replicaPartition == null) {
+                    replicaPartition = repository.createNewReplicaPartition(replica, partition);
+                }
+                
+                if (replicaPartition.getNodeId() != null) {
+                    // okay, this replica partition is already materialized.
+                    usedNodeIds.add(replicaPartition.getNodeId());
+                } else {
+                    // this one needs to be stored somewhere.
+                    toBeStored.add(replicaPartition);
+                }
+            }
+
+            // then, assign nodes to the "toBeStored" replica partitions, avoiding the already used nodes (usedNodeIds)
+            queue.moveToNextPartition(usedNodeIds);
+            for (LVReplicaPartition replicaPartition : toBeStored) {
+                LVRackNode node = queue.pickNode();
+                repository.updateReplicaPartition(replicaPartition, ReplicaPartitionStatus.BEING_RECOVERED, node);
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug(replicaPartition + " will be materialized on " + node);
+                }
+            }
         }
     }
     @Override

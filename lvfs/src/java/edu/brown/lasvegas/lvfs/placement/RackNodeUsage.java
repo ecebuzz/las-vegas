@@ -1,23 +1,30 @@
 package edu.brown.lasvegas.lvfs.placement;
 
-import java.util.HashSet;
+import java.util.Comparator;
 
-import edu.brown.lasvegas.LVSubPartitionScheme;
+import edu.brown.lasvegas.LVRackNode;
 
 /**
  * Represents how vacant a node is.
  */
 public class RackNodeUsage {
-    public int nodeId;
+    public RackNodeUsage (LVRackNode node, int assignedCount) {
+        this.node = node;
+        this.assignedCount = assignedCount;
+    }
+    
+    public final LVRackNode node;
     /** total number of replica partitions this node stores.*/
     public int assignedCount;
 
-    /** sub-partitioning scheme the following attributes are about. */
-    public int subPartitionSchemeId;
-    /**
-     * Sub-partitions (indexes of ranges in {@link LVSubPartitionScheme}) stored in this node.
-     * This is about a particular sub-partitioning scheme specified in subPartitionSchemeId.
-     * So, don't use an instance of this object over multiple replica groups!
-     */
-    public HashSet<Integer> storedPartitions = new HashSet<Integer>();
+    /** comparator to sort by assignedCount. uses nodeId if same count. */
+    public final static class UsageComparator implements Comparator<RackNodeUsage> {
+        @Override
+        public int compare(RackNodeUsage o1, RackNodeUsage o2) {
+            if (o1.assignedCount != o2.assignedCount) {
+                return o1.assignedCount - o2.assignedCount;
+            }
+            return o1.node.getNodeId() - o2.node.getNodeId();
+        }
+    }
 }
