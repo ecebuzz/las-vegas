@@ -18,6 +18,17 @@ import org.apache.hadoop.net.Node;
  * Overrides HDFS's BlockPlacementPolicy.
  */
 public final class LVFSBlockPlacementPolicy extends ProxyBlockPlacementPolicy {
+    /** default constructor is used by BlockPlacementPolicy.getInstance(). */
+    public LVFSBlockPlacementPolicy() {
+    }
+
+    /** the real initialization happens here. */
+    @Override
+    protected void initialize(Configuration conf, FSClusterStats stats, NetworkTopology clusterMap) {
+        // TODO Auto-generated method stub
+        
+    }
+    
 
     @Override
     protected DatanodeDescriptor[] chooseTargetP(String srcPath, int numOfReplicas, DatanodeDescriptor writer, List<DatanodeDescriptor> chosenNodes,
@@ -45,11 +56,4 @@ public final class LVFSBlockPlacementPolicy extends ProxyBlockPlacementPolicy {
         // TODO Auto-generated method stub
         return null;
     }
-
-    @Override
-    protected void initialize(Configuration conf, FSClusterStats stats, NetworkTopology clusterMap) {
-        // TODO Auto-generated method stub
-        
-    }
-    
 }

@@ -3,11 +3,12 @@ package edu.brown.lasvegas.lvfs.imp;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import java.io.InputStream;
+import java.net.URL;
 
 import org.junit.Test;
 
 import edu.brown.lasvegas.ColumnType;
+import edu.brown.lasvegas.util.URLVirtualFile;
 
 /**
  * Another test using lineorder.tbl.
@@ -15,7 +16,8 @@ import edu.brown.lasvegas.ColumnType;
 public class TextFileTableReaderLineorderTest {
     @Test
     public void testAll() throws Exception {
-        InputStream testFile = this.getClass().getResourceAsStream("mini_lineorder.tbl");
+        URL testFile = this.getClass().getResource("mini_lineorder.tbl");
+        
         TextFileTableScheme scheme = new TextFileTableScheme();
         scheme.addColumn(/*"lo_orderkey", */ColumnType.INTEGER)
             .addColumn(/*"lo_linenumber", */ColumnType.TINYINT)
@@ -36,7 +38,7 @@ public class TextFileTableReaderLineorderTest {
             .addColumn(/*"lo_shipmode",*/ ColumnType.VARCHAR)
             ;
         
-        TextFileTableReader reader = new TextFileTableReader(testFile, scheme, "|");
+        TextFileTableReader reader = new TextFileTableReader(new URLVirtualFile(testFile), scheme, "|");
         assertEquals (17, scheme.getColumnCount());
         assertEquals (scheme.getColumnCount(), reader.getColumnCount());
         System.out.println("reading:\n" + scheme.toString());

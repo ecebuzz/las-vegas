@@ -3,6 +3,7 @@ package edu.brown.lasvegas;
 import java.io.IOException;
 
 import edu.brown.lasvegas.lvfs.LasVegasFileSystem;
+import edu.brown.lasvegas.lvfs.imp.SimplePartitioner;
 import edu.brown.lasvegas.lvfs.imp.TextFileTableReader;
 
 /**
@@ -21,13 +22,29 @@ import edu.brown.lasvegas.lvfs.imp.TextFileTableReader;
  * distributed and partitioned file blocks.
  * @see TextFileTableReader
  */
-public interface LVTableReader {
+public interface InputTableReader {
     /**
      * This method is called to read a tuple, including the first tuple.
      * @return whether there is a tuple to return.
      */
     boolean next() throws IOException;
     
+    /**
+     * Returns the total byte size of the underlying file.
+     */
+    long length() throws IOException;
+    
+    /**
+     * Seek to a tuple at or after the specified byte position in the underlying file.
+     * 
+     * <p><b>NOTE</b>: this method is usually very efficient (seek and then find next tuple boundary),
+     * but might be extremely costly or impossible to implement in some underlying file format
+     * whose tuple boundary is not easy to detect. In that case, avoid using {@link SimplePartitioner}
+     * which uses this method.</p>
+     * @param position approximate byte position in the file.
+     */
+    void seekApproximate(long position) throws IOException;
+
     /** Revoke every resource this object holds. */
     void close() throws IOException;
     
@@ -37,6 +54,9 @@ public interface LVTableReader {
     /** Returns the data type of specified column. */
     ColumnType getColumnType(int columnIndex);
     
+    /** Returns the byte size of the current tuple. It's approximated. should be only used as statistics. */
+    int getCurrentTupleByteSize ();
+
     /** for general reads. */
     Object getObject (int columnIndex) throws IOException;
 
@@ -44,6 +64,7 @@ public interface LVTableReader {
     boolean wasNull();
 
     boolean getBoolean (int columnIndex) throws IOException;
+    
     byte getByte(int columnIndex) throws IOException;
     short getShort (int columnIndex) throws IOException;
     int getInt (int columnIndex) throws IOException;
@@ -53,7 +74,8 @@ public interface LVTableReader {
     double getDouble (int columnIndex) throws IOException;
     
     String getString (int columnIndex) throws IOException;
-    
+
+    /** these are only for debug output. Internally they are stored as long. */
     java.sql.Date getSqlDate (int columnIndex) throws IOException;
     java.sql.Time getSqlTime (int columnIndex) throws IOException;
     java.sql.Timestamp getSqlTimestamp (int columnIndex) throws IOException;

@@ -4,13 +4,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import java.io.InputStream;
+import java.net.URL;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import edu.brown.lasvegas.ColumnType;
+import edu.brown.lasvegas.util.URLVirtualFile;
 
 /**
  * Testcase for {@link TextFileTableReader}.
@@ -21,7 +22,7 @@ public class TextFileTableReaderTest {
     
     @Before
     public void setUp() throws Exception {
-        InputStream testFile = this.getClass().getResourceAsStream("alltypes.csv");
+        URL testFile = this.getClass().getResource("alltypes.csv");
         TextFileTableScheme scheme = new TextFileTableScheme();
         scheme.addColumn(ColumnType.BOOLEAN)
             .addColumn(ColumnType.TINYINT)
@@ -36,7 +37,7 @@ public class TextFileTableReaderTest {
             .addColumn(ColumnType.VARCHAR)
             ;
         
-        reader = new TextFileTableReader(testFile, scheme, ",");
+        reader = new TextFileTableReader(new URLVirtualFile(testFile), scheme, ",");
     }
 
     @After
@@ -201,13 +202,13 @@ public class TextFileTableReaderTest {
         correctAnswers[0] = new Object[] {
             new Boolean(false), new Byte((byte) -50), new Short((short)-4332), new Integer(-531232356), new Long(-23940928390482431L),
             new Float(-0.312444f), new Double(-0.00314159265358979d),
-            new java.sql.Date(2011 - 1900, 11 - 1, 20), new java.sql.Time(12, 34, 56), new java.sql.Timestamp(2011 - 1900, 11 - 1, 20, 12, 34, 56, 987 * 1000000),
+            new java.sql.Date(2011 - 1900, 11 - 1, 20).getTime(), new java.sql.Time(12, 34, 56).getTime(), new java.sql.Timestamp(2011 - 1900, 11 - 1, 20, 12, 34, 56, 987 * 1000000).getTime(),
             "aaabcd"
         };
         correctAnswers[1] = new Object[] {
             new Boolean(true), new Byte((byte) 60), new Short((short) 7332), new Integer(531232356), new Long(23940928390482431L),
             new Float(0.312444f), new Double(3.14159265358979),
-            new java.sql.Date(2011 - 1900, 11 - 1, 1), new java.sql.Time(12, 44, 56), new java.sql.Timestamp(2011 - 1900, 2 - 1, 20, 12, 34, 56, 987 * 1000000),
+            new java.sql.Date(2011 - 1900, 11 - 1, 1).getTime(), new java.sql.Time(12, 44, 56).getTime(), new java.sql.Timestamp(2011 - 1900, 2 - 1, 20, 12, 34, 56, 987 * 1000000).getTime(),
             "bbbb"
         };
         for (int i = 0; i < 2; ++i) {

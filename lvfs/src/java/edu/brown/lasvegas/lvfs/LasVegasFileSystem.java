@@ -6,7 +6,7 @@ import java.util.Set;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileSystem;
 
-import edu.brown.lasvegas.LVTableReader;
+import edu.brown.lasvegas.InputTableReader;
 
 /**
  * LVFS API for client programs.
@@ -22,7 +22,7 @@ public class LasVegasFileSystem extends Configured {
      * @param datasource provides the data to import.
      * @return ID of the newly created fracture
     */
-    public int importFracture (int tableId, LVTableReader datasource) throws IOException {
+    public int importFracture (int tableId, InputTableReader datasource) throws IOException {
         return -1;
     }
 
