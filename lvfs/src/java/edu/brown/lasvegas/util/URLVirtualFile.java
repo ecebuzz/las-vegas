@@ -2,6 +2,7 @@ package edu.brown.lasvegas.util;
 
 import java.io.IOException;
 import java.net.URL;
+import java.net.URLConnection;
 
 import org.apache.commons.lang.NotImplementedException;
 
@@ -29,8 +30,10 @@ public final class URLVirtualFile implements VirtualFile {
         throw new NotImplementedException();
     }
     @Override
-    public long length() {
-        throw new NotImplementedException();
+    public long length() throws IOException {
+        URLConnection connection = url.openConnection();
+        int len = connection.getContentLength();
+        return len;
     }
     @Override
     public String getAbsolutePath() {

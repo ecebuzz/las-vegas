@@ -24,6 +24,11 @@ import edu.brown.lasvegas.lvfs.imp.TextFileTableReader;
  */
 public interface InputTableReader {
     /**
+     * Move back to the first tuple.
+     */
+    void reset() throws IOException;
+    
+    /**
      * This method is called to read a tuple, including the first tuple.
      * @return whether there is a tuple to return.
      */

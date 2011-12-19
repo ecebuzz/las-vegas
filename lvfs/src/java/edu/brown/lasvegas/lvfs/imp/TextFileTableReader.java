@@ -22,14 +22,15 @@ import edu.brown.lasvegas.lvfs.VirtualFile;
 public class TextFileTableReader implements InputTableReader {
     private final VirtualFile file;
     private final TextFileTableScheme scheme;
+    private final int buffersize;
     private final Charset charset;
     private final String delimiter;
     private final DateFormat dateFormat;
     private final DateFormat timeFormat;
     private final DateFormat timestampFormat;
 
-    private final InputStream in;
-    private final BufferedReader reader;
+    private InputStream in;
+    private BufferedReader reader;
     private final String[] columnData;
     private String currentLineString;
     private long linesRead;
@@ -57,6 +58,7 @@ public class TextFileTableReader implements InputTableReader {
         this.file = file;
         this.scheme = scheme;
         this.delimiter = delimiter;
+        this.buffersize = buffersize;
         this.charset = charset;
         this.dateFormat = dateFormat;
         this.timeFormat = timeFormat;
@@ -66,6 +68,15 @@ public class TextFileTableReader implements InputTableReader {
         reader = new BufferedReader (new InputStreamReader(in, charset), buffersize);
         Arrays.fill(columnData, null);
         linesRead = 0;
+    }
+    
+    @Override
+    public void reset() throws IOException {
+        linesRead = 0;
+        reader.close();
+        Arrays.fill(columnData, null);
+        in = file.getInputStream();
+        reader = new BufferedReader (new InputStreamReader(in, charset), buffersize);
     }
 
     @Override
@@ -98,7 +109,7 @@ public class TextFileTableReader implements InputTableReader {
     
     @Override
     public void seekApproximate(long position) throws IOException {
-        reader.reset();
+        reset();
         in.skip(position);
         // skip to next tuple
         byte[] ln = "\n".getBytes(charset);

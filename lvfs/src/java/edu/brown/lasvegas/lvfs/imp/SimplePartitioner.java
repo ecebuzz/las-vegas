@@ -35,13 +35,14 @@ public class SimplePartitioner<T extends Comparable<T>> {
      * @param firstSplit The first file to import. If the partitioning column is not correlated with
      * tuple position, any file would work fine.
      * @param lastSplit The last file to import. If the partitioning column is not correlated with
-     * tuple position, any file would work fine. Could be NULL if there is only one file to import.
+     * tuple position, any file would work fine. Could be same as firstSplit if there is only one file to import.
      * @param partitioningColumnIndex the column used for partitioning
-     * @param numPartitions the expected number of partitions. The actual 
+     * @param numPartitions the expected number of partitions. The actual count might be different.
+     * @param sampleByteSize
      * @return designed partitions.
      * @throws IOException
      */
-    public static ValueRange<?>[] designPartitions (InputTableReader firstSplit, InputTableReader lastSplit, int partitioningColumnIndex, int numPartitions) throws IOException {
+    public static ValueRange<?>[] designPartitions (InputTableReader firstSplit, InputTableReader lastSplit, int partitioningColumnIndex, int numPartitions, int sampleByteSize) throws IOException {
         ColumnType type = firstSplit.getColumnType(partitioningColumnIndex);
         SimplePartitioner<?> partitioner;
         switch(type) {
@@ -62,32 +63,35 @@ public class SimplePartitioner<T extends Comparable<T>> {
             throw new IOException ("Unexpected column type:" + type);
         }
         
-        return partitioner.design(firstSplit, lastSplit, partitioningColumnIndex, numPartitions);
+        return partitioner.design(firstSplit, lastSplit, partitioningColumnIndex, numPartitions, sampleByteSize);
     }
+    /**
+     * overload that uses default sample size.
+     * @see #designPartitions(InputTableReader, InputTableReader, int, int, int)
+     */
+    public static ValueRange<?>[] designPartitions (InputTableReader firstSplit, InputTableReader lastSplit, int partitioningColumnIndex, int numPartitions) throws IOException {
+        return designPartitions(firstSplit, lastSplit, partitioningColumnIndex, numPartitions, DEFAULT_SAMPLE_BYTE_SIZE);
+    }
+    private final static int DEFAULT_SAMPLE_BYTE_SIZE = 1 << 20;
     private final ValueSplitter<T> splitter;
     private SimplePartitioner(ValueSplitter<T> splitter) {
         this.splitter = splitter;
     }
     
     
-    private final static int SAMPLE_BYTE_SIZE = 1 << 20;
-    private ValueRange<?>[] design (InputTableReader firstSplit, InputTableReader lastSplit, int partitioningColumnIndex, int numPartitions) throws IOException {
+    private ValueRange<?>[] design (InputTableReader firstSplit, InputTableReader lastSplit, int partitioningColumnIndex, int numPartitions, int sampleByteSize) throws IOException {
         LOG.info("Designing " + numPartitions + " partitions from first-file:" + firstSplit + " and last-file:" + lastSplit);
         //first SAMPLE_BYTE_SIZE from first-file
-        ValueRange<T> minmax1 = getMinMax(firstSplit, partitioningColumnIndex);
-        ValueRange<T> minmax;
-        if (lastSplit != null) {
-            //last SAMPLE_BYTE_SIZE from last-file
-            long lastSplitLen = lastSplit.length();
-            long seekpos = lastSplitLen - SAMPLE_BYTE_SIZE;
-            if (seekpos < 0) seekpos = 0;
-            lastSplit.seekApproximate(seekpos);
-            ValueRange<T> minmax2 = getMinMax(lastSplit, partitioningColumnIndex);
-            minmax = new ValueRange<T>(minmax1.getStartKey().compareTo(minmax2.getStartKey()) < 0 ? minmax1.getStartKey() : minmax2.getStartKey(),
-                        minmax1.getEndKey().compareTo(minmax2.getEndKey()) > 0 ? minmax1.getEndKey() : minmax2.getEndKey());
-        } else {
-            minmax = minmax1;
-        }
+        firstSplit.reset();
+        ValueRange<T> minmax1 = getMinMax(firstSplit, partitioningColumnIndex, sampleByteSize);
+        //last SAMPLE_BYTE_SIZE from last-file
+        long lastSplitLen = lastSplit.length();
+        long seekpos = lastSplitLen - sampleByteSize;
+        if (seekpos < 0) seekpos = 0;
+        lastSplit.seekApproximate(seekpos);
+        ValueRange<T> minmax2 = getMinMax(lastSplit, partitioningColumnIndex, sampleByteSize);
+        ValueRange<T> minmax = new ValueRange<T>(minmax1.getStartKey().compareTo(minmax2.getStartKey()) < 0 ? minmax1.getStartKey() : minmax2.getStartKey(),
+                    minmax1.getEndKey().compareTo(minmax2.getEndKey()) > 0 ? minmax1.getEndKey() : minmax2.getEndKey());
         // uniformly divide the range
         ValueRange<?>[] ret = splitter.split(minmax.getStartKey(), minmax.getEndKey(), numPartitions).toArray(new ValueRange<?>[0]);
         if (LOG.isInfoEnabled()) {
@@ -99,9 +103,9 @@ public class SimplePartitioner<T extends Comparable<T>> {
         }
         return ret;
     }
-    private ValueRange<T> getMinMax (InputTableReader file, int partitioningColumnIndex) throws IOException {
+    private ValueRange<T> getMinMax (InputTableReader file, int partitioningColumnIndex, int sampleByteSize) throws IOException {
         T min = null, max = null;
-        for (int totalRead = 0; totalRead < SAMPLE_BYTE_SIZE;) {
+        for (int totalRead = 0; totalRead < sampleByteSize;) {
             if (!file.next()) {
                 break;
             }
@@ -283,13 +287,13 @@ public class SimplePartitioner<T extends Comparable<T>> {
             char start = (prefixLen == min.length() ? 0 : min.charAt(prefixLen));
             char end = (prefixLen == max.length() ? 0 : max.charAt(prefixLen));
 
-            // split it. this is far from complete, but we have no idea what the alphabet in 2nd char and later.
+            // split it. this is far from complete, but we have no idea are what the alphabet in 2nd char and later.
             // anyway, this class is a stupid default implementation.
             Character prevEnd = null;
             for (int i = 0; i < numSplits; ++i) {
                 char nextEnd = (char) (start + ((char) (end - start) * i / numSplits));
                 if (prevEnd == null || nextEnd != prevEnd) {
-                    list.add(new ValueRange<String>(prefix + prevEnd, prefix + nextEnd));
+                    list.add(new ValueRange<String>(prevEnd == null ? null : prefix + prevEnd, prefix + nextEnd));
                     prevEnd = nextEnd;
                 }
             }
