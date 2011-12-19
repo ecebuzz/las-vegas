@@ -1,5 +1,9 @@
 package edu.brown.lasvegas;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+
 import com.sleepycat.persist.model.Entity;
 import com.sleepycat.persist.model.PrimaryKey;
 import com.sleepycat.persist.model.Relationship;
@@ -47,6 +51,27 @@ public class LVRackAssignment implements LVObject {
     @Override
     public String toString() {
         return "Assignment-" + assignmentId + " of Rack-" + rackId + " on Fracture-" + fractureId + ": owner=ReplicaGroup-" + ownerReplicaGroupId;
+    }
+
+    @Override
+    public void write(DataOutput out) throws IOException {
+        out.writeInt(assignmentId);
+        out.writeInt(fractureId);
+        out.writeInt(ownerReplicaGroupId);
+        out.writeInt(rackId);
+    }
+    @Override
+    public void readFields(DataInput in) throws IOException {
+        assignmentId = in.readInt();
+        fractureId = in.readInt();
+        ownerReplicaGroupId = in.readInt();
+        rackId = in.readInt();
+    }
+    /** Creates and returns a new instance of this class from the data input.*/
+    public static LVRackAssignment read (DataInput in) throws IOException {
+        LVRackAssignment obj = new LVRackAssignment();
+        obj.readFields(in);
+        return obj;
     }
 
  // auto-generated getters/setters (comments by JAutodoc)

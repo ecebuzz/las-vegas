@@ -1,5 +1,9 @@
 package edu.brown.lasvegas;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+
 import com.sleepycat.persist.model.Entity;
 import com.sleepycat.persist.model.PrimaryKey;
 import com.sleepycat.persist.model.Relationship;
@@ -80,6 +84,30 @@ public class LVReplica implements LVObject {
         return "Replica-" + replicaId + "(Scheme=" + schemeId + ", Fracture=" + fractureId + ") "
         + "status=" + status + ", subPartitionSchemeId=" + subPartitionSchemeId
         ;
+    }
+
+    @Override
+    public void write(DataOutput out) throws IOException {
+        out.writeInt(fractureId);
+        out.writeInt(replicaId);
+        out.writeInt(schemeId);
+        out.writeInt(status.ordinal());
+        out.writeInt(subPartitionSchemeId);
+    }
+    @Override
+    public void readFields(DataInput in) throws IOException {
+        fractureId = in.readInt();
+        replicaId = in.readInt();
+        schemeId = in.readInt();
+        status = ReplicaStatus.values()[in.readInt()];
+        subPartitionSchemeId = in.readInt();
+        syncSchemeFractureId();
+    }
+    /** Creates and returns a new instance of this class from the data input.*/
+    public static LVReplica read (DataInput in) throws IOException {
+        LVReplica obj = new LVReplica();
+        obj.readFields(in);
+        return obj;
     }
     
 // auto-generated getters/setters (comments by JAutodoc)

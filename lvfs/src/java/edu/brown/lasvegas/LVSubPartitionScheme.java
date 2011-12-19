@@ -1,5 +1,9 @@
 package edu.brown.lasvegas;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+
 import com.sleepycat.persist.model.Entity;
 import com.sleepycat.persist.model.PrimaryKey;
 import com.sleepycat.persist.model.Relationship;
@@ -16,6 +20,8 @@ import edu.brown.lasvegas.util.ValueRange;
  */
 @Entity
 public class LVSubPartitionScheme implements LVObject {
+    
+    /** The Constant IX_FRACTURE_ID. */
     public static final String IX_FRACTURE_ID = "IX_FRACTURE_ID";
     /**
      * ID of the fracture the sub-partitions belong to.
@@ -23,6 +29,7 @@ public class LVSubPartitionScheme implements LVObject {
     @SecondaryKey(name=IX_FRACTURE_ID, relate=Relationship.MANY_TO_ONE, relatedEntity=LVFracture.class)
     private int fractureId;
 
+    /** The Constant IX_GROUP_ID. */
     public static final String IX_GROUP_ID = "IX_GROUP_ID";
     /**
      * ID of the replica group among which these sub-partitions are shared.
@@ -35,10 +42,16 @@ public class LVSubPartitionScheme implements LVObject {
      */
     @PrimaryKey
     private int subPartitionSchemeId;
+    
+    /**
+     * @see edu.brown.lasvegas.LVObject#getPrimaryKey()
+     */
     @Override
     public int getPrimaryKey() {
         return subPartitionSchemeId;
     }   
+    /** The type of the partitioning key. */
+    private ColumnType keyType;
     /**
      * The key ranges of the partitioning column in this group.
      * Sorted by the ranges themselves.
@@ -53,14 +66,36 @@ public class LVSubPartitionScheme implements LVObject {
         StringBuffer buffer = new StringBuffer();
         buffer.append("SubPartitionScheme-" + subPartitionSchemeId)
             .append("(Fracture=" + fractureId + ", Group=" + groupId + ")");
-        buffer.append(" ranges={");
+        buffer.append(" ranges(keyType=" + keyType + ")={");
         for (ValueRange<?> range : ranges) {
             buffer.append(range + ",");
         }
         buffer.append("}");
         return new String(buffer);
     }
-
+    @Override
+    public void write(DataOutput out) throws IOException {
+        out.writeInt(fractureId);
+        out.writeInt(groupId);
+        out.writeInt(keyType.ordinal());
+        ValueRange.writeRanges(out, ranges, keyType);
+        out.writeInt(subPartitionSchemeId);
+    }
+    @Override
+    public void readFields(DataInput in) throws IOException {
+        fractureId = in.readInt();
+        groupId = in.readInt();
+        keyType = ColumnType.values()[in.readInt()];
+        ranges = ValueRange.readRanges(in);
+        subPartitionSchemeId = in.readInt();
+    }
+    /** Creates and returns a new instance of this class from the data input.*/
+    public static LVSubPartitionScheme read (DataInput in) throws IOException {
+        LVSubPartitionScheme obj = new LVSubPartitionScheme();
+        obj.readFields(in);
+        return obj;
+    }
+    
     // auto-generated getters/setters (comments by JAutodoc)
     /**
      * Gets the iD of the fracture the sub-partitions belong to.
@@ -132,5 +167,23 @@ public class LVSubPartitionScheme implements LVObject {
      */
     public void setRanges(ValueRange<?>[] ranges) {
         this.ranges = ranges;
+    }
+
+    /**
+     * Gets the type of the partitioning key.
+     *
+     * @return the type of the partitioning key
+     */
+    public ColumnType getKeyType() {
+        return keyType;
+    }
+
+    /**
+     * Sets the type of the partitioning key.
+     *
+     * @param keyType the new type of the partitioning key
+     */
+    public void setKeyType(ColumnType keyType) {
+        this.keyType = keyType;
     }
 }

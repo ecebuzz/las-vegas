@@ -380,6 +380,7 @@ public class MasterMetadataRepository implements MetadataRepository {
     public LVFracture createNewFracture(LVTable table) throws IOException {
         assert (table.getTableId() > 0);
         LVFracture fracture = new LVFracture();
+        fracture.setKeyType(getColumn(table.getFracturingColumnId()).getType());
         fracture.setTableId(table.getTableId());
         fracture.setFractureId(bdbTableAccessors.fractureAccessor.issueNewId());
         bdbTableAccessors.fractureAccessor.PKX.putNoReturn(fracture);
@@ -642,6 +643,7 @@ public class MasterMetadataRepository implements MetadataRepository {
         partitionScheme.setFractureId(fracture.getFractureId());
         partitionScheme.setGroupId(group.getGroupId());
         partitionScheme.setSubPartitionSchemeId(bdbTableAccessors.subPartitionSchemeAccessor.issueNewId());
+        partitionScheme.setKeyType(getColumn(group.getPartitioningColumnId()).getType());
         bdbTableAccessors.subPartitionSchemeAccessor.PKX.putNoReturn(partitionScheme);
         return partitionScheme;
     }

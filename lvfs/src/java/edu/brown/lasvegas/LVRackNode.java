@@ -1,5 +1,9 @@
 package edu.brown.lasvegas;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+
 import com.sleepycat.persist.model.Entity;
 import com.sleepycat.persist.model.PrimaryKey;
 import com.sleepycat.persist.model.Relationship;
@@ -48,6 +52,27 @@ public class LVRackNode implements LVObject {
     public String toString() {
         return "RackNode-" + nodeId + " (Name=" + name
         + ", Status=" + status + ", RackId=" + rackId + ")";
+    }
+
+    @Override
+    public void write(DataOutput out) throws IOException {
+        out.writeUTF(name);
+        out.writeInt(nodeId);
+        out.writeInt(rackId);
+        out.writeInt(status.ordinal());
+    }
+    @Override
+    public void readFields(DataInput in) throws IOException {
+        name = in.readUTF();
+        nodeId = in.readInt();
+        rackId = in.readInt();
+        status = RackNodeStatus.values()[in.readInt()];
+    }
+    /** Creates and returns a new instance of this class from the data input.*/
+    public static LVRackNode read (DataInput in) throws IOException {
+        LVRackNode obj = new LVRackNode();
+        obj.readFields(in);
+        return obj;
     }
     
 // auto-generated getters/setters (comments by JAutodoc)

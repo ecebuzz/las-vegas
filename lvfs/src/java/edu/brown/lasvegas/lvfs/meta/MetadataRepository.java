@@ -1,5 +1,6 @@
 package edu.brown.lasvegas.lvfs.meta;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.Map;
 
@@ -40,7 +41,7 @@ import edu.brown.lasvegas.ReplicaStatus;
  * frequently called and materializing the parent object is not an issue,
  * so type safety wins.</p>
  */
-public interface MetadataRepository {
+public interface MetadataRepository extends Closeable {
     /**
      * Epoch is a coarse grained timestamp to partition inserted tuples. It's maintained
      * as a hidden implicit column in each table. Usually, one epoch corresponds to millions of tuples.

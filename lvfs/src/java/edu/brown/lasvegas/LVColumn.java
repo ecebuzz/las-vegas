@@ -1,5 +1,9 @@
 package edu.brown.lasvegas;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+
 import com.sleepycat.persist.model.Entity;
 import com.sleepycat.persist.model.PrimaryKey;
 import com.sleepycat.persist.model.Relationship;
@@ -80,6 +84,33 @@ public class LVColumn implements LVObject {
     public String toString() {
         return "Column-" + columnId + "(" + name + ") in Table-" + tableId
         + ", order=" + order + ", status=" + status + ",fracturingColumn?=" + fracturingColumn;
+    }
+    
+    @Override
+    public void write(DataOutput out) throws IOException {
+        out.writeInt(columnId);
+        out.writeBoolean(fracturingColumn);
+        out.writeUTF(name);
+        out.writeInt(order);
+        out.writeInt(status.ordinal());
+        out.writeInt(tableId);
+        out.writeInt(type.ordinal());
+    }
+    @Override
+    public void readFields(DataInput in) throws IOException {
+        columnId = in.readInt();
+        fracturingColumn = in.readBoolean();
+        name = in.readUTF();
+        order = in.readInt();
+        status = ColumnStatus.values()[in.readInt()];
+        tableId = in.readInt();
+        type = ColumnType.values()[in.readInt()];
+    }
+    /** Creates and returns a new instance of this class from the data input.*/
+    public static LVColumn read (DataInput in) throws IOException {
+        LVColumn obj = new LVColumn();
+        obj.readFields(in);
+        return obj;
     }
 
 // auto-generated getters/setters (comments by JAutodoc)

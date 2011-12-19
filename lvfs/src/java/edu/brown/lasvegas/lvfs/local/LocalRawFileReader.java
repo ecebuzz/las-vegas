@@ -1,6 +1,7 @@
 package edu.brown.lasvegas.lvfs.local;
 
 import java.io.BufferedInputStream;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -16,7 +17,7 @@ import edu.brown.lasvegas.lvfs.VirtualFile;
  * no index whatever. Those additional things are
  * stored in separate files.
  */
-public class LocalRawFileReader {
+public class LocalRawFileReader implements Closeable {
     private static Logger LOG = Logger.getLogger(LocalRawFileReader.class);
 
     /** underlying file handle. */

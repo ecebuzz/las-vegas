@@ -1,5 +1,6 @@
 package edu.brown.lasvegas.lvfs;
 
+import java.io.Closeable;
 import java.io.IOException;
 
 /**
@@ -14,7 +15,7 @@ import java.io.IOException;
  * @param <T> Value type
  * @param <AT> Array type 
  */
-public interface TypedWriter<T, AT> {
+public interface TypedWriter<T, AT> extends Closeable {
     /**
      * Writes a single value. Avoid using this,
      * and instead use {@link #writeValues(Object, int, int)} whenever possible.

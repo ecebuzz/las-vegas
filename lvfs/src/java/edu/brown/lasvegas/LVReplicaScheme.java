@@ -1,6 +1,10 @@
 package edu.brown.lasvegas;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.util.HashMap;
+import java.util.Map;
 
 import com.sleepycat.persist.model.Entity;
 import com.sleepycat.persist.model.PrimaryKey;
@@ -67,6 +71,40 @@ public class LVReplicaScheme implements LVObject {
             + ", sortColumnId=" + sortColumnId + ", compressionSchemes=" + columnCompressionSchemes;
     }
 
+    @Override
+    public void write(DataOutput out) throws IOException {
+        out.writeInt(groupId);
+        out.writeInt(schemeId);
+        out.writeInt(sortColumnId);
+        Object[] array = columnCompressionSchemes.entrySet().toArray();
+        out.writeInt(array.length);
+        for (int i = 0; i < array.length; ++i) {
+            @SuppressWarnings("unchecked")
+            Map.Entry<Integer, CompressionType> entry = (Map.Entry<Integer, CompressionType>) array[i];
+            out.writeInt(entry.getKey());
+            out.writeInt(entry.getValue().ordinal());
+        }
+    }
+    @Override
+    public void readFields(DataInput in) throws IOException {
+        groupId = in.readInt();
+        schemeId = in.readInt();
+        sortColumnId = in.readInt();
+        columnCompressionSchemes.clear();
+        int count = in.readInt();
+        for (int i = 0; i < count; ++i) {
+            int key = in.readInt();
+            int val = in.readInt();
+            assert (!columnCompressionSchemes.containsKey(key));
+            columnCompressionSchemes.put(key, CompressionType.values()[val]);
+        }
+    }
+    /** Creates and returns a new instance of this class from the data input.*/
+    public static LVReplicaScheme read (DataInput in) throws IOException {
+        LVReplicaScheme obj = new LVReplicaScheme();
+        obj.readFields(in);
+        return obj;
+    }
 // auto-generated getters/setters (comments by JAutodoc)
     /**
      * Gets the iD of the replica group (partitioning scheme) this scheme belongs to.

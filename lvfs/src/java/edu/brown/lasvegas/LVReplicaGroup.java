@@ -1,5 +1,9 @@
 package edu.brown.lasvegas;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+
 import com.sleepycat.persist.model.Entity;
 import com.sleepycat.persist.model.PrimaryKey;
 import com.sleepycat.persist.model.Relationship;
@@ -42,6 +46,24 @@ public class LVReplicaGroup implements LVObject {
         + " partitioning-column-id=" + partitioningColumnId;
     }
 
+    @Override
+    public void write(DataOutput out) throws IOException {
+        out.writeInt(groupId);
+        out.writeInt(partitioningColumnId);
+        out.writeInt(tableId);
+    }
+    @Override
+    public void readFields(DataInput in) throws IOException {
+        groupId = in.readInt();
+        partitioningColumnId = in.readInt();
+        tableId = in.readInt();
+    }
+    /** Creates and returns a new instance of this class from the data input.*/
+    public static LVReplicaGroup read (DataInput in) throws IOException {
+        LVReplicaGroup obj = new LVReplicaGroup();
+        obj.readFields(in);
+        return obj;
+    }
 // auto-generated getters/setters (comments by JAutodoc)
     /**
      * Gets the iD of the table this fracture belongs to.

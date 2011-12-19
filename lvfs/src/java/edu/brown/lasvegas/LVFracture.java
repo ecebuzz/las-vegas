@@ -1,5 +1,9 @@
 package edu.brown.lasvegas;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+
 import com.sleepycat.persist.model.Entity;
 import com.sleepycat.persist.model.PrimaryKey;
 import com.sleepycat.persist.model.Relationship;
@@ -25,6 +29,8 @@ import edu.brown.lasvegas.util.ValueRange;
  */
 @Entity
 public class LVFracture implements LVObject {
+    
+    /** The Constant IX_TABLE_ID. */
     public static final String IX_TABLE_ID = "IX_TABLE_ID";
     /**
      * ID of the table this fracture belongs to.
@@ -37,10 +43,16 @@ public class LVFracture implements LVObject {
      */
     @PrimaryKey
     private int fractureId;
+    
+    /**
+     * @see edu.brown.lasvegas.LVObject#getPrimaryKey()
+     */
     @Override
     public int getPrimaryKey() {
         return fractureId;
     }
+    /** The type of the fracturing key. */
+    private ColumnType keyType;
     /**
      * The key range of the fracturing key in this fracture.
      */
@@ -58,10 +70,33 @@ public class LVFracture implements LVObject {
     @Override
     public String toString() {
         return "Fracture-" + fractureId + " in Table-" + tableId
-        + ": range=" + range
+        + ": range=" + range + " (type=" + keyType + ")"
         + ". tupleCount=" + tupleCount;
     }
 
+    @Override
+    public void write(DataOutput out) throws IOException {
+        out.writeInt(fractureId);
+        out.writeInt(keyType.ordinal());
+        ValueRange.writeRange(out, range, keyType);
+        out.writeInt(tableId);
+        out.writeLong(tupleCount);
+    }
+    @Override
+    public void readFields(DataInput in) throws IOException {
+        fractureId = in.readInt();
+        keyType = ColumnType.values()[in.readInt()];
+        range = ValueRange.readRange(in);
+        tableId = in.readInt();
+        tupleCount = in.readLong();
+    }
+    /** Creates and returns a new instance of this class from the data input.*/
+    public static LVFracture read (DataInput in) throws IOException {
+        LVFracture obj = new LVFracture();
+        obj.readFields(in);
+        return obj;
+    }
+    
 // auto-generated getters/setters (comments by JAutodoc)    
     /**
      * Gets the iD of the table this fracture belongs to.
@@ -134,5 +169,22 @@ public class LVFracture implements LVObject {
     public void setRange(ValueRange<?> range) {
         this.range = range;
     }
-    
+
+    /**
+     * Gets the type of the fracturing key.
+     *
+     * @return the type of the fracturing key
+     */
+    public ColumnType getKeyType() {
+        return keyType;
+    }
+
+    /**
+     * Sets the type of the fracturing key.
+     *
+     * @param keyType the new type of the fracturing key
+     */
+    public void setKeyType(ColumnType keyType) {
+        this.keyType = keyType;
+    }
 }

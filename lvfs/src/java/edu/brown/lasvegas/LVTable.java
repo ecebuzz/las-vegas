@@ -1,5 +1,9 @@
 package edu.brown.lasvegas;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+
 import com.sleepycat.persist.model.Entity;
 import com.sleepycat.persist.model.PrimaryKey;
 import com.sleepycat.persist.model.Relationship;
@@ -61,6 +65,29 @@ public class LVTable implements LVObject {
     @Override
     public String toString() {
         return "Table-" + tableId + "(" + name + "): status=" + status + ", fracturingColumnId=" + fracturingColumnId + ", pervasiveReplication=" + pervasiveReplication;
+    }
+
+    @Override
+    public void write(DataOutput out) throws IOException {
+        out.writeInt(fracturingColumnId);
+        out.writeUTF(name);
+        out.writeBoolean(pervasiveReplication);
+        out.writeInt(status.ordinal());
+        out.writeInt(tableId);
+    }
+    @Override
+    public void readFields(DataInput in) throws IOException {
+        fracturingColumnId = in.readInt();
+        name = in.readUTF();
+        pervasiveReplication = in.readBoolean();
+        status = TableStatus.values()[in.readInt()];
+        tableId = in.readInt();
+    }
+    /** Creates and returns a new instance of this class from the data input.*/
+    public static LVTable read (DataInput in) throws IOException {
+        LVTable obj = new LVTable();
+        obj.readFields(in);
+        return obj;
     }
 
  // auto-generated getters/setters (comments by JAutodoc)

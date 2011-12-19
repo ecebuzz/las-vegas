@@ -1,5 +1,9 @@
 package edu.brown.lasvegas;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
+
 import com.sleepycat.persist.model.Entity;
 import com.sleepycat.persist.model.PrimaryKey;
 import com.sleepycat.persist.model.Relationship;
@@ -75,6 +79,32 @@ public class LVColumnFile implements LVObject {
     public String toString() {
         return "ColumnFile-" + columnFileId + " (Column=" + columnId + ", Partition=" + partitionId + ")"
             + " HDFS-PATH=" + hdfsFilePath + ", FileSize=" + fileSize + ", checksum=" + checksum;
+    }
+
+    @Override
+    public void write(DataOutput out) throws IOException {
+        out.writeInt(checksum);
+        out.writeInt(columnFileId);
+        out.writeInt(columnId);
+        out.writeLong(fileSize);
+        out.writeUTF(hdfsFilePath);
+        out.writeInt(partitionId);
+    }
+    @Override
+    public void readFields(DataInput in) throws IOException {
+        checksum = in.readInt();
+        columnFileId = in.readInt();
+        columnId = in.readInt();
+        fileSize = in.readLong();
+        hdfsFilePath = in.readUTF();
+        partitionId = in.readInt();
+        syncPartitionColumnId();
+    }
+    /** Creates and returns a new instance of this class from the data input.*/
+    public static LVColumnFile read (DataInput in) throws IOException {
+        LVColumnFile obj = new LVColumnFile();
+        obj.readFields(in);
+        return obj;
     }
     
 // auto-generated getters/setters (comments by JAutodoc)
