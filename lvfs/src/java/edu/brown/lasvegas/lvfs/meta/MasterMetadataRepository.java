@@ -12,6 +12,7 @@ import java.util.Random;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import org.apache.hadoop.ipc.ProtocolSignature;
 import org.apache.log4j.Logger;
 
 import com.sleepycat.je.CheckpointConfig;
@@ -40,14 +41,15 @@ import edu.brown.lasvegas.LVColumn;
 import edu.brown.lasvegas.LVFracture;
 import edu.brown.lasvegas.ReplicaStatus;
 import edu.brown.lasvegas.TableStatus;
+import edu.brown.lasvegas.lvfs.protocol.LVFSMetadataRepositoryProtocol;
 import edu.brown.lasvegas.util.CompositeIntKey;
 
 /**
- * Implementation of {@link MetadataRepository} in the master namenode.
+ * Implementation of {@link LVFSMetadataRepositoryProtocol} in the master namenode.
  * This can directly handle all read and write accesses over the local BDB-JE
  * instance.
  */
-public class MasterMetadataRepository implements MetadataRepository {
+public class MasterMetadataRepository implements LVFSMetadataRepositoryProtocol {
     private static Logger LOG = Logger.getLogger(MasterMetadataRepository.class);
     
     private final File bdbEnvHome;
@@ -57,6 +59,20 @@ public class MasterMetadataRepository implements MetadataRepository {
     private BdbTableAccessors bdbTableAccessors;
     
     private static final long BDB_CACHE_SIZE = 1L << 26;
+    
+    @Override
+    public ProtocolSignature getProtocolSignature(String protocol, long clientVersion, int clientMethodsHash) throws IOException {
+        return ProtocolSignature.getProtocolSignature(this, protocol, clientVersion, clientMethodsHash);
+    }
+    
+    @Override
+    public long getProtocolVersion(String protocol, long clientVersion) throws IOException {
+        if (protocol.equals(LVFSMetadataRepositoryProtocol.class.getName())) {
+            return LVFSMetadataRepositoryProtocol.versionID;
+        } else {
+            throw new IOException("This protocol is not supported: " + protocol);
+        }
+    }
     
     /**
      * Constructs a metadata repository.
@@ -115,19 +131,19 @@ public class MasterMetadataRepository implements MetadataRepository {
     
     @Override
     public int issueNewEpoch() throws IOException {
-        return bdbTableAccessors.masterTableAccessor.issueNewId(MasterTable.EPOCH_SEQ);
+        return bdbTableAccessors.masterTableAccessor.issueNewIdBlock(MasterTable.EPOCH_SEQ, 1);
     }
 
     @Override
-    public int issueNewId(Class<?> clazz) throws IOException {
-        return bdbTableAccessors.masterTableAccessor.issueNewId(clazz.getName());
+    public int issueNewId(int objectTypeOrdinal) throws IOException {
+        return bdbTableAccessors.masterTableAccessor.issueNewId(objectTypeOrdinal);
     }
     @Override
-    public int issueNewIdBlock(Class<?> clazz, int blockSize) throws IOException {
+    public int issueNewIdBlock(int objectTypeOrdinal, int blockSize) throws IOException {
         if (blockSize <= 0) {
             throw new IOException ("invalid blockSize:" + blockSize);
         }
-        return bdbTableAccessors.masterTableAccessor.issueNewIdBlock(clazz.getName(), blockSize);
+        return bdbTableAccessors.masterTableAccessor.issueNewIdBlock(objectTypeOrdinal, blockSize);
     }
 
     @Override

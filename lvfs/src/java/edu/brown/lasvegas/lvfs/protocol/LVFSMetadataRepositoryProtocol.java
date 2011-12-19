@@ -1,8 +1,10 @@
-package edu.brown.lasvegas.lvfs.meta;
+package edu.brown.lasvegas.lvfs.protocol;
 
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.Map;
+
+import org.apache.hadoop.ipc.VersionedProtocol;
 
 import edu.brown.lasvegas.LVColumnFile;
 import edu.brown.lasvegas.ColumnType;
@@ -14,6 +16,7 @@ import edu.brown.lasvegas.LVReplica;
 import edu.brown.lasvegas.LVReplicaGroup;
 import edu.brown.lasvegas.LVReplicaPartition;
 import edu.brown.lasvegas.LVSubPartitionScheme;
+import edu.brown.lasvegas.LVObjectType;
 import edu.brown.lasvegas.RackNodeStatus;
 import edu.brown.lasvegas.RackStatus;
 import edu.brown.lasvegas.ReplicaPartitionStatus;
@@ -24,7 +27,7 @@ import edu.brown.lasvegas.LVFracture;
 import edu.brown.lasvegas.ReplicaStatus;
 
 /**
- * Represents a repository of all metadata in LVFS.
+ * Defines a protocol to access a repository of metadata in LVFS.
  * 
  * <p>All write accesses to this repository are durably stored in our name-node.
  * The implementation of this interface might be the actual name-node, or a read-only slave in
@@ -41,7 +44,7 @@ import edu.brown.lasvegas.ReplicaStatus;
  * frequently called and materializing the parent object is not an issue,
  * so type safety wins.</p>
  */
-public interface MetadataRepository extends Closeable {
+public interface LVFSMetadataRepositoryProtocol extends Closeable, VersionedProtocol {
     /**
      * Epoch is a coarse grained timestamp to partition inserted tuples. It's maintained
      * as a hidden implicit column in each table. Usually, one epoch corresponds to millions of tuples.
@@ -51,18 +54,18 @@ public interface MetadataRepository extends Closeable {
     
     /**
      * Issues a unique ID for each metadata object. 
-     * @param clazz specified the metadata object.
+     * @param objectTypeOrdinal specifies the metadata object type. must be a valid ordinal in {@link LVObjectType}.
      * @return unique ID for the class.
      */
-    int issueNewId(Class<?> clazz) throws IOException;
+    int issueNewId(int objectTypeOrdinal) throws IOException;
 
     /**
      * Issues (reserves) a series of unique IDs at once for better performance.
-     * @param clazz specified the metadata object.
+     * @param objectTypeOrdinal specifies the metadata object type. must be a valid ordinal in {@link LVObjectType}.
      * @param blockSize number of IDs to reserve
      * @return the beginning of unique IDs for the class.
      */
-    int issueNewIdBlock(Class<?> clazz, int blockSize) throws IOException;
+    int issueNewIdBlock(int objectTypeOrdinal, int blockSize) throws IOException;
     
     /**
      * Assures every change in this repository is flushed to disk.
@@ -709,4 +712,6 @@ public interface MetadataRepository extends Closeable {
      * @throws IOException
      */
     void dropColumnFile (LVColumnFile columnFile) throws IOException;
+
+    public static final long versionID = 1L;
 }

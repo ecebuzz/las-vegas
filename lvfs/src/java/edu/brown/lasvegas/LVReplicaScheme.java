@@ -105,6 +105,11 @@ public class LVReplicaScheme implements LVObject {
         obj.readFields(in);
         return obj;
     }
+
+    @Override
+    public LVObjectType getObjectType() {
+        return LVObjectType.REPLICA_SCHEME;
+    }
 // auto-generated getters/setters (comments by JAutodoc)
     /**
      * Gets the iD of the replica group (partitioning scheme) this scheme belongs to.

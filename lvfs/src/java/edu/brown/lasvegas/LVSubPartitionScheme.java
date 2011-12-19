@@ -95,6 +95,11 @@ public class LVSubPartitionScheme implements LVObject {
         obj.readFields(in);
         return obj;
     }
+
+    @Override
+    public LVObjectType getObjectType() {
+        return LVObjectType.SUB_PARTITION_SCHEME;
+    }
     
     // auto-generated getters/setters (comments by JAutodoc)
     /**

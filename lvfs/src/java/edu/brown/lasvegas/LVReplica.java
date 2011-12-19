@@ -109,6 +109,11 @@ public class LVReplica implements LVObject {
         obj.readFields(in);
         return obj;
     }
+
+    @Override
+    public LVObjectType getObjectType() {
+        return LVObjectType.REPLICA;
+    }
     
 // auto-generated getters/setters (comments by JAutodoc)
     /**

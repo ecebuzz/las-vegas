@@ -106,6 +106,11 @@ public class LVColumnFile implements LVObject {
         obj.readFields(in);
         return obj;
     }
+
+    @Override
+    public LVObjectType getObjectType() {
+        return LVObjectType.COLUMN_FILE;
+    }
     
 // auto-generated getters/setters (comments by JAutodoc)
     /**

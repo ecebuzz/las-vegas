@@ -64,6 +64,11 @@ public class LVReplicaGroup implements LVObject {
         obj.readFields(in);
         return obj;
     }
+
+    @Override
+    public LVObjectType getObjectType() {
+        return LVObjectType.REPLICA_GROUP;
+    }
 // auto-generated getters/setters (comments by JAutodoc)
     /**
      * Gets the iD of the table this fracture belongs to.

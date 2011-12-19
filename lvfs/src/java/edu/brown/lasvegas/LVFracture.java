@@ -96,6 +96,11 @@ public class LVFracture implements LVObject {
         obj.readFields(in);
         return obj;
     }
+
+    @Override
+    public LVObjectType getObjectType() {
+        return LVObjectType.FRACTURE;
+    }
     
 // auto-generated getters/setters (comments by JAutodoc)    
     /**

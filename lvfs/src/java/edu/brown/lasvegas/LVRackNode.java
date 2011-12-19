@@ -74,6 +74,11 @@ public class LVRackNode implements LVObject {
         obj.readFields(in);
         return obj;
     }
+
+    @Override
+    public LVObjectType getObjectType() {
+        return LVObjectType.RACK_NODE;
+    }
     
 // auto-generated getters/setters (comments by JAutodoc)
 

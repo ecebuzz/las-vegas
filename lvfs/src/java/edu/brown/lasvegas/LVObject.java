@@ -11,4 +11,9 @@ public interface LVObject extends Writable {
      * The ID is only unique among the same type of object. 
      */
     int getPrimaryKey ();
+    
+    /**
+     * Returns the type of the object defined in {@link LVObjectType}.
+     */
+    LVObjectType getObjectType ();
 }

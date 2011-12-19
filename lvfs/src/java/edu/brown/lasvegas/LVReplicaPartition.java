@@ -148,6 +148,11 @@ public class LVReplicaPartition implements LVObject {
         return obj;
     }
 
+    @Override
+    public LVObjectType getObjectType() {
+        return LVObjectType.REPLICA_PARTITION;
+    }
+
 // auto-generated getters/setters (comments by JAutodoc)
     /**
      * Gets the iD of the replica (Replicated Fracture) this replica partition belongs to.

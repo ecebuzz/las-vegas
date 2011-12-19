@@ -90,6 +90,11 @@ public class LVTable implements LVObject {
         return obj;
     }
 
+    @Override
+    public LVObjectType getObjectType() {
+        return LVObjectType.TABLE;
+    }
+
  // auto-generated getters/setters (comments by JAutodoc)
     /**
      * Gets the a unique (system-wide) ID of this table.

@@ -10,6 +10,7 @@ import com.sleepycat.persist.SecondaryIndex;
 import com.sleepycat.persist.StoreConfig;
 
 import edu.brown.lasvegas.LVColumnFile;
+import edu.brown.lasvegas.LVObjectType;
 import edu.brown.lasvegas.LVRack;
 import edu.brown.lasvegas.LVRackAssignment;
 import edu.brown.lasvegas.LVRackNode;
@@ -81,9 +82,8 @@ class BdbTableAccessors {
      * Base class of table accessors for BDB.
      * @param <Ent> entity class (e.g., LVTable).
      */
-    class MetaTableAccessor<Ent> {
+    abstract class MetaTableAccessor<Ent> {
         MetaTableAccessor (Class<Ent> entClass) {
-            idSequence = entClass.getName();
             PKX = store.getPrimaryIndex(Integer.class, entClass);
             // load everything in main memory. metadata should be enough compact.
             // note: database.preload() is not enough as it only preloads index node.
@@ -101,15 +101,13 @@ class BdbTableAccessors {
                 MemoryUtil.outputMemory();
             }
         }
-        /** name of the ID sequence stored in master table. */
-        final String idSequence;
         /**
          * primary index on the table.
          */
         final PrimaryIndex<Integer, Ent> PKX;
-
-        int issueNewId () {
-            int newId = masterTableAccessor.issueNewId(idSequence);
+        abstract LVObjectType getType();
+        final int issueNewId () {
+            int newId = masterTableAccessor.issueNewId(getType().ordinal());
             if (LOG.isDebugEnabled()) {
                 LOG.debug("new id=" + newId);
                 Ent existing = PKX.get(newId);
@@ -126,6 +124,7 @@ class BdbTableAccessors {
             super(LVTable.class);
             IX_NAME = store.getSecondaryIndex(PKX, String.class, LVTable.IX_NAME);
         }
+        LVObjectType getType() { return LVObjectType.TABLE;}
         final SecondaryIndex<String, Integer, LVTable> IX_NAME;
     }
 
@@ -134,6 +133,7 @@ class BdbTableAccessors {
             super(LVColumn.class);
             IX_TABLE_ID = store.getSecondaryIndex(PKX, Integer.class, LVColumn.IX_TABLE_ID);
         }
+        LVObjectType getType() { return LVObjectType.COLUMN;}
         final SecondaryIndex<Integer, Integer, LVColumn> IX_TABLE_ID;
     }
 
@@ -142,6 +142,7 @@ class BdbTableAccessors {
             super(LVFracture.class);
             IX_TABLE_ID = store.getSecondaryIndex(PKX, Integer.class, LVFracture.IX_TABLE_ID);
         }
+        LVObjectType getType() { return LVObjectType.FRACTURE;}
         final SecondaryIndex<Integer, Integer, LVFracture> IX_TABLE_ID;
     }
 
@@ -150,6 +151,7 @@ class BdbTableAccessors {
             super(LVReplicaGroup.class);
             IX_TABLE_ID = store.getSecondaryIndex(PKX, Integer.class, LVReplicaGroup.IX_TABLE_ID);
         }
+        LVObjectType getType() { return LVObjectType.REPLICA;}
         final SecondaryIndex<Integer, Integer, LVReplicaGroup> IX_TABLE_ID;
     }
 
@@ -158,7 +160,8 @@ class BdbTableAccessors {
             super(LVRack.class);
             IX_NAME = store.getSecondaryIndex(PKX, String.class, LVRack.IX_NAME);
         }
-        final SecondaryIndex<String, Integer, LVRack> IX_NAME;
+        LVObjectType getType() { return LVObjectType.RACK;}
+       final SecondaryIndex<String, Integer, LVRack> IX_NAME;
     }
 
     class RackNodeAccessor extends MetaTableAccessor<LVRackNode> {
@@ -167,6 +170,7 @@ class BdbTableAccessors {
             IX_NAME = store.getSecondaryIndex(PKX, String.class, LVRackNode.IX_NAME);
             IX_RACK_ID = store.getSecondaryIndex(PKX, Integer.class, LVRackNode.IX_RACK_ID);
         }
+        LVObjectType getType() { return LVObjectType.RACK_NODE;}
         final SecondaryIndex<String, Integer, LVRackNode> IX_NAME;
         final SecondaryIndex<Integer, Integer, LVRackNode> IX_RACK_ID;
     }
@@ -178,6 +182,7 @@ class BdbTableAccessors {
             IX_RACK_ID = store.getSecondaryIndex(PKX, Integer.class, LVRackAssignment.IX_RACK_ID);
             IX_OWNER = store.getSecondaryIndex(PKX, Integer.class, LVRackAssignment.IX_OWNER);
         }
+        LVObjectType getType() { return LVObjectType.RACK_ASSIGNMENT;}
         final SecondaryIndex<Integer, Integer, LVRackAssignment> IX_FRACTURE_ID;
         final SecondaryIndex<Integer, Integer, LVRackAssignment> IX_RACK_ID;
         final SecondaryIndex<Integer, Integer, LVRackAssignment> IX_OWNER;
@@ -188,6 +193,7 @@ class BdbTableAccessors {
             super(LVReplicaScheme.class);
             IX_GROUP_ID = store.getSecondaryIndex(PKX, Integer.class, LVReplicaScheme.IX_GROUP_ID);
         }
+        LVObjectType getType() { return LVObjectType.REPLICA_SCHEME;}
         final SecondaryIndex<Integer, Integer, LVReplicaScheme> IX_GROUP_ID;
     }
 
@@ -197,6 +203,7 @@ class BdbTableAccessors {
             IX_GROUP_ID = store.getSecondaryIndex(PKX, Integer.class, LVSubPartitionScheme.IX_GROUP_ID);
             IX_FRACTURE_ID = store.getSecondaryIndex(PKX, Integer.class, LVSubPartitionScheme.IX_FRACTURE_ID);
         }
+        LVObjectType getType() { return LVObjectType.SUB_PARTITION_SCHEME;}
         final SecondaryIndex<Integer, Integer, LVSubPartitionScheme> IX_GROUP_ID;
         final SecondaryIndex<Integer, Integer, LVSubPartitionScheme> IX_FRACTURE_ID;
     }
@@ -209,6 +216,7 @@ class BdbTableAccessors {
             IX_STATUS = store.getSecondaryIndex(PKX, ReplicaPartitionStatus.class, LVReplicaPartition.IX_STATUS);
             IX_NODE_ID = store.getSecondaryIndex(PKX, Integer.class, LVReplicaPartition.IX_NODE_ID);
         }
+        LVObjectType getType() { return LVObjectType.REPLICA_PARTITION;}
         final SecondaryIndex<Integer, Integer, LVReplicaPartition> IX_REPLICA_ID;
         final SecondaryIndex<CompositeIntKey, Integer, LVReplicaPartition> IX_REPLICA_RANGE;
         final SecondaryIndex<ReplicaPartitionStatus, Integer, LVReplicaPartition> IX_STATUS;
@@ -223,6 +231,7 @@ class BdbTableAccessors {
             IX_SCHEME_FRACTURE_ID = store.getSecondaryIndex(PKX, CompositeIntKey.class, LVReplica.IX_SCHEME_FRACTURE_ID);
             IX_STATUS = store.getSecondaryIndex(PKX, ReplicaStatus.class, LVReplica.IX_SCHEME_ID);
         }
+        LVObjectType getType() { return LVObjectType.REPLICA;}
         final SecondaryIndex<Integer, Integer, LVReplica> IX_FRACTURE_ID;
         final SecondaryIndex<Integer, Integer, LVReplica> IX_SCHEME_ID;
         final SecondaryIndex<CompositeIntKey, Integer, LVReplica> IX_SCHEME_FRACTURE_ID;
@@ -235,6 +244,7 @@ class BdbTableAccessors {
             IX_PARTITION_ID = store.getSecondaryIndex(PKX, Integer.class, LVColumnFile.IX_PARTITION_ID);
             IX_PARTITION_COLUMN_ID = store.getSecondaryIndex(PKX, CompositeIntKey.class, LVColumnFile.IX_PARTITION_COLUMN_ID);
         }
+        LVObjectType getType() { return LVObjectType.COLUMN_FILE;}
         final SecondaryIndex<Integer, Integer, LVColumnFile> IX_PARTITION_ID;
         final SecondaryIndex<CompositeIntKey, Integer, LVColumnFile> IX_PARTITION_COLUMN_ID;
     }

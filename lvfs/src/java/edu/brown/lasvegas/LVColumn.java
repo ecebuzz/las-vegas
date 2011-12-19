@@ -113,6 +113,11 @@ public class LVColumn implements LVObject {
         return obj;
     }
 
+    @Override
+    public LVObjectType getObjectType() {
+        return LVObjectType.COLUMN;
+    }
+
 // auto-generated getters/setters (comments by JAutodoc)
     /**
      * Gets the iD of the table this column belongs to.

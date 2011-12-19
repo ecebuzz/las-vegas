@@ -65,6 +65,11 @@ public class LVRack implements LVObject {
         return obj;
     }
 
+    @Override
+    public LVObjectType getObjectType() {
+        return LVObjectType.RACK;
+    }
+
 // auto-generated getters/setters (comments by JAutodoc)
 
     /**

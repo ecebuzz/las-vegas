@@ -22,8 +22,11 @@ public class MasterTableAccessor {
         primaryIndex.putNoReturn(entry);
     }
     
-    public int issueNewId (String idSequence) {
-        return issueNewIdBlock (idSequence, 1);
+    public int issueNewId (int objectTypeOrdinal) {
+        return issueNewIdBlock (objectTypeOrdinal, 1);
+    }
+    public int issueNewIdBlock (int objectTypeOrdinal, int blockSize) {
+        return issueNewIdBlock ("SEQ-" + objectTypeOrdinal, blockSize);
     }
     public int issueNewIdBlock (String idSequence, int blockSize) {
         assert (blockSize > 0);

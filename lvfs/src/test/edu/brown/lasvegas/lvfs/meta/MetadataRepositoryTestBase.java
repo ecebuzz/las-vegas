@@ -17,6 +17,7 @@ import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.LVColumn;
 import edu.brown.lasvegas.LVColumnFile;
 import edu.brown.lasvegas.LVFracture;
+import edu.brown.lasvegas.LVObjectType;
 import edu.brown.lasvegas.LVRack;
 import edu.brown.lasvegas.LVRackAssignment;
 import edu.brown.lasvegas.LVRackNode;
@@ -31,6 +32,7 @@ import edu.brown.lasvegas.RackStatus;
 import edu.brown.lasvegas.ReplicaPartitionStatus;
 import edu.brown.lasvegas.ReplicaStatus;
 import edu.brown.lasvegas.TableStatus;
+import edu.brown.lasvegas.lvfs.protocol.LVFSMetadataRepositoryProtocol;
 import edu.brown.lasvegas.util.ValueRange;
 
 /**
@@ -46,7 +48,7 @@ public abstract class MetadataRepositoryTestBase {
     /**
      * The derived testcase sets the repository instance to be tested.
      */
-    protected MetadataRepository repository;
+    protected LVFSMetadataRepositoryProtocol repository;
     
     /**
      * Flushes the tested repository, closes it and then reloads it.
@@ -56,7 +58,7 @@ public abstract class MetadataRepositoryTestBase {
     protected abstract void reloadRepository() throws IOException;
 
     /** called from setUp() in derived class. */
-    protected void baseSetUp(MetadataRepository repository) throws Exception {
+    protected void baseSetUp(LVFSMetadataRepositoryProtocol repository) throws Exception {
         this.repository = repository;
         initDefaultTestObjects ();
     }
@@ -192,20 +194,20 @@ public abstract class MetadataRepositoryTestBase {
 
     @Test
     public void testIssueNewId() throws IOException {
-        int table1 = repository.issueNewId(LVTable.class);
-        int fracture1 = repository.issueNewId(LVFracture.class);
-        int table2 = repository.issueNewId(LVTable.class);
-        int fracture2 = repository.issueNewId(LVFracture.class);
-        int table3 = repository.issueNewId(LVTable.class);
+        int table1 = repository.issueNewId(LVObjectType.TABLE.ordinal());
+        int fracture1 = repository.issueNewId(LVObjectType.FRACTURE.ordinal());
+        int table2 = repository.issueNewId(LVObjectType.TABLE.ordinal());
+        int fracture2 = repository.issueNewId(LVObjectType.FRACTURE.ordinal());
+        int table3 = repository.issueNewId(LVObjectType.TABLE.ordinal());
         assertEquals (table1 + 1, table2);
         assertEquals (table1 + 2, table3);
         assertEquals (fracture1 + 1, fracture2);
 
         reloadRepository();
 
-        int fracture3 = repository.issueNewId(LVFracture.class);
-        int fracture4 = repository.issueNewId(LVFracture.class);
-        int table4 = repository.issueNewId(LVTable.class);
+        int fracture3 = repository.issueNewId(LVObjectType.FRACTURE.ordinal());
+        int fracture4 = repository.issueNewId(LVObjectType.FRACTURE.ordinal());
+        int table4 = repository.issueNewId(LVObjectType.TABLE.ordinal());
 
         assertEquals (table1 + 3, table4);
         assertEquals (fracture1 + 2, fracture3);
@@ -215,14 +217,13 @@ public abstract class MetadataRepositoryTestBase {
     public void testIssueNewIdBlock() throws IOException {
         // call issueNewIdBlock with sorta random number (but deterministic) of block size for each of them.
         // this also makes the following test more robust, randomizing the sequential IDs.
-        Class<?>[] array = new Class<?>[]{LVColumn.class, LVColumnFile.class, LVFracture.class,
-                LVReplica.class, LVReplicaGroup.class, LVReplicaPartition.class, LVReplicaScheme.class, LVSubPartitionScheme.class, LVTable.class};
+        LVObjectType[] array = LVObjectType.values();
         for (int i = 0; i < array.length; ++i) {
             int count = (((i + 17) * 613287413) % (1 << 16));
             if (count < 0) count = -count;
             if (count == 0) count = 1;
-            int newId = repository.issueNewIdBlock(array[i], count);
-            int next = repository.issueNewId(array[i]);
+            int newId = repository.issueNewIdBlock(array[i].ordinal(), count);
+            int next = repository.issueNewId(array[i].ordinal());
             assertEquals (newId + count, next);
         }
     }

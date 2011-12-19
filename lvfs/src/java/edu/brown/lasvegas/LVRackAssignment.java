@@ -74,6 +74,11 @@ public class LVRackAssignment implements LVObject {
         return obj;
     }
 
+    @Override
+    public LVObjectType getObjectType() {
+        return LVObjectType.RACK_ASSIGNMENT;
+    }
+
  // auto-generated getters/setters (comments by JAutodoc)
 
     /**
