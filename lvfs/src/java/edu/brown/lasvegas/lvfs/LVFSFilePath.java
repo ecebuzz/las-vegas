@@ -17,10 +17,10 @@ import edu.brown.lasvegas.LVTable;
  * Represents a path of a columnar file in LVFS.
  * This class defines the rules to determine the path of columnar files. 
  * <p>The path of a columnar file consists of following parts:
- * PREFIX, TABLE_ID, FRACTURE_ID"_"REPLICA_SCHEME_ID, RANGE"_"REPLICA_PARTITION_ID,
+ * PREFIX, DATABASE_ID, TABLE_ID, FRACTURE_ID"_"REPLICA_SCHEME_ID, RANGE"_"REPLICA_PARTITION_ID,
  * COLUMN_ID"_"COLUMN_FILE_ID, types of files (data, position, dictionary).</p>
  * 
- * <p>Examples, "/lvfs/22/30_143/0_111/333_2344.dat", "/lvfs/22/30_143/1_112/333_4343.dic"</p>
+ * <p>Examples, "/lvfs/2/22/30_143/0_111/333_2344.dat", "/lvfs/2/22/30_143/1_112/333_4343.dic"</p>
  */
 public final class LVFSFilePath {
     /** name of the configuration value which defines the root folder path of LVFS. */
@@ -30,6 +30,8 @@ public final class LVFSFilePath {
     private final String absolutePath;
     /** the root folder path of LVFS. Should be the value defined as "lasvegas.lvfs.rootdir" in configuration files.*/
     private final String lvfsRootDir;
+    /** ID of {@link LVDatabase}. */
+    private final int databaseId;
     /** ID of {@link LVTable}. */
     private final int tableId;
     /** ID of {@link LVFracture}. */
@@ -50,6 +52,7 @@ public final class LVFSFilePath {
     /**
      * Constructs a file path from IDs of metadata objects.
      * @param lvfsRootDir the root folder path of LVFS. Should be the value defined as "lasvegas.lvfs.rootdir" in configuration files
+     * @param databaseId ID of {@link LVDatabase}
      * @param tableId ID of {@link LVTable}
      * @param fractureId ID of {@link LVFracture}
      * @param replicaSchemeId ID of {@link LVReplicaScheme}
@@ -59,11 +62,12 @@ public final class LVFSFilePath {
      * @param columnFileId ID of {@link LVColumnFile}
      * @param type type of the file
      */
-    public LVFSFilePath(String lvfsRootDir, int tableId, int fractureId, int replicaSchemeId, int range, int replicaPartitionId, int columnId, int columnFileId, LVFSFileType type) {
+    public LVFSFilePath(String lvfsRootDir, int databaseId, int tableId, int fractureId, int replicaSchemeId, int range, int replicaPartitionId, int columnId, int columnFileId, LVFSFileType type) {
         assert (lvfsRootDir.indexOf("://") < 0); // protocol part should have been removed beforehand
         assert (lvfsRootDir.endsWith("/")); // lasvegas.lvfs.rootdir should always end with /
         assert (range >= 0);
         this.lvfsRootDir = lvfsRootDir;
+        this.databaseId = databaseId;
         this.tableId = tableId;
         this.fractureId = fractureId;
         this.replicaSchemeId = replicaSchemeId;
@@ -72,7 +76,7 @@ public final class LVFSFilePath {
         this.columnId = columnId;
         this.columnFileId = columnFileId;
         this.type = type;
-        this.absolutePath = lvfsRootDir + tableId + "/"
+        this.absolutePath = lvfsRootDir + databaseId + "/" + tableId + "/"
             + fractureId + "_" + replicaSchemeId + "/"
             + range + "_" + replicaPartitionId + "/"
             + columnId + "_" + columnFileId + "." + type.getExtension();
@@ -81,8 +85,8 @@ public final class LVFSFilePath {
     /**
      * Overload to use root folder defined in the configuration file.
      */
-    public LVFSFilePath(Configuration conf, int tableId, int fractureId, int replicaSchemeId, int range, int replicaPartitionId, int columnId, int columnFileId, LVFSFileType type) throws IOException {
-        this(getLvfsRootDirFromConf(conf), tableId, fractureId, replicaSchemeId, range, replicaPartitionId, columnId, columnFileId, type);
+    public LVFSFilePath(Configuration conf, int databaseId, int tableId, int fractureId, int replicaSchemeId, int range, int replicaPartitionId, int columnId, int columnFileId, LVFSFileType type) throws IOException {
+        this(getLvfsRootDirFromConf(conf), databaseId, tableId, fractureId, replicaSchemeId, range, replicaPartitionId, columnId, columnFileId, type);
     }
     private static String getLvfsRootDirFromConf (Configuration conf) throws IOException {
         String dir = conf.get(LVFS_CONF_ROOT_KEY);
@@ -94,7 +98,7 @@ public final class LVFSFilePath {
 
     private static final Pattern pattern;
     static {
-        pattern = Pattern.compile("(.*/)([0-9]+)/([0-9]+)_([0-9]+)/([0-9]+)_([0-9]+)/([0-9]+)_([0-9]+)\\.([a-z]+)");
+        pattern = Pattern.compile("(.*/)([0-9]+)/([0-9]+)/([0-9]+)_([0-9]+)/([0-9]+)_([0-9]+)/([0-9]+)_([0-9]+)\\.([a-z]+)");
     }
     /**
      * Extracts IDs of metadata objects from a file path.
@@ -111,6 +115,7 @@ public final class LVFSFilePath {
         try {
             int i = 0;
             this.lvfsRootDir = matcher.group(++i);
+            this.databaseId = Integer.parseInt(matcher.group(++i));
             this.tableId = Integer.parseInt(matcher.group(++i));
             this.fractureId = Integer.parseInt(matcher.group(++i));
             this.replicaSchemeId = Integer.parseInt(matcher.group(++i));
@@ -132,6 +137,7 @@ public final class LVFSFilePath {
     public String toString() {
         return absolutePath + " - ("
         + "lvfsRootDir=" + lvfsRootDir
+        + ", databaseId=" + databaseId
         + ", tableId=" + tableId
         + ", fractureId=" + fractureId
         + ", replicaSchemeId=" + replicaSchemeId
@@ -180,6 +186,15 @@ public final class LVFSFilePath {
      */
     public String getLvfsRootDir() {
         return lvfsRootDir;
+    }
+    
+    /**
+     * Gets the iD of {@link LVDatabase}.
+     *
+     * @return the iD of {@link LVDatabase}
+     */
+    public int getDatabaseId() {
+        return databaseId;
     }
     
     /**
