@@ -33,7 +33,7 @@ public final class CentralNode {
         Configuration.addDefaultResource("lasvegas-default.xml");
         Configuration.addDefaultResource("lasvegas-site.xml");
     }
-    // private Daemon replicator;
+    private Daemon replicator;
 
     /** hadoop configuration */
     private Configuration conf;
@@ -130,12 +130,11 @@ public final class CentralNode {
             LOG.warn("Interrupted while joining modules in central node.", ex);
         }
     }
-/*
+
     class Replicator implements Runnable {
         @Override
         public void run() {
             // TODO Auto-generated method stub
         }
     }
-    */
 }

@@ -33,11 +33,19 @@ public class LVTable implements LVObject {
     /** The Constant IX_NAME. */
     public static final String IX_NAME = "IX_NAME";
     /**
-     * The logical name of this table. Of course has to be unique.
+     * The logical name of this table. Has to be unique in the database.
      * Only some set of characters are allowed in table name (as defined in ANSI SQL). 
      */
-    @SecondaryKey(name=IX_NAME, relate=Relationship.ONE_TO_ONE)
+    @SecondaryKey(name=IX_NAME, relate=Relationship.MANY_TO_ONE)
     private String name;
+
+    /** The Constant IX_DATABASE_ID. */
+    public static final String IX_DATABASE_ID = "IX_DATABASE_ID";
+    /**
+     * The database this table belongs to. 
+     */
+    @SecondaryKey(name=IX_DATABASE_ID, relate=Relationship.MANY_TO_ONE, relatedEntity=LVDatabase.class)
+    private int databaseId;
 
     /** current status of this table. */
     private TableStatus status;
@@ -64,11 +72,15 @@ public class LVTable implements LVObject {
      */
     @Override
     public String toString() {
-        return "Table-" + tableId + "(" + name + "): status=" + status + ", fracturingColumnId=" + fracturingColumnId + ", pervasiveReplication=" + pervasiveReplication;
+        return "Table-" + tableId + "(" + name + ", databaseId=" + databaseId + "): status=" + status + ", fracturingColumnId=" + fracturingColumnId + ", pervasiveReplication=" + pervasiveReplication;
     }
 
+    /**
+     * @see org.apache.hadoop.io.Writable#write(java.io.DataOutput)
+     */
     @Override
     public void write(DataOutput out) throws IOException {
+        out.writeInt(databaseId);
         out.writeInt(fracturingColumnId);
         out.writeBoolean(name == null);
         if (name != null) {
@@ -78,8 +90,13 @@ public class LVTable implements LVObject {
         out.writeInt(status == null ? TableStatus.INVALID.ordinal() : status.ordinal());
         out.writeInt(tableId);
     }
+    
+    /**
+     * @see org.apache.hadoop.io.Writable#readFields(java.io.DataInput)
+     */
     @Override
     public void readFields(DataInput in) throws IOException {
+        databaseId = in.readInt();
         fracturingColumnId = in.readInt();
         boolean isNameNull = in.readBoolean();
         if (isNameNull) {
@@ -98,6 +115,9 @@ public class LVTable implements LVObject {
         return obj;
     }
 
+    /**
+     * @see edu.brown.lasvegas.LVObject#getObjectType()
+     */
     @Override
     public LVObjectType getObjectType() {
         return LVObjectType.TABLE;
@@ -192,5 +212,23 @@ public class LVTable implements LVObject {
      */
     public void setPervasiveReplication(boolean pervasiveReplication) {
         this.pervasiveReplication = pervasiveReplication;
+    }
+
+    /**
+     * Gets the database this table belongs to.
+     *
+     * @return the database this table belongs to
+     */
+    public int getDatabaseId() {
+        return databaseId;
+    }
+
+    /**
+     * Sets the database this table belongs to.
+     *
+     * @param databaseId the new database this table belongs to
+     */
+    public void setDatabaseId(int databaseId) {
+        this.databaseId = databaseId;
     }
 }

@@ -15,6 +15,7 @@ import org.junit.Test;
 
 import edu.brown.lasvegas.ColumnType;
 import edu.brown.lasvegas.LVColumn;
+import edu.brown.lasvegas.LVDatabase;
 import edu.brown.lasvegas.LVTable;
 import edu.brown.lasvegas.protocol.MetadataProtocol;
 
@@ -45,19 +46,11 @@ public class CentralNodeTest {
         
         MetadataProtocol metaClient = RPC.getProxy(MetadataProtocol.class, MetadataProtocol.versionID, NetUtils.createSocketAddr(METAREPO_ADDRESS), conf);
 
-        LVColumn[] columns = new LVColumn[2];
-        columns[0] = new LVColumn();
-        columns[0].setFracturingColumn(false);
-        columns[0].setName("col1");
-        columns[0].setType(ColumnType.INTEGER);
-        columns[1] = new LVColumn();
-        columns[1].setFracturingColumn(false);
-        columns[1].setName("col2");
-        columns[1].setType(ColumnType.VARCHAR);
-        LVTable table = metaClient.createNewTable("ttt", columns);
+        LVDatabase database = metaClient.createNewDatabase("sdf");
+        LVTable table = metaClient.createNewTable(database.getDatabaseId(), "ttt", new String[]{"col1", "col2"}, new ColumnType[]{ColumnType.INTEGER, ColumnType.VARCHAR});
         assertTrue (table.getTableId() > 0);
         
-        columns = metaClient.getAllColumns(table.getTableId());
+        LVColumn[] columns = metaClient.getAllColumns(table.getTableId());
         assertEquals (2 + 1, columns.length);
         assertEquals (LVColumn.EPOCH_COLUMN_NAME, columns[0].getName());
         assertEquals ("col1", columns[1].getName());

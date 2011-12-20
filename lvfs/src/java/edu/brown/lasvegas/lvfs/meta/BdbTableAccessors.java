@@ -10,6 +10,7 @@ import com.sleepycat.persist.SecondaryIndex;
 import com.sleepycat.persist.StoreConfig;
 
 import edu.brown.lasvegas.LVColumnFile;
+import edu.brown.lasvegas.LVDatabase;
 import edu.brown.lasvegas.LVObjectType;
 import edu.brown.lasvegas.LVRack;
 import edu.brown.lasvegas.LVRackAssignment;
@@ -37,6 +38,7 @@ class BdbTableAccessors {
     final EntityStore store;
     final MasterTableAccessor masterTableAccessor;
 
+    final DatabaseAccessor databaseAccessor;
     final TableAccessor tableAccessor;
     final ColumnAccessor columnAccessor;
     final FractureAccessor fractureAccessor;
@@ -60,6 +62,7 @@ class BdbTableAccessors {
         storeConfig.setTransactional(false);
         store = new EntityStore(bdbEnv, MasterTable.DBNAME, storeConfig);
         masterTableAccessor = new MasterTableAccessor(store);
+        databaseAccessor = new DatabaseAccessor();
         tableAccessor = new TableAccessor();
         columnAccessor = new ColumnAccessor();
         fractureAccessor = new FractureAccessor();
@@ -119,12 +122,22 @@ class BdbTableAccessors {
         }
     }
 
+    class DatabaseAccessor extends MetaTableAccessor<LVDatabase> {
+        DatabaseAccessor () {
+            super(LVDatabase.class);
+            IX_NAME = store.getSecondaryIndex(PKX, String.class, LVDatabase.IX_NAME);
+        }
+        LVObjectType getType() { return LVObjectType.DATABASE;}
+        final SecondaryIndex<String, Integer, LVDatabase> IX_NAME;
+    }
     class TableAccessor extends MetaTableAccessor<LVTable> {
         TableAccessor () {
             super(LVTable.class);
+            IX_DATABASE_ID = store.getSecondaryIndex(PKX, Integer.class, LVTable.IX_DATABASE_ID);
             IX_NAME = store.getSecondaryIndex(PKX, String.class, LVTable.IX_NAME);
         }
         LVObjectType getType() { return LVObjectType.TABLE;}
+        final SecondaryIndex<Integer, Integer, LVTable> IX_DATABASE_ID;
         final SecondaryIndex<String, Integer, LVTable> IX_NAME;
     }
 

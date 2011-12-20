@@ -8,6 +8,7 @@ import org.apache.hadoop.ipc.VersionedProtocol;
 import edu.brown.lasvegas.LVColumnFile;
 import edu.brown.lasvegas.ColumnType;
 import edu.brown.lasvegas.CompressionType;
+import edu.brown.lasvegas.LVDatabase;
 import edu.brown.lasvegas.LVRack;
 import edu.brown.lasvegas.LVRackAssignment;
 import edu.brown.lasvegas.LVRackNode;
@@ -87,6 +88,56 @@ public interface MetadataProtocol extends VersionedProtocol {
      */
     void close () throws IOException;
 
+    //////////////////////// Database Methods : begin ////////////////////////////////
+    /**
+     * Returns the database object with the given ID.
+     * @param databaseId Database ID 
+     * @return database object. null if the ID is not found.
+     * @throws IOException
+     */
+    LVDatabase getDatabase(int databaseId) throws IOException;
+    
+    /**
+     * Returns the database object with the given name (case insensitive).
+     * @param name Database name 
+     * @return database object. null if the name is not found.
+     * @throws IOException
+     */
+    LVDatabase getDatabase(String name) throws IOException;
+
+    /**
+     * Returns all existing database objects. 
+     * @return database objects. in ID order.
+     * @throws IOException
+     */
+    LVDatabase[] getAllDatabases() throws IOException;
+
+    /**
+     * Creates a new database.
+     * @param name the name of the new database
+     * @return the newly created database
+     * @throws IOException
+     */
+    LVDatabase createNewDatabase (String name) throws IOException;
+    
+    /**
+     * Drops a database and all of its related objects.
+     * Dropping a database consists of a few steps which might take long time.
+     * This method merely sets a flag so that the steps will start in near future.
+     * @param databaseId the database to drop
+     * @throws IOException
+     */
+    void requestDropDatabase (int databaseId) throws IOException;
+    
+    /**
+     * This method is called to fully delete the metadata object of the database and
+     * related objects from this
+     * repository after the deletion actually completes.
+     * @param databaseId the database to drop
+     * @throws IOException
+     */
+    void dropDatabase (int databaseId) throws IOException;
+
     //////////////////////// Table Methods : begin ////////////////////////////////
     
     /**
@@ -99,31 +150,41 @@ public interface MetadataProtocol extends VersionedProtocol {
     
     /**
      * Returns the table object with the given name (case insensitive). 
+     * @param databaseId ID of the database containing the table
      * @param name Table name 
      * @return table object. null if the name is not found.
      * @throws IOException
      */
-    LVTable getTable(String name) throws IOException;
+    LVTable getTable(int databaseId, String name) throws IOException;
 
     /**
-     * Returns all existing table objects. 
+     * Returns all existing tables in the specified database. 
+     * @param databaseId ID of the database containing the tables
      * @return table objects. in ID order.
      * @throws IOException
      */
-    LVTable[] getAllTables() throws IOException;
+    LVTable[] getAllTables(int databaseId) throws IOException;
 
     /**
      * Creates a new table with the given columns and base partitioning scheme.
      * This method itself does not create any replica scheme for this table.
      * You have to create at least one replica scheme to this table before importing fractures.
      * @param name the name of the new table
-     * @param columns spec of the columns in the table (ID/Order is ignored)
+     * @param columnNames names of the columns in the table
      * The epoch column is automatically added as an implicit column. 
+     * @param columnTypes types of the columns in the table
+     * @param fracturingColumn specifies the column used for fracturing the table. index of columnNames/columnTypes.
+     * If -1, the implicit epoch column is used.
      * @return the newly created table
      * @throws IOException
      * @see #createNewReplicaScheme(LVReplicaGroup, LVColumn, Map)
      */
-    LVTable createNewTable (String name, LVColumn[] columns) throws IOException;
+    LVTable createNewTable (int databaseId, String name, String[] columnNames, ColumnType[] columnTypes, int fracturingColumn) throws IOException;
+    /**
+     * an overload that uses the implicit epoch column for fracturing.
+     * @see #createNewTable(int, String, String[], ColumnType[], int)
+     */
+    LVTable createNewTable (int databaseId, String name, String[] columnNames, ColumnType[] columnTypes) throws IOException;
     
     /**
      * Drops a table and all of its column files in all replicas.

@@ -22,9 +22,11 @@ import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.persist.EntityIndex;
 
 import edu.brown.lasvegas.ColumnStatus;
+import edu.brown.lasvegas.DatabaseStatus;
 import edu.brown.lasvegas.LVColumnFile;
 import edu.brown.lasvegas.ColumnType;
 import edu.brown.lasvegas.CompressionType;
+import edu.brown.lasvegas.LVDatabase;
 import edu.brown.lasvegas.LVRack;
 import edu.brown.lasvegas.LVRackAssignment;
 import edu.brown.lasvegas.LVRackNode;
@@ -175,57 +177,133 @@ public class MasterMetadataRepository implements MetadataProtocol {
     }
 
     @Override
+    public LVDatabase getDatabase(int databaseId) throws IOException {
+        return bdbTableAccessors.databaseAccessor.PKX.get(databaseId);
+    }
+    @Override
+    public LVDatabase getDatabase(String name) throws IOException {
+        return bdbTableAccessors.databaseAccessor.IX_NAME.get(name);
+    }
+    @Override
+    public LVDatabase[] getAllDatabases() throws IOException {
+        // ID order
+        return bdbTableAccessors.databaseAccessor.PKX.sortedMap().values().toArray(new LVDatabase[0]);
+    }
+    @Override
+    public LVDatabase createNewDatabase(String name) throws IOException {
+        LOG.info("creating new database " + name + "...");
+        if (name == null || name.length() == 0) {
+            throw new IOException ("empty database name");
+        }
+        if (bdbTableAccessors.databaseAccessor.IX_NAME.contains(name)) {
+            throw new IOException ("this database name already exists:" + name);
+        }
+        LVDatabase database = new LVDatabase();
+        database.setDatabaseId(bdbTableAccessors.databaseAccessor.issueNewId());
+        database.setName(name);
+        database.setStatus(DatabaseStatus.OK);
+        bdbTableAccessors.databaseAccessor.PKX.putNoReturn(database);
+        return database;
+    }
+    @Override
+    public void requestDropDatabase(int databaseId) throws IOException {
+        LVDatabase database = getDatabase(databaseId);
+        if (database == null) {
+            throw new IOException("this databaseId does not exist. already dropped? : " + databaseId);
+        }
+        if (LOG.isInfoEnabled()) {
+            LOG.info("drop database requested : " + database);
+        }
+        database.setStatus(DatabaseStatus.BEING_DROPPED);
+        bdbTableAccessors.databaseAccessor.PKX.putNoReturn(database);
+    }
+    @Override
+    public void dropDatabase(int databaseId) throws IOException {
+        LVDatabase database = getDatabase(databaseId);
+        if (database == null) {
+            throw new IOException("this databaseId does not exist. already dropped? : " + databaseId);
+        }
+
+        // drop tables
+        LVTable[] tables = getAllTables(databaseId);
+        for (LVTable table : tables) {
+            dropTable(table);
+        }
+        boolean deleted = bdbTableAccessors.databaseAccessor.PKX.delete(databaseId);
+        if (!deleted) {
+            LOG.warn("this database has been already deleted?? :" + database);
+        }
+        LOG.info("Dropped");
+    }
+    
+    @Override
     public LVTable getTable(int tableId) throws IOException {
         return bdbTableAccessors.tableAccessor.PKX.get(tableId);
     }
     @Override
-    public LVTable getTable(String name) throws IOException {
-        return bdbTableAccessors.tableAccessor.IX_NAME.get(name);
+    public LVTable getTable(int databaseId, String name) throws IOException {
+        Map<Integer, LVTable> map1 = bdbTableAccessors.tableAccessor.IX_DATABASE_ID.subIndex(databaseId).map();
+        Map<Integer, LVTable> map2 = bdbTableAccessors.tableAccessor.IX_NAME.subIndex(name).map();
+        for (LVTable table : map2.values()) {
+            if (map1.containsKey(table.getTableId())) {
+                assert (table.getDatabaseId() == databaseId);
+                assert (table.getName().equalsIgnoreCase(name));
+                return table;
+            }
+        }
+        return null;
     }
     @Override
-    public LVTable[] getAllTables() throws IOException {
+    public LVTable[] getAllTables(int databaseId) throws IOException {
         // ID order
-        return bdbTableAccessors.tableAccessor.PKX.sortedMap().values().toArray(new LVTable[0]);
+        return bdbTableAccessors.tableAccessor.IX_DATABASE_ID.subIndex(databaseId).sortedMap().values().toArray(new LVTable[0]);
     }
 
     @Override
-    public LVTable createNewTable(String name, LVColumn[] columns) throws IOException {
-        LOG.info("creating new table " + name + "...");
+    public LVTable createNewTable(int databaseId, String name, String[] columnNames, ColumnType[] columnTypes) throws IOException {
+        return createNewTable(databaseId, name, columnNames, columnTypes, -1);
+    }
+    @Override
+    public LVTable createNewTable(int databaseId, String name, String[] columnNames, ColumnType[] columnTypes, int fracturingColumn) throws IOException {
+        LOG.info("creating new table " + name + " in databaseId=" + databaseId + "...");
         // misc parameter check
         if (name == null || name.length() == 0) {
             throw new IOException ("empty table name");
         }
-        if (columns.length == 0) {
+        if (columnNames.length == 0) {
             throw new IOException ("table without any columns is not allowed");
         }
-        if (bdbTableAccessors.tableAccessor.IX_NAME.contains(name)) {
-            throw new IOException ("this table name already exists:" + name);
+        if (columnNames.length != columnTypes.length) {
+            throw new IOException ("the size of columnNames doesn't agree with that of columnTypes");
+        }
+        if (fracturingColumn < -1 || fracturingColumn >= columnNames.length) {
+            throw new IOException ("invalid fracturingColumn:" + fracturingColumn);
+        }
+        {
+            LVTable existingTable = getTable(databaseId, name);
+            if (existingTable != null) {
+                throw new IOException ("this table name already exists in this database:" + name);
+            }
         }
 
-        boolean userSpecifiedFracturingColumn = false;
         {
             // check column name duplicates
-            HashSet<String> columnNames = new HashSet<String>();
-            columnNames.add(LVColumn.EPOCH_COLUMN_NAME);
-            for (LVColumn column : columns) {
-                if (column.getName() == null || column.getName().length() == 0) {
+            HashSet<String> columnNameSet = new HashSet<String>();
+            columnNameSet.add(LVColumn.EPOCH_COLUMN_NAME);
+            for (String columnName : columnNames) {
+                if (columnName == null || columnName.length() == 0) {
                     throw new IOException ("empty column name");
                 }
-                if (columnNames.contains(column.getName().toLowerCase())) {
-                    throw new IOException ("this column name is used more than once:" + column.getName());
+                if (columnNameSet.contains(columnName.toLowerCase())) {
+                    throw new IOException ("this column name is used more than once:" + columnName);
                 }
-                columnNames.add(column.getName().toLowerCase());
-                if (column.isFracturingColumn()) {
-                    if (userSpecifiedFracturingColumn) {
-                        throw new IOException ("cannot specify more than one fracturing column:" + column.getName());
-                    }
-                    userSpecifiedFracturingColumn = true;
-                }
+                columnNameSet.add(columnName.toLowerCase());
             }
         }
 
         // first, create table record
         LVTable table = new LVTable();
+        table.setDatabaseId(databaseId);
         table.setName(name);
         table.setStatus(TableStatus.BEING_CREATED);
         int tableId = bdbTableAccessors.tableAccessor.issueNewId();
@@ -244,23 +322,23 @@ public class MasterMetadataRepository implements MetadataProtocol {
             column.setTableId(tableId);
             int columnId = bdbTableAccessors.columnAccessor.issueNewId();
             column.setColumnId(columnId);
-            column.setFracturingColumn(!userSpecifiedFracturingColumn);
+            column.setFracturingColumn(fracturingColumn == -1);
             bdbTableAccessors.columnAccessor.PKX.putNoReturn(column);
             if (column.isFracturingColumn()) {
                 fracturingColumnId = columnId;
             }
         }
-        for (int i = 0; i < columns.length; ++i) {
+        for (int i = 0; i < columnNames.length; ++i) {
             int order = i + 1;
             LVColumn column = new LVColumn();
-            column.setName(columns[i].getName());
+            column.setName(columnNames[i]);
             column.setOrder(order);
             column.setStatus(ColumnStatus.OK);
-            column.setType(columns[i].getType());
+            column.setType(columnTypes[i]);
             column.setTableId(tableId);
             int columnId = bdbTableAccessors.columnAccessor.issueNewId();
             column.setColumnId(columnId);
-            column.setFracturingColumn(columns[i].isFracturingColumn());
+            column.setFracturingColumn(fracturingColumn == i);
             bdbTableAccessors.columnAccessor.PKX.putNoReturn(column);
             if (column.isFracturingColumn()) {
                 fracturingColumnId = columnId;

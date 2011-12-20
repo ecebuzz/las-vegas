@@ -6,6 +6,7 @@ import java.util.HashSet;
 
 import org.apache.log4j.Logger;
 
+import edu.brown.lasvegas.LVDatabase;
 import edu.brown.lasvegas.LVFracture;
 import edu.brown.lasvegas.LVRack;
 import edu.brown.lasvegas.LVRackAssignment;
@@ -38,25 +39,27 @@ public final class PlacementEventHandlerImpl implements PlacementEventHandler {
     @Override
     public void onNewRack(LVRack rack) throws IOException {
         LOG.info("rebalancing for new rack:" + rack);
-        for (LVTable table : repository.getAllTables()) {
-            LVReplicaGroup[] groups = repository.getAllReplicaGroups(table.getTableId());
-            if (groups.length == 0) {
-                LOG.warn("this table doesn't have replica groups defined yet. skipped: " + table);
-                continue;
-            }
-            for (LVFracture fracture : repository.getAllFractures(table.getTableId())) {
-                ReplicaGroupToAssignRack result = pickReplicaGroupToAssignRack (rack, table, fracture, groups);
-                LVReplicaGroup group = result.group;
-                // store the assignment to the metadata store
-                repository.createNewRackAssignment(rack, fracture, group);
-                if (result.rackCount == 0) {
-                     // If the rack is the first assigned rack for the replica group (in other words, the replica group wasn't materialized
-                     // until now), we do the same as {@link #onNewFracture(LVTable, LVFracture)} regarding
-                     // this rack.
-                    rebalanceReplicas (fracture, group); // this will utilize the newly assigned (thus vacant) rack
-                } else {
-                    // otherwise, do nothing. the newly assigned rack will be utilized on the next onNewFracture.
-                    // we don't do anything here to keep it simple, and minimize the data transmission (in other words, not just an excuse!).
+        for (LVDatabase database : repository.getAllDatabases()) {
+            for (LVTable table : repository.getAllTables(database.getDatabaseId())) {
+                LVReplicaGroup[] groups = repository.getAllReplicaGroups(table.getTableId());
+                if (groups.length == 0) {
+                    LOG.warn("this table doesn't have replica groups defined yet. skipped: " + table);
+                    continue;
+                }
+                for (LVFracture fracture : repository.getAllFractures(table.getTableId())) {
+                    ReplicaGroupToAssignRack result = pickReplicaGroupToAssignRack (rack, table, fracture, groups);
+                    LVReplicaGroup group = result.group;
+                    // store the assignment to the metadata store
+                    repository.createNewRackAssignment(rack, fracture, group);
+                    if (result.rackCount == 0) {
+                         // If the rack is the first assigned rack for the replica group (in other words, the replica group wasn't materialized
+                         // until now), we do the same as {@link #onNewFracture(LVTable, LVFracture)} regarding
+                         // this rack.
+                        rebalanceReplicas (fracture, group); // this will utilize the newly assigned (thus vacant) rack
+                    } else {
+                        // otherwise, do nothing. the newly assigned rack will be utilized on the next onNewFracture.
+                        // we don't do anything here to keep it simple, and minimize the data transmission (in other words, not just an excuse!).
+                    }
                 }
             }
         }

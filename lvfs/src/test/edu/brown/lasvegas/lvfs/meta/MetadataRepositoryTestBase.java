@@ -14,8 +14,10 @@ import org.junit.Test;
 import edu.brown.lasvegas.ColumnStatus;
 import edu.brown.lasvegas.ColumnType;
 import edu.brown.lasvegas.CompressionType;
+import edu.brown.lasvegas.DatabaseStatus;
 import edu.brown.lasvegas.LVColumn;
 import edu.brown.lasvegas.LVColumnFile;
+import edu.brown.lasvegas.LVDatabase;
 import edu.brown.lasvegas.LVFracture;
 import edu.brown.lasvegas.LVObjectType;
 import edu.brown.lasvegas.LVRack;
@@ -69,9 +71,11 @@ public abstract class MetadataRepositoryTestBase {
     }
     
     
+    private final static String DEFAULT_DATABASE_NAME = "defdb";
     private final static String DEFAULT_TABLE_NAME = "deftable";
     private final static String DEFAULT_RACK_NAME = "default_rack";
     private final static String DEFAULT_RACK_NODE_NAME = "default_node.default_rack.dummy.org";
+    private LVDatabase DEFAULT_DATABASE;
     private LVTable DEFAULT_TABLE;
     /** 0=epoch, 1=intcol, 2=strcol, 3=floatcol, 4=tscol. */
     private LVColumn[] DEFAULT_COLUMNS;
@@ -93,18 +97,19 @@ public abstract class MetadataRepositoryTestBase {
     
     /** for ease of testing, create a few default objects. */
     private void initDefaultTestObjects () throws IOException {
-        for (LVTable existing : repository.getAllTables()) {
-            repository.dropTable(existing);
+        for (LVDatabase existing : repository.getAllDatabases()) {
+            repository.dropDatabase(existing.getDatabaseId());
         }
         for (LVRack existing : repository.getAllRacks()) {
             repository.dropRack(existing);
         }
-        DEFAULT_TABLE = repository.createNewTable(DEFAULT_TABLE_NAME, new LVColumn[]{
-            new LVColumn("intcol", ColumnType.INTEGER),
-            new LVColumn("strcol", ColumnType.VARCHAR),
-            new LVColumn("floatcol", ColumnType.FLOAT),
-            new LVColumn("tscol", ColumnType.TIMESTAMP),
-        });
+        DEFAULT_DATABASE = repository.createNewDatabase(DEFAULT_DATABASE_NAME);
+        DEFAULT_TABLE = repository.createNewTable(DEFAULT_DATABASE.getDatabaseId(),
+            DEFAULT_TABLE_NAME,
+            new String[] {"intcol", "strcol", "floatcol", "tscol"},
+            new ColumnType[]{ ColumnType.INTEGER, ColumnType.VARCHAR, ColumnType.FLOAT, ColumnType.TIMESTAMP}
+        );
+        assertEquals (DEFAULT_DATABASE.getDatabaseId(), DEFAULT_TABLE.getDatabaseId());
         assertTrue (DEFAULT_TABLE.getTableId() != 0);
         
         DEFAULT_RACK = repository.createNewRack(DEFAULT_RACK_NAME);
@@ -244,14 +249,61 @@ public abstract class MetadataRepositoryTestBase {
     // public void testClose() throws IOException {}
 
     @Test
+    public void testDatabaseAssorted() throws IOException {
+        LVDatabase database = repository.createNewDatabase("aaaa");
+        assertTrue(database.getDatabaseId() != DEFAULT_DATABASE.getDatabaseId());
+        assertEquals("aaaa", database.getName());
+        try {
+            repository.createNewDatabase("aaaa"); // duplicate name
+            fail(); // should fail!
+        } catch (IOException ex) {
+            // ok
+        }
+        
+        repository.createNewDatabase("bbb");
+        
+        reloadRepository();
+        
+        LVDatabase[] databases = repository.getAllDatabases();
+        assertEquals (3, databases.length);
+        assertEquals (DEFAULT_DATABASE_NAME, databases[0].getName());
+        assertEquals ("aaaa", databases[1].getName());
+        assertEquals ("bbb", databases[2].getName());
+        
+        assertEquals("aaaa", repository.getDatabase(databases[1].getDatabaseId()).getName());
+        assertEquals("bbb", repository.getDatabase(databases[2].getDatabaseId()).getName());
+        assertNull(repository.getDatabase(databases[2].getDatabaseId() + 100));
+    }
+
+    @Test
+    public void testRequestDropDatabase() throws IOException {
+        assertEquals (DatabaseStatus.OK, DEFAULT_DATABASE.getStatus());
+        repository.requestDropDatabase(DEFAULT_DATABASE.getDatabaseId());
+        LVDatabase modified = repository.getDatabase(DEFAULT_DATABASE.getDatabaseId());
+        assertEquals (DatabaseStatus.BEING_DROPPED, modified.getStatus());
+    }
+
+    @Test
+    public void testDropDatabase() throws IOException {
+        assertNotNull(repository.getDatabase(DEFAULT_DATABASE.getDatabaseId()));
+        repository.dropDatabase(DEFAULT_DATABASE.getDatabaseId());
+        assertNull(repository.getDatabase(DEFAULT_DATABASE.getDatabaseId()));
+        // also, its subsequent objects should be deleted too
+        assertEquals(0, repository.getAllTables(DEFAULT_DATABASE.getDatabaseId()).length);
+        reloadRepository();
+        assertNull(repository.getDatabase(DEFAULT_DATABASE.getDatabaseId()));
+        assertEquals(0, repository.getAllTables(DEFAULT_DATABASE.getDatabaseId()).length);
+    }
+
+    @Test
     public void testCreateGetNewTable() throws IOException {
         int id1, id2;
         {
-            LVTable table = repository.createNewTable("aabc", new LVColumn[]{
-                new LVColumn("col1", ColumnType.INTEGER),
-                new LVColumn("col2", ColumnType.VARCHAR),
-                new LVColumn("col3", ColumnType.FLOAT),
-            });
+            LVTable table = repository.createNewTable(
+                DEFAULT_DATABASE.getDatabaseId(), "aabc",
+                new String[]{"col1", "col2", "col3"},
+                new ColumnType[]{ ColumnType.INTEGER, ColumnType.VARCHAR, ColumnType.FLOAT}
+            );
             assertTrue (table.getTableId() > 0);
             assertEquals("aabc", table.getName());
             LVColumn[] columns = repository.getAllColumns(table.getTableId());
@@ -267,11 +319,33 @@ public abstract class MetadataRepositoryTestBase {
             id1 = table.getTableId();
         }
         {
-            LVTable table = repository.createNewTable("aabc2", new LVColumn[]{
-                new LVColumn("col1", ColumnType.INTEGER, true),
-                new LVColumn("col2", ColumnType.VARCHAR),
-                new LVColumn("col3", ColumnType.FLOAT),
-            });
+            try {
+                repository.createNewTable(
+                    DEFAULT_DATABASE.getDatabaseId(), "aabc",
+                    new String[]{"col1"}, new ColumnType[]{ ColumnType.INTEGER}
+                );
+                fail(); // duplicate name
+            } catch (IOException ex) {
+                // ok
+            }
+        }
+        {
+            // but, duplicate name in another database is fine.
+            LVDatabase database2 = repository.createNewDatabase("dssdds");
+            LVTable table = repository.createNewTable(
+                database2.getDatabaseId(), "aabc",
+                new String[]{"col1"}, new ColumnType[]{ ColumnType.INTEGER}
+            );
+            assertEquals (database2.getDatabaseId(), table.getDatabaseId());
+            assertEquals ("aabc", table.getName());
+        }
+        {
+            LVTable table = repository.createNewTable(
+                DEFAULT_DATABASE.getDatabaseId(), "aabc2",
+                new String[]{"col1", "col2", "col3"},
+                new ColumnType[]{ColumnType.INTEGER, ColumnType.VARCHAR, ColumnType.FLOAT},
+                0
+            );
             assertTrue (table.getTableId() > 0);
             assertTrue (table.getTableId() != id1);
             assertEquals("aabc2", table.getName());

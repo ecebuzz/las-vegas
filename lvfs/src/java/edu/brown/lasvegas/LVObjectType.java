@@ -7,6 +7,7 @@ public enum LVObjectType {
     INVALID,
     COLUMN,
     COLUMN_FILE,
+    DATABASE,
     FRACTURE,
     RACK,
     RACK_ASSIGNMENT,
