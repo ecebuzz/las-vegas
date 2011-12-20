@@ -1,6 +1,13 @@
 package edu.brown.lasvegas.server;
 
 import static org.junit.Assert.*;
+
+import java.io.File;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Random;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.ipc.RPC;
 import org.apache.hadoop.net.NetUtils;
@@ -16,10 +23,21 @@ import edu.brown.lasvegas.protocol.MetadataProtocol;
  */
 public class CentralNodeTest {
     private static final String METAREPO_ADDRESS = "localhost:18711"; // use a port different from the default.
-    private static final String METAREPO_BDBHOME = "test/metatest";
+    private static final String METAREPO_BDBHOME = "test/metatest2";
 
     @Test
     public void testConnect () throws Exception {
+        File bdbFolder = new File(METAREPO_BDBHOME);
+        if (bdbFolder.exists()) {
+            File backup = new File(bdbFolder.getParentFile(), bdbFolder.getName() + "_backup_"
+                        + new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date()) // append backup-date
+                        + "_" + new Random(System.nanoTime()).nextInt()); // to make it unique
+            boolean renamed = bdbFolder.renameTo(backup);
+            if (!renamed) {
+                throw new IOException ("failed to take a backup of existing testing-bdbhome");
+            }
+        }
+
         Configuration conf = new Configuration();
         conf.set(CentralNode.METAREPO_ADDRESS_KEY, METAREPO_ADDRESS);
         conf.set(CentralNode.METAREPO_BDBHOME_KEY, METAREPO_BDBHOME);
