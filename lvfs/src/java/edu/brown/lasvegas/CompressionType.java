@@ -33,4 +33,6 @@ public enum CompressionType {
      * the criteria is what Snappy is for.</p> 
      */
     GZIP_BEST_COMPRESSION,
+    /** kind of null. */
+    INVALID,
 }

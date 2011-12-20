@@ -1,6 +1,5 @@
 package edu.brown.lasvegas.protocol;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.Map;
 
@@ -44,7 +43,7 @@ import edu.brown.lasvegas.ReplicaStatus;
  * frequently called and materializing the parent object is not an issue,
  * so type safety wins.</p>
  */
-public interface MetadataProtocol extends Closeable, VersionedProtocol {
+public interface MetadataProtocol extends VersionedProtocol {
     /**
      * Epoch is a coarse grained timestamp to partition inserted tuples. It's maintained
      * as a hidden implicit column in each table. Usually, one epoch corresponds to millions of tuples.
@@ -459,13 +458,14 @@ public interface MetadataProtocol extends Closeable, VersionedProtocol {
      * afterwards to do so.
      * @param group the replica group to create a replica scheme
      * @param sortingColumn the in-block sorting column of the replica scheme
-     * @param columnCompressionSchemes compression schemes of each column (key=Column Id)
+     * @param columnIds corresponds to the next parameter
+     * @param columnCompressionSchemes compression schemes of each column.
      * omitted columns are considered as no-compression.
      * @return new ReplicaScheme object
      * @throws IOException
      */
     LVReplicaScheme createNewReplicaScheme(LVReplicaGroup group, LVColumn sortingColumn,
-                    Map<Integer, CompressionType> columnCompressionSchemes) throws IOException;
+                    int[] columnIds, CompressionType[] columnCompressionSchemes) throws IOException;
 
 
     /**

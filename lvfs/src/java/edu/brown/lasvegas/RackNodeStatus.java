@@ -8,4 +8,6 @@ public enum RackNodeStatus {
     OK,
     /** the node is out of reach.*/
     LOST,
+    /** kind of null. */
+    INVALID,
 }

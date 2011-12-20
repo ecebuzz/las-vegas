@@ -37,10 +37,13 @@ public final class CentralNode {
 
     /** hadoop configuration */
     private Configuration conf;
+    public Configuration getConfiguration() {
+        return conf;
+    }
     
-    public static final String METAREPO_ADDRESS_KEY = "lasvegas.centralnode.metarepo.address";
+    public static final String METAREPO_ADDRESS_KEY = "lasvegas.server.meta.address";
     public static final String METAREPO_ADDRESS_DEFAULT = "localhost:28710";
-    public static final String METAREPO_BDBHOME_KEY = "lasvegas.centralnode.metarepo.bdbhome";
+    public static final String METAREPO_BDBHOME_KEY = "lasvegas.server.meta.bdbhome";
     public static final String METAREPO_BDBHOME_DEFAULT = "metarepo/bdb_data";
     
     /** server object to provide metadata repository access to clients. */
@@ -105,6 +108,11 @@ public final class CentralNode {
         stopRequested = true;
         if (metadataRepositoryServer != null) {
             metadataRepositoryServer.stop();
+            try {
+                metadataRepository.close();
+            } catch (IOException ex) {
+                LOG.error("error on closing metadata repository", ex);
+            }
         }
         LOG.info("Stopped central node.");
     }

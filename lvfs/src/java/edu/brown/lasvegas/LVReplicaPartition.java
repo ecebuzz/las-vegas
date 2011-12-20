@@ -127,7 +127,7 @@ public class LVReplicaPartition implements LVObject {
         out.writeInt(partitionId);
         out.writeInt(range);
         out.writeInt(replicaId);
-        out.writeInt(status.ordinal());
+        out.writeInt(status == null ? ReplicaPartitionStatus.INVALID.ordinal() : status.ordinal());
         out.writeInt(subPartitionSchemeId);
     }
     @Override

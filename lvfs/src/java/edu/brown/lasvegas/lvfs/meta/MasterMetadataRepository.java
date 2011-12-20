@@ -502,13 +502,17 @@ public class MasterMetadataRepository implements MetadataProtocol {
     }
 
     @Override
-    public LVReplicaScheme createNewReplicaScheme(LVReplicaGroup group, LVColumn sortingColumn, Map<Integer, CompressionType> columnCompressionSchemes)
+    public LVReplicaScheme createNewReplicaScheme(LVReplicaGroup group, LVColumn sortingColumn, int[] columnIds, CompressionType[] columnCompressionSchemes)
                     throws IOException {
         assert (group.getGroupId() > 0);
         assert (sortingColumn.getColumnId() > 0);
         assert (group.getTableId() == sortingColumn.getTableId());
+        assert (columnIds.length == columnCompressionSchemes.length);
         
-        HashMap<Integer, CompressionType> clonedCompressionSchemes = new HashMap<Integer, CompressionType> (columnCompressionSchemes);
+        HashMap<Integer, CompressionType> clonedCompressionSchemes = new HashMap<Integer, CompressionType> ();
+        for (int i = 0; i < columnIds.length; ++i) {
+            clonedCompressionSchemes.put (columnIds[i], columnCompressionSchemes[i]);
+        }
         boolean foundSortingColumn = false;
         // complement compression type
         for (LVColumn column : getAllColumns(group.getTableId())) {

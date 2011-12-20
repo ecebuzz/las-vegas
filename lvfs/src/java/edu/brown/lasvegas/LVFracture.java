@@ -77,7 +77,7 @@ public class LVFracture implements LVObject {
     @Override
     public void write(DataOutput out) throws IOException {
         out.writeInt(fractureId);
-        out.writeInt(keyType.ordinal());
+        out.writeInt(keyType == null ? ColumnType.INVALID.ordinal() : keyType.ordinal());
         ValueRange.writeRange(out, range, keyType);
         out.writeInt(tableId);
         out.writeLong(tupleCount);

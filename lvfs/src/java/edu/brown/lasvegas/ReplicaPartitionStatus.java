@@ -10,4 +10,6 @@ public enum ReplicaPartitionStatus {
     LOST,
     /** being recovered or created.*/
     BEING_RECOVERED,
+    /** kind of null. */
+    INVALID,
 }

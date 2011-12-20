@@ -10,4 +10,6 @@ public enum ColumnStatus {
     BEING_DROPPED,
     /** The column has been dropped. */
     DROPPED,
+    /** kind of null. */
+    INVALID,
 }

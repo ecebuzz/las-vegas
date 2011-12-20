@@ -91,7 +91,7 @@ public class LVReplica implements LVObject {
         out.writeInt(fractureId);
         out.writeInt(replicaId);
         out.writeInt(schemeId);
-        out.writeInt(status.ordinal());
+        out.writeInt(status == null ? ReplicaStatus.INVALID.ordinal() : status.ordinal());
         out.writeInt(subPartitionSchemeId);
     }
     @Override

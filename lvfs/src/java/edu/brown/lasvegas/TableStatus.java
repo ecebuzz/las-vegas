@@ -10,4 +10,6 @@ public enum TableStatus {
     BEING_DROPPED,
     /** The table has been dropped. */
     DROPPED,
+    /** kind of null. */
+    INVALID,
 }

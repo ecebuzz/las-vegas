@@ -53,7 +53,7 @@ public class LVRack implements LVObject {
             out.writeUTF(name);
         }
         out.writeInt(rackId);
-        out.writeInt(status.ordinal());
+        out.writeInt(status == null ? RackStatus.INVALID.ordinal() : status.ordinal());
     }
     @Override
     public void readFields(DataInput in) throws IOException {

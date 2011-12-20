@@ -82,7 +82,7 @@ public class LVReplicaScheme implements LVObject {
             @SuppressWarnings("unchecked")
             Map.Entry<Integer, CompressionType> entry = (Map.Entry<Integer, CompressionType>) array[i];
             out.writeInt(entry.getKey());
-            out.writeInt(entry.getValue().ordinal());
+            out.writeInt(entry.getValue() == null ? CompressionType.INVALID.ordinal() : entry.getValue().ordinal());
         }
     }
     @Override

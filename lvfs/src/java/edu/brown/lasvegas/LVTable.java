@@ -75,7 +75,7 @@ public class LVTable implements LVObject {
             out.writeUTF(name);
         }
         out.writeBoolean(pervasiveReplication);
-        out.writeInt(status.ordinal());
+        out.writeInt(status == null ? TableStatus.INVALID.ordinal() : status.ordinal());
         out.writeInt(tableId);
     }
     @Override

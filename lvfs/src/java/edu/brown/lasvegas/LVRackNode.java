@@ -62,7 +62,7 @@ public class LVRackNode implements LVObject {
         }
         out.writeInt(nodeId);
         out.writeInt(rackId);
-        out.writeInt(status.ordinal());
+        out.writeInt(status == null ? RackNodeStatus.INVALID.ordinal() : status.ordinal());
     }
     @Override
     public void readFields(DataInput in) throws IOException {

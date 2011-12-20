@@ -95,9 +95,9 @@ public class LVColumn implements LVObject {
             out.writeUTF(name);
         }
         out.writeInt(order);
-        out.writeInt(status.ordinal());
+        out.writeInt(status == null ? ColumnStatus.INVALID.ordinal() : status.ordinal());
         out.writeInt(tableId);
-        out.writeInt(type.ordinal());
+        out.writeInt(type == null ? ColumnType.INVALID.ordinal() : type.ordinal());
     }
     @Override
     public void readFields(DataInput in) throws IOException {

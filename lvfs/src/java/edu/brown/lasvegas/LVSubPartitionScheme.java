@@ -77,7 +77,7 @@ public class LVSubPartitionScheme implements LVObject {
     public void write(DataOutput out) throws IOException {
         out.writeInt(fractureId);
         out.writeInt(groupId);
-        out.writeInt(keyType.ordinal());
+        out.writeInt(keyType == null ? ColumnType.INVALID.ordinal() : keyType.ordinal());
         ValueRange.writeRanges(out, ranges, keyType);
         out.writeInt(subPartitionSchemeId);
     }

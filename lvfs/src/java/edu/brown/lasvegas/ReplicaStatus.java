@@ -8,4 +8,6 @@ public enum ReplicaStatus {
     OK,
     /** Some partition is lost or being recovered. */
     NOT_READY,
+    /** kind of null. */
+    INVALID,
 }

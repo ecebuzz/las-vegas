@@ -139,12 +139,9 @@ public abstract class MetadataRepositoryTestBase {
         DEFAULT_SUB_PARTITION_SCHEME.setRanges(new ValueRange<?>[]{new ValueRange<Integer>(40, 140), new ValueRange<Integer>(140, 300)});
         repository.finalizeSubPartitionScheme(DEFAULT_SUB_PARTITION_SCHEME);
 
-        HashMap<Integer, CompressionType> comp = new HashMap<Integer, CompressionType>();
-        comp.put(DEFAULT_COLUMNS[0].getColumnId(), CompressionType.RLE);
-        comp.put(DEFAULT_COLUMNS[1].getColumnId(), CompressionType.NULL_SUPPRESS);
-        comp.put(DEFAULT_COLUMNS[2].getColumnId(), CompressionType.DICTIONARY);
-        comp.put(DEFAULT_COLUMNS[3].getColumnId(), CompressionType.SNAPPY);
-        DEFAULT_SCHEME = repository.createNewReplicaScheme(DEFAULT_GROUP, DEFAULT_COLUMNS[1], comp);
+        int[] columnIds = new int[]{DEFAULT_COLUMNS[0].getColumnId(), DEFAULT_COLUMNS[1].getColumnId(), DEFAULT_COLUMNS[2].getColumnId(), DEFAULT_COLUMNS[3].getColumnId()};
+        CompressionType[] compressionTypes = new CompressionType[]{CompressionType.RLE, CompressionType.NULL_SUPPRESS, CompressionType.DICTIONARY, CompressionType.SNAPPY};
+        DEFAULT_SCHEME = repository.createNewReplicaScheme(DEFAULT_GROUP, DEFAULT_COLUMNS[1], columnIds, compressionTypes);
         assertTrue (DEFAULT_SCHEME.getSchemeId() > 0);
         
         DEFAULT_REPLICA = repository.createNewReplica(DEFAULT_SCHEME, DEFAULT_FRACTURE);
@@ -509,6 +506,7 @@ public abstract class MetadataRepositoryTestBase {
 
         assertNull (repository.getRack(rackId1));
         validateRack (repository.getRack(rackId2), rackId2, "rack2", RackStatus.LOST);
+        racks = repository.getAllRacks();
         assertEquals (2, racks.length);
         validateRack (racks[0], DEFAULT_RACK.getRackId(), DEFAULT_RACK_NAME, RackStatus.OK);
         validateRack (racks[1], rackId2, "rack2", RackStatus.LOST);
@@ -828,11 +826,9 @@ public abstract class MetadataRepositoryTestBase {
 
     @Test
     public void testReplicaSchemeAssorted() throws IOException {
-        HashMap<Integer, CompressionType> comp = new HashMap<Integer, CompressionType>();
-        comp.put(DEFAULT_COLUMNS[0].getColumnId(), CompressionType.RLE);
-        comp.put(DEFAULT_COLUMNS[1].getColumnId(), CompressionType.RLE);
-        comp.put(DEFAULT_COLUMNS[2].getColumnId(), CompressionType.NONE);
-        LVReplicaScheme scheme = repository.createNewReplicaScheme(DEFAULT_GROUP, DEFAULT_COLUMNS[2], comp);
+        LVReplicaScheme scheme = repository.createNewReplicaScheme(DEFAULT_GROUP, DEFAULT_COLUMNS[2],
+            new int[]{DEFAULT_COLUMNS[0].getColumnId(), DEFAULT_COLUMNS[1].getColumnId(), DEFAULT_COLUMNS[2].getColumnId()},
+            new CompressionType[]{CompressionType.RLE, CompressionType.RLE, CompressionType.NONE});
         assertTrue (scheme.getSchemeId() > 0);
         
         assertEquals (DEFAULT_GROUP.getGroupId(), scheme.getGroupId());
@@ -851,8 +847,8 @@ public abstract class MetadataRepositoryTestBase {
         assertEquals (DEFAULT_COLUMNS[1].getColumnId(), schemes[0].getSortColumnId());
         assertEquals (DEFAULT_COLUMNS[2].getColumnId(), schemes[1].getSortColumnId());
         
-        repository.changeColumnCompressionScheme(scheme, DEFAULT_COLUMNS[4], CompressionType.SNAPPY);
-        repository.changeColumnCompressionScheme(scheme, DEFAULT_COLUMNS[1], CompressionType.NONE);
+        scheme = repository.changeColumnCompressionScheme(scheme, DEFAULT_COLUMNS[4], CompressionType.SNAPPY);
+        scheme = repository.changeColumnCompressionScheme(scheme, DEFAULT_COLUMNS[1], CompressionType.NONE);
 
         reloadRepository();
 
@@ -891,7 +887,7 @@ public abstract class MetadataRepositoryTestBase {
         repository.finalizeSubPartitionScheme(subPartitionScheme2);
 
         LVReplicaScheme scheme1 = DEFAULT_SCHEME;
-        LVReplicaScheme scheme2 = repository.createNewReplicaScheme(DEFAULT_GROUP, DEFAULT_COLUMNS[3], new HashMap<Integer, CompressionType>());
+        LVReplicaScheme scheme2 = repository.createNewReplicaScheme(DEFAULT_GROUP, DEFAULT_COLUMNS[3], new int[0], new CompressionType[0]);
 
         LVReplica replica11 = repository.getReplica(DEFAULT_REPLICA.getReplicaId());
         assertEquals(DEFAULT_REPLICA.getReplicaId(), replica11.getReplicaId());
@@ -980,7 +976,7 @@ public abstract class MetadataRepositoryTestBase {
 
     @Test
     public void testReplicaPartitionAssorted() throws IOException {
-        LVReplicaScheme scheme = repository.createNewReplicaScheme(DEFAULT_GROUP, DEFAULT_COLUMNS[3], new HashMap<Integer, CompressionType>());
+        LVReplicaScheme scheme = repository.createNewReplicaScheme(DEFAULT_GROUP, DEFAULT_COLUMNS[3], new int[0], new CompressionType[0]);
         LVReplica replica = repository.createNewReplica(scheme, DEFAULT_FRACTURE);
         
         assertTrue (replica.getReplicaId() > 0);
