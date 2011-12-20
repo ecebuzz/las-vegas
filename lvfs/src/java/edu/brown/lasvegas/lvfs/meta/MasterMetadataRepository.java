@@ -41,6 +41,7 @@ import edu.brown.lasvegas.LVColumn;
 import edu.brown.lasvegas.LVFracture;
 import edu.brown.lasvegas.ReplicaStatus;
 import edu.brown.lasvegas.TableStatus;
+import edu.brown.lasvegas.lvfs.LVFSFilePath;
 import edu.brown.lasvegas.protocol.MetadataProtocol;
 import edu.brown.lasvegas.util.CompositeIntKey;
 
@@ -791,6 +792,23 @@ public class MasterMetadataRepository implements MetadataProtocol {
         if (!deleted) {
             LOG.warn("this column file has been already deleted?? :" + columnFile);
         }
+    }
+
+    @Override
+    public String queryColumnFilePlacement(String hdfsFilePath) throws IOException {
+        LVFSFilePath path = new LVFSFilePath(hdfsFilePath);
+        LVTable table = getTable(path.getTableId());
+        if (table.isPervasiveReplication()) {
+            return null; // null means replicating to all nodes
+        }
+        int replicaPartitionId = path.getReplicaPartitionId();
+        LVReplicaPartition replicaPartition = getReplicaPartition(replicaPartitionId);
+        Integer nodeId = replicaPartition.getNodeId();
+        if (nodeId == null) {
+            LOG.error("this column file belongs to a replica partition which hasn't been assigned to node?? :" + hdfsFilePath);
+            throw new IOException ("this column file belongs to a replica partition which hasn't been assigned to node?? :" + hdfsFilePath);
+        }
+        return getRackNode(nodeId).getName();
     }
 
     @Override

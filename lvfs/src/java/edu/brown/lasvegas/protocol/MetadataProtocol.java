@@ -712,6 +712,17 @@ public interface MetadataProtocol extends VersionedProtocol {
      * @throws IOException
      */
     void dropColumnFile (LVColumnFile columnFile) throws IOException;
+    
+    /**
+     * Returns the name of the node to place the specified column file.
+     * Unlike other methods, this one is supposed to be used by
+     * BlockPlacementPolicy.
+     * @param hdfsFilePath the path of the file in HDFS.
+     * @return the name of the node to place the file. Returns
+     * NULL if the file should be replicated to all nodes. 
+     * @throws IOException
+     */
+    String queryColumnFilePlacement (String hdfsFilePath) throws IOException;
 
     public static final long versionID = 1L;
 }
