@@ -56,14 +56,22 @@ public class LVRackNode implements LVObject {
 
     @Override
     public void write(DataOutput out) throws IOException {
-        out.writeUTF(name);
+        out.writeBoolean(name == null);
+        if (name != null) {
+            out.writeUTF(name);
+        }
         out.writeInt(nodeId);
         out.writeInt(rackId);
         out.writeInt(status.ordinal());
     }
     @Override
     public void readFields(DataInput in) throws IOException {
-        name = in.readUTF();
+        boolean isNameNull = in.readBoolean();
+        if (isNameNull) {
+            name = null;
+        } else {
+            name = in.readUTF();
+        }
         nodeId = in.readInt();
         rackId = in.readInt();
         status = RackNodeStatus.values()[in.readInt()];

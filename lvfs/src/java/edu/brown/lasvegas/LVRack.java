@@ -48,13 +48,21 @@ public class LVRack implements LVObject {
 
     @Override
     public void write(DataOutput out) throws IOException {
-        out.writeUTF(name);
+        out.writeBoolean(name == null);
+        if (name != null) {
+            out.writeUTF(name);
+        }
         out.writeInt(rackId);
         out.writeInt(status.ordinal());
     }
     @Override
     public void readFields(DataInput in) throws IOException {
-        name = in.readUTF();
+        boolean isNameNull = in.readBoolean();
+        if (isNameNull) {
+            name = null;
+        } else {
+            name = in.readUTF();
+        }
         rackId = in.readInt();
         status = RackStatus.values()[in.readInt()];
     }

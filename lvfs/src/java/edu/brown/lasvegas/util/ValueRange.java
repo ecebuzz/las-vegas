@@ -36,7 +36,21 @@ public class ValueRange<T extends Comparable<T>> {
             return false;
         }
         ValueRange<?> o = (ValueRange<?>) obj;
-        return startKey.equals(o.startKey) && endKey.equals(o.endKey);
+        if (startKey == null || o.startKey == null) {
+            if (startKey != null || o.startKey != null) {
+                return false;
+            }
+        } else {
+            if (!startKey.equals(o.startKey)) {
+                return false;
+            }
+        }
+
+        if (endKey == null || o.endKey == null) {
+            return (endKey == null && o.endKey == null);
+        } else {
+            return endKey.equals(o.endKey);
+        }
     }
     
     /**
@@ -110,7 +124,7 @@ public class ValueRange<T extends Comparable<T>> {
         out.writeBoolean(range.startKey == null);
         out.writeBoolean(range.endKey == null);
         for (Object val : new Object[]{range.startKey, range.endKey}) {
-            if (val == null) {
+            if (val != null) {
                 switch (type) {
                 case BIGINT: out.writeLong((Long) val); break;
                 case BOOLEAN: out.writeBoolean((Boolean) val); break;

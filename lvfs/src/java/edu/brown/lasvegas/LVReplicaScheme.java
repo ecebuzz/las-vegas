@@ -179,7 +179,7 @@ public class LVReplicaScheme implements LVObject {
      *
      * @param columnCompressionSchemes the new each column's compression scheme
      */
-    public void setColumnCompressionSchemes(HashMap<Integer, CompressionType> columnCompressionSchemes) {
-        this.columnCompressionSchemes = columnCompressionSchemes;
+    public void setColumnCompressionSchemes(Map<Integer, CompressionType> columnCompressionSchemes) {
+        this.columnCompressionSchemes = new HashMap<Integer, CompressionType>(columnCompressionSchemes);
     }
 }

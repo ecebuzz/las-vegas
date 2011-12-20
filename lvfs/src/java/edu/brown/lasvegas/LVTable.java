@@ -70,7 +70,10 @@ public class LVTable implements LVObject {
     @Override
     public void write(DataOutput out) throws IOException {
         out.writeInt(fracturingColumnId);
-        out.writeUTF(name);
+        out.writeBoolean(name == null);
+        if (name != null) {
+            out.writeUTF(name);
+        }
         out.writeBoolean(pervasiveReplication);
         out.writeInt(status.ordinal());
         out.writeInt(tableId);
@@ -78,7 +81,12 @@ public class LVTable implements LVObject {
     @Override
     public void readFields(DataInput in) throws IOException {
         fracturingColumnId = in.readInt();
-        name = in.readUTF();
+        boolean isNameNull = in.readBoolean();
+        if (isNameNull) {
+            name = null;
+        } else {
+            name = in.readUTF();
+        }
         pervasiveReplication = in.readBoolean();
         status = TableStatus.values()[in.readInt()];
         tableId = in.readInt();

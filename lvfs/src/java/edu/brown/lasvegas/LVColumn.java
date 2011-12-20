@@ -90,7 +90,10 @@ public class LVColumn implements LVObject {
     public void write(DataOutput out) throws IOException {
         out.writeInt(columnId);
         out.writeBoolean(fracturingColumn);
-        out.writeUTF(name);
+        out.writeBoolean(name == null);
+        if (name != null) {
+            out.writeUTF(name);
+        }
         out.writeInt(order);
         out.writeInt(status.ordinal());
         out.writeInt(tableId);
@@ -100,7 +103,12 @@ public class LVColumn implements LVObject {
     public void readFields(DataInput in) throws IOException {
         columnId = in.readInt();
         fracturingColumn = in.readBoolean();
-        name = in.readUTF();
+        boolean isNameNull = in.readBoolean();
+        if (isNameNull) {
+            name = null;
+        } else {
+            name = in.readUTF();
+        }
         order = in.readInt();
         status = ColumnStatus.values()[in.readInt()];
         tableId = in.readInt();

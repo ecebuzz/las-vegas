@@ -87,7 +87,10 @@ public class LVColumnFile implements LVObject {
         out.writeInt(columnFileId);
         out.writeInt(columnId);
         out.writeLong(fileSize);
-        out.writeUTF(hdfsFilePath);
+        out.writeBoolean(hdfsFilePath == null);
+        if (hdfsFilePath != null) {
+            out.writeUTF(hdfsFilePath);
+        }
         out.writeInt(partitionId);
     }
     @Override
@@ -96,7 +99,12 @@ public class LVColumnFile implements LVObject {
         columnFileId = in.readInt();
         columnId = in.readInt();
         fileSize = in.readLong();
-        hdfsFilePath = in.readUTF();
+        boolean isHdfsFilePathNull = in.readBoolean();
+        if (isHdfsFilePathNull) {
+            hdfsFilePath = null;
+        } else {
+            hdfsFilePath = in.readUTF();
+        }
         partitionId = in.readInt();
         syncPartitionColumnId();
     }
