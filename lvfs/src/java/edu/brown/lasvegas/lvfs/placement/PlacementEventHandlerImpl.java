@@ -19,7 +19,7 @@ import edu.brown.lasvegas.LVTable;
 import edu.brown.lasvegas.RackNodeStatus;
 import edu.brown.lasvegas.RackStatus;
 import edu.brown.lasvegas.ReplicaPartitionStatus;
-import edu.brown.lasvegas.lvfs.protocol.LVFSMetadataRepositoryProtocol;
+import edu.brown.lasvegas.protocol.MetadataProtocol;
 
 /**
  * The default implementation of {@link PlacementEventHandler}.
@@ -29,8 +29,8 @@ import edu.brown.lasvegas.lvfs.protocol.LVFSMetadataRepositoryProtocol;
 public final class PlacementEventHandlerImpl implements PlacementEventHandler {
     private static Logger LOG = Logger.getLogger(PlacementEventHandlerImpl.class);
     /** the metadata store. */
-    private final LVFSMetadataRepositoryProtocol repository;
-    public PlacementEventHandlerImpl(LVFSMetadataRepositoryProtocol repository) {
+    private final MetadataProtocol repository;
+    public PlacementEventHandlerImpl(MetadataProtocol repository) {
         this.repository = repository;
     }
     

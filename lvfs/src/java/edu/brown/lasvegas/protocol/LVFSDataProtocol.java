@@ -1,4 +1,4 @@
-package edu.brown.lasvegas.lvfs.protocol;
+package edu.brown.lasvegas.protocol;
 
 import org.apache.hadoop.ipc.VersionedProtocol;
 

@@ -1,4 +1,4 @@
-package edu.brown.lasvegas.lvfs.protocol;
+package edu.brown.lasvegas.protocol;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -44,7 +44,7 @@ import edu.brown.lasvegas.ReplicaStatus;
  * frequently called and materializing the parent object is not an issue,
  * so type safety wins.</p>
  */
-public interface LVFSMetadataRepositoryProtocol extends Closeable, VersionedProtocol {
+public interface MetadataProtocol extends Closeable, VersionedProtocol {
     /**
      * Epoch is a coarse grained timestamp to partition inserted tuples. It's maintained
      * as a hidden implicit column in each table. Usually, one epoch corresponds to millions of tuples.

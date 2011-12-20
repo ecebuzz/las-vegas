@@ -41,15 +41,15 @@ import edu.brown.lasvegas.LVColumn;
 import edu.brown.lasvegas.LVFracture;
 import edu.brown.lasvegas.ReplicaStatus;
 import edu.brown.lasvegas.TableStatus;
-import edu.brown.lasvegas.lvfs.protocol.LVFSMetadataRepositoryProtocol;
+import edu.brown.lasvegas.protocol.MetadataProtocol;
 import edu.brown.lasvegas.util.CompositeIntKey;
 
 /**
- * Implementation of {@link LVFSMetadataRepositoryProtocol} in the master namenode.
+ * Implementation of {@link MetadataProtocol} in the master namenode.
  * This can directly handle all read and write accesses over the local BDB-JE
  * instance.
  */
-public class MasterMetadataRepository implements LVFSMetadataRepositoryProtocol {
+public class MasterMetadataRepository implements MetadataProtocol {
     private static Logger LOG = Logger.getLogger(MasterMetadataRepository.class);
     
     private final File bdbEnvHome;
@@ -67,8 +67,8 @@ public class MasterMetadataRepository implements LVFSMetadataRepositoryProtocol 
     
     @Override
     public long getProtocolVersion(String protocol, long clientVersion) throws IOException {
-        if (protocol.equals(LVFSMetadataRepositoryProtocol.class.getName())) {
-            return LVFSMetadataRepositoryProtocol.versionID;
+        if (protocol.equals(MetadataProtocol.class.getName())) {
+            return MetadataProtocol.versionID;
         } else {
             throw new IOException("This protocol is not supported: " + protocol);
         }
