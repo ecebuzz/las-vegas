@@ -17,6 +17,7 @@
         <delete dir="${junit.output.dir}" quiet="true" />
     </target>
 
+	<!-- we rather use Hive's jar
 	<target name="build-hive-grammar" description="Re-generate Hive's SQL grammer files">
 		<echo>Building Grammar src/hive/org/apache/hadoop/hive/ql/parse/Hive.g  ....</echo>
 		<java classname="org.antlr.Tool" classpathref="lvfs.classpath" fork="true">
@@ -25,6 +26,7 @@
 			<arg value="src/hive/org/apache/hadoop/hive/ql/parse/Hive.g" />
 		</java>
 	</target>
+	-->
 
 	<target name="compile" description="Compile all java files and copy resources into bin">
         <echo message="${ant.project.name}: ${ant.file}"/>

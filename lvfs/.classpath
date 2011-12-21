@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src/java"/>
-	<classpathentry kind="src" path="src/hive"/>
 	<classpathentry kind="src" path="src/test"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="lib/activation-1.1.jar"/>
@@ -73,5 +72,7 @@
 	<classpathentry kind="lib" path="lib/hadoop-mapreduce-client-jobclient-0.23.0.jar"/>
 	<classpathentry kind="lib" path="lib/hadoop-mapreduce-client-shuffle-0.23.0.jar"/>
 	<classpathentry kind="lib" path="lib/antlr-3.4-complete.jar"/>
+	<classpathentry kind="lib" path="lib/hive-common-0.8.0.jar"/>
+	<classpathentry kind="lib" path="lib/hive-exec-0.8.0.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
