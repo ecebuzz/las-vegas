@@ -242,11 +242,8 @@ public class MasterMetadataRepository implements MetadataProtocol {
     }
     @Override
     public LVTable getTable(int databaseId, String name) throws IOException {
-        Map<Integer, LVTable> map1 = bdbTableAccessors.tableAccessor.IX_DATABASE_ID.subIndex(databaseId).map();
-        Map<Integer, LVTable> map2 = bdbTableAccessors.tableAccessor.IX_NAME.subIndex(name).map();
-        for (LVTable table : map2.values()) {
-            if (map1.containsKey(table.getTableId())) {
-                assert (table.getDatabaseId() == databaseId);
+        for (LVTable table : bdbTableAccessors.tableAccessor.IX_NAME.subIndex(name).map().values()) {
+            if (table.getDatabaseId() == databaseId) {
                 assert (table.getName().equalsIgnoreCase(name));
                 return table;
             }
@@ -722,11 +719,8 @@ public class MasterMetadataRepository implements MetadataProtocol {
 
     @Override
     public LVSubPartitionScheme getSubPartitionSchemeByFractureAndGroup(int fractureId, int groupId) throws IOException {
-        // #fractures * #groups shouldn't be large.. so, joining two indexes is not so slower than composite index
-        Map<Integer, LVSubPartitionScheme> map1 = bdbTableAccessors.subPartitionSchemeAccessor.IX_FRACTURE_ID.subIndex(fractureId).map();
-        Map<Integer, LVSubPartitionScheme> map2 = bdbTableAccessors.subPartitionSchemeAccessor.IX_GROUP_ID.subIndex(groupId).map();
-        for (LVSubPartitionScheme value : map1.values()) {
-            if (map2.containsKey(value.getPrimaryKey())) {
+        for (LVSubPartitionScheme value : bdbTableAccessors.subPartitionSchemeAccessor.IX_FRACTURE_ID.subIndex(fractureId).map().values()) {
+            if (value.getGroupId() == groupId) {
                 return value;
             }
         }

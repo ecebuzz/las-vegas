@@ -12,6 +12,8 @@ import org.apache.log4j.Logger;
 
 import edu.brown.lasvegas.lvfs.meta.MasterMetadataRepository;
 import edu.brown.lasvegas.protocol.MetadataProtocol;
+import edu.brown.lasvegas.protocol.QueryProtocol;
+import edu.brown.lasvegas.qe.QueryExecutionEngine;
 
 /**
  * The central node that maintains metadata of files and initiates
@@ -45,12 +47,19 @@ public final class CentralNode {
     public static final String METAREPO_ADDRESS_DEFAULT = "localhost:28710";
     public static final String METAREPO_BDBHOME_KEY = "lasvegas.server.meta.bdbhome";
     public static final String METAREPO_BDBHOME_DEFAULT = "metarepo/bdb_data";
+    public static final String QE_ADDRESS_KEY = "lasvegas.server.qe.address";
+    public static final String QE_ADDRESS_DEFAULT = "localhost:28711";
     
     /** server object to provide metadata repository access to clients. */
     private Server metadataRepositoryServer;
     /** instance of the master metadata repository running in this central node. */
     private MasterMetadataRepository metadataRepository;
     
+    /** server object to receive query execution requests from clients. */
+    private Server queryExecutionServer;
+    /** instance of the query execution engine running in this central node.*/
+    private QueryExecutionEngine queryExecutionEngine;
+
     /** disabled. */
     private CentralNode() {}
 
@@ -90,6 +99,17 @@ public final class CentralNode {
             metadataRepositoryServer.start();
             LOG.info("started metadata repository server.");
         }
+        {
+            // initialize query execution engine
+            String address = conf.get(QE_ADDRESS_KEY, QE_ADDRESS_DEFAULT);
+            LOG.info("initializing query execution engine server. address=" + address);
+            InetSocketAddress sockAddress = NetUtils.createSocketAddr(address);
+            queryExecutionEngine = new QueryExecutionEngine(metadataRepository);
+            queryExecutionServer = RPC.getServer(QueryProtocol.class, queryExecutionEngine, sockAddress.getHostName(), sockAddress.getPort(), conf);
+            LOG.info("initialized query execution engine  server.");
+            queryExecutionServer.start();
+            LOG.info("started query execution engine  server.");
+        }
         /*
         replicator = new Daemon(new Replicator());
         replicator.start();
@@ -106,6 +126,15 @@ public final class CentralNode {
         }
         LOG.info("Stopping central node...");
         stopRequested = true;
+        // stop proceeds in the _opposite_ order to initialization
+        if (queryExecutionServer != null) {
+            queryExecutionServer.stop();
+            try {
+                queryExecutionEngine.close();
+            } catch (IOException ex) {
+                LOG.error("error on closing query execution engine", ex);
+            }
+        }
         if (metadataRepositoryServer != null) {
             metadataRepositoryServer.stop();
             try {
@@ -122,6 +151,10 @@ public final class CentralNode {
     public void join() {
         LOG.info("Waiting until all modules in central node stop...");
         try {
+            // stop proceeds in the _opposite_ order to initialization
+            if (queryExecutionServer != null) {
+                queryExecutionServer.join();
+            }
             if (metadataRepositoryServer != null) {
                 metadataRepositoryServer.join();
             }
