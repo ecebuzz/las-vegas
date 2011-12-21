@@ -33,7 +33,7 @@
             <mkdir dir="bin"/>
         <javac debug="true" debuglevel="${debuglevel}" destdir="bin" source="${source}" target="${target}" includeantruntime="false">
             <src path="src/java"/>
-            <src path="src/hive"/>
+            <!-- <src path="src/hive"/> -->
             <classpath refid="lvfs.classpath"/>
         </javac>
         <javac debug="true" debuglevel="${debuglevel}" destdir="bin" source="${source}" target="${target}" includeantruntime="false">
