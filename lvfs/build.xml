@@ -17,11 +17,21 @@
         <delete dir="${junit.output.dir}" quiet="true" />
     </target>
 
+	<target name="build-hive-grammar" description="Re-generate Hive's SQL grammer files">
+		<echo>Building Grammar src/hive/org/apache/hadoop/hive/ql/parse/Hive.g  ....</echo>
+		<java classname="org.antlr.Tool" classpathref="lvfs.classpath" fork="true">
+			<arg value="-fo" />
+			<arg value="src/hive/org/apache/hadoop/hive/ql/parse" />
+			<arg value="src/hive/org/apache/hadoop/hive/ql/parse/Hive.g" />
+		</java>
+	</target>
+
 	<target name="compile" description="Compile all java files and copy resources into bin">
         <echo message="${ant.project.name}: ${ant.file}"/>
             <mkdir dir="bin"/>
         <javac debug="true" debuglevel="${debuglevel}" destdir="bin" source="${source}" target="${target}" includeantruntime="false">
             <src path="src/java"/>
+            <src path="src/hive"/>
             <classpath refid="lvfs.classpath"/>
         </javac>
         <javac debug="true" debuglevel="${debuglevel}" destdir="bin" source="${source}" target="${target}" includeantruntime="false">
