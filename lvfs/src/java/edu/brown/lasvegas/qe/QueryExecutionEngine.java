@@ -1,6 +1,9 @@
 package edu.brown.lasvegas.qe;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.hadoop.ipc.ProtocolSignature;
 
@@ -19,9 +22,17 @@ public final class QueryExecutionEngine implements QueryProtocol {
      * and query optimizer node for better scalability, but it wouldn't be easy. 
      */ 
     private final MasterMetadataRepository metadata;
+
+    /**
+     * Holds information of all queries since the startup.
+     */
+    private final Map<Integer, QueryRepo> queries;
+
     public QueryExecutionEngine (MasterMetadataRepository metadata) {
         this.metadata = metadata;
+        this.queries = Collections.synchronizedMap(new HashMap<Integer, QueryRepo>());
     }
+    
 
     @Override
     public ProtocolSignature getProtocolSignature(String protocol, long clientVersion, int clientMethodsHash) throws IOException {

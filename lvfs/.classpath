@@ -71,8 +71,9 @@
 	<classpathentry kind="lib" path="lib/hadoop-mapreduce-client-hs-0.23.0.jar"/>
 	<classpathentry kind="lib" path="lib/hadoop-mapreduce-client-jobclient-0.23.0.jar"/>
 	<classpathentry kind="lib" path="lib/hadoop-mapreduce-client-shuffle-0.23.0.jar"/>
-	<classpathentry kind="lib" path="lib/antlr-3.4-complete.jar"/>
 	<classpathentry kind="lib" path="lib/hive-common-0.8.0.jar"/>
-	<classpathentry kind="lib" path="lib/hive-exec-0.8.0.jar"/>
+	<classpathentry kind="lib" path="lib/hive-exec-0.8.0.jar" sourcepath="/home/hkimura/hive-0.8.0_sources"/>
+	<classpathentry kind="lib" path="lib/antlr-3.0.1.jar"/>
+	<classpathentry kind="lib" path="lib/antlr-runtime-3.0.1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
