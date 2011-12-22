@@ -40,7 +40,6 @@ public class ClientBase<T> {
     
     /**
      * Gets the RPC channel.
-     *
      * @return the RPC channel
      */
     public T getChannel() {
