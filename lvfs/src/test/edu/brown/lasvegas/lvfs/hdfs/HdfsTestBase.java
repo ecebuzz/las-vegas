@@ -1,6 +1,7 @@
 package edu.brown.lasvegas.lvfs.hdfs;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -15,7 +16,9 @@ public class HdfsTestBase {
     
     @BeforeClass
     public static void setUpOnce () throws Exception {
-        dfsCluster = new MiniDFSCluster.Builder(new Configuration()).numDataNodes(2)
+        Configuration conf = new Configuration();
+        conf.setInt(DFSConfigKeys.DFS_NAMENODE_NAME_CACHE_THRESHOLD_KEY, 10000); // to speed-up testing
+        dfsCluster = new MiniDFSCluster.Builder(conf).numDataNodes(2)
             .format(true).racks(null).build();
     }
 

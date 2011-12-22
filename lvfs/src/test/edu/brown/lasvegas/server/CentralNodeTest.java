@@ -9,6 +9,8 @@ import java.util.Date;
 import java.util.Random;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hdfs.DFSConfigKeys;
+import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.ipc.RPC;
 import org.apache.hadoop.net.NetUtils;
 import org.junit.Test;
@@ -42,8 +44,13 @@ public class CentralNodeTest {
         Configuration conf = new Configuration();
         conf.set(LVCentralNode.METAREPO_ADDRESS_KEY, METAREPO_ADDRESS);
         conf.set(LVCentralNode.METAREPO_BDBHOME_KEY, METAREPO_BDBHOME);
-        LVCentralNode centralNode = LVCentralNode.createInstance(conf);
-        
+        conf.setInt(DFSConfigKeys.DFS_NAMENODE_NAME_CACHE_THRESHOLD_KEY, 10000); // to speed-up testing
+        MiniDFSCluster dfsCluster = new MiniDFSCluster.Builder(conf).numDataNodes(1)
+            .format(true).racks(null).build();
+
+        LVCentralNode centralNode = new LVCentralNode(conf);
+        centralNode.start(dfsCluster.getNameNode()); 
+
         LVMetadataProtocol metaClient = RPC.getProxy(LVMetadataProtocol.class, LVMetadataProtocol.versionID, NetUtils.createSocketAddr(METAREPO_ADDRESS), conf);
 
         LVDatabase database = metaClient.createNewDatabase("sdf");
@@ -58,5 +65,7 @@ public class CentralNodeTest {
 
         centralNode.stop();
         centralNode.join();
+        
+        dfsCluster.shutdown();
     }
 }

@@ -46,6 +46,13 @@ public final class LVDataNode implements ServicePlugin {
         Configuration.addDefaultResource("mapred-site.xml");
     }
 
+    public LVDataNode () {
+        this(new Configuration());
+    }
+    public LVDataNode (Configuration conf) {
+        this.conf = conf;
+    }
+    
     /** hadoop configuration */
     private Configuration conf;
     public Configuration getConfiguration() {
@@ -63,23 +70,24 @@ public final class LVDataNode implements ServicePlugin {
     /** instance of the LVFS data management in this node. */
     private DataEngine dataEngine;
 
-    public static LVDataNode createInstance(Configuration conf) throws IOException {
-        LVDataNode instance = new LVDataNode();
+    @Override
+    public void start(Object service) {
+        // TODO Auto-generated method stub
+        hdfsDataNode = (DataNode) service;
         try {
-            instance.initialize(conf);
+            initialize();
         } catch (Exception exception) {
             LOG.error("error while initializing data node. will terminate", exception);
             try {
-                instance.stop();
+                stop();
             } catch (Exception ex2) {
                 LOG.error("another error while stopping", ex2);
             }
-            throw new IOException("error while initializing data node", exception);
+            throw new RuntimeException("error while initializing data node", exception);
         }
-        return instance;
     }
 
-    private void initialize(Configuration conf) throws IOException {
+    private void initialize() throws IOException {
         String address = conf.get(DATA_ADDRESS_KEY, DATA_ADDRESS_DEFAULT);
         LOG.info("initializing LVFS Data Server. address=" + address);
         InetSocketAddress sockAddress = NetUtils.createSocketAddr(address);
@@ -92,13 +100,7 @@ public final class LVDataNode implements ServicePlugin {
     
     @Override
     public void close() throws IOException {
-        // TODO Auto-generated method stub
-        
-    }
-    @Override
-    public void start(Object service) {
-        // TODO Auto-generated method stub
-        hdfsDataNode = (DataNode) service;
+        stop ();
     }
 
     private boolean stopRequested = false;
@@ -122,5 +124,20 @@ public final class LVDataNode implements ServicePlugin {
             }
         }
         LOG.info("Stopped data node.");
+    }
+
+    /**
+     * Block until all modules in this node stop.
+     */
+    public void join() {
+        LOG.info("Waiting until data node stops...");
+        try {
+            if (dataServer != null) {
+                dataServer.join();
+            }
+            LOG.info("data node has been stopped.");
+        } catch (InterruptedException ex) {
+            LOG.warn("Interrupted while joining data node.", ex);
+        }
     }
 }

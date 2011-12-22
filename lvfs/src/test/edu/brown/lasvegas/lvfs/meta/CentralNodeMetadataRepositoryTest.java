@@ -7,6 +7,8 @@ import java.util.Date;
 import java.util.Random;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hdfs.DFSConfigKeys;
+import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.ipc.RPC;
 import org.apache.hadoop.net.NetUtils;
 import org.junit.After;
@@ -26,7 +28,7 @@ public class CentralNodeMetadataRepositoryTest extends MetadataRepositoryTestBas
 
     private static LVCentralNode centralNode;
     private static LVMetadataProtocol metaClient;
-
+    private static MiniDFSCluster dfsCluster;
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
         File bdbFolder = new File(METAREPO_BDBHOME);
@@ -39,10 +41,15 @@ public class CentralNodeMetadataRepositoryTest extends MetadataRepositoryTestBas
                 throw new IOException ("failed to take a backup of existing testing-bdbhome");
             }
         }
+
         Configuration conf = new Configuration();
         conf.set(LVCentralNode.METAREPO_ADDRESS_KEY, METAREPO_ADDRESS);
         conf.set(LVCentralNode.METAREPO_BDBHOME_KEY, METAREPO_BDBHOME);
-        centralNode = LVCentralNode.createInstance(conf);
+        conf.setInt(DFSConfigKeys.DFS_NAMENODE_NAME_CACHE_THRESHOLD_KEY, 10000); // to speed-up testing
+        dfsCluster = new MiniDFSCluster.Builder(conf).numDataNodes(1)
+            .format(true).racks(null).build();
+        centralNode = new LVCentralNode(conf);
+        centralNode.start(dfsCluster.getNameNode()); 
         metaClient = RPC.getProxy(LVMetadataProtocol.class, LVMetadataProtocol.versionID, NetUtils.createSocketAddr(METAREPO_ADDRESS), conf);
     }
 
@@ -51,6 +58,8 @@ public class CentralNodeMetadataRepositoryTest extends MetadataRepositoryTestBas
         centralNode.stop();
         centralNode.join();
         centralNode = null;
+        dfsCluster.shutdown();
+        dfsCluster = null;
     }
 
     @Before

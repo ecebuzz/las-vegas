@@ -4,10 +4,10 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.hdfs.server.namenode.NameNode;
 import org.apache.hadoop.ipc.RPC;
 import org.apache.hadoop.ipc.RPC.Server;
 import org.apache.hadoop.net.NetUtils;
-import org.apache.hadoop.util.Daemon;
 import org.apache.hadoop.util.ServicePlugin;
 import org.apache.log4j.Logger;
 
@@ -48,7 +48,13 @@ public final class LVCentralNode implements ServicePlugin {
         Configuration.addDefaultResource("mapred-default.xml");
         Configuration.addDefaultResource("mapred-site.xml");
     }
-    private Daemon replicator;
+
+    public LVCentralNode () {
+        this(new Configuration());
+    }
+    public LVCentralNode (Configuration conf) {
+        this.conf = conf;
+    }
 
     /** hadoop configuration */
     private Configuration conf;
@@ -73,33 +79,30 @@ public final class LVCentralNode implements ServicePlugin {
     /** instance of the query execution engine running in this central node.*/
     private QueryExecutionEngine queryExecutionEngine;
 
-    /** disabled. */
-    private LVCentralNode() {}
+    /** HDFS Name Node containing this object as a plugin. */
+    private NameNode hdfsNameNode;
 
     /**
-     * Creates, initializes and returns an LVFS node on this machine. 
+     * Creates, initializes and activates the central node on this machine. 
      */
-    public static LVCentralNode createInstance() throws IOException {
-        return createInstance (new Configuration());
-    }
-    public static LVCentralNode createInstance(Configuration conf) throws IOException {
-        LVCentralNode instance = new LVCentralNode();
+    @Override
+    public void start(Object service) {
+        // TODO Auto-generated method stub
+        hdfsNameNode = (NameNode) service;
         try {
-            instance.initialize(conf);
+            initialize();
         } catch (Exception exception) {
             LOG.error("error while initializing central node. will terminate", exception);
             try {
-                instance.stop();
+                stop();
             } catch (Exception ex2) {
                 LOG.error("another error while stopping", ex2);
             }
-            throw new IOException("error while initializing central node", exception);
+            throw new RuntimeException("error while initializing central node", exception);
         }
-        return instance;
     }
 
-        
-    private void initialize(Configuration conf) throws IOException {
+    private void initialize() throws IOException {
         {
             // initialize metadata repository server
             String bdbHome = conf.get(METAREPO_BDBHOME_KEY, METAREPO_BDBHOME_DEFAULT);
@@ -123,10 +126,6 @@ public final class LVCentralNode implements ServicePlugin {
             queryExecutionServer.start();
             LOG.info("started query execution engine  server.");
         }
-        /*
-        replicator = new Daemon(new Replicator());
-        replicator.start();
-        */
     }
 
     private boolean stopRequested = false;
@@ -190,10 +189,4 @@ public final class LVCentralNode implements ServicePlugin {
         // TODO Auto-generated method stub
         
     }
-    @Override
-    public void start(Object service) {
-        // TODO Auto-generated method stub
-        
-    }
-    
 }
