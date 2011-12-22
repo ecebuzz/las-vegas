@@ -35,7 +35,7 @@ import edu.brown.lasvegas.qe.TaskProgress;
  * until the client explicitly calls {@link #releaseQuery(int)} to revoke all resources for
  * the query. So, never forget calling it when you are done!</p>
  */
-public interface QueryProtocol extends VersionedProtocol {
+public interface LVQueryProtocol extends VersionedProtocol {
     /**
      * Syntactically parses the given SQL and creates a query object for it.
      * @param databaseId the context database. 0 if no context database (some SQL doesn't

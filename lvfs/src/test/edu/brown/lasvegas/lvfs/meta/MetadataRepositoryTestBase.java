@@ -34,7 +34,7 @@ import edu.brown.lasvegas.RackStatus;
 import edu.brown.lasvegas.ReplicaPartitionStatus;
 import edu.brown.lasvegas.ReplicaStatus;
 import edu.brown.lasvegas.TableStatus;
-import edu.brown.lasvegas.protocol.MetadataProtocol;
+import edu.brown.lasvegas.protocol.LVMetadataProtocol;
 import edu.brown.lasvegas.util.ValueRange;
 
 /**
@@ -50,7 +50,7 @@ public abstract class MetadataRepositoryTestBase {
     /**
      * The derived testcase sets the repository instance to be tested.
      */
-    protected MetadataProtocol repository;
+    protected LVMetadataProtocol repository;
     
     /**
      * Flushes the tested repository, closes it and then reloads it.
@@ -60,7 +60,7 @@ public abstract class MetadataRepositoryTestBase {
     protected abstract void reloadRepository() throws IOException;
 
     /** called from setUp() in derived class. */
-    protected void baseSetUp(MetadataProtocol repository) throws Exception {
+    protected void baseSetUp(LVMetadataProtocol repository) throws Exception {
         this.repository = repository;
         initDefaultTestObjects ();
     }

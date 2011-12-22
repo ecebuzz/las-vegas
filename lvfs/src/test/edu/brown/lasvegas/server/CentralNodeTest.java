@@ -17,10 +17,10 @@ import edu.brown.lasvegas.ColumnType;
 import edu.brown.lasvegas.LVColumn;
 import edu.brown.lasvegas.LVDatabase;
 import edu.brown.lasvegas.LVTable;
-import edu.brown.lasvegas.protocol.MetadataProtocol;
+import edu.brown.lasvegas.protocol.LVMetadataProtocol;
 
 /**
- * Testcases for {@link CentralNode}.
+ * Testcases for {@link LVCentralNode}.
  */
 public class CentralNodeTest {
     private static final String METAREPO_ADDRESS = "localhost:18711"; // use a port different from the default.
@@ -40,11 +40,11 @@ public class CentralNodeTest {
         }
 
         Configuration conf = new Configuration();
-        conf.set(CentralNode.METAREPO_ADDRESS_KEY, METAREPO_ADDRESS);
-        conf.set(CentralNode.METAREPO_BDBHOME_KEY, METAREPO_BDBHOME);
-        CentralNode centralNode = CentralNode.createInstance(conf);
+        conf.set(LVCentralNode.METAREPO_ADDRESS_KEY, METAREPO_ADDRESS);
+        conf.set(LVCentralNode.METAREPO_BDBHOME_KEY, METAREPO_BDBHOME);
+        LVCentralNode centralNode = LVCentralNode.createInstance(conf);
         
-        MetadataProtocol metaClient = RPC.getProxy(MetadataProtocol.class, MetadataProtocol.versionID, NetUtils.createSocketAddr(METAREPO_ADDRESS), conf);
+        LVMetadataProtocol metaClient = RPC.getProxy(LVMetadataProtocol.class, LVMetadataProtocol.versionID, NetUtils.createSocketAddr(METAREPO_ADDRESS), conf);
 
         LVDatabase database = metaClient.createNewDatabase("sdf");
         LVTable table = metaClient.createNewTable(database.getDatabaseId(), "ttt", new String[]{"col1", "col2"}, new ColumnType[]{ColumnType.INTEGER, ColumnType.VARCHAR});

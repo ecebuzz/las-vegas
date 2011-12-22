@@ -14,18 +14,18 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 
-import edu.brown.lasvegas.protocol.MetadataProtocol;
-import edu.brown.lasvegas.server.CentralNode;
+import edu.brown.lasvegas.protocol.LVMetadataProtocol;
+import edu.brown.lasvegas.server.LVCentralNode;
 
 /**
- * Testcase for RPC version of {@link MetadataProtocol}.
+ * Testcase for RPC version of {@link LVMetadataProtocol}.
  */
 public class CentralNodeMetadataRepositoryTest extends MetadataRepositoryTestBase {
     private static final String METAREPO_ADDRESS = "localhost:18710"; // use a port different from the default.
     private static final String METAREPO_BDBHOME = "test/metatest";
 
-    private static CentralNode centralNode;
-    private static MetadataProtocol metaClient;
+    private static LVCentralNode centralNode;
+    private static LVMetadataProtocol metaClient;
 
     @BeforeClass
     public static void setUpBeforeClass() throws Exception {
@@ -40,10 +40,10 @@ public class CentralNodeMetadataRepositoryTest extends MetadataRepositoryTestBas
             }
         }
         Configuration conf = new Configuration();
-        conf.set(CentralNode.METAREPO_ADDRESS_KEY, METAREPO_ADDRESS);
-        conf.set(CentralNode.METAREPO_BDBHOME_KEY, METAREPO_BDBHOME);
-        centralNode = CentralNode.createInstance(conf);
-        metaClient = RPC.getProxy(MetadataProtocol.class, MetadataProtocol.versionID, NetUtils.createSocketAddr(METAREPO_ADDRESS), conf);
+        conf.set(LVCentralNode.METAREPO_ADDRESS_KEY, METAREPO_ADDRESS);
+        conf.set(LVCentralNode.METAREPO_BDBHOME_KEY, METAREPO_BDBHOME);
+        centralNode = LVCentralNode.createInstance(conf);
+        metaClient = RPC.getProxy(LVMetadataProtocol.class, LVMetadataProtocol.versionID, NetUtils.createSocketAddr(METAREPO_ADDRESS), conf);
     }
 
     @AfterClass

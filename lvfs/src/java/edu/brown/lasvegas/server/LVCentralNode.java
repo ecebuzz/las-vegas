@@ -8,32 +8,45 @@ import org.apache.hadoop.ipc.RPC;
 import org.apache.hadoop.ipc.RPC.Server;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.util.Daemon;
+import org.apache.hadoop.util.ServicePlugin;
 import org.apache.log4j.Logger;
 
 import edu.brown.lasvegas.lvfs.meta.MasterMetadataRepository;
-import edu.brown.lasvegas.protocol.MetadataProtocol;
-import edu.brown.lasvegas.protocol.QueryProtocol;
+import edu.brown.lasvegas.protocol.LVMetadataProtocol;
+import edu.brown.lasvegas.protocol.LVQueryProtocol;
 import edu.brown.lasvegas.qe.QueryExecutionEngine;
 
 /**
- * The central node that maintains metadata of files and initiates
- * replication and recovery of them.
- * <p>There must be only one central LVFS node in the system.</p>
+ * The central node that serves all centralized functionalities in Las-Vegas.
+ * <p>There must be only one central LV node in the system.</p>
  * 
  * <p>The central node provides multiple protocols for clients; metadata repository
- * (MetadataProtocol), TODO XXX, and YYY. This class itself doesn't implement
+ * (MetadataProtocol), Query Parser/Optimizer, and Data Load/Recovery Engine.
+ * This class itself doesn't implement
  * the protocols, but holds Server objects for each of the protocol it provides.</p>
+ * 
+ * <p>
+ * Currently, the LV Central Node runs on HDFS name node.
+ * It's deployed as a plugin ({@link ServicePlugin}) for HDFS Name Node.
+ * </p>
+ * 
+ * <p>In order to activate it, the user needs to put the following parameter
+ * in Hadoop's configuration file (e.g., hdfs-default.xml).</p>
+<quote>
+&lt;property&gt;
+  &lt;name&gt;dfs.namenode.plugins&lt;/name&gt;
+  &lt;value&gt;edu.brown.lasvegas.server.LVCentralNode&lt;/value&gt;
+&lt;/property&gt;
+</quote>
  */
-public final class CentralNode {
-    private static Logger LOG = Logger.getLogger(CentralNode.class);
+public final class LVCentralNode implements ServicePlugin {
+    private static Logger LOG = Logger.getLogger(LVCentralNode.class);
 
     static{
         Configuration.addDefaultResource("hdfs-default.xml");
         Configuration.addDefaultResource("hdfs-site.xml");
         Configuration.addDefaultResource("mapred-default.xml");
         Configuration.addDefaultResource("mapred-site.xml");
-        Configuration.addDefaultResource("lasvegas-default.xml");
-        Configuration.addDefaultResource("lasvegas-site.xml");
     }
     private Daemon replicator;
 
@@ -61,16 +74,16 @@ public final class CentralNode {
     private QueryExecutionEngine queryExecutionEngine;
 
     /** disabled. */
-    private CentralNode() {}
+    private LVCentralNode() {}
 
     /**
      * Creates, initializes and returns an LVFS node on this machine. 
      */
-    public static CentralNode createInstance() throws IOException {
+    public static LVCentralNode createInstance() throws IOException {
         return createInstance (new Configuration());
     }
-    public static CentralNode createInstance(Configuration conf) throws IOException {
-        CentralNode instance = new CentralNode();
+    public static LVCentralNode createInstance(Configuration conf) throws IOException {
+        LVCentralNode instance = new LVCentralNode();
         try {
             instance.initialize(conf);
         } catch (Exception exception) {
@@ -94,7 +107,7 @@ public final class CentralNode {
             LOG.info("initializing metadata repository server. address=" + address + ", bdbHome=" + bdbHome);
             InetSocketAddress sockAddress = NetUtils.createSocketAddr(address);
             metadataRepository = new MasterMetadataRepository(false, bdbHome);
-            metadataRepositoryServer = RPC.getServer(MetadataProtocol.class, metadataRepository, sockAddress.getHostName(), sockAddress.getPort(), conf);
+            metadataRepositoryServer = RPC.getServer(LVMetadataProtocol.class, metadataRepository, sockAddress.getHostName(), sockAddress.getPort(), conf);
             LOG.info("initialized metadata repository server.");
             metadataRepositoryServer.start();
             LOG.info("started metadata repository server.");
@@ -105,7 +118,7 @@ public final class CentralNode {
             LOG.info("initializing query execution engine server. address=" + address);
             InetSocketAddress sockAddress = NetUtils.createSocketAddr(address);
             queryExecutionEngine = new QueryExecutionEngine(metadataRepository);
-            queryExecutionServer = RPC.getServer(QueryProtocol.class, queryExecutionEngine, sockAddress.getHostName(), sockAddress.getPort(), conf);
+            queryExecutionServer = RPC.getServer(LVQueryProtocol.class, queryExecutionEngine, sockAddress.getHostName(), sockAddress.getPort(), conf);
             LOG.info("initialized query execution engine  server.");
             queryExecutionServer.start();
             LOG.info("started query execution engine  server.");
@@ -120,6 +133,7 @@ public final class CentralNode {
     /**
      * Requests all modules in this node to stop.
      */
+    @Override
     public void stop() {
         if (stopRequested) {
             return;
@@ -170,4 +184,16 @@ public final class CentralNode {
             // TODO Auto-generated method stub
         }
     }
+    
+    @Override
+    public void close() throws IOException {
+        // TODO Auto-generated method stub
+        
+    }
+    @Override
+    public void start(Object service) {
+        // TODO Auto-generated method stub
+        
+    }
+    
 }

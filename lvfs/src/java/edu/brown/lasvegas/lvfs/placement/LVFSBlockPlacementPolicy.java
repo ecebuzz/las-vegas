@@ -16,7 +16,7 @@ import org.apache.hadoop.net.NetworkTopology;
 import org.apache.hadoop.net.Node;
 import org.apache.log4j.Logger;
 
-import edu.brown.lasvegas.client.MetadataClient;
+import edu.brown.lasvegas.client.LVMetadataClient;
 
 /**
  * Overrides HDFS's BlockPlacementPolicy.
@@ -28,7 +28,7 @@ public final class LVFSBlockPlacementPolicy extends ProxyBlockPlacementPolicy {
     public LVFSBlockPlacementPolicy() {
     }
     
-    private MetadataClient metadataClient;
+    private LVMetadataClient metadataClient;
     
     public void release () {
         if (metadataClient != null) {
@@ -44,7 +44,7 @@ public final class LVFSBlockPlacementPolicy extends ProxyBlockPlacementPolicy {
     protected void initialize(Configuration conf, FSClusterStats stats, NetworkTopology clusterMap) {
         LOG.info("initializing metadata client in block placement policy..");
         try {
-            metadataClient = new MetadataClient(conf);
+            metadataClient = new LVMetadataClient(conf);
         } catch (IOException ex) {
             LOG.error("failed to initialize metadata client in block placement policy.", ex);
             throw new RuntimeException ("failed to initialize metadata client in block placement policy.", ex);

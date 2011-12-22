@@ -9,13 +9,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.hadoop.ipc.ProtocolSignature;
 
 import edu.brown.lasvegas.lvfs.meta.MasterMetadataRepository;
-import edu.brown.lasvegas.protocol.QueryProtocol;
+import edu.brown.lasvegas.protocol.LVQueryProtocol;
 
 /**
  * The query execution engine which runs on the central node
  * to compile, optimize, execute and monitor queries.
  */
-public final class QueryExecutionEngine implements QueryProtocol {
+public final class QueryExecutionEngine implements LVQueryProtocol {
     /**
      * metadata repository. Notice this is a Master repository, not an RPC proxy.
      * The query execution engine needs to access metadata in an extremely high rate,
@@ -43,8 +43,8 @@ public final class QueryExecutionEngine implements QueryProtocol {
     
     @Override
     public long getProtocolVersion(String protocol, long clientVersion) throws IOException {
-        if (protocol.equals(QueryProtocol.class.getName())) {
-            return QueryProtocol.versionID;
+        if (protocol.equals(LVQueryProtocol.class.getName())) {
+            return LVQueryProtocol.versionID;
         } else {
             throw new IOException("This protocol is not supported: " + protocol);
         }
