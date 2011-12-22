@@ -24,9 +24,9 @@ import edu.brown.lasvegas.qe.TaskProgress;
  * <li>Compile Query: {@link #compile(int, String)} to get QueryID</li>
  * <li>Optimize Plan: {@link #optimize(int)} to get PlanID</li>
  * <li>Execute Task: {@link #execute(int, int)} to get TaskID</li>
- * <li>Monitor Task Progress/Log: {@link #getTaskProgress(int)}, {@link #getTaskLog(int, int, int)}, etc.</li>
- * <li>(optional) Cancel Task: {@link #cancelTask(int)} to terminate a running query.</li>
- * <li>Receive Query Results: {@link #joinTask(int, long)} or {@link #getTaskProgress(int)}</li>
+ * <li>Monitor Task Progress/Log: {@link #getTaskProgress(int, int)}, {@link #getTaskLog(int, int, int, int)}, etc.</li>
+ * <li>(optional) Cancel Task: {@link #cancelTask(int, int)} to terminate a running query.</li>
+ * <li>Receive Query Results: {@link #joinTask(int, int, long)} or {@link #getTaskProgress(int, int)}</li>
  * <li>Release all resources: {@link #releaseQuery(int)}</li>
  * </ol>
  * </p>
@@ -81,7 +81,7 @@ public interface QueryProtocol extends VersionedProtocol {
      * @return Details of the query plan
      * @throws IOException
      */
-    QueryPlan getQueryPlan (int planId) throws IOException;
+    QueryPlan getQueryPlan (int queryId, int planId) throws IOException;
 
     /**
      * Starts running the specified query with the given plan. This method immediately returns.
@@ -102,39 +102,42 @@ public interface QueryProtocol extends VersionedProtocol {
     
     /**
      * Blocks until the specified task finishes or the given time elapses. 
+     * @param queryId ID of the query
      * @param taskId the task to join
      * @param millisecondsToWait the maximum time to wait
      * @return progress of the task as of returning from this method
      * @throws IOException
      */
-    TaskProgress joinTask (int taskId, long millisecondsToWait) throws IOException;
+    TaskProgress joinTask (int queryId, int taskId, long millisecondsToWait) throws IOException;
 
     /**
      * Returns the current progress of the specified task.
      */
-    TaskProgress getTaskProgress (int taskId) throws IOException;
+    TaskProgress getTaskProgress (int queryId, int taskId) throws IOException;
 
     /**
      * Returns the number of unicode characters logged for the task.
      */
-    int getTaskLogLength (int taskId) throws IOException;
+    int getTaskLogLength (int queryId, int taskId) throws IOException;
 
     /**
      * Returns the log message for the specified task.
+     * @param queryId ID of the query
      * @param taskId ID of the task
      * @param offset offset in unicode characters
      * @param len maximum number of unicode characters to return
      * @return log message.
      */
-    String getTaskLog (int taskId, int offset, int len) throws IOException;
+    String getTaskLog (int queryId, int taskId, int offset, int len) throws IOException;
     
     /**
      * Forcibly terminates the specified task.
+     * @param queryId ID of the query
      * @param taskId the task to terminate
      * @return progress as of termination
      * @throws IOException
      */
-    TaskProgress cancelTask (int taskId) throws IOException;
+    TaskProgress cancelTask (int queryId, int taskId) throws IOException;
 
     /**
      * Release all objects (such as query results and query plans) for the specified query.

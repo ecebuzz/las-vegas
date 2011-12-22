@@ -75,5 +75,13 @@
 	<classpathentry kind="lib" path="lib/hive-exec-0.8.0.jar" sourcepath="/home/hkimura/hive-0.8.0_sources"/>
 	<classpathentry kind="lib" path="lib/antlr-3.0.1.jar"/>
 	<classpathentry kind="lib" path="lib/antlr-runtime-3.0.1.jar"/>
+	<classpathentry kind="lib" path="lib/hadoop-yarn-api-0.23.0.jar"/>
+	<classpathentry kind="lib" path="lib/hadoop-yarn-applications-distributedshell-0.23.0.jar"/>
+	<classpathentry kind="lib" path="lib/hadoop-yarn-common-0.23.0.jar"/>
+	<classpathentry kind="lib" path="lib/hadoop-yarn-server-common-0.23.0.jar"/>
+	<classpathentry kind="lib" path="lib/hadoop-yarn-server-nodemanager-0.23.0.jar"/>
+	<classpathentry kind="lib" path="lib/hadoop-yarn-server-resourcemanager-0.23.0.jar"/>
+	<classpathentry kind="lib" path="lib/hadoop-yarn-server-web-proxy-0.23.0.jar"/>
+	<classpathentry kind="lib" path="lib/hadoop-yarn-site-0.23.0.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

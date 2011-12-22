@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.hadoop.ipc.ProtocolSignature;
 
@@ -27,6 +28,7 @@ public final class QueryExecutionEngine implements QueryProtocol {
      * Holds information of all queries since the startup.
      */
     private final Map<Integer, QueryRepo> queries;
+    private final AtomicInteger lastQueryId = new AtomicInteger(0);
 
     public QueryExecutionEngine (MasterMetadataRepository metadata) {
         this.metadata = metadata;
@@ -50,14 +52,14 @@ public final class QueryExecutionEngine implements QueryProtocol {
 
     @Override
     public int compile(int databaseId, String sql) throws IOException {
+        int queryId = lastQueryId.incrementAndGet();
         // TODO Auto-generated method stub
         return 0;
     }
 
     @Override
     public int compile(String sql) throws IOException {
-        // TODO Auto-generated method stub
-        return 0;
+        return compile (0, sql);
     }
 
     @Override
@@ -68,8 +70,7 @@ public final class QueryExecutionEngine implements QueryProtocol {
 
     @Override
     public int optimize(int queryId) throws IOException {
-        // TODO Auto-generated method stub
-        return 0;
+        return optimize (queryId, new QueryHint[0]);
     }
 
     @Override
@@ -79,7 +80,7 @@ public final class QueryExecutionEngine implements QueryProtocol {
     }
 
     @Override
-    public QueryPlan getQueryPlan(int planId) throws IOException {
+    public QueryPlan getQueryPlan(int queryId, int planId) throws IOException {
         // TODO Auto-generated method stub
         return null;
     }
@@ -92,36 +93,35 @@ public final class QueryExecutionEngine implements QueryProtocol {
 
     @Override
     public int execute(int queryId, int planId) throws IOException {
+        return execute(queryId, planId, TaskLogLevel.INFO);
+    }
+
+    @Override
+    public TaskProgress joinTask(int queryId, int taskId, long millisecondsToWait) throws IOException {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public TaskProgress getTaskProgress(int queryId, int taskId) throws IOException {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public int getTaskLogLength(int queryId, int taskId) throws IOException {
         // TODO Auto-generated method stub
         return 0;
     }
 
     @Override
-    public TaskProgress joinTask(int taskId, long millisecondsToWait) throws IOException {
+    public String getTaskLog(int queryId, int taskId, int offset, int len) throws IOException {
         // TODO Auto-generated method stub
         return null;
     }
 
     @Override
-    public TaskProgress getTaskProgress(int taskId) throws IOException {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public int getTaskLogLength(int taskId) throws IOException {
-        // TODO Auto-generated method stub
-        return 0;
-    }
-
-    @Override
-    public String getTaskLog(int taskId, int offset, int len) throws IOException {
-        // TODO Auto-generated method stub
-        return null;
-    }
-
-    @Override
-    public TaskProgress cancelTask(int taskId) throws IOException {
+    public TaskProgress cancelTask(int queryId, int taskId) throws IOException {
         // TODO Auto-generated method stub
         return null;
     }

@@ -11,7 +11,7 @@ import edu.brown.lasvegas.InputTableReader;
 import edu.brown.lasvegas.util.ValueRange;
 
 /**
- * A VERY simple, fast, and inaccurate implementation of partitioning logic.
+ * A VERY simple, fast, and inaccurate implementation of equi-width partitioning.
  * 
  * <p>This class looks at the first 10MB of the first file
  * and last 10MB of the last file, retrieving the smallest
@@ -28,8 +28,8 @@ import edu.brown.lasvegas.util.ValueRange;
  * should modify the beginning value of the first partition, and the ending value of the
  * last partition while importing.</p>
  */
-public class SimplePartitioner<T extends Comparable<T>> {
-    private static Logger LOG = Logger.getLogger(SimplePartitioner.class);
+public class EquiWidthPartitioner<T extends Comparable<T>> {
+    private static Logger LOG = Logger.getLogger(EquiWidthPartitioner.class);
     /**
      * Designs partition ranges by sampling the given files. See the class comment for more details.
      * @param firstSplit The first file to import. If the partitioning column is not correlated with
@@ -44,21 +44,21 @@ public class SimplePartitioner<T extends Comparable<T>> {
      */
     public static ValueRange<?>[] designPartitions (InputTableReader firstSplit, InputTableReader lastSplit, int partitioningColumnIndex, int numPartitions, int sampleByteSize) throws IOException {
         ColumnType type = firstSplit.getColumnType(partitioningColumnIndex);
-        SimplePartitioner<?> partitioner;
+        EquiWidthPartitioner<?> partitioner;
         switch(type) {
-        case BIGINT: partitioner = new SimplePartitioner<Long>(new LongValueSplitter()); break;
-        case BOOLEAN: partitioner = new SimplePartitioner<Boolean>(new BooleanValueSplitter()); break;
-        case DOUBLE: partitioner = new SimplePartitioner<Double>(new DoubleValueSplitter()); break;
-        case FLOAT: partitioner = new SimplePartitioner<Float>(new FloatValueSplitter()); break;
-        case INTEGER: partitioner = new SimplePartitioner<Integer>(new IntegerValueSplitter()); break;
-        case SMALLINT: partitioner = new SimplePartitioner<Short>(new ShortValueSplitter()); break;
-        case TINYINT: partitioner = new SimplePartitioner<Byte>(new ByteValueSplitter()); break;
+        case BIGINT: partitioner = new EquiWidthPartitioner<Long>(new LongValueSplitter()); break;
+        case BOOLEAN: partitioner = new EquiWidthPartitioner<Boolean>(new BooleanValueSplitter()); break;
+        case DOUBLE: partitioner = new EquiWidthPartitioner<Double>(new DoubleValueSplitter()); break;
+        case FLOAT: partitioner = new EquiWidthPartitioner<Float>(new FloatValueSplitter()); break;
+        case INTEGER: partitioner = new EquiWidthPartitioner<Integer>(new IntegerValueSplitter()); break;
+        case SMALLINT: partitioner = new EquiWidthPartitioner<Short>(new ShortValueSplitter()); break;
+        case TINYINT: partitioner = new EquiWidthPartitioner<Byte>(new ByteValueSplitter()); break;
         case VARBINARY: throw new IllegalArgumentException("partitioning by VARBINARY column is not supported");
-        case VARCHAR: partitioner = new SimplePartitioner<String>(new StringValueSplitter()); break;
+        case VARCHAR: partitioner = new EquiWidthPartitioner<String>(new StringValueSplitter()); break;
 
-        case DATE: partitioner = new SimplePartitioner<Long>(new LongValueSplitter()); break;
-        case TIME: partitioner = new SimplePartitioner<Long>(new LongValueSplitter()); break;
-        case TIMESTAMP: partitioner = new SimplePartitioner<Long>(new LongValueSplitter()); break;
+        case DATE: partitioner = new EquiWidthPartitioner<Long>(new LongValueSplitter()); break;
+        case TIME: partitioner = new EquiWidthPartitioner<Long>(new LongValueSplitter()); break;
+        case TIMESTAMP: partitioner = new EquiWidthPartitioner<Long>(new LongValueSplitter()); break;
         default:
             throw new IOException ("Unexpected column type:" + type);
         }
@@ -74,7 +74,7 @@ public class SimplePartitioner<T extends Comparable<T>> {
     }
     private final static int DEFAULT_SAMPLE_BYTE_SIZE = 1 << 20;
     private final ValueSplitter<T> splitter;
-    private SimplePartitioner(ValueSplitter<T> splitter) {
+    private EquiWidthPartitioner(ValueSplitter<T> splitter) {
         this.splitter = splitter;
     }
     

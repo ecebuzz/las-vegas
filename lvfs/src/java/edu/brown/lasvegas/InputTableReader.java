@@ -4,7 +4,7 @@ import java.io.Closeable;
 import java.io.IOException;
 
 import edu.brown.lasvegas.lvfs.LasVegasFileSystem;
-import edu.brown.lasvegas.lvfs.imp.SimplePartitioner;
+import edu.brown.lasvegas.lvfs.imp.EquiWidthPartitioner;
 import edu.brown.lasvegas.lvfs.imp.TextFileTableReader;
 
 /**
@@ -45,7 +45,7 @@ public interface InputTableReader extends Closeable {
      * 
      * <p><b>NOTE</b>: this method is usually very efficient (seek and then find next tuple boundary),
      * but might be extremely costly or impossible to implement in some underlying file format
-     * whose tuple boundary is not easy to detect. In that case, avoid using {@link SimplePartitioner}
+     * whose tuple boundary is not easy to detect. In that case, avoid using {@link EquiWidthPartitioner}
      * which uses this method.</p>
      * @param position approximate byte position in the file.
      */
