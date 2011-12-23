@@ -7,6 +7,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 
@@ -114,6 +115,29 @@ public class LVObjectSerializationTest {
         }
     }
 
+    @Test
+    public void testDatabase () throws IOException {
+        LVDatabase obj1 = new LVDatabase();
+        obj1.setDatabaseId(32);
+        obj1.setName("db1");
+        obj1.setStatus(DatabaseStatus.BEING_DROPPED);
+        obj1.write(out);
+        LVDatabase obj2 = new LVDatabase();
+        obj2.setDatabaseId(442);
+        obj2.setName("rack2");
+        obj2.setStatus(DatabaseStatus.OK);
+        obj2.write(out);
+
+        LVDatabase[] org = new LVDatabase[]{obj1, obj2};
+        DataInputStream in = inFromOut();
+        for (int i = 0; i < org.length; ++i) {
+            LVDatabase copied = LVDatabase.read(in);
+            assertEquals(org[i].getDatabaseId(), copied.getDatabaseId());
+            assertEquals(org[i].getName(), copied.getName());
+            assertEquals(org[i].getStatus(), copied.getStatus());
+            assertEquals(org[i].getPrimaryKey(), copied.getPrimaryKey());
+        }
+    }
 
     @Test
     public void testFracture () throws IOException {
@@ -412,6 +436,85 @@ public class LVObjectSerializationTest {
             assertEquals(org[i].getTableId(), copied.getTableId());
             assertEquals(org[i].getStatus(), copied.getStatus());
             assertEquals(org[i].getName(), copied.getName());
+            assertEquals(org[i].getPrimaryKey(), copied.getPrimaryKey());
+        }
+    }
+
+    @Test
+    public void testJob () throws IOException {
+        LVJob obj1 = new LVJob();
+        obj1.setDescription("job1");
+        obj1.setErrorMessages("user cancel");
+        obj1.setFinishedTime(new Date(201010101010L));
+        obj1.setJobId(32);
+        obj1.setProgress(0.3d);
+        obj1.setStartedTime(new Date(101010101010L));
+        obj1.setStatus(JobStatus.CANCELED);
+        obj1.setType(JobType.MERGE_FRACTURE);
+        obj1.write(out);
+        LVJob obj2 = new LVJob();
+        obj2.setJobId(442);
+        obj2.setDescription("job2");
+        obj2.setStatus(JobStatus.ERROR);
+        obj2.write(out);
+
+        LVJob[] org = new LVJob[]{obj1, obj2};
+        DataInputStream in = inFromOut();
+        for (int i = 0; i < org.length; ++i) {
+            LVJob copied = LVJob.read(in);
+            assertEquals(org[i].getJobId(), copied.getJobId());
+            assertEquals(org[i].getDescription(), copied.getDescription());
+            assertEquals(org[i].getErrorMessages(), copied.getErrorMessages());
+            assertEquals(org[i].getStatus(), copied.getStatus());
+            assertEquals(org[i].getType(), copied.getType());
+            assertEquals(org[i].getProgress(), copied.getProgress(), 0.00000001d);
+            assertEquals(org[i].getStartedTime(), copied.getStartedTime());
+            assertEquals(org[i].getFinishedTime(), copied.getFinishedTime());
+            assertEquals(org[i].getPrimaryKey(), copied.getPrimaryKey());
+        }
+    }
+
+    @Test
+    public void testTask () throws IOException {
+        LVTask obj1 = new LVTask();
+        obj1.setErrorMessages("liilisdsd");
+        obj1.setFinishedTime(new Date(201010101010L));
+        obj1.setJobId(32);
+        obj1.setProgress(0.3d);
+        obj1.setStartedTime(new Date(101010101010L));
+        obj1.setTaskId(32);
+        obj1.setNodeId(123);
+        obj1.setStatus(TaskStatus.CREATED);
+        obj1.setType(TaskType.PROJECT);
+        obj1.setOutputFilePaths(new String[]{"aaa", "bbb"});
+        obj1.write(out);
+        LVTask obj2 = new LVTask();
+        obj2.setErrorMessages("sdfsdfsdf");
+        obj2.setFinishedTime(new Date(21010101010L));
+        obj2.setJobId(454);
+        obj2.setProgress(0.3d);
+        obj2.setStartedTime(new Date(11010101010L));
+        obj2.setTaskId(3333);
+        obj2.setNodeId(1323232);
+        obj2.setStatus(TaskStatus.RUNNING);
+        obj2.setType(TaskType.FILTER_COLUMN_FILES);
+        obj2.setOutputFilePaths(new String[]{"asd"});
+        obj2.write(out);
+
+        LVTask[] org = new LVTask[]{obj1, obj2};
+        DataInputStream in = inFromOut();
+        for (int i = 0; i < org.length; ++i) {
+            LVTask copied = LVTask.read(in);
+            assertEquals(org[i].getTaskId(), copied.getTaskId());
+            assertEquals(org[i].getErrorMessages(), copied.getErrorMessages());
+            assertEquals(org[i].getJobId(), copied.getJobId());
+            assertEquals(org[i].getFinishedTime(), copied.getFinishedTime());
+            assertEquals(org[i].getProgress(), copied.getProgress(), 0.0000001d);
+            assertEquals(org[i].getStartedTime(), copied.getStartedTime());
+            assertEquals(org[i].getNodeId(), copied.getNodeId());
+            assertEquals(org[i].getStatus(), copied.getStatus());
+            assertEquals(org[i].getType(), copied.getType());
+            assertArrayEquals(org[i].getOutputFilePaths(), copied.getOutputFilePaths());
             assertEquals(org[i].getPrimaryKey(), copied.getPrimaryKey());
         }
     }

@@ -52,16 +52,16 @@ public final class LVTask implements LVObject {
     private TaskStatus status = TaskStatus.INVALID;
     
     /** fraction of the work done (finished=1.0). just for report purpose. */
-    private double progress = 0.0d;
+    private double progress;
     
     /** The time this task has been created (largely the time this task has been started). */
-    private Date startedTime = new Date();
+    private Date startedTime = new Date(0L);
     
     /** The time this task has finished. */
-    private Date finishedTime = new Date();
+    private Date finishedTime = new Date(0L);
     
     /** the _local_ paths (relative to the local HDFS's root dir) of this taks's result files. */
-    private String[] outputFilePaths;
+    private String[] outputFilePaths = new String[0];
     
     /** the dumped message of the error (if the task finished with an error).*/
     private String errorMessages = "";
@@ -96,18 +96,18 @@ public final class LVTask implements LVObject {
         out.writeInt(taskId);
         out.writeInt(jobId);
         out.writeInt(nodeId);
-        out.writeInt(type.ordinal());
-        out.writeInt(status.ordinal());
+        out.writeInt(type == null ? TaskType.INVALID.ordinal() : type.ordinal());
+        out.writeInt(status == null ? TaskStatus.INVALID.ordinal() : status.ordinal());
         out.writeDouble(progress);
-        out.writeLong(startedTime.getTime());
-        out.writeLong(finishedTime.getTime());
-        out.writeUTF(errorMessages);
+        out.writeLong(startedTime == null ? 0L : startedTime.getTime());
+        out.writeLong(finishedTime == null ? 0L : finishedTime.getTime());
+        out.writeUTF(errorMessages == null ? "" : errorMessages);
         if (outputFilePaths == null) {
             out.writeInt(0);
         } else {
             out.writeInt(outputFilePaths.length);
             for (String path : outputFilePaths) {
-                out.writeUTF(path);
+                out.writeUTF(path == null ? "" : path);
             }
         }
     }
@@ -121,10 +121,18 @@ public final class LVTask implements LVObject {
         jobId = in.readInt();
         nodeId = in.readInt();
         type = TaskType.values()[in.readInt()];
-        progress = in.readDouble();
         status = TaskStatus.values()[in.readInt()];
-        startedTime.setTime(in.readLong());
-        finishedTime.setTime(in.readLong());
+        progress = in.readDouble();
+        if (startedTime == null) {
+            startedTime = new Date(in.readLong());
+        } else {
+            startedTime.setTime(in.readLong());
+        }
+        if (finishedTime == null) {
+            finishedTime = new Date(in.readLong());
+        } else {
+            finishedTime.setTime(in.readLong());
+        }
         errorMessages = in.readUTF();
         outputFilePaths = new String[in.readInt()];
         for (int i = 0; i < outputFilePaths.length; ++i) {
@@ -196,7 +204,6 @@ public final class LVTask implements LVObject {
      * @param type the new type of this local task
      */
     public void setType(TaskType type) {
-        assert (type != null);
         this.type = type;
     }
 
@@ -217,7 +224,6 @@ public final class LVTask implements LVObject {
      * @param status the new current status of this task
      */
     public void setStatus(TaskStatus status) {
-        assert (status != null);
         this.status = status;
     }
 
@@ -257,7 +263,6 @@ public final class LVTask implements LVObject {
      * @param finishedTime the new time this task has finished
      */
     public void setFinishedTime(Date finishedTime) {
-        assert (finishedTime != null);
         this.finishedTime = finishedTime;
     }
 
@@ -278,7 +283,6 @@ public final class LVTask implements LVObject {
      * @param errorMessages the new dumped message of the error (if the task finished with an error)
      */
     public void setErrorMessages(String errorMessages) {
-        assert (errorMessages != null);
         this.errorMessages = errorMessages;
     }
 

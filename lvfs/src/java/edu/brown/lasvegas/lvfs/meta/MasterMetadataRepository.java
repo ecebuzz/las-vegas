@@ -12,6 +12,7 @@ import java.util.Random;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.ipc.ProtocolSignature;
 import org.apache.log4j.Logger;
 
@@ -1088,6 +1089,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         LVJob job = new LVJob();
         job.setJobId(bdbTableAccessors.jobAccessor.issueNewId());
         job.setDescription(description == null ? "" : description);
+        job.setProgress(0.0d);
         job.setStartedTime(new Date());
         job.setType(type);
         job.setStatus(JobStatus.CREATED);
@@ -1101,17 +1103,17 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     }
 
     @Override
-    public LVJob updateJob(int jobId, JobStatus status, Double progress, String errorMessages) throws IOException {
+    public LVJob updateJob(int jobId, JobStatus status, DoubleWritable progress, String errorMessages) throws IOException {
         LVJob job = getJob(jobId);
         if (status != null) {
-            boolean wasFinished = job.getStatus().isFinished();
+            boolean wasFinished = JobStatus.isFinished(job.getStatus());
             job.setStatus(status);
-            if (!wasFinished && status.isFinished()) {
+            if (!wasFinished && JobStatus.isFinished(status)) {
                 job.setFinishedTime(new Date());
             }
         }
         if (progress != null) {
-            job.setProgress(progress);
+            job.setProgress(progress.get());
         }
         if (errorMessages != null) {
             job.setErrorMessages(errorMessages);
@@ -1121,7 +1123,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     }
 
     @Override
-    public void updateJobNoReturn(int jobId, JobStatus status, Double progress, String errorMessages) throws IOException {
+    public void updateJobNoReturn(int jobId, JobStatus status, DoubleWritable progress, String errorMessages) throws IOException {
         updateJob(jobId, status, progress, errorMessages);
     }
 
@@ -1159,7 +1161,8 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         LVTask task = new LVTask();
         task.setJobId(jobId);
         task.setNodeId(nodeId);
-        task.setJobId(bdbTableAccessors.taskAccessor.issueNewId());
+        task.setTaskId(bdbTableAccessors.taskAccessor.issueNewId());
+        task.setProgress(0.0d);
         task.setStartedTime(new Date());
         task.setType(type);
         task.setStatus(TaskStatus.CREATED);
@@ -1173,17 +1176,17 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     }
 
     @Override
-    public LVTask updateTask(int taskId, TaskStatus status, Double progress, String[] outputFilePaths, String errorMessages) throws IOException {
+    public LVTask updateTask(int taskId, TaskStatus status, DoubleWritable progress, String[] outputFilePaths, String errorMessages) throws IOException {
         LVTask task = getTask(taskId);
         if (status != null) {
-            boolean wasFinished = task.getStatus().isFinished();
+            boolean wasFinished = TaskStatus.isFinished(task.getStatus());
             task.setStatus(status);
-            if (!wasFinished && status.isFinished()) {
+            if (!wasFinished && TaskStatus.isFinished(status)) {
                 task.setFinishedTime(new Date());
             }
         }
         if (progress != null) {
-            task.setProgress(progress);
+            task.setProgress(progress.get());
         }
         if (errorMessages != null) {
             task.setErrorMessages(errorMessages);
@@ -1193,7 +1196,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     }
 
     @Override
-    public void updateTaskNoReturn(int taskId, TaskStatus status, Double progress, String[] outputFilePaths, String errorMessages) throws IOException {
+    public void updateTaskNoReturn(int taskId, TaskStatus status, DoubleWritable progress, String[] outputFilePaths, String errorMessages) throws IOException {
         updateTask(taskId, status, progress, outputFilePaths, errorMessages);
     }
 

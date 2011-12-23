@@ -40,13 +40,13 @@ public final class LVJob implements LVObject {
     private String description = "";
     
     /** fraction of the work done (finished=1.0). just for report purpose. */
-    private double progress = 0.0d;
+    private double progress;
     
     /** The time this job has been created (largely the time this job has been started). */
-    private Date startedTime = new Date();
+    private Date startedTime = new Date(0L);
     
     /** The time this job has finished. */
-    private Date finishedTime = new Date();
+    private Date finishedTime = new Date(0L);
     
     /** the dumped message of the error (if the job finished with an error).*/
     private String errorMessages = "";
@@ -68,13 +68,13 @@ public final class LVJob implements LVObject {
     @Override
     public void write(DataOutput out) throws IOException {
         out.writeInt(jobId);
-        out.writeInt(type.ordinal());
-        out.writeInt(status.ordinal());
+        out.writeInt(type == null ? JobType.INVALID.ordinal() : type.ordinal());
+        out.writeInt(status == null ? JobStatus.INVALID.ordinal() : status.ordinal());
         out.writeDouble(progress);
-        out.writeLong(startedTime.getTime());
-        out.writeLong(finishedTime.getTime());
-        out.writeUTF(description);
-        out.writeUTF(errorMessages);
+        out.writeLong(startedTime == null ? 0L : startedTime.getTime());
+        out.writeLong(finishedTime == null ? 0L : finishedTime.getTime());
+        out.writeUTF(description == null ? "" : description);
+        out.writeUTF(errorMessages == null ? "" : errorMessages);
     }
     @Override
     public void readFields(DataInput in) throws IOException {
@@ -82,8 +82,16 @@ public final class LVJob implements LVObject {
         type = JobType.values()[in.readInt()];
         status = JobStatus.values()[in.readInt()];
         progress = in.readDouble();
-        startedTime.setTime(in.readLong());
-        finishedTime.setTime(in.readLong());
+        if (startedTime == null) {
+            startedTime = new Date(in.readLong());
+        } else {
+            startedTime.setTime(in.readLong());
+        }
+        if (finishedTime == null) {
+            finishedTime = new Date(in.readLong());
+        } else {
+            finishedTime.setTime(in.readLong());
+        }
         description = in.readUTF();
         errorMessages = in.readUTF();
     }
@@ -128,7 +136,6 @@ public final class LVJob implements LVObject {
      * @param type the new type of this job (such as data import and querying)
      */
     public void setType(JobType type) {
-        assert (type != null);
         this.type = type;
     }
 
@@ -147,7 +154,6 @@ public final class LVJob implements LVObject {
      * @param status the new current status of this job
      */
     public void setStatus(JobStatus status) {
-        assert (status != null);
         this.status = status;
     }
 
@@ -166,7 +172,6 @@ public final class LVJob implements LVObject {
      * @param description the new a short user-given description of this job
      */
     public void setDescription(String description) {
-        assert (description != null);
         this.description = description;
     }
 
@@ -207,7 +212,6 @@ public final class LVJob implements LVObject {
      * @param finishedTime the new time this job has finished
      */
     public void setFinishedTime(Date finishedTime) {
-        assert (finishedTime != null);
         this.finishedTime = finishedTime;
     }
 
@@ -226,7 +230,6 @@ public final class LVJob implements LVObject {
      * @param errorMessages the new dumped message of the error (if the job finished with an error)
      */
     public void setErrorMessages(String errorMessages) {
-        assert (errorMessages != null);
         this.errorMessages = errorMessages;
     }
 

@@ -3,6 +3,7 @@ package edu.brown.lasvegas.protocol;
 import java.io.IOException;
 import java.util.Map;
 
+import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.ipc.VersionedProtocol;
 
 import edu.brown.lasvegas.JobStatus;
@@ -831,12 +832,12 @@ public interface LVMetadataProtocol extends VersionedProtocol {
      * @return updated Job object
      * @throws IOException
      */
-    LVJob updateJob (int jobId, JobStatus status, Double progress, String errorMessages) throws IOException;
+    LVJob updateJob (int jobId, JobStatus status, DoubleWritable progress, String errorMessages) throws IOException;
     /**
      * To reduce network overhead.
      * {@link #updateJob(int, JobStatus, Double, String)}
      */
-    void updateJobNoReturn (int jobId, JobStatus status, Double progress, String errorMessages) throws IOException;
+    void updateJobNoReturn (int jobId, JobStatus status, DoubleWritable progress, String errorMessages) throws IOException;
     
     /**
      * Deletes the job and its related objects from this repository.
@@ -897,12 +898,12 @@ public interface LVMetadataProtocol extends VersionedProtocol {
      * @return updated Task object
      * @throws IOException
      */
-    LVTask updateTask (int taskId, TaskStatus status, Double progress, String[] outputFilePaths, String errorMessages) throws IOException;
+    LVTask updateTask (int taskId, TaskStatus status, DoubleWritable progress, String[] outputFilePaths, String errorMessages) throws IOException;
     /**
      * To reduce network overhead.
      * @see #updateTask(int, TaskStatus, Double, String[], String)
      */
-    void updateTaskNoReturn (int taskId, TaskStatus status, Double progress, String[] outputFilePaths, String errorMessages) throws IOException;
+    void updateTaskNoReturn (int taskId, TaskStatus status, DoubleWritable progress, String[] outputFilePaths, String errorMessages) throws IOException;
     
     /**
      * Deletes the task.
