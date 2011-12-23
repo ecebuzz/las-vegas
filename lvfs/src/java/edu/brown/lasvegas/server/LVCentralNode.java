@@ -127,6 +127,12 @@ public final class LVCentralNode implements ServicePlugin {
             LOG.info("started query execution engine  server.");
         }
     }
+    
+    @Override
+    public void close() throws IOException {
+        stop ();
+        hdfsNameNode = null;
+    }
 
     private boolean stopRequested = false;
     /**
@@ -182,11 +188,5 @@ public final class LVCentralNode implements ServicePlugin {
         public void run() {
             // TODO Auto-generated method stub
         }
-    }
-    
-    @Override
-    public void close() throws IOException {
-        // TODO Auto-generated method stub
-        
     }
 }

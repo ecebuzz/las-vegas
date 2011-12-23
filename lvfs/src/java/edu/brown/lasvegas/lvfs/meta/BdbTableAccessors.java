@@ -11,6 +11,7 @@ import com.sleepycat.persist.StoreConfig;
 
 import edu.brown.lasvegas.LVColumnFile;
 import edu.brown.lasvegas.LVDatabase;
+import edu.brown.lasvegas.LVJob;
 import edu.brown.lasvegas.LVObjectType;
 import edu.brown.lasvegas.LVRack;
 import edu.brown.lasvegas.LVRackAssignment;
@@ -23,6 +24,7 @@ import edu.brown.lasvegas.LVReplicaScheme;
 import edu.brown.lasvegas.LVTable;
 import edu.brown.lasvegas.LVColumn;
 import edu.brown.lasvegas.LVFracture;
+import edu.brown.lasvegas.LVTask;
 import edu.brown.lasvegas.ReplicaPartitionStatus;
 import edu.brown.lasvegas.ReplicaStatus;
 import edu.brown.lasvegas.util.CompositeIntKey;
@@ -38,6 +40,8 @@ class BdbTableAccessors {
     final EntityStore store;
     final MasterTableAccessor masterTableAccessor;
 
+    final JobAccessor jobAccessor;
+    final TaskAccessor taskAccessor;
     final DatabaseAccessor databaseAccessor;
     final TableAccessor tableAccessor;
     final ColumnAccessor columnAccessor;
@@ -62,6 +66,8 @@ class BdbTableAccessors {
         storeConfig.setTransactional(false);
         store = new EntityStore(bdbEnv, MasterTable.DBNAME, storeConfig);
         masterTableAccessor = new MasterTableAccessor(store);
+        jobAccessor = new JobAccessor();
+        taskAccessor = new TaskAccessor();
         databaseAccessor = new DatabaseAccessor();
         tableAccessor = new TableAccessor();
         columnAccessor = new ColumnAccessor();
@@ -122,6 +128,22 @@ class BdbTableAccessors {
         }
     }
 
+    class JobAccessor extends MetaTableAccessor<LVJob> {
+        JobAccessor () {
+            super(LVJob.class);
+        }
+        LVObjectType getType() { return LVObjectType.JOB;}
+    }
+    class TaskAccessor extends MetaTableAccessor<LVTask> {
+        TaskAccessor () {
+            super(LVTask.class);
+            IX_JOB_ID = store.getSecondaryIndex(PKX, Integer.class, LVTask.IX_JOB_ID);
+            IX_NODE_ID = store.getSecondaryIndex(PKX, Integer.class, LVTask.IX_NODE_ID);
+        }
+        LVObjectType getType() { return LVObjectType.TASK;}
+        final SecondaryIndex<Integer, Integer, LVTask> IX_JOB_ID;
+        final SecondaryIndex<Integer, Integer, LVTask> IX_NODE_ID;
+    }
     class DatabaseAccessor extends MetaTableAccessor<LVDatabase> {
         DatabaseAccessor () {
             super(LVDatabase.class);

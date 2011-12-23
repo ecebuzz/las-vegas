@@ -31,4 +31,15 @@ public final class DataEngine implements LVDataProtocol, Closeable {
         // TODO Auto-generated method stub
         
     }
+    
+    @Override
+    public byte[] getFileBody(String localPath, int offset, int len) throws IOException {
+        // TODO Auto-generated method stub
+        return null;
+    }
+    @Override
+    public int getFileLength(String localPath) throws IOException {
+        // TODO Auto-generated method stub
+        return 0;
+    }
 }

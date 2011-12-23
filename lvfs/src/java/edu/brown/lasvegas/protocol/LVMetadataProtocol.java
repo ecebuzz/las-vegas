@@ -5,10 +5,13 @@ import java.util.Map;
 
 import org.apache.hadoop.ipc.VersionedProtocol;
 
+import edu.brown.lasvegas.JobStatus;
+import edu.brown.lasvegas.JobType;
 import edu.brown.lasvegas.LVColumnFile;
 import edu.brown.lasvegas.ColumnType;
 import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.LVDatabase;
+import edu.brown.lasvegas.LVJob;
 import edu.brown.lasvegas.LVRack;
 import edu.brown.lasvegas.LVRackAssignment;
 import edu.brown.lasvegas.LVRackNode;
@@ -17,6 +20,7 @@ import edu.brown.lasvegas.LVReplicaGroup;
 import edu.brown.lasvegas.LVReplicaPartition;
 import edu.brown.lasvegas.LVSubPartitionScheme;
 import edu.brown.lasvegas.LVObjectType;
+import edu.brown.lasvegas.LVTask;
 import edu.brown.lasvegas.RackNodeStatus;
 import edu.brown.lasvegas.RackStatus;
 import edu.brown.lasvegas.ReplicaPartitionStatus;
@@ -25,6 +29,8 @@ import edu.brown.lasvegas.LVTable;
 import edu.brown.lasvegas.LVColumn;
 import edu.brown.lasvegas.LVFracture;
 import edu.brown.lasvegas.ReplicaStatus;
+import edu.brown.lasvegas.TaskStatus;
+import edu.brown.lasvegas.TaskType;
 
 /**
  * Defines a protocol to access a repository of metadata in LVFS.
@@ -785,5 +791,125 @@ public interface LVMetadataProtocol extends VersionedProtocol {
      */
     String queryColumnFilePlacement (String hdfsFilePath) throws IOException;
 
+
+    //////////////////////// Job Methods : begin ////////////////////////////////
+    /**
+     * Returns the job object with the given ID.
+     * @param jobId Job ID 
+     * @return job object. null if the ID is not found.
+     * @throws IOException
+     */
+    LVJob getJob(int jobId) throws IOException;
+
+    /**
+     * Returns all existing job objects.
+     * @return job objects. in ID order.
+     * @throws IOException
+     */
+    LVJob[] getAllJobs() throws IOException;
+
+    /**
+     * Creates a new job with the status {@link JobStatus#CREATED}.
+     * @param description short description of the new job
+     * @param type type of the new job
+     * @return the newly created job
+     * @throws IOException
+     */
+    LVJob createNewJob (String description, JobType type) throws IOException;
+    /**
+     * To reduce network overhead.
+     * {@link #createNewJob(String, JobType)}
+     */
+    int createNewJobIdOnlyReturn (String description, JobType type) throws IOException;
+    
+    /**
+     * Updates the status and (if error) its error message of the given job.
+     * @param jobId ID the job to update
+     * @param status the new value of status. NULL to not change
+     * @param progress the new value of progress. NULL to not change
+     * @param errorMessages the new value of errorMessages.  NULL to not change
+     * @return updated Job object
+     * @throws IOException
+     */
+    LVJob updateJob (int jobId, JobStatus status, Double progress, String errorMessages) throws IOException;
+    /**
+     * To reduce network overhead.
+     * {@link #updateJob(int, JobStatus, Double, String)}
+     */
+    void updateJobNoReturn (int jobId, JobStatus status, Double progress, String errorMessages) throws IOException;
+    
+    /**
+     * Deletes the job and its related objects from this repository.
+     * @param jobId the job to drop
+     * @throws IOException
+     */
+    void dropJob (int jobId) throws IOException;
+
+    //////////////////////// Task Methods : begin ////////////////////////////////
+    
+    /**
+     * Returns the task object with the given ID.
+     * @param taskId Task ID 
+     * @return task object. null if the ID is not found.
+     * @throws IOException
+     */
+    LVTask getTask(int taskId) throws IOException;
+
+    /**
+     * Returns all existing tasks in the specified job. 
+     * @param jobId ID of the job containing the tasks
+     * @return task objects. in ID order.
+     * @throws IOException
+     */
+    LVTask[] getAllTasksByJob(int jobId) throws IOException;
+
+    /**
+     * Returns all existing tasks in the specified node. 
+     * @param nodeId ID of the node on which the tasks did/is-doing/will run on
+     * @return task objects. in ID order.
+     * @throws IOException
+     */
+    LVTask[] getAllTasksByNode(int nodeId) throws IOException;
+
+    /**
+     * Creates a new local task on the specified node as a part of the given job.
+     * The status of the newly created task is  {@link TaskStatus#NOT_STARTED}.
+     * @param jobId ID of the global job this local task belongs to
+     * @param nodeId ID of the node this local task will run on
+     * @param type type of the local task. 
+     * @return the newly created task
+     * @throws IOException
+     */
+    LVTask createNewTask (int jobId, int nodeId, TaskType type) throws IOException;
+    /**
+     * To reduce network overhead.
+     * {@link #createNewTask(int, int, TaskType)}
+     */
+    int createNewTaskIdOnlyReturn (int jobId, int nodeId, TaskType type) throws IOException;
+    
+    /**
+     * Updates the status and (if error) its error message of the given task.
+     * @param taskId ID the task to update
+     * @param status the new value of status. NULL to not change
+     * @param progress the new value of progress. NULL to not change
+     * @param outputFilePaths the new value of outputFilePaths. NULL to not change (String[0] would reset it).
+     * @param errorMessages the new value of errorMessages.  NULL to not change
+     * @return updated Task object
+     * @throws IOException
+     */
+    LVTask updateTask (int taskId, TaskStatus status, Double progress, String[] outputFilePaths, String errorMessages) throws IOException;
+    /**
+     * To reduce network overhead.
+     * @see #updateTask(int, TaskStatus, Double, String[], String)
+     */
+    void updateTaskNoReturn (int taskId, TaskStatus status, Double progress, String[] outputFilePaths, String errorMessages) throws IOException;
+    
+    /**
+     * Deletes the task.
+     * @param taskId ID the task to drop
+     * @throws IOException
+     */
+    void dropTask (int taskId) throws IOException;
+    
     public static final long versionID = 1L;
 }

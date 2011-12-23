@@ -101,6 +101,7 @@ public final class LVDataNode implements ServicePlugin {
     @Override
     public void close() throws IOException {
         stop ();
+        hdfsDataNode = null;
     }
 
     private boolean stopRequested = false;

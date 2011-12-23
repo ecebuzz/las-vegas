@@ -9,6 +9,7 @@ public enum LVObjectType {
     COLUMN_FILE,
     DATABASE,
     FRACTURE,
+    JOB,
     RACK,
     RACK_ASSIGNMENT,
     RACK_NODE,
@@ -17,5 +18,7 @@ public enum LVObjectType {
     REPLICA_PARTITION,
     REPLICA_SCHEME,
     SUB_PARTITION_SCHEME,
-    TABLE;
+    TABLE,
+    TASK,
+    ;
 }

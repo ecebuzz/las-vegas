@@ -23,10 +23,13 @@ import com.sleepycat.persist.EntityIndex;
 
 import edu.brown.lasvegas.ColumnStatus;
 import edu.brown.lasvegas.DatabaseStatus;
+import edu.brown.lasvegas.JobStatus;
+import edu.brown.lasvegas.JobType;
 import edu.brown.lasvegas.LVColumnFile;
 import edu.brown.lasvegas.ColumnType;
 import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.LVDatabase;
+import edu.brown.lasvegas.LVJob;
 import edu.brown.lasvegas.LVRack;
 import edu.brown.lasvegas.LVRackAssignment;
 import edu.brown.lasvegas.LVRackNode;
@@ -34,6 +37,7 @@ import edu.brown.lasvegas.LVReplica;
 import edu.brown.lasvegas.LVReplicaGroup;
 import edu.brown.lasvegas.LVReplicaPartition;
 import edu.brown.lasvegas.LVSubPartitionScheme;
+import edu.brown.lasvegas.LVTask;
 import edu.brown.lasvegas.RackNodeStatus;
 import edu.brown.lasvegas.RackStatus;
 import edu.brown.lasvegas.ReplicaPartitionStatus;
@@ -43,6 +47,8 @@ import edu.brown.lasvegas.LVColumn;
 import edu.brown.lasvegas.LVFracture;
 import edu.brown.lasvegas.ReplicaStatus;
 import edu.brown.lasvegas.TableStatus;
+import edu.brown.lasvegas.TaskStatus;
+import edu.brown.lasvegas.TaskType;
 import edu.brown.lasvegas.lvfs.LVFSFilePath;
 import edu.brown.lasvegas.protocol.LVMetadataProtocol;
 import edu.brown.lasvegas.util.CompositeIntKey;
@@ -1063,5 +1069,139 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     public void dropRackAssignment(LVRackAssignment assignment) throws IOException {
         assert (assignment.getAssignmentId() > 0);
         bdbTableAccessors.rackAssignmentAccessor.PKX.delete(assignment.getAssignmentId());
+    }
+
+    
+    @Override
+    public LVJob getJob(int jobId) throws IOException {
+        return bdbTableAccessors.jobAccessor.PKX.get(jobId);
+    }
+
+    @Override
+    public LVJob[] getAllJobs() throws IOException {
+        // ID order
+        return bdbTableAccessors.jobAccessor.PKX.sortedMap().values().toArray(new LVJob[0]);
+    }
+
+    @Override
+    public LVJob createNewJob(String description, JobType type) throws IOException {
+        LVJob job = new LVJob();
+        job.setJobId(bdbTableAccessors.jobAccessor.issueNewId());
+        job.setDescription(description == null ? "" : description);
+        job.setStartedTime(new Date());
+        job.setType(type);
+        job.setStatus(JobStatus.CREATED);
+        bdbTableAccessors.jobAccessor.PKX.putNoReturn(job);
+        return job;
+    }
+
+    @Override
+    public int createNewJobIdOnlyReturn(String description, JobType type) throws IOException {
+        return createNewJob(description, type).getJobId();
+    }
+
+    @Override
+    public LVJob updateJob(int jobId, JobStatus status, Double progress, String errorMessages) throws IOException {
+        LVJob job = getJob(jobId);
+        if (status != null) {
+            boolean wasFinished = job.getStatus().isFinished();
+            job.setStatus(status);
+            if (!wasFinished && status.isFinished()) {
+                job.setFinishedTime(new Date());
+            }
+        }
+        if (progress != null) {
+            job.setProgress(progress);
+        }
+        if (errorMessages != null) {
+            job.setErrorMessages(errorMessages);
+        }
+        bdbTableAccessors.jobAccessor.PKX.putNoReturn(job);
+        return job;
+    }
+
+    @Override
+    public void updateJobNoReturn(int jobId, JobStatus status, Double progress, String errorMessages) throws IOException {
+        updateJob(jobId, status, progress, errorMessages);
+    }
+
+    @Override
+    public void dropJob(int jobId) throws IOException {
+        // delete sub tasks
+        for (LVTask task : getAllTasksByJob(jobId)) {
+            dropTask (task.getTaskId());
+        }
+        boolean deleted = bdbTableAccessors.jobAccessor.PKX.delete(jobId);
+        if (!deleted) {
+            LOG.warn("Job-" + jobId + " doesn't exist (already deleted?)");
+        }
+    }
+
+    
+    @Override
+    public LVTask getTask(int taskId) throws IOException {
+        return bdbTableAccessors.taskAccessor.PKX.get(taskId);
+    }
+
+    @Override
+    public LVTask[] getAllTasksByJob(int jobId) throws IOException {
+        // ID order
+        return bdbTableAccessors.taskAccessor.IX_JOB_ID.subIndex(jobId).sortedMap().values().toArray(new LVTask[0]);
+    }
+    @Override
+    public LVTask[] getAllTasksByNode(int nodeId) throws IOException {
+        // ID order
+        return bdbTableAccessors.taskAccessor.IX_NODE_ID.subIndex(nodeId).sortedMap().values().toArray(new LVTask[0]);
+    }
+
+    @Override
+    public LVTask createNewTask(int jobId, int nodeId, TaskType type) throws IOException {
+        LVTask task = new LVTask();
+        task.setJobId(jobId);
+        task.setNodeId(nodeId);
+        task.setJobId(bdbTableAccessors.taskAccessor.issueNewId());
+        task.setStartedTime(new Date());
+        task.setType(type);
+        task.setStatus(TaskStatus.CREATED);
+        bdbTableAccessors.taskAccessor.PKX.putNoReturn(task);
+        return task;
+    }
+
+    @Override
+    public int createNewTaskIdOnlyReturn(int jobId, int nodeId, TaskType type) throws IOException {
+        return createNewTask(jobId, nodeId, type).getTaskId();
+    }
+
+    @Override
+    public LVTask updateTask(int taskId, TaskStatus status, Double progress, String[] outputFilePaths, String errorMessages) throws IOException {
+        LVTask task = getTask(taskId);
+        if (status != null) {
+            boolean wasFinished = task.getStatus().isFinished();
+            task.setStatus(status);
+            if (!wasFinished && status.isFinished()) {
+                task.setFinishedTime(new Date());
+            }
+        }
+        if (progress != null) {
+            task.setProgress(progress);
+        }
+        if (errorMessages != null) {
+            task.setErrorMessages(errorMessages);
+        }
+        bdbTableAccessors.taskAccessor.PKX.putNoReturn(task);
+        return task;
+    }
+
+    @Override
+    public void updateTaskNoReturn(int taskId, TaskStatus status, Double progress, String[] outputFilePaths, String errorMessages) throws IOException {
+        updateTask(taskId, status, progress, outputFilePaths, errorMessages);
+    }
+
+    @Override
+    public void dropTask(int taskId) throws IOException {
+        boolean deleted = bdbTableAccessors.taskAccessor.PKX.delete(taskId);
+        if (!deleted) {
+            LOG.warn("Task-" + taskId + " doesn't exist (already deleted?)");
+        }
     }    
 }
