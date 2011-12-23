@@ -81,6 +81,9 @@ public final class LVCentralNode implements ServicePlugin {
 
     /** HDFS Name Node containing this object as a plugin. */
     private NameNode hdfsNameNode;
+    public NameNode getHdfsNameNode () {
+        return hdfsNameNode;
+    }
 
     /**
      * Creates, initializes and activates the central node on this machine. 

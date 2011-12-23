@@ -1,5 +1,6 @@
 package edu.brown.lasvegas;
 
+import edu.brown.lasvegas.lvfs.data.LoadPartitionedTextFilesTask;
 import edu.brown.lasvegas.lvfs.data.PartitionRawTextFilesTask;
 
 /**
@@ -31,6 +32,7 @@ public enum TaskType {
      * Given partitioned text files output by {@link #PARTITION_TEXT_FILES} task,
      * this task collects those text files from local and remote nodes and
      * construct LVFS files in the local drive.
+     * @see LoadPartitionedTextFilesTask
      */
     LOAD_PARTITIONED_TEXT_FILES,
     

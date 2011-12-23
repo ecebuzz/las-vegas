@@ -61,6 +61,9 @@ public final class LVDataNode implements ServicePlugin {
 
     /** HDFS Data Node containing this object as a plugin. */
     private DataNode hdfsDataNode;
+    public DataNode getHdfsDataNode () {
+        return hdfsDataNode;
+    }
 
     public static final String DATA_ADDRESS_KEY = "lasvegas.server.data.address";
     public static final String DATA_ADDRESS_DEFAULT = "localhost:28712";
