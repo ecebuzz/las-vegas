@@ -27,6 +27,7 @@ import edu.brown.lasvegas.LVFracture;
 import edu.brown.lasvegas.LVTask;
 import edu.brown.lasvegas.ReplicaPartitionStatus;
 import edu.brown.lasvegas.ReplicaStatus;
+import edu.brown.lasvegas.TaskStatus;
 import edu.brown.lasvegas.util.CompositeIntKey;
 import edu.brown.lasvegas.util.MemoryUtil;
 
@@ -139,10 +140,12 @@ class BdbTableAccessors {
             super(LVTask.class);
             IX_JOB_ID = store.getSecondaryIndex(PKX, Integer.class, LVTask.IX_JOB_ID);
             IX_NODE_ID = store.getSecondaryIndex(PKX, Integer.class, LVTask.IX_NODE_ID);
+            IX_STATUS = store.getSecondaryIndex(PKX, TaskStatus.class, LVTask.IX_STATUS);
         }
         LVObjectType getType() { return LVObjectType.TASK;}
         final SecondaryIndex<Integer, Integer, LVTask> IX_JOB_ID;
         final SecondaryIndex<Integer, Integer, LVTask> IX_NODE_ID;
+        final SecondaryIndex<TaskStatus, Integer, LVTask> IX_STATUS;
     }
     class DatabaseAccessor extends MetaTableAccessor<LVDatabase> {
         DatabaseAccessor () {

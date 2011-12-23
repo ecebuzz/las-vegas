@@ -3,6 +3,7 @@ package edu.brown.lasvegas.lvfs.meta;
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
@@ -1085,7 +1086,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     }
 
     @Override
-    public LVJob createNewJob(String description, JobType type) throws IOException {
+    public LVJob createNewJob(String description, JobType type, byte[] parameters) throws IOException {
         LVJob job = new LVJob();
         job.setJobId(bdbTableAccessors.jobAccessor.issueNewId());
         job.setDescription(description == null ? "" : description);
@@ -1093,13 +1094,14 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         job.setStartedTime(new Date());
         job.setType(type);
         job.setStatus(JobStatus.CREATED);
+        job.setParameters(parameters);
         bdbTableAccessors.jobAccessor.PKX.putNoReturn(job);
         return job;
     }
 
     @Override
-    public int createNewJobIdOnlyReturn(String description, JobType type) throws IOException {
-        return createNewJob(description, type).getJobId();
+    public int createNewJobIdOnlyReturn(String description, JobType type, byte[] parameters) throws IOException {
+        return createNewJob(description, type, parameters).getJobId();
     }
 
     @Override
@@ -1155,9 +1157,23 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         // ID order
         return bdbTableAccessors.taskAccessor.IX_NODE_ID.subIndex(nodeId).sortedMap().values().toArray(new LVTask[0]);
     }
+    
+    @Override
+    public LVTask[] getAllTasksByNodeAndStatus(int nodeId, TaskStatus status) throws IOException {
+        // status (probably "REQUESTED") should be quite selective
+        // because most of records will be historical (DONE/ERROR/etc status).
+        // if this is not true, we should add a composite index on Status and NodeID.
+        ArrayList<LVTask> tasks = new ArrayList<LVTask>();
+        for (LVTask task : bdbTableAccessors.taskAccessor.IX_STATUS.subIndex(status).sortedMap().values()) { // ID order
+            if (task.getNodeId() == nodeId) {
+                tasks.add(task);
+            }
+        }
+        return tasks.toArray(new LVTask[tasks.size()]);
+    }
 
     @Override
-    public LVTask createNewTask(int jobId, int nodeId, TaskType type) throws IOException {
+    public LVTask createNewTask(int jobId, int nodeId, TaskType type, byte[] parameters) throws IOException {
         LVTask task = new LVTask();
         task.setJobId(jobId);
         task.setNodeId(nodeId);
@@ -1166,13 +1182,14 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         task.setStartedTime(new Date());
         task.setType(type);
         task.setStatus(TaskStatus.CREATED);
+        task.setParameters(parameters);
         bdbTableAccessors.taskAccessor.PKX.putNoReturn(task);
         return task;
     }
 
     @Override
-    public int createNewTaskIdOnlyReturn(int jobId, int nodeId, TaskType type) throws IOException {
-        return createNewTask(jobId, nodeId, type).getTaskId();
+    public int createNewTaskIdOnlyReturn(int jobId, int nodeId, TaskType type, byte[] parameters) throws IOException {
+        return createNewTask(jobId, nodeId, type, parameters).getTaskId();
     }
 
     @Override

@@ -51,6 +51,9 @@ public final class LVJob implements LVObject {
     /** the dumped message of the error (if the job finished with an error).*/
     private String errorMessages = "";
     
+    /** serialized job parameters.*/
+    private byte[] parameters;
+
     @Override
     public LVObjectType getObjectType() {
         return LVObjectType.JOB;
@@ -75,6 +78,12 @@ public final class LVJob implements LVObject {
         out.writeLong(finishedTime == null ? 0L : finishedTime.getTime());
         out.writeUTF(description == null ? "" : description);
         out.writeUTF(errorMessages == null ? "" : errorMessages);
+        if (parameters == null) {
+            out.writeInt(-1);
+        } else {
+            out.writeInt(parameters.length);
+            out.write(parameters);
+        }
     }
     @Override
     public void readFields(DataInput in) throws IOException {
@@ -94,6 +103,15 @@ public final class LVJob implements LVObject {
         }
         description = in.readUTF();
         errorMessages = in.readUTF();
+        {
+            int len = in.readInt();
+            if (len < 0) {
+                parameters = null;
+            } else {
+                parameters = new byte[len];
+                in.readFully(parameters);
+            }
+        }
     }
     /** Creates and returns a new instance of this class from the data input.*/
     public static LVJob read (DataInput in) throws IOException {
@@ -252,4 +270,25 @@ public final class LVJob implements LVObject {
     public void setProgress(double progress) {
         this.progress = progress;
     }
+
+
+    /**
+     * Gets the serialized job parameters.
+     *
+     * @return the serialized job parameters
+     */
+    public byte[] getParameters() {
+        return parameters;
+    }
+
+
+    /**
+     * Sets the serialized job parameters.
+     *
+     * @param parameters the new serialized job parameters
+     */
+    public void setParameters(byte[] parameters) {
+        this.parameters = parameters;
+    }
+    
 }

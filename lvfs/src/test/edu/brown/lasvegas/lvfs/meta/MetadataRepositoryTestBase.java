@@ -1,5 +1,6 @@
 package edu.brown.lasvegas.lvfs.meta;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -191,8 +192,8 @@ public abstract class MetadataRepositoryTestBase {
             }
         }
         
-        DEFAULT_JOB = repository.createNewJob(DEFAULT_JOB_DESCRIPTION, JobType.QUERY);
-        DEFAULT_TASK = repository.createNewTask(DEFAULT_JOB.getJobId(), DEFAULT_RACK_NODE.getNodeId(), TaskType.FILTER_COLUMN_FILES);
+        DEFAULT_JOB = repository.createNewJob(DEFAULT_JOB_DESCRIPTION, JobType.QUERY, null);
+        DEFAULT_TASK = repository.createNewTask(DEFAULT_JOB.getJobId(), DEFAULT_RACK_NODE.getNodeId(), TaskType.FILTER_COLUMN_FILES, null);
     }
     
 
@@ -1176,16 +1177,18 @@ public abstract class MetadataRepositoryTestBase {
     public void testJobAssorted() throws IOException {
         int jobId1, jobId2;
         {
-            LVJob job = repository.createNewJob("job1", JobType.IMPORT_FRACTURE);
+            LVJob job = repository.createNewJob("job1", JobType.IMPORT_FRACTURE, new byte[]{5,4,3});
             assertTrue (job.getJobId() > 0);
             validateJob (job, job.getJobId(), "job1", JobType.IMPORT_FRACTURE, JobStatus.CREATED);
             jobId1 = job.getJobId();
+            assertArrayEquals(job.getParameters(), new byte[]{5,4,3});
         }
         {
-            LVJob job = repository.createNewJob("job2", JobType.MERGE_FRACTURE);
+            LVJob job = repository.createNewJob("job2", JobType.MERGE_FRACTURE, new byte[]{1, 2});
             assertTrue (job.getJobId() > 0);
             validateJob (job, job.getJobId(), "job2", JobType.MERGE_FRACTURE, JobStatus.CREATED);
             jobId2 = job.getJobId();
+            assertArrayEquals(job.getParameters(), new byte[]{1,2});
         }
         assertTrue(jobId1 != jobId2);
         
@@ -1238,24 +1241,26 @@ public abstract class MetadataRepositoryTestBase {
         int nodeId1 = DEFAULT_RACK_NODE.getNodeId();
         int nodeId2 = repository.createNewRackNode(DEFAULT_RACK, "node2").getNodeId();
         int jobId1 = DEFAULT_JOB.getJobId();
-        int jobId2 = repository.createNewJobIdOnlyReturn("job2", JobType.IMPORT_FRACTURE);
+        int jobId2 = repository.createNewJobIdOnlyReturn("job2", JobType.IMPORT_FRACTURE, null);
         {
-            LVTask task = repository.createNewTask(jobId1, nodeId2, TaskType.FILTER_COLUMN_FILES);
+            LVTask task = repository.createNewTask(jobId1, nodeId2, TaskType.FILTER_COLUMN_FILES, new byte[]{1, 3, 2});
             taskId1 = task.getTaskId();
             assertTrue (task.getTaskId() > 0);
             validateTask (task, taskId1, jobId1, nodeId2, TaskType.FILTER_COLUMN_FILES, TaskStatus.CREATED);
+            assertArrayEquals (task.getParameters(), new byte[]{1, 3, 2});
         }
         validateTask (repository.getTask(taskId1), taskId1, jobId1, nodeId2, TaskType.FILTER_COLUMN_FILES, TaskStatus.CREATED);
         {
-            LVTask task = repository.createNewTask(jobId2, nodeId1, TaskType.PROJECT);
+            LVTask task = repository.createNewTask(jobId2, nodeId1, TaskType.PROJECT, new byte[]{3, 1, 2});
             assertTrue (task.getTaskId() > 0);
             taskId2 = task.getTaskId();
             validateTask (task, taskId2, jobId2, nodeId1, TaskType.PROJECT, TaskStatus.CREATED);
+            assertArrayEquals (task.getParameters(), new byte[]{3, 1, 2});
         }
         validateTask (repository.getTask(taskId1), taskId1, jobId1, nodeId2, TaskType.FILTER_COLUMN_FILES, TaskStatus.CREATED);
         validateTask (repository.getTask(taskId2), taskId2, jobId2, nodeId1, TaskType.PROJECT, TaskStatus.CREATED);
         assertTrue(taskId1 != taskId2);
-     
+        
         LVTask[] tasks = repository.getAllTasksByJob(jobId1);
         assertEquals (2, tasks.length);
         validateTask (tasks[0], DEFAULT_TASK.getTaskId(), jobId1, nodeId1, DEFAULT_TASK.getType(), DEFAULT_TASK.getStatus());
@@ -1266,6 +1271,11 @@ public abstract class MetadataRepositoryTestBase {
         validateTask (tasks[0], taskId2, jobId2, nodeId1, TaskType.PROJECT, TaskStatus.CREATED);
 
         tasks = repository.getAllTasksByNode(nodeId1);
+        assertEquals (2, tasks.length);
+        validateTask (tasks[0], DEFAULT_TASK.getTaskId(), jobId1, nodeId1, DEFAULT_TASK.getType(), DEFAULT_TASK.getStatus());
+        validateTask (tasks[1], taskId2, jobId2, nodeId1, TaskType.PROJECT, TaskStatus.CREATED);
+
+        tasks = repository.getAllTasksByNodeAndStatus(nodeId1, TaskStatus.CREATED);
         assertEquals (2, tasks.length);
         validateTask (tasks[0], DEFAULT_TASK.getTaskId(), jobId1, nodeId1, DEFAULT_TASK.getType(), DEFAULT_TASK.getStatus());
         validateTask (tasks[1], taskId2, jobId2, nodeId1, TaskType.PROJECT, TaskStatus.CREATED);
@@ -1285,6 +1295,11 @@ public abstract class MetadataRepositoryTestBase {
         validateTask (tasks[0], taskId2, jobId2, nodeId1, TaskType.PROJECT, TaskStatus.CREATED);
 
         tasks = repository.getAllTasksByNode(nodeId1);
+        assertEquals (2, tasks.length);
+        validateTask (tasks[0], DEFAULT_TASK.getTaskId(), jobId1, nodeId1, DEFAULT_TASK.getType(), DEFAULT_TASK.getStatus());
+        validateTask (tasks[1], taskId2, jobId2, nodeId1, TaskType.PROJECT, TaskStatus.CREATED);
+
+        tasks = repository.getAllTasksByNodeAndStatus(nodeId1, TaskStatus.CREATED);
         assertEquals (2, tasks.length);
         validateTask (tasks[0], DEFAULT_TASK.getTaskId(), jobId1, nodeId1, DEFAULT_TASK.getType(), DEFAULT_TASK.getStatus());
         validateTask (tasks[1], taskId2, jobId2, nodeId1, TaskType.PROJECT, TaskStatus.CREATED);
@@ -1310,6 +1325,11 @@ public abstract class MetadataRepositoryTestBase {
         LVTask task2 = repository.getTask(taskId2);
         validateTask (task2, taskId2, jobId2, nodeId1, TaskType.PROJECT, TaskStatus.RUNNING);
         assertEquals (0.5d, task2.getProgress(), 0.00000001d);
+        
+        
+        tasks = repository.getAllTasksByNodeAndStatus(nodeId1, TaskStatus.RUNNING);
+        assertEquals (1, tasks.length);
+        validateTask (tasks[0], taskId2, jobId2, nodeId1, TaskType.PROJECT, TaskStatus.RUNNING);
     }
     private void validateTask (LVTask task, int taskId, int jobId, int nodeId, TaskType type, TaskStatus status) {
         assertEquals (taskId, task.getTaskId());

@@ -456,6 +456,7 @@ public class LVObjectSerializationTest {
         obj2.setJobId(442);
         obj2.setDescription("job2");
         obj2.setStatus(JobStatus.ERROR);
+        obj2.setParameters(new byte[]{(byte)23, (byte)-23, (byte)0, (byte)32});
         obj2.write(out);
 
         LVJob[] org = new LVJob[]{obj1, obj2};
@@ -470,6 +471,7 @@ public class LVObjectSerializationTest {
             assertEquals(org[i].getProgress(), copied.getProgress(), 0.00000001d);
             assertEquals(org[i].getStartedTime(), copied.getStartedTime());
             assertEquals(org[i].getFinishedTime(), copied.getFinishedTime());
+            assertArrayEquals(org[i].getParameters(), copied.getParameters());
             assertEquals(org[i].getPrimaryKey(), copied.getPrimaryKey());
         }
     }
@@ -487,6 +489,7 @@ public class LVObjectSerializationTest {
         obj1.setStatus(TaskStatus.CREATED);
         obj1.setType(TaskType.PROJECT);
         obj1.setOutputFilePaths(new String[]{"aaa", "bbb"});
+        obj1.setParameters(new byte[]{(byte)23, (byte)-23, (byte)0, (byte)32});
         obj1.write(out);
         LVTask obj2 = new LVTask();
         obj2.setErrorMessages("sdfsdfsdf");
@@ -515,6 +518,7 @@ public class LVObjectSerializationTest {
             assertEquals(org[i].getStatus(), copied.getStatus());
             assertEquals(org[i].getType(), copied.getType());
             assertArrayEquals(org[i].getOutputFilePaths(), copied.getOutputFilePaths());
+            assertArrayEquals(org[i].getParameters(), copied.getParameters());
             assertEquals(org[i].getPrimaryKey(), copied.getPrimaryKey());
         }
     }

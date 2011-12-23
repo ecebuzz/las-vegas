@@ -813,15 +813,16 @@ public interface LVMetadataProtocol extends VersionedProtocol {
      * Creates a new job with the status {@link JobStatus#CREATED}.
      * @param description short description of the new job
      * @param type type of the new job
+     * @param parameters arbitrary parameters as a serialized byte array 
      * @return the newly created job
      * @throws IOException
      */
-    LVJob createNewJob (String description, JobType type) throws IOException;
+    LVJob createNewJob (String description, JobType type, byte[] parameters) throws IOException;
     /**
      * To reduce network overhead.
-     * {@link #createNewJob(String, JobType)}
+     * {@link #createNewJob(String, JobType, byte[])}
      */
-    int createNewJobIdOnlyReturn (String description, JobType type) throws IOException;
+    int createNewJobIdOnlyReturn (String description, JobType type, byte[] parameters) throws IOException;
     
     /**
      * Updates the status and (if error) its error message of the given job.
@@ -873,20 +874,31 @@ public interface LVMetadataProtocol extends VersionedProtocol {
     LVTask[] getAllTasksByNode(int nodeId) throws IOException;
 
     /**
+     * Returns all existing tasks in the specified node with the given status.
+     * This is used, for example, to periodically check tasks to be processed in some node.
+     * @param nodeId ID of the node on which the tasks did/is-doing/will run on
+     * @param status Status of the tasks to return
+     * @return task objects. in ID order.
+     * @throws IOException
+     */
+    LVTask[] getAllTasksByNodeAndStatus(int nodeId, TaskStatus status) throws IOException;
+
+    /**
      * Creates a new local task on the specified node as a part of the given job.
      * The status of the newly created task is  {@link TaskStatus#NOT_STARTED}.
      * @param jobId ID of the global job this local task belongs to
      * @param nodeId ID of the node this local task will run on
      * @param type type of the local task. 
+     * @param parameters arbitrary parameters as a serialized byte array 
      * @return the newly created task
      * @throws IOException
      */
-    LVTask createNewTask (int jobId, int nodeId, TaskType type) throws IOException;
+    LVTask createNewTask (int jobId, int nodeId, TaskType type, byte[] parameters) throws IOException;
     /**
      * To reduce network overhead.
-     * {@link #createNewTask(int, int, TaskType)}
+     * {@link #createNewTask(int, int, TaskType, byte[])}
      */
-    int createNewTaskIdOnlyReturn (int jobId, int nodeId, TaskType type) throws IOException;
+    int createNewTaskIdOnlyReturn (int jobId, int nodeId, TaskType type, byte[] parameters) throws IOException;
     
     /**
      * Updates the status and (if error) its error message of the given task.

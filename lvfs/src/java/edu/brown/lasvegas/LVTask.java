@@ -48,7 +48,9 @@ public final class LVTask implements LVObject {
     /** Type of this local task. */
     private TaskType type = TaskType.INVALID;
     
+    public static final String IX_STATUS = "IX_STATUS";
     /** Current status of this task. */
+    @SecondaryKey(name=IX_STATUS, relate=Relationship.MANY_TO_ONE)
     private TaskStatus status = TaskStatus.INVALID;
     
     /** fraction of the work done (finished=1.0). just for report purpose. */
@@ -61,11 +63,14 @@ public final class LVTask implements LVObject {
     private Date finishedTime = new Date(0L);
     
     /** the _local_ paths (relative to the local HDFS's root dir) of this taks's result files. */
-    private String[] outputFilePaths = new String[0];
+    private String[] outputFilePaths;
     
     /** the dumped message of the error (if the task finished with an error).*/
     private String errorMessages = "";
     
+    /** serialized task parameters.*/
+    private byte[] parameters;
+
     /**
      * @see edu.brown.lasvegas.LVObject#getObjectType()
      */
@@ -103,12 +108,18 @@ public final class LVTask implements LVObject {
         out.writeLong(finishedTime == null ? 0L : finishedTime.getTime());
         out.writeUTF(errorMessages == null ? "" : errorMessages);
         if (outputFilePaths == null) {
-            out.writeInt(0);
+            out.writeInt(-1);
         } else {
             out.writeInt(outputFilePaths.length);
             for (String path : outputFilePaths) {
                 out.writeUTF(path == null ? "" : path);
             }
+        }
+        if (parameters == null) {
+            out.writeInt(-1);
+        } else {
+            out.writeInt(parameters.length);
+            out.write(parameters);
         }
     }
     
@@ -134,9 +145,25 @@ public final class LVTask implements LVObject {
             finishedTime.setTime(in.readLong());
         }
         errorMessages = in.readUTF();
-        outputFilePaths = new String[in.readInt()];
-        for (int i = 0; i < outputFilePaths.length; ++i) {
-            outputFilePaths[i] = in.readUTF();
+        {
+            int len = in.readInt();
+            if (len < 0) {
+                outputFilePaths = null;
+            } else {
+                outputFilePaths = new String[len];
+                for (int i = 0; i < outputFilePaths.length; ++i) {
+                    outputFilePaths[i] = in.readUTF();
+                }
+            }
+        }
+        {
+            int len = in.readInt();
+            if (len < 0) {
+                parameters = null;
+            } else {
+                parameters = new byte[len];
+                in.readFully(parameters);
+            }
         }
     }
     /** Creates and returns a new instance of this class from the data input.*/
@@ -339,4 +366,23 @@ public final class LVTask implements LVObject {
     public void setOutputFilePaths(String[] outputFilePaths) {
         this.outputFilePaths = outputFilePaths;
     }
+
+    /**
+     * Gets the serialized task parameters.
+     *
+     * @return the serialized task parameters
+     */
+    public byte[] getParameters() {
+        return parameters;
+    }
+
+    /**
+     * Sets the serialized task parameters.
+     *
+     * @param parameters the new serialized task parameters
+     */
+    public void setParameters(byte[] parameters) {
+        this.parameters = parameters;
+    }
+    
 }

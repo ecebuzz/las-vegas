@@ -30,7 +30,5 @@ public interface LVDataProtocol extends VersionedProtocol {
      */
     byte[] getFileBody (String localPath, int offset, int len) throws IOException;
     
-    
-    
     public static final long versionID = 1L;
 }
