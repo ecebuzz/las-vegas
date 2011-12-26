@@ -12,8 +12,8 @@ import java.util.Arrays;
 import java.util.StringTokenizer;
 
 import edu.brown.lasvegas.ColumnType;
-import edu.brown.lasvegas.InputTableReader;
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.tuple.InputTableReader;
 
 /**
  * An implementation of LVTableReader for a simple

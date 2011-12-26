@@ -7,7 +7,7 @@ import java.util.List;
 import org.apache.log4j.Logger;
 
 import edu.brown.lasvegas.ColumnType;
-import edu.brown.lasvegas.InputTableReader;
+import edu.brown.lasvegas.tuple.InputTableReader;
 import edu.brown.lasvegas.util.ValueRange;
 
 /**

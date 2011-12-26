@@ -96,8 +96,54 @@ public final class DataEngine implements LVDataProtocol, Closeable, Configurable
     }
     @Override
     public int getFileLength(String localPath) throws IOException {
-        // TODO Auto-generated method stub
-        return 0;
+        File file = new File (localPath);
+        assert (file.length() <= 0x7FFFFFFF);
+        return (int) file.length();
+    }
+    @Override
+    public boolean existsFile(String localPath) throws IOException {
+        return new File (localPath).exists();
+    }
+    @Override
+    public boolean isDirectory(String localPath) throws IOException {
+        return new File (localPath).isDirectory();
+    }
+    @Override
+    public int[] getCombinedFileStatus(String localPath) throws IOException {
+        File file = new File (localPath);
+        assert (file.length() <= 0x7FFFFFFF);
+        return new int[]{(int) file.length(), file.exists() ? 1 : 0, file.isDirectory() ? 1 : 0};
+    }
+    @Override
+    public boolean deleteFile(String localPath, boolean recursive) throws IOException {
+        if (!localPath.startsWith(context.localLvfsRootDir.getAbsolutePath())) {
+            throw new IOException ("this file seems not part of LVFS. deletion refused: " + localPath);
+        }
+        File file = new File (localPath);
+        if (!file.exists()) {
+            return false;
+        }
+        if (!recursive || !file.isDirectory()) {
+            return file.delete();
+        }
+        return deleteFileRecursive (file);
+    }
+    private final static String SAFE_DIR_PREFIX = "/home/hkimura/workspace/las-vegas/lvfs/test/";
+    private boolean deleteFileRecursive (File dir) throws IOException {
+        // TODO this additional check is a tentative code. will be removed when I become really confident
+        if (!dir.getAbsolutePath().startsWith(SAFE_DIR_PREFIX)) {
+            throw new IOException ("wait, wait! you are going to recursively delete " + dir.getAbsolutePath());
+        }
+        
+        if (!dir.isDirectory()) {
+            return dir.delete();
+        }
+        for (File child : dir.listFiles()) {
+            if (!deleteFileRecursive(child)) {
+                return false;
+            }
+        }
+        return dir.delete();
     }
     
     @Override

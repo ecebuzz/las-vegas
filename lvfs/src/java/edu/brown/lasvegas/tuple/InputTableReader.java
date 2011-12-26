@@ -1,8 +1,9 @@
-package edu.brown.lasvegas;
+package edu.brown.lasvegas.tuple;
 
 import java.io.Closeable;
 import java.io.IOException;
 
+import edu.brown.lasvegas.ColumnType;
 import edu.brown.lasvegas.lvfs.LasVegasFileSystem;
 import edu.brown.lasvegas.lvfs.imp.EquiWidthPartitioner;
 import edu.brown.lasvegas.lvfs.imp.TextFileTableReader;

@@ -39,6 +39,14 @@ public final class LocalVirtualFileInputStream extends VirtualFileInputStream {
         stream.reset();
     }
     @Override
+    public synchronized void mark(int readlimit) {
+        stream.mark(readlimit);
+    }
+    @Override
+    public boolean markSupported() {
+        return stream.markSupported();
+    }
+    @Override
     public long skip(long n) throws IOException {
         return stream.skip(n);
     }

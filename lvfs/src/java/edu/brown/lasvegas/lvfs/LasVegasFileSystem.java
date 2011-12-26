@@ -6,7 +6,7 @@ import java.util.Set;
 import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.FileSystem;
 
-import edu.brown.lasvegas.InputTableReader;
+import edu.brown.lasvegas.tuple.InputTableReader;
 
 /**
  * LVFS API for client programs.

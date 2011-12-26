@@ -13,6 +13,7 @@ import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.lvfs.RawValueWriter;
 import edu.brown.lasvegas.lvfs.ValueTraits;
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.util.RawByteArrayOutputStream;
 
 /**
  * File writer for a block-compressed file such as Snappy and LZO.

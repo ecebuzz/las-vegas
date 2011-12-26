@@ -9,6 +9,7 @@ import java.util.HashSet;
 
 import org.apache.log4j.Logger;
 
+import edu.brown.lasvegas.lvfs.OrderedDictionary;
 import edu.brown.lasvegas.lvfs.TypedReader;
 import edu.brown.lasvegas.lvfs.TypedWriter;
 import edu.brown.lasvegas.lvfs.VirtualFile;
@@ -34,7 +35,7 @@ import edu.brown.lasvegas.lvfs.VirtualFile;
  * dealing with this if you call {@link #getDictionary()} and directly use the internal
  * dictionary data. Usually, the conversion is done by {@link #convertCompressedValueToDictionaryIndex(int)}.</p>
  */
-public final class LocalDictFile {
+public final class LocalDictFile implements OrderedDictionary<String> {
     private static Logger LOG = Logger.getLogger(LocalDictFile.class);
 
     /**
@@ -117,29 +118,20 @@ public final class LocalDictFile {
         }
     }
 
-    /**
-     * Returns the internal dictionary. Use this for a batch access like
-     * dictionary-merging (when merging two dictionary-compressed files).
-     * However, be VERY careful about the dictionary numbering. See the class comment.
-     */
+    @Override
     public String[] getDictionary () {
         return dict;
     }
-    /** Returns the byte size of compressed values. 1/2/4 only */
+    @Override
     public byte getBytesPerEntry () {
         return bytesPerEntry;
     }
-    /**
-     * Compresses the given value with this dictionary.
-     * @return compressed value. null if the value does not exist in this dictionary
-     */
+    @Override
     public Integer compress (String value) {
         return dictHashMap.get(value);
     }
 
-    /**
-     * Returns the decompressed value corresponding to the given compressed value.
-     */
+    @Override
     public String decompress (int compresedValue) {
         int arrayIndex = convertCompressedValueToDictionaryIndex(compresedValue);
         assert (arrayIndex >= 0);
@@ -147,10 +139,7 @@ public final class LocalDictFile {
         return dict[arrayIndex];
     }
 
-    /**
-     * Given a compressed value in signed integer, returns the
-     * corresponding array index in dict.
-     */
+    @Override
     public int convertCompressedValueToDictionaryIndex (int compresedValue) {
         switch (bytesPerEntry) {
         case 1:
@@ -168,9 +157,7 @@ public final class LocalDictFile {
             return -1;
         }
     }
-    /**
-     * Given an array index in dict, returns a compressed value in signed integer.
-     */
+    @Override
     public int convertDictionaryIndexToCompressedValue (int dictionaryIndex) {
         assert (dictionaryIndex >= 0);
         assert (dictionaryIndex < dict.length);

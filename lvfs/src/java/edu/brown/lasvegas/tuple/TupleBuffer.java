@@ -1,9 +1,8 @@
-package edu.brown.lasvegas.lvfs.table;
+package edu.brown.lasvegas.tuple;
 
 import java.io.IOException;
 
 import edu.brown.lasvegas.ColumnType;
-import edu.brown.lasvegas.InputTableReader;
 import edu.brown.lasvegas.lvfs.TypedReader;
 
 /**
@@ -25,7 +24,7 @@ public class TupleBuffer {
         this.data = new Object[columnCount];
         this.accessors = new ColumnAccessor[columnCount];
         for (int i = 0; i < columnCount; ++i) {
-            switch (types[i]) {
+            switch (this.types[i]) {
             case BIGINT:
             case DATE:
             case TIME:

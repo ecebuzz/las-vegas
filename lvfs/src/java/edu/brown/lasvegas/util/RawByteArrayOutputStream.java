@@ -1,4 +1,4 @@
-package edu.brown.lasvegas.lvfs.local;
+package edu.brown.lasvegas.util;
 
 import java.io.ByteArrayOutputStream;
 
