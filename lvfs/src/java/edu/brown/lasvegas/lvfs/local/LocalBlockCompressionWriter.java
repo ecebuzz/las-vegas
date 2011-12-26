@@ -1,6 +1,5 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -198,20 +197,6 @@ public abstract class LocalBlockCompressionWriter<T, AT> extends LocalTypedWrite
         if (currentBlockUsed > 0) {
             // just warn too. 
             LOG.warn("this file format has a non-flushed block but close() was called before flush(). the block will be lost: " + this);
-        }
-    }
-
-    /**
-     * Extends {@link ByteArrayOutputStream} just for using the given byte array
-     * and returning it without copying.
-     */
-    private static final class RawByteArrayOutputStream extends ByteArrayOutputStream {
-        private RawByteArrayOutputStream(byte[] buffer) {
-            buf = buffer;
-            count = 0;
-        }
-        private byte[] getRawBuffer () {
-            return buf;
         }
     }
 }

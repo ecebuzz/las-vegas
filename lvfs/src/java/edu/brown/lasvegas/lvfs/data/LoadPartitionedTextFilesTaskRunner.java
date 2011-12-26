@@ -8,6 +8,10 @@ import edu.brown.lasvegas.JobType;
  * this task collects those text files from local and remote nodes and
  * construct LVFS files in the local drive.
  */
-public class LoadPartitionedTextFilesTask {
-
+public final class LoadPartitionedTextFilesTaskRunner extends DataTaskRunner<LoadPartitionedTextFilesTaskParameters> {
+    @Override
+    protected String[] runDataTask() throws Exception {
+        // TODO Auto-generated method stub
+        return null;
+    }
 }

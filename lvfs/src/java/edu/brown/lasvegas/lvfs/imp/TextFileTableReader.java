@@ -33,6 +33,7 @@ public class TextFileTableReader implements InputTableReader {
     private BufferedReader reader;
     private final String[] columnData;
     private String currentLineString;
+
     private long linesRead;
 
     /** shortcut constructor for SSB/TPCH tbl files. */
@@ -261,5 +262,9 @@ public class TextFileTableReader implements InputTableReader {
     @Override
     public String toString() {
         return "TextFileTableReader:" + file.getAbsolutePath();
+    }
+
+    public String getCurrentLineString() {
+        return currentLineString;
     }
 }

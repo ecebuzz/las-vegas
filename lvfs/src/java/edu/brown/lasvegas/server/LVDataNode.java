@@ -11,6 +11,8 @@ import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.util.ServicePlugin;
 import org.apache.log4j.Logger;
 
+import edu.brown.lasvegas.LVRackNode;
+import edu.brown.lasvegas.client.LVMetadataClient;
 import edu.brown.lasvegas.lvfs.data.DataEngine;
 import edu.brown.lasvegas.protocol.LVDataProtocol;
 
@@ -64,6 +66,9 @@ public final class LVDataNode implements ServicePlugin {
     public DataNode getHdfsDataNode () {
         return hdfsDataNode;
     }
+    
+    /** connect to remote metadata repository. */
+    private LVMetadataClient metaClient;
 
     public static final String DATA_ADDRESS_KEY = "lasvegas.server.data.address";
     public static final String DATA_ADDRESS_DEFAULT = "localhost:28712";
@@ -75,7 +80,6 @@ public final class LVDataNode implements ServicePlugin {
 
     @Override
     public void start(Object service) {
-        // TODO Auto-generated method stub
         hdfsDataNode = (DataNode) service;
         try {
             initialize();
@@ -93,8 +97,15 @@ public final class LVDataNode implements ServicePlugin {
     private void initialize() throws IOException {
         String address = conf.get(DATA_ADDRESS_KEY, DATA_ADDRESS_DEFAULT);
         LOG.info("initializing LVFS Data Server. address=" + address);
+        metaClient = new LVMetadataClient(conf);
+        String nodeName = hdfsDataNode.getMachineName();
+        LVRackNode node = metaClient.getChannel().getRackNode(nodeName);
+        if (node == null) {
+            throw new IOException ("This node name doesn't exist: " + nodeName);
+        }
         InetSocketAddress sockAddress = NetUtils.createSocketAddr(address);
-        dataEngine = new DataEngine();
+        dataEngine = new DataEngine(metaClient.getChannel(), node.getNodeId());
+        dataEngine.start();
         dataServer = RPC.getServer(LVDataProtocol.class, dataEngine, sockAddress.getHostName(), sockAddress.getPort(), conf);
         LOG.info("initialized LVFS Data Server.");
         dataServer.start();

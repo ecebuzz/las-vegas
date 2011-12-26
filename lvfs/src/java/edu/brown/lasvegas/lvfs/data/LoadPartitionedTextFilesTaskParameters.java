@@ -6,12 +6,11 @@ import java.io.IOException;
 import java.text.SimpleDateFormat;
 
 import edu.brown.lasvegas.LVTask;
-import edu.brown.lasvegas.TaskParameters;
 
 /**
- * Parameters for {@link LoadPartitionedTextFilesTask}.
+ * Parameters for {@link LoadPartitionedTextFilesTaskRunner}.
  */
-public final class LoadPartitionedTextFilesTaskParameters extends TaskParameters {
+public final class LoadPartitionedTextFilesTaskParameters extends DataTaskParameters {
     /**
      * The fracture to be constructed after this import.
      */

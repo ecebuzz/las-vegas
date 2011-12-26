@@ -173,6 +173,18 @@ public final class LVTask implements LVObject {
         return obj;
     }
 
+    /**
+     * De-serializes task-type specific parameters.
+     */
+    public TaskParameters deserializeParameters () throws IOException {
+        if (parameters == null) return null;
+        TaskParameters param = TaskType.instantiateParameters(type);
+        if (param != null) {
+            param.readFromBytes(parameters);
+        }
+        return param;
+    }
+
  // auto-generated getters/setters (comments by JAutodoc)    
 
     /**
