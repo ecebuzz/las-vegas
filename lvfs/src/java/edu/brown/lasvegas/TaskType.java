@@ -4,6 +4,8 @@ import edu.brown.lasvegas.lvfs.data.LoadPartitionedTextFilesTaskRunner;
 import edu.brown.lasvegas.lvfs.data.LoadPartitionedTextFilesTaskParameters;
 import edu.brown.lasvegas.lvfs.data.PartitionRawTextFilesTaskRunner;
 import edu.brown.lasvegas.lvfs.data.PartitionRawTextFilesTaskParameters;
+import edu.brown.lasvegas.lvfs.data.RecoverPartitionFromBuddyTaskParameters;
+import edu.brown.lasvegas.lvfs.data.RecoverPartitionFromBuddyTaskRunner;
 
 /**
  * Defines types of local Tasks ({@link TaskJob}).
@@ -34,9 +36,22 @@ public enum TaskType {
      * Given partitioned text files output by {@link #PARTITION_TEXT_FILES} task,
      * this task collects those text files from local and remote nodes and
      * construct LVFS files in the local drive.
+     * This task is for the first replica scheme in each replica group.
+     * For other replica schemes in the group (buddy), use
+     * #RECOVER_PARTITION_FROM_BUDDY for much better performance.
      * @see LoadPartitionedTextFilesTaskRunner
      */
     LOAD_PARTITIONED_TEXT_FILES,
+    
+    /**
+     * Sub task of {@link JobType#IMPORT_FRACTURE} or recovery jobs such as {@link JobType#RECOVER_FRACTURE_FROM_BUDDY}.
+     * Assuming a buddy (another replica scheme in the same replica group) has all
+     * column files of a partition, this task reads, sorts, and compresses them to
+     * its own column files. This task is supposed to be efficient because the communication will
+     * be between nodes in the same rack.
+     * @see RecoverPartitionFromBuddyTaskRunner
+     */
+    RECOVER_PARTITION_FROM_BUDDY,
     
     
     /**
@@ -68,6 +83,8 @@ public enum TaskType {
             return new PartitionRawTextFilesTaskParameters();
         case LOAD_PARTITIONED_TEXT_FILES:
             return new LoadPartitionedTextFilesTaskParameters();
+        case RECOVER_PARTITION_FROM_BUDDY:
+            return new RecoverPartitionFromBuddyTaskParameters();
         default:
             return null;
         }
@@ -83,6 +100,8 @@ public enum TaskType {
             return new PartitionRawTextFilesTaskRunner();
         case LOAD_PARTITIONED_TEXT_FILES:
             return new LoadPartitionedTextFilesTaskRunner();
+        case RECOVER_PARTITION_FROM_BUDDY:
+            return new RecoverPartitionFromBuddyTaskRunner();
         default:
             return null;
         }

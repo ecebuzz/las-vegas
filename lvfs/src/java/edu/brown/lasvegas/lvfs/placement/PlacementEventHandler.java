@@ -52,6 +52,8 @@ public interface PlacementEventHandler {
      * Rule 2: If there are 3 or more replica schemes, and 2 or more racks, balance the number
      * of same sub-partitions in each rack. 
      * </p>
+     * TODO : Rule 2 is arguable. Placing all buddies in the same rack will boost recovery performance.
+     * However, it will be much more risky regarding rack failure. To be discussed.
      * 
      * <p>With the above rules, we simply iterate for sub-partitions, check the current file location,
      * and then pick the new location in a round-robin fashion.</p>

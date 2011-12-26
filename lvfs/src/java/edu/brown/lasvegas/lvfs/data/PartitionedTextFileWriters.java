@@ -131,7 +131,7 @@ public final class PartitionedTextFileWriters {
         private final byte[] buffer;
         private int bufferUsed = 0;
         public void write (String line) throws IOException {
-            byte[] bytes = line.getBytes(charset);
+            byte[] bytes = (line + "\r\n").getBytes(charset);
             if (bufferUsed + bytes.length > buffer.length) {
                 flushBlock ();
             }

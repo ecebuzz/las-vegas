@@ -95,46 +95,26 @@ public final class PartitionRawTextFilesTaskRunner extends DataTaskRunner<Partit
             case BIGINT:
             case DATE:
             case TIME:
-            case TIMESTAMP:{
-                Long[] startKeys = new Long[partitions];
-                for (int i = 0; i < partitions; ++i) {
-                    startKeys[i] = (Long) ranges[i].getStartKey();
-                    if (startKeys[i] == null) startKeys[i] = Long.MIN_VALUE;
-                }
-                partitionFiles (startKeys, inputFiles, fracture, group, ranges, partitioningColumn);
-                break;}
-            case INTEGER:{
-                Integer[] startKeys = new Integer[partitions];
-                for (int i = 0; i < partitions; ++i) {
-                    startKeys[i] = (Integer) ranges[i].getStartKey();
-                    if (startKeys[i] == null) startKeys[i] = Integer.MIN_VALUE;
-                }
-                partitionFiles (startKeys, inputFiles, fracture, group, ranges, partitioningColumn);
-                break;}
-            case SMALLINT:{
-                Short[] startKeys = new Short[partitions];
-                for (int i = 0; i < partitions; ++i) {
-                    startKeys[i] = (Short) ranges[i].getStartKey();
-                    if (startKeys[i] == null) startKeys[i] = Short.MIN_VALUE;
-                }
-                partitionFiles (startKeys, inputFiles, fracture, group, ranges, partitioningColumn);
-                break;}
-            case TINYINT:{
-                Byte[] startKeys = new Byte[partitions];
-                for (int i = 0; i < partitions; ++i) {
-                    startKeys[i] = (Byte) ranges[i].getStartKey();
-                    if (startKeys[i] == null) startKeys[i] = Byte.MIN_VALUE;
-                }
-                partitionFiles (startKeys, inputFiles, fracture, group, ranges, partitioningColumn);
-                break;}
-            case VARCHAR:{
-                String[] startKeys = new String[partitions];
-                for (int i = 0; i < partitions; ++i) {
-                    startKeys[i] = (String) ranges[i].getStartKey();
-                    if (startKeys[i] == null) startKeys[i] = "";
-                }
-                partitionFiles (startKeys, inputFiles, fracture, group, ranges, partitioningColumn);
-                break;}
+            case TIMESTAMP:
+                partitionFiles (extractStartKeys(Long.MIN_VALUE, ranges, new Long[partitions]),
+                            inputFiles, fracture, group, partitioningColumn);
+                break;
+            case INTEGER:
+                partitionFiles (extractStartKeys(Integer.MIN_VALUE, ranges, new Integer[partitions]),
+                                inputFiles, fracture, group, partitioningColumn);
+                break;
+            case SMALLINT:
+                partitionFiles (extractStartKeys(Short.MIN_VALUE, ranges, new Short[partitions]),
+                                inputFiles, fracture, group, partitioningColumn);
+                break;
+            case TINYINT:
+                partitionFiles (extractStartKeys(Byte.MIN_VALUE, ranges, new Byte[partitions]),
+                                inputFiles, fracture, group, partitioningColumn);
+                break;
+            case VARCHAR:
+                partitionFiles (extractStartKeys("", ranges, new String[partitions]),
+                                inputFiles, fracture, group, partitioningColumn);
+                break;
             default:
                 throw new IOException ("unexpected partition column type:" + partitioningColumn);
             }
@@ -143,14 +123,26 @@ public final class PartitionRawTextFilesTaskRunner extends DataTaskRunner<Partit
         LOG.info("all partitioning done. " + outputFilePaths.size() + " output files");
         return outputFilePaths.toArray(new String[0]);
     }
+
+    @SuppressWarnings("unchecked")
+    private static <T extends Comparable<T>> T[] extractStartKeys(T minValue, ValueRange<?>[] ranges, T[] startKeys) {
+        int partitions = ranges.length;
+        assert (partitions == startKeys.length);
+        for (int i = 0; i < partitions; ++i) {
+            startKeys[i] = (T) ranges[i].getStartKey();
+            if (startKeys[i] == null) startKeys[i] = minValue;
+            if (i != 0) {
+                assert (startKeys[i - 1].compareTo(startKeys[i]) < 0);
+            }
+        }
+        return startKeys;
+    }
+
     private <T extends Comparable<T>> void partitionFiles (T[] startKeys,
                     List<LocalVirtualFile> inputFiles,
                     LVFracture fracture, LVReplicaGroup group,
-                    ValueRange<?>[] ranges, LVColumn partitioningColumn) throws IOException {
-        int partitions = ranges.length;
-        for (int i = 1; i < partitions; ++i) {
-            assert (startKeys[i - 1].compareTo(startKeys[i]) < 0);
-        }
+                    LVColumn partitioningColumn) throws IOException {
+        int partitions = startKeys.length;
         
         boolean[] partitionsCompleted = new boolean[partitions];
         Arrays.fill(partitionsCompleted, false);
@@ -169,6 +161,7 @@ public final class PartitionRawTextFilesTaskRunner extends DataTaskRunner<Partit
                     @SuppressWarnings("unchecked")
                     T partitionValue = (T) reader.getObject(partitioningColumnIndex);
                     int partition = findPartition (partitionValue, startKeys);
+                    assert (partition >= 0 && partition < partitions);
                     writers.write(partition, reader.getCurrentLineString());
                 }
                 reader.close();
