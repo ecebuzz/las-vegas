@@ -16,7 +16,6 @@ import org.xerial.snappy.Snappy;
 
 import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.LVFracture;
-import edu.brown.lasvegas.LVRackNode;
 import edu.brown.lasvegas.LVReplicaGroup;
 import edu.brown.lasvegas.lvfs.local.RawByteArrayOutputStream;
 

@@ -61,10 +61,12 @@ public final class PartitionRawTextFilesTaskRunner extends DataTaskRunner<Partit
     private int writePartitionsMax;
     private CompressionType compression;
     
+    private List<String> outputFilePaths;
 
     @Override
     protected String[] runDataTask() throws Exception {
         readConf ();
+        outputFilePaths = new ArrayList<String>();
         List<LocalVirtualFile> inputFiles = new ArrayList<LocalVirtualFile>();
         for (String path : parameters.getFilePaths()) {
             File file = new File (path);
@@ -85,40 +87,119 @@ public final class PartitionRawTextFilesTaskRunner extends DataTaskRunner<Partit
             if (partitionScheme == null) {
                 throw new IOException ("this fracture and group don't have a corresponding partition scheme yet:" + fracture + "," + group);
             }
-            int partitions = partitionScheme.getRanges().length;
             ValueRange<?>[] ranges = partitionScheme.getRanges();
-            boolean[] partitionsCompleted = new boolean[partitions];
-            Arrays.fill(partitionsCompleted, false);
+            int partitions = ranges.length;
             LVColumn partitioningColumn = context.metaRepo.getColumn(group.getPartitioningColumnId());
-            int partitioningColumnIndex = partitioningColumn.getOrder();
-            while (true) {
-                PartitionedTextFileWriters writers = new PartitionedTextFileWriters(context.localLvfsTmpDir, context.nodeId, group, fracture, partitions,
-                                partitionsCompleted, parameters.getEncoding(), writeBufferSize, writePartitionsMax, compression);
-                // scan all input files
-                for (LocalVirtualFile file : inputFiles) {
-                    TextFileTableReader reader = new TextFileTableReader(file, null,
-                        parameters.getDelimiter(), readBufferSize, Charset.forName(parameters.getEncoding()),
-                        new SimpleDateFormat(parameters.getDateFormat()),
-                        new SimpleDateFormat(parameters.getTimeFormat()),
-                        new SimpleDateFormat(parameters.getTimestampFormat()));
-                    while (reader.next()) {
-                        Object partitionValue = reader.getObject(partitioningColumnIndex);
-                        // TODO determine the partition for this tuple.
-                        int partition = 0;
-                        // ranges[0].contains(partitionValue);
-                        writers.write(partition, reader.getCurrentLineString());
-                    }
-                    reader.close();
+            LOG.info("partitioning files for replica group:" + group);
+            switch (partitioningColumn.getType()) {
+            case BIGINT:
+            case DATE:
+            case TIME:
+            case TIMESTAMP:{
+                Long[] startKeys = new Long[partitions];
+                for (int i = 0; i < partitions; ++i) {
+                    startKeys[i] = (Long) ranges[i].getStartKey();
+                    if (startKeys[i] == null) startKeys[i] = Long.MIN_VALUE;
                 }
-                writers.complete();
-                partitionsCompleted = writers.getPartitionCompleted();
-                if (!writers.isPartitionRemaining()) {
-                    // some partition was skipped to save memory. scan the file again.
-                    break;
+                partitionFiles (startKeys, inputFiles, fracture, group, ranges, partitioningColumn);
+                break;}
+            case INTEGER:{
+                Integer[] startKeys = new Integer[partitions];
+                for (int i = 0; i < partitions; ++i) {
+                    startKeys[i] = (Integer) ranges[i].getStartKey();
+                    if (startKeys[i] == null) startKeys[i] = Integer.MIN_VALUE;
                 }
+                partitionFiles (startKeys, inputFiles, fracture, group, ranges, partitioningColumn);
+                break;}
+            case SMALLINT:{
+                Short[] startKeys = new Short[partitions];
+                for (int i = 0; i < partitions; ++i) {
+                    startKeys[i] = (Short) ranges[i].getStartKey();
+                    if (startKeys[i] == null) startKeys[i] = Short.MIN_VALUE;
+                }
+                partitionFiles (startKeys, inputFiles, fracture, group, ranges, partitioningColumn);
+                break;}
+            case TINYINT:{
+                Byte[] startKeys = new Byte[partitions];
+                for (int i = 0; i < partitions; ++i) {
+                    startKeys[i] = (Byte) ranges[i].getStartKey();
+                    if (startKeys[i] == null) startKeys[i] = Byte.MIN_VALUE;
+                }
+                partitionFiles (startKeys, inputFiles, fracture, group, ranges, partitioningColumn);
+                break;}
+            case VARCHAR:{
+                String[] startKeys = new String[partitions];
+                for (int i = 0; i < partitions; ++i) {
+                    startKeys[i] = (String) ranges[i].getStartKey();
+                    if (startKeys[i] == null) startKeys[i] = "";
+                }
+                partitionFiles (startKeys, inputFiles, fracture, group, ranges, partitioningColumn);
+                break;}
+            default:
+                throw new IOException ("unexpected partition column type:" + partitioningColumn);
+            }
+            LOG.info("partitioning done for the group");
+        }
+        LOG.info("all partitioning done. " + outputFilePaths.size() + " output files");
+        return outputFilePaths.toArray(new String[0]);
+    }
+    private <T extends Comparable<T>> void partitionFiles (T[] startKeys,
+                    List<LocalVirtualFile> inputFiles,
+                    LVFracture fracture, LVReplicaGroup group,
+                    ValueRange<?>[] ranges, LVColumn partitioningColumn) throws IOException {
+        int partitions = ranges.length;
+        for (int i = 1; i < partitions; ++i) {
+            assert (startKeys[i - 1].compareTo(startKeys[i]) < 0);
+        }
+        
+        boolean[] partitionsCompleted = new boolean[partitions];
+        Arrays.fill(partitionsCompleted, false);
+        int partitioningColumnIndex = partitioningColumn.getOrder();
+        while (true) {
+            PartitionedTextFileWriters writers = new PartitionedTextFileWriters(context.localLvfsTmpDir, context.nodeId, group, fracture, partitions,
+                            partitionsCompleted, parameters.getEncoding(), writeBufferSize, writePartitionsMax, compression);
+            // scan all input files
+            for (LocalVirtualFile file : inputFiles) {
+                TextFileTableReader reader = new TextFileTableReader(file, null,
+                    parameters.getDelimiter(), readBufferSize, Charset.forName(parameters.getEncoding()),
+                    new SimpleDateFormat(parameters.getDateFormat()),
+                    new SimpleDateFormat(parameters.getTimeFormat()),
+                    new SimpleDateFormat(parameters.getTimestampFormat()));
+                while (reader.next()) {
+                    @SuppressWarnings("unchecked")
+                    T partitionValue = (T) reader.getObject(partitioningColumnIndex);
+                    int partition = findPartition (partitionValue, startKeys);
+                    writers.write(partition, reader.getCurrentLineString());
+                }
+                reader.close();
+            }
+            String[] paths = writers.complete();
+            for (String path : paths) {
+                outputFilePaths.add(path);
+            }
+            partitionsCompleted = writers.getPartitionCompleted();
+            if (!writers.isPartitionRemaining()) {
+                // some partition was skipped to save memory. scan the file again.
+                break;
             }
         }
-        return null;
+    }
+    private static <T extends Comparable<T>> int findPartition (T partitionValue, T[] startKeys) {
+        int arrayPos = Arrays.binarySearch(startKeys, partitionValue);
+        if (arrayPos < 0) {
+            // non-exact match. start from previous one
+            arrayPos = (-arrayPos) - 1; // this "-1" is binarySearch's design
+            arrayPos -= 1; // this -1 means "previous one"
+            if (arrayPos == -1) {
+                arrayPos = 0;
+            }
+        }
+        if (arrayPos >= startKeys.length) {
+            arrayPos = startKeys.length - 1;
+        }
+        assert (partitionValue.compareTo(startKeys[arrayPos]) >= 0);
+        assert (arrayPos > startKeys.length - 2 || partitionValue.compareTo(startKeys[arrayPos + 1]) < 0);
+        return arrayPos;
     }
 
     private void readConf () throws Exception {

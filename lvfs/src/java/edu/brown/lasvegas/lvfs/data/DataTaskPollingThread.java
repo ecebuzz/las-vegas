@@ -4,17 +4,13 @@ import java.io.IOException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import org.apache.hadoop.conf.Configurable;
-import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.Logger;
 
 import edu.brown.lasvegas.LVRackNode;
 import edu.brown.lasvegas.LVTask;
 import edu.brown.lasvegas.RackNodeStatus;
-import edu.brown.lasvegas.TaskRunner;
 import edu.brown.lasvegas.TaskStatus;
 import edu.brown.lasvegas.TaskType;
-import edu.brown.lasvegas.protocol.LVMetadataProtocol;
 
 /**
  * A thread that runs on LVFS data node to continuously pull

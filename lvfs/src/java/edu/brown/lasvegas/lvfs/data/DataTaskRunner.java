@@ -2,14 +2,12 @@ package edu.brown.lasvegas.lvfs.data;
 
 import java.io.IOException;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.Logger;
 
 import edu.brown.lasvegas.LVTask;
 import edu.brown.lasvegas.TaskParameters;
 import edu.brown.lasvegas.TaskRunner;
 import edu.brown.lasvegas.TaskStatus;
-import edu.brown.lasvegas.protocol.LVMetadataProtocol;
 
 /**
  * Base class for tasks that will run on an LVFS data node.

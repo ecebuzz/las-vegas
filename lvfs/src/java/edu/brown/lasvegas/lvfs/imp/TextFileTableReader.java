@@ -208,7 +208,13 @@ public class TextFileTableReader implements InputTableReader {
 
     @Override
     public long getLong(int columnIndex) throws IOException {
+        switch (scheme.getColumnType(columnIndex)) {
+        case DATE: return getSqlDate(columnIndex).getTime();
+        case TIME: return getSqlTime(columnIndex).getTime();
+        case TIMESTAMP: return getSqlTimestamp(columnIndex).getTime();
+        default:
         return Long.parseLong(columnData[columnIndex]);
+        }
     }
 
     @Override
