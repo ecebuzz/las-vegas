@@ -93,7 +93,7 @@ public interface LVMetadataProtocol extends VersionedProtocol {
      * Releases every resource this repository holds.
      * @throws IOException
      */
-    void close () throws IOException;
+    void shutdown () throws IOException;
 
     //////////////////////// Database Methods : begin ////////////////////////////////
     /**

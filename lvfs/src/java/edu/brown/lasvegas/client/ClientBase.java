@@ -18,11 +18,16 @@ public class ClientBase<T> {
     private T channel;
     
     /**
-     * Connects to the RPC service.
+     * Connects to the RPC service with address in configuration file.
+     */
+    protected ClientBase(Class<T> protocolClass, long protocolVersionID, Configuration conf, String addressConfKey, String addressConfDefault) throws IOException {
+        this (protocolClass, protocolVersionID, conf, conf.get(addressConfKey, addressConfDefault));
+    }
+    /**
+     * Connects to the RPC service with the given address.
      */
     @SuppressWarnings("unchecked")
-    protected ClientBase(Class<T> protocolClass, long protocolVersionID, Configuration conf, String addressConfKey, String addressConfDefault) throws IOException {
-        String address = conf.get(addressConfKey, addressConfDefault);
+    protected ClientBase(Class<T> protocolClass, long protocolVersionID, Configuration conf, String address) throws IOException {
         T proxy = RPC.getProxy(protocolClass, protocolVersionID, NetUtils.createSocketAddr(address), conf);
         RetryPolicy retryPolicy = RetryPolicies.exponentialBackoffRetry(20, 200, TimeUnit.MILLISECONDS);
         channel = (T) RetryProxy.create(protocolClass, proxy, retryPolicy);

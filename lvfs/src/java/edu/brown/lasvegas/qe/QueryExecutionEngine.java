@@ -133,7 +133,7 @@ public final class QueryExecutionEngine implements LVQueryProtocol {
     }
 
     @Override
-    public void close() throws IOException {
+    public void shutdown() throws IOException {
         // TODO Auto-generated method stub
         
     }

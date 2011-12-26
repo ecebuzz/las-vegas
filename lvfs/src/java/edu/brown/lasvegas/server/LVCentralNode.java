@@ -152,7 +152,7 @@ public final class LVCentralNode implements ServicePlugin {
         if (queryExecutionServer != null) {
             queryExecutionServer.stop();
             try {
-                queryExecutionEngine.close();
+                queryExecutionEngine.shutdown();
             } catch (IOException ex) {
                 LOG.error("error on closing query execution engine", ex);
             }
@@ -160,7 +160,7 @@ public final class LVCentralNode implements ServicePlugin {
         if (metadataRepositoryServer != null) {
             metadataRepositoryServer.stop();
             try {
-                metadataRepository.close();
+                metadataRepository.shutdown();
             } catch (IOException ex) {
                 LOG.error("error on closing metadata repository", ex);
             }

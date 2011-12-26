@@ -176,12 +176,12 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     }
 
     @Override
-    public void close () throws IOException {
-        LOG.info("closing...");
+    public void shutdown () throws IOException {
+        LOG.info("shutting down...");
         sync();
         bdbTableAccessors.closeAll();
         bdbEnv.close();
-        LOG.info("closed.");
+        LOG.info("shutdown.");
     }
 
     @Override

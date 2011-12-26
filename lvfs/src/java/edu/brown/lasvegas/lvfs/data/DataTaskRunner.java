@@ -35,6 +35,7 @@ public abstract class DataTaskRunner<ParamType extends TaskParameters> implement
     @Override
     public final void run() {
         try {
+            checkTaskCanceled ();
             String[] outputFilePaths = runDataTask();
             context.metaRepo.updateTaskNoReturn(task.getTaskId(), TaskStatus.DONE, null, outputFilePaths, null);
         } catch (Exception ex) {

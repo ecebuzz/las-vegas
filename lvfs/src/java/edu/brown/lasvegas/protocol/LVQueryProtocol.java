@@ -147,7 +147,7 @@ public interface LVQueryProtocol extends VersionedProtocol {
     void releaseQuery (int queryId) throws IOException;
     
     /** Releases all resources. */
-    void close() throws IOException;
+    void shutdown() throws IOException;
 
     public static final long versionID = 1L;
 }

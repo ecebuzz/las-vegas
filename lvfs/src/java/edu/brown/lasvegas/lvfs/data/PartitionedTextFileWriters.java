@@ -111,19 +111,8 @@ public final class PartitionedTextFileWriters {
     public class PartitionWriter {
         public PartitionWriter(int partition) throws IOException {
             buffer = new byte[writeBufferSize];
-            // <nodeId>_<replicaGroupId>_<fractureId>_<partition>_<random(to make it unique)>
-            String extension;
-            if (compression == CompressionType.SNAPPY) {
-                extension = "snappy";
-            } else if (compression == CompressionType.GZIP_BEST_COMPRESSION) {
-                extension = "gz";
-            } else {
-                extension = "txt";
-                assert (compression == CompressionType.NONE);
-            }
-            String fileName = nodeId + "_" + group.getGroupId() + "_" + fracture.getFractureId() + "_" + partition + "_" + new Random (System.nanoTime()).nextInt()
-                + "." + extension;
-            file = new File(outputDir, fileName);
+            TemporaryFilePath fileName = new TemporaryFilePath(outputDir.getAbsolutePath(), nodeId, group.getGroupId(), fracture.getFractureId(), partition, new Random (System.nanoTime()).nextInt(), compression);
+            file = new File(fileName.getFilePath());
             out = new FileOutputStream(file, false);
         }
         private final File file;
@@ -143,7 +132,7 @@ public final class PartitionedTextFileWriters {
                 int sizeAfterCompression = Snappy.compress(buffer, 0, bufferUsed, compressionBuffer, 8);
                 if (sizeAfterCompression > compressionBuffer.length) {
                     // this might happen, but not sure how Snappy-java handles exceptional cases..
-                    throw new IOException ("compresion buffer too small???");
+                    throw new IOException ("compression buffer too small???");
                 }
                 LOG.info("compressed a block in snappy:" + bufferUsed + " -> " + sizeAfterCompression);
                 ByteBuffer.wrap(compressionBuffer).asIntBuffer().put(new int[]{bufferUsed, sizeAfterCompression});

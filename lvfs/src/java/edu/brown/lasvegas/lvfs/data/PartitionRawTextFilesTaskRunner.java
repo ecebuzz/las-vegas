@@ -47,15 +47,6 @@ public final class PartitionRawTextFilesTaskRunner extends DataTaskRunner<Partit
     public static final String WRITE_PARTITIONS_MAX_KEY = "lasvegas.server.data.task.partition_raw_text.write_partitions_max";
     public static final int WRITE_PARTITIONS_MAX_DEFAULT = 1 << 8;
 
-    /**
-     * which compression scheme to use for compressing the partitioned files. snappy/gzip/none.
-     * When the file is compressed, its extension becomes like .gz, .snappy.
-     * Also, each compressed block (write_buffer_size after de-compression) starts from two 4-byte integers
-     * which tells the sizes of the compressed block before/after compression.
-     */
-    public static final String COMPRESS_KEY = "lasvegas.server.data.task.partition_raw_text.compression";
-    public static final String COMPRESS_DEFAULT = "snappy";
-    
     private int readBufferSize;
     private int writeBufferSize;
     private int writePartitionsMax;
@@ -111,6 +102,14 @@ public final class PartitionRawTextFilesTaskRunner extends DataTaskRunner<Partit
                 partitionFiles (extractStartKeys(Byte.MIN_VALUE, ranges, new Byte[partitions]),
                                 inputFiles, fracture, group, partitioningColumn);
                 break;
+            case FLOAT:
+                partitionFiles (extractStartKeys(Float.MIN_VALUE, ranges, new Float[partitions]),
+                                inputFiles, fracture, group, partitioningColumn);
+                break;
+            case DOUBLE:
+                partitionFiles (extractStartKeys(Double.MIN_VALUE, ranges, new Double[partitions]),
+                                inputFiles, fracture, group, partitioningColumn);
+                break;
             case VARCHAR:
                 partitionFiles (extractStartKeys("", ranges, new String[partitions]),
                                 inputFiles, fracture, group, partitioningColumn);
@@ -141,7 +140,8 @@ public final class PartitionRawTextFilesTaskRunner extends DataTaskRunner<Partit
     private <T extends Comparable<T>> void partitionFiles (T[] startKeys,
                     List<LocalVirtualFile> inputFiles,
                     LVFracture fracture, LVReplicaGroup group,
-                    LVColumn partitioningColumn) throws IOException {
+                    LVColumn partitioningColumn) throws Exception {
+        checkTaskCanceled ();
         int partitions = startKeys.length;
         
         boolean[] partitionsCompleted = new boolean[partitions];
@@ -152,17 +152,22 @@ public final class PartitionRawTextFilesTaskRunner extends DataTaskRunner<Partit
                             partitionsCompleted, parameters.getEncoding(), writeBufferSize, writePartitionsMax, compression);
             // scan all input files
             for (LocalVirtualFile file : inputFiles) {
+                checkTaskCanceled ();
                 TextFileTableReader reader = new TextFileTableReader(file, null,
                     parameters.getDelimiter(), readBufferSize, Charset.forName(parameters.getEncoding()),
                     new SimpleDateFormat(parameters.getDateFormat()),
                     new SimpleDateFormat(parameters.getTimeFormat()),
                     new SimpleDateFormat(parameters.getTimestampFormat()));
+                int checkCounter = 0;
                 while (reader.next()) {
                     @SuppressWarnings("unchecked")
                     T partitionValue = (T) reader.getObject(partitioningColumnIndex);
                     int partition = findPartition (partitionValue, startKeys);
                     assert (partition >= 0 && partition < partitions);
                     writers.write(partition, reader.getCurrentLineString());
+                    if (++checkCounter % 100000 == 0) {
+                        checkTaskCanceled ();
+                    }
                 }
                 reader.close();
             }
@@ -199,17 +204,7 @@ public final class PartitionRawTextFilesTaskRunner extends DataTaskRunner<Partit
         readBufferSize = context.conf.getInt(READ_BUFFER_KEY, READ_BUFFER_DEFAULT);
         writeBufferSize = context.conf.getInt(WRITE_BUFFER_KEY, WRITE_BUFFER_DEFAULT);
         writePartitionsMax = context.conf.getInt(WRITE_PARTITIONS_MAX_KEY, WRITE_PARTITIONS_MAX_DEFAULT);
-        String compressionName = context.conf.get(COMPRESS_KEY, COMPRESS_DEFAULT);
-        if (compressionName.equalsIgnoreCase("snappy")) {
-            compression = CompressionType.SNAPPY;
-        } else if (compressionName.equalsIgnoreCase("gzip") || compressionName.equalsIgnoreCase("GZIP_BEST_COMPRESSION")) {
-            compression = CompressionType.GZIP_BEST_COMPRESSION;
-        } else if (compressionName.length() == 0 || compressionName.equalsIgnoreCase("none")) {
-            compression = CompressionType.NONE;
-        } else {
-            throw new Exception ("invalid value of " + COMPRESS_KEY + ":" + compressionName
-                            + ". valid values are: snappy, gzip, none");
-        }
+        compression = parameters.getTemporaryCompression();
         LOG.info("partitioning " + parameters.getFilePaths().length + " files. readBufferSize=" + readBufferSize
                         + ", writeBufferSize=" + writeBufferSize + ", writePartitionsMax=" + writePartitionsMax
                         + ", compression=" + compression);

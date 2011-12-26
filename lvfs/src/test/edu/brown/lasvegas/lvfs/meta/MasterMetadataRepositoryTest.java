@@ -21,7 +21,7 @@ public class MasterMetadataRepositoryTest extends MetadataRepositoryTestBase {
 
     @AfterClass
     public static void tearDownAfterClass() throws Exception {
-        masterRepository.close();
+        masterRepository.shutdown();
         masterRepository = null;
     }
 
@@ -37,7 +37,7 @@ public class MasterMetadataRepositoryTest extends MetadataRepositoryTestBase {
     
     @Override
     protected void reloadRepository() throws IOException {
-        masterRepository.close();
+        masterRepository.shutdown();
         masterRepository = new MasterMetadataRepository(false, TEST_BDB_HOME);
         repository = masterRepository;
     }
