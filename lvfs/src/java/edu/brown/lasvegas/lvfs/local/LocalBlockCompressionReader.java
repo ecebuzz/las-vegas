@@ -29,7 +29,7 @@ public abstract class LocalBlockCompressionReader<T, AT> extends LocalTypedReade
     /** List of the tuples to start each block. */
     protected final int[] blockStartTuples;
     /** List of the byte position (in compressed form) of each block. */
-    protected final long[] blockPositions;
+    protected final int[] blockPositions;
     /** List of the byte length (in compressed form) of each block. */
     protected final int[] blockLengthes;
     /** List of the tuple counts of each block. */
@@ -55,31 +55,31 @@ public abstract class LocalBlockCompressionReader<T, AT> extends LocalTypedReade
 
         // Reads the block position footer at the end of the file.
         // This is done only once when this class is instantiated.
-        final long rawFileSize = getRawReader().getRawFileSize();
-        assert (rawFileSize >= 16);
-        getRawReader().seekToByteAbsolute(rawFileSize - 16);
-        blockCount = (int) getRawValueReader().readLong();
-        if (blockCount < 0 || rawFileSize < 16 + 8 * 3 * blockCount) {
+        final int rawFileSize = getRawReader().getRawFileSize();
+        assert (rawFileSize >= 8);
+        getRawReader().seekToByteAbsolute(rawFileSize - 8);
+        blockCount = getRawValueReader().readInt();
+        if (blockCount < 0 || rawFileSize < 8 + 4 * 3 * blockCount) {
             throw new IOException ("invalid file footer. corrupted file? blockCount=" + blockCount + ". file="+ this);
         }
-        totalTuples = (int) getRawValueReader().readLong();
+        totalTuples = getRawValueReader().readInt();
         if (totalTuples < 0) {
             throw new IOException ("invalid file footer. corrupted file? blockCount=" + blockCount + ", totalTuples=" + totalTuples + ". file="+ this);
         }
-        getRawReader().seekToByteAbsolute(rawFileSize - 16 - 8 * 3 * blockCount);
-        long[] longBuf = new long[3 * blockCount];
-        int longRead = getRawValueReader().readLongs(longBuf, 0, longBuf.length);
-        assert (longRead == longBuf.length);
+        getRawReader().seekToByteAbsolute(rawFileSize - 8 - 4 * 3 * blockCount);
+        int[] intBuf = new int[3 * blockCount];
+        int intRead = getRawValueReader().readInts(intBuf, 0, intBuf.length);
+        assert (intRead == intBuf.length);
         // the 3*n array can be used as it is.. but it's easier to have variables names for them.
         // so, split the triplets to each array. anyway, this happens only once per file.
         blockStartTuples = new int[blockCount];
-        blockPositions = new long[blockCount];
+        blockPositions = new int[blockCount];
         blockLengthes = new int[blockCount];
         blockTupleCounts = new int[blockCount];
         for (int i = 0; i < blockCount; ++i) {
-            blockStartTuples[i] = (int) longBuf[3 * i];
-            blockPositions[i] = longBuf[3 * i + 1];
-            blockLengthes[i] = (int) longBuf[3 * i + 2];
+            blockStartTuples[i] = intBuf[3 * i];
+            blockPositions[i] = intBuf[3 * i + 1];
+            blockLengthes[i] = intBuf[3 * i + 2];
             if (i == 0) {
                 if (blockStartTuples[i] != 0 || blockPositions[i] != 0) {
                     throw new IOException ("invalid footer. "
@@ -96,10 +96,10 @@ public abstract class LocalBlockCompressionReader<T, AT> extends LocalTypedReade
             }
         }
         blockTupleCounts[blockCount - 1] = totalTuples - blockStartTuples[blockCount - 1];
-        if (blockPositions[blockCount - 1] + blockLengthes[blockCount - 1] + 16L + 8L * 3 * blockCount != rawFileSize) {
+        if (blockPositions[blockCount - 1] + blockLengthes[blockCount - 1] + 8 + 4 * 3 * blockCount != rawFileSize) {
             throw new IOException ("invalid footer. corrupted file? file="+ this);
         }
-        getRawReader().seekToByteAbsolute(0L); // reset to the beginning of the file
+        getRawReader().seekToByteAbsolute(0); // reset to the beginning of the file
         currentBlockIndex = -1; // in no block
     }
     protected abstract int getCurrentBlockFooterByteSize ();
@@ -138,13 +138,13 @@ public abstract class LocalBlockCompressionReader<T, AT> extends LocalTypedReade
             return len;
         }
         @Override
-        public void skipBytes(long length) throws IOException {
+        public void skipBytes(int length) throws IOException {
             // same as above
             if (currentBlockCursor + length  > currentBlock.length) {
                 throw new IOException ("cannot skip beyond the end of current block: currentBlockCursor=" + currentBlockCursor
                                 + ", requested skip=" + length + ", currentBlock.length=" + currentBlock.length);
             }
-            currentBlockCursor += (int) length;
+            currentBlockCursor += length;
             if (LOG.isTraceEnabled()) {
                 LOG.trace("skipped in compressed block " + length + " bytes");
             }
@@ -208,7 +208,7 @@ public abstract class LocalBlockCompressionReader<T, AT> extends LocalTypedReade
      * @param tupleToFind the tuple position to find.
      * @return the block that contains the specified tuple.
      */
-    protected final int searchBlock (long tupleToFind) {
+    protected final int searchBlock (int tupleToFind) {
         if (blockStartTuples[0] >= tupleToFind) {
             return 0;
         }
@@ -222,7 +222,7 @@ public abstract class LocalBlockCompressionReader<T, AT> extends LocalTypedReade
         int mid = 0;
         while (low <= high) {
             mid = (low + high) >>> 1;
-            long midTuple = blockStartTuples[mid];
+            int midTuple = blockStartTuples[mid];
             if (midTuple < tupleToFind) {
                 low = mid + 1;
             } else if (midTuple > tupleToFind) {

@@ -8,7 +8,8 @@ import org.apache.hadoop.io.Writable;
 public interface LVObject extends Writable {
     /**
      * Returns the unique identifier of the object.
-     * The ID is only unique among the same type of object. 
+     * ID is a positive integer starting from 1. So, zero means an invalid ID.
+     * The ID is only unique among the same type of object.
      */
     int getPrimaryKey ();
     

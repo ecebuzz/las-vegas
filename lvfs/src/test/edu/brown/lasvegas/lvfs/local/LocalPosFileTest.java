@@ -7,8 +7,8 @@ import java.util.ArrayList;
 
 import org.junit.Test;
 
+import edu.brown.lasvegas.lvfs.PositionIndex.Pos;
 import edu.brown.lasvegas.lvfs.VirtualFile;
-import edu.brown.lasvegas.lvfs.local.LocalPosFile.Pos;
 
 /**
  * Testcase for {@link LocalPosFile}.
@@ -21,12 +21,12 @@ public class LocalPosFileTest {
             throw new Exception ("Couldn't create test directory " + file.getParentFile().getAbsolutePath());
         }
         file.delete();
-        ArrayList<Long> tuples = new ArrayList<Long>();
-        ArrayList<Long> positions = new ArrayList<Long>();
+        ArrayList<Integer> tuples = new ArrayList<Integer>();
+        ArrayList<Integer> positions = new ArrayList<Integer>();
 
         final int ENTRY_COUNT = 1000;
-        long curTup = 0L;
-        long curPos = 12L;
+        int curTup = 0;
+        int curPos = 12;
         for (int i = 0; i < ENTRY_COUNT; ++i) {
             tuples.add(curTup);
             positions.add(curPos);
@@ -36,7 +36,7 @@ public class LocalPosFileTest {
         // suppose it really ends at 1000 * 100 - 50, 1000 * 1024 - 500
 
         LocalPosFile.createPosFile(file, tuples, positions, ENTRY_COUNT * 100 - 50, ENTRY_COUNT * 1024 - 500);
-        assertEquals ((tuples.size() + 1) * 2 * 8, file.length());
+        assertEquals ((tuples.size() + 1) * 2 * 4, file.length());
         
         LocalPosFile posFile = new LocalPosFile(file);
         assertEquals (ENTRY_COUNT * 100 - 50, posFile.getTotalTuples());

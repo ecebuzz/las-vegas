@@ -25,7 +25,7 @@ public abstract class RawValueReader {
      * @param length byte size to skip
      * @throws IOException
      */
-    public abstract void skipBytes(long length) throws IOException;
+    public abstract void skipBytes(int length) throws IOException;
     
     /**
      * Returns whether there is still something to read.

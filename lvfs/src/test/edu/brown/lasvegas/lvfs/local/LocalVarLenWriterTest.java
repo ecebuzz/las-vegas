@@ -8,8 +8,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import edu.brown.lasvegas.lvfs.PositionIndex.Pos;
 import edu.brown.lasvegas.lvfs.VirtualFile;
-import edu.brown.lasvegas.lvfs.local.LocalPosFile.Pos;
 
 /**
  * Testcase for {@link LocalVarLenWriter}.
@@ -77,10 +77,10 @@ public class LocalVarLenWriterTest {
         assertEquals (COUNT, readerWithPos.getTotalTuples());
         LocalPosFile positions = new LocalPosFile(posFile);
         assertEquals(COUNT, positions.getTotalTuples());
-        final long[] tuplesToSearch = new long[]{1500, 234, 555, 0, 6000, 12344};
-        for (long tupleToSearch : tuplesToSearch) {
-            readerWithPos.seekToTupleAbsolute((int) tupleToSearch);
-            assertEquals (generateValue((int) tupleToSearch), readerWithPos.readValue());
+        final int[] tuplesToSearch = new int[]{1500, 234, 555, 0, 6000, 12344};
+        for (int tupleToSearch : tuplesToSearch) {
+            readerWithPos.seekToTupleAbsolute(tupleToSearch);
+            assertEquals (generateValue(tupleToSearch), readerWithPos.readValue());
 
             Pos pos = positions.searchPosition(tupleToSearch);
             assertTrue (pos.tuple <= tupleToSearch);
@@ -88,10 +88,10 @@ public class LocalVarLenWriterTest {
             LocalVarLenReader<String> reader = LocalVarLenReader.getInstanceVarchar(dataFile);
             reader.getRawReader().seekToByteAbsolute(pos.bytePosition);
             if (tupleToSearch - pos.tuple > 0) {
-                reader.skipValues((int) (tupleToSearch - pos.tuple));
+                reader.skipValues(tupleToSearch - pos.tuple);
             }
             String value = reader.readValue();
-            assertEquals (generateValue((int) tupleToSearch), value);
+            assertEquals (generateValue(tupleToSearch), value);
             reader.close();
         }
         readerWithPos.close();
@@ -134,10 +134,10 @@ public class LocalVarLenWriterTest {
         assertEquals (COUNT, readerWithPos.getTotalTuples());
         LocalPosFile positions = new LocalPosFile(posFile);
         assertEquals(COUNT, positions.getTotalTuples());
-        final long[] tuplesToSearch = new long[]{1500, 234, 555, 0, 6000, 12344};
-        for (long tupleToSearch : tuplesToSearch) {
-            readerWithPos.seekToTupleAbsolute((int) tupleToSearch);
-            assertArrayEquals (generateValue((int) tupleToSearch).getBytes("UTF-8"), readerWithPos.readValue());
+        final int[] tuplesToSearch = new int[]{1500, 234, 555, 0, 6000, 12344};
+        for (int tupleToSearch : tuplesToSearch) {
+            readerWithPos.seekToTupleAbsolute(tupleToSearch);
+            assertArrayEquals (generateValue(tupleToSearch).getBytes("UTF-8"), readerWithPos.readValue());
 
             Pos pos = positions.searchPosition(tupleToSearch);
             assertTrue (pos.tuple <= tupleToSearch);
@@ -145,10 +145,10 @@ public class LocalVarLenWriterTest {
             LocalVarLenReader<byte[]> reader = LocalVarLenReader.getInstanceVarbin(dataFile);
             reader.getRawReader().seekToByteAbsolute(pos.bytePosition);
             if (tupleToSearch - pos.tuple > 0) {
-                reader.skipValues((int) (tupleToSearch - pos.tuple));
+                reader.skipValues(tupleToSearch - pos.tuple);
             }
             byte[] value = reader.readValue();
-            assertArrayEquals (generateValue((int) tupleToSearch).getBytes("UTF-8"), value);
+            assertArrayEquals (generateValue(tupleToSearch).getBytes("UTF-8"), value);
             reader.close();
         }
         readerWithPos.close();

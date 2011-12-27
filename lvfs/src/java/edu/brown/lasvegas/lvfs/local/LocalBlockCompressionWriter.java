@@ -24,8 +24,8 @@ import edu.brown.lasvegas.util.RawByteArrayOutputStream;
  * it's impossible to jump to each tuple without compression. So, position
  * indexes are included in the compressed file too.</p>
  * 
- * <p>At the end of the file, two 8-byte integers specifies how many blocks and tuples
- * this file has. Let the number of blocks be n. 3n 8-byte integers precede the end-of-file
+ * <p>At the end of the file, two 4-byte integers specifies how many blocks and tuples
+ * this file has. Let the number of blocks be n. 3n 4-byte integers precede the end-of-file
  * values. These integers are triplets of the tuple number, byte position and length of each block in this file.
  * For example, "12345,9000000,500000" means that a block starting with 12345-th tuple is located from
  * 9000000-th bytes to 9500000 in the compressed file.</p>
@@ -52,7 +52,7 @@ public abstract class LocalBlockCompressionWriter<T, AT> extends LocalTypedWrite
     /** List of the tuples to start each block. */
     private final ArrayList<Integer> blockStartTuples = new ArrayList<Integer>();
     /** List of the byte position (in compressed form) of each block. */
-    private final ArrayList<Long> blockPositions = new ArrayList<Long>();
+    private final ArrayList<Integer> blockPositions = new ArrayList<Integer>();
     /** List of the byte length (in compressed form) of each block. */
     private final ArrayList<Integer> blockLengthes = new ArrayList<Integer>();
     private final ProxyValueWriter proxyWriter;
@@ -170,7 +170,7 @@ public abstract class LocalBlockCompressionWriter<T, AT> extends LocalTypedWrite
         flushBlock();
         // write out the end-of-file footer.
         int blockCount = blockStartTuples.size();
-        long[] footer = new long[blockCount * 3 + 2];
+        int[] footer = new int[blockCount * 3 + 2];
         for (int i = 0; i < blockCount; ++i) {
             footer[3 * i] = blockStartTuples.get(i);
             footer[3 * i + 1] = blockPositions.get(i);
@@ -186,7 +186,7 @@ public abstract class LocalBlockCompressionWriter<T, AT> extends LocalTypedWrite
         }
         footer[footer.length - 2] = blockCount;
         footer[footer.length - 1] = curTuple;
-        getRawValueWriter().writeLongs(footer, 0, footer.length);
+        getRawValueWriter().writeInts(footer, 0, footer.length);
         footerWritten = true;
     }
     @Override

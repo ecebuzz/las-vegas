@@ -38,12 +38,21 @@ public class LVReplicaGroup implements LVObject {
     private int partitioningColumnId;
     
     /**
+     * ID of the replica group <b>in another table</b> this group is linked to (NULL if this group is independent).
+     * If this group is linked to a group of another table, this group uses the same partitioning as another group
+     * and corresponding partitions are co-located as much as possible to speed-up JOIN queries.
+     * This property must not be changed after creation. So, no chance to have a cycle
+     * (eg, this links to group-A, group-A links to group-B, group-B links to this group).
+     */
+    private Integer linkedGroupId;
+    
+    /**
      * @see java.lang.Object#toString()
      */
     @Override
     public String toString() {
         return "ReplicaGroup-" + groupId + " in Table-" + tableId
-        + " partitioning-column-id=" + partitioningColumnId;
+        + " partitioning-column-id=" + partitioningColumnId + ", linkedGroupId=" + linkedGroupId;
     }
 
     @Override
@@ -51,12 +60,21 @@ public class LVReplicaGroup implements LVObject {
         out.writeInt(groupId);
         out.writeInt(partitioningColumnId);
         out.writeInt(tableId);
+        out.writeBoolean(linkedGroupId == null);
+        if (linkedGroupId != null) {
+            out.writeInt(linkedGroupId);
+        }
     }
     @Override
     public void readFields(DataInput in) throws IOException {
         groupId = in.readInt();
         partitioningColumnId = in.readInt();
         tableId = in.readInt();
+        if (in.readBoolean()) {
+            linkedGroupId = null;
+        } else {
+            linkedGroupId = in.readInt();
+        }
     }
     /** Creates and returns a new instance of this class from the data input.*/
     public static LVReplicaGroup read (DataInput in) throws IOException {
@@ -122,5 +140,23 @@ public class LVReplicaGroup implements LVObject {
      */
     public void setPartitioningColumnId(int partitioningColumnId) {
         this.partitioningColumnId = partitioningColumnId;
+    }
+
+    /**
+     * Gets the iD of the replica group <b>in another table</b> this group is linked to (NULL if this group is independent).
+     *
+     * @return the iD of the replica group <b>in another table</b> this group is linked to (NULL if this group is independent)
+     */
+    public Integer getLinkedGroupId() {
+        return linkedGroupId;
+    }
+
+    /**
+     * Sets the iD of the replica group <b>in another table</b> this group is linked to (NULL if this group is independent).
+     *
+     * @param linkedGroupId the new iD of the replica group <b>in another table</b> this group is linked to (NULL if this group is independent)
+     */
+    public void setLinkedGroupId(Integer linkedGroupId) {
+        this.linkedGroupId = linkedGroupId;
     }
 }

@@ -900,7 +900,7 @@ public abstract class MetadataRepositoryTestBase {
         LVReplicaScheme scheme = repository.getReplicaScheme(DEFAULT_SCHEME.getSchemeId());
         assertEquals (DEFAULT_SCHEME.getSchemeId(), scheme.getSchemeId());
         assertEquals (DEFAULT_GROUP.getGroupId(), scheme.getGroupId());
-        assertEquals (DEFAULT_COLUMNS[1].getColumnId(), scheme.getSortColumnId());
+        assertEquals (DEFAULT_COLUMNS[1].getColumnId(), scheme.getSortColumnId().intValue());
 
         HashMap<Integer, CompressionType> map = scheme.getColumnCompressionSchemes();
         assertEquals (CompressionType.RLE, map.get(DEFAULT_COLUMNS[0].getColumnId()));
@@ -918,6 +918,14 @@ public abstract class MetadataRepositoryTestBase {
     }
 
     @Test
+    public void testReplicaSchemeNoOrder() throws IOException {
+        // TODO
+        LVReplicaScheme scheme = repository.createNewReplicaScheme(DEFAULT_GROUP, DEFAULT_COLUMNS[2],
+            new int[]{DEFAULT_COLUMNS[0].getColumnId(), DEFAULT_COLUMNS[1].getColumnId(), DEFAULT_COLUMNS[2].getColumnId()},
+            new CompressionType[]{CompressionType.RLE, CompressionType.RLE, CompressionType.NONE});
+        assertTrue (scheme.getSchemeId() > 0);
+    }
+    @Test
     public void testReplicaSchemeAssorted() throws IOException {
         LVReplicaScheme scheme = repository.createNewReplicaScheme(DEFAULT_GROUP, DEFAULT_COLUMNS[2],
             new int[]{DEFAULT_COLUMNS[0].getColumnId(), DEFAULT_COLUMNS[1].getColumnId(), DEFAULT_COLUMNS[2].getColumnId()},
@@ -925,7 +933,7 @@ public abstract class MetadataRepositoryTestBase {
         assertTrue (scheme.getSchemeId() > 0);
         
         assertEquals (DEFAULT_GROUP.getGroupId(), scheme.getGroupId());
-        assertEquals (DEFAULT_COLUMNS[2].getColumnId(), scheme.getSortColumnId());
+        assertEquals (DEFAULT_COLUMNS[2].getColumnId(), scheme.getSortColumnId().intValue());
 
         assertEquals (CompressionType.RLE, scheme.getColumnCompressionScheme(DEFAULT_COLUMNS[0].getColumnId()));
         assertEquals (CompressionType.RLE, scheme.getColumnCompressionScheme(DEFAULT_COLUMNS[1].getColumnId()));
@@ -937,8 +945,8 @@ public abstract class MetadataRepositoryTestBase {
         assertEquals (2, schemes.length);
         assertEquals (DEFAULT_SCHEME.getSchemeId(), schemes[0].getSchemeId());
         assertEquals (scheme.getSchemeId(), schemes[1].getSchemeId());
-        assertEquals (DEFAULT_COLUMNS[1].getColumnId(), schemes[0].getSortColumnId());
-        assertEquals (DEFAULT_COLUMNS[2].getColumnId(), schemes[1].getSortColumnId());
+        assertEquals (DEFAULT_COLUMNS[1].getColumnId(), schemes[0].getSortColumnId().intValue());
+        assertEquals (DEFAULT_COLUMNS[2].getColumnId(), schemes[1].getSortColumnId().intValue());
         
         scheme = repository.changeColumnCompressionScheme(scheme, DEFAULT_COLUMNS[4], CompressionType.SNAPPY);
         scheme = repository.changeColumnCompressionScheme(scheme, DEFAULT_COLUMNS[1], CompressionType.NONE);
@@ -949,8 +957,8 @@ public abstract class MetadataRepositoryTestBase {
         assertEquals (2, schemes.length);
         assertEquals (DEFAULT_SCHEME.getSchemeId(), schemes[0].getSchemeId());
         assertEquals (scheme.getSchemeId(), schemes[1].getSchemeId());
-        assertEquals (DEFAULT_COLUMNS[1].getColumnId(), schemes[0].getSortColumnId());
-        assertEquals (DEFAULT_COLUMNS[2].getColumnId(), schemes[1].getSortColumnId());
+        assertEquals (DEFAULT_COLUMNS[1].getColumnId(), schemes[0].getSortColumnId().intValue());
+        assertEquals (DEFAULT_COLUMNS[2].getColumnId(), schemes[1].getSortColumnId().intValue());
 
         scheme = repository.getReplicaScheme(scheme.getSchemeId());
         assertEquals (CompressionType.RLE, scheme.getColumnCompressionScheme(DEFAULT_COLUMNS[0].getColumnId()));
@@ -964,7 +972,7 @@ public abstract class MetadataRepositoryTestBase {
         schemes = repository.getAllReplicaSchemes(DEFAULT_GROUP.getGroupId());
         assertEquals (1, schemes.length);
         assertEquals (scheme.getSchemeId(), schemes[0].getSchemeId());
-        assertEquals (DEFAULT_COLUMNS[2].getColumnId(), schemes[0].getSortColumnId());
+        assertEquals (DEFAULT_COLUMNS[2].getColumnId(), schemes[0].getSortColumnId().intValue());
     }
 
     @Test

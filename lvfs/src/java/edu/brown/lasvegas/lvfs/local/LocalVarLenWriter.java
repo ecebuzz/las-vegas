@@ -28,10 +28,10 @@ public final class LocalVarLenWriter<T> extends LocalTypedWriterBase<T, T[]>  {
     private final VarLenValueTraits<T> traits;
 
     private final int collectPerBytes;
-    private long prevCollectPosition = -1L; // to always collect at the first value
-    private long curTuple = 0L;
-    private ArrayList<Long> collectedTuples = new ArrayList<Long>();
-    private ArrayList<Long> collectedPositions = new ArrayList<Long>();
+    private int prevCollectPosition = -1; // to always collect at the first value
+    private int curTuple = 0;
+    private ArrayList<Integer> collectedTuples = new ArrayList<Integer>();
+    private ArrayList<Integer> collectedPositions = new ArrayList<Integer>();
     public LocalVarLenWriter(VirtualFile file, VarLenValueTraits<T> traits, int collectPerBytes) throws IOException {
         super(file, traits, 1 << 18);
         this.traits = traits;

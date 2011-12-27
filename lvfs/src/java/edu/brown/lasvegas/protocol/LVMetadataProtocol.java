@@ -328,6 +328,20 @@ public interface LVMetadataProtocol extends VersionedProtocol {
      * @throws IOException
      */
     LVReplicaGroup createNewReplicaGroup(LVTable table, LVColumn partitioningColumn) throws IOException;
+
+    /**
+     * Creates a new additional replica group in the given table with the specified partitioning column
+     * and links it to an existing replica group <b>in another table</b>.
+     * <p>If a group is linked to a group of another table, the group uses the same partitioning as another group
+     * and corresponding partitions are co-located as much as possible to speed-up JOIN queries.</p>
+     * @param table the table to create a new group
+     * @param partitioningColumn the partitioning column of the new group
+     * @param linkedGroup existing replica group in another table the new group will follow. It must have the
+     * same type of column for partitioning.
+     * @return new ReplicaGroup object
+     * @throws IOException
+     */
+    LVReplicaGroup createNewReplicaGroup(LVTable table, LVColumn partitioningColumn, LVReplicaGroup linkedGroup) throws IOException;
     
     /**
      * Deletes the replica group metadata object and related objects from this repository.
@@ -525,7 +539,7 @@ public interface LVMetadataProtocol extends VersionedProtocol {
      * Call {@link #changeColumnCompressionScheme(LVReplicaScheme, LVColumn, CompressionType)}
      * afterwards to do so.
      * @param group the replica group to create a replica scheme
-     * @param sortingColumn the in-block sorting column of the replica scheme
+     * @param sortingColumn the in-block sorting column of the replica scheme. NULL if not particular order.
      * @param columnIds corresponds to the next parameter
      * @param columnCompressionSchemes compression schemes of each column.
      * omitted columns are considered as no-compression.

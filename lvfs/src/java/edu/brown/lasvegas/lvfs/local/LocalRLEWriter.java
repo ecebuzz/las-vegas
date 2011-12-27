@@ -61,10 +61,10 @@ public final class LocalRLEWriter<T, AT> extends LocalTypedWriterBase<T, AT> imp
     private ValueRun<T> curRun = new ValueRun<T>();
 
     private final int collectPerBytes;
-    private long prevCollectPosition = -1L; // to always collect at the first value
+    private int prevCollectPosition = -1; // to always collect at the first value
     private int curTuple = 0;
-    private ArrayList<Long> collectedTuples = new ArrayList<Long>();
-    private ArrayList<Long> collectedPositions = new ArrayList<Long>();
+    private ArrayList<Integer> collectedTuples = new ArrayList<Integer>();
+    private ArrayList<Integer> collectedPositions = new ArrayList<Integer>();
     /** just a statistics. */
     private int runCount = 0;
 
@@ -82,7 +82,7 @@ public final class LocalRLEWriter<T, AT> extends LocalTypedWriterBase<T, AT> imp
 
     private void collectTuplePosition () {
         if (prevCollectPosition < 0 || getRawCurPosition() - prevCollectPosition >= collectPerBytes) {
-            collectedTuples.add((long) curTuple);
+            collectedTuples.add(curTuple);
             collectedPositions.add(getRawCurPosition());
             prevCollectPosition = getRawCurPosition();
             assert (collectedTuples.size() == collectedPositions.size());

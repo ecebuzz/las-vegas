@@ -1,5 +1,7 @@
 package edu.brown.lasvegas.lvfs;
 
+import java.io.IOException;
+
 /**
  * Represents a order-preserving dictionary loaded in-memory for dictionary compression.
  * 
@@ -46,4 +48,9 @@ public interface OrderedDictionary<T extends Comparable<T>> {
      * Given an array index in dict, returns a compressed value in signed integer.
      */
     public int convertDictionaryIndexToCompressedValue (int dictionaryIndex);
+
+    /**
+     * Serializes the dictionary into the given file.
+     */
+    public void writeToFile (VirtualFile dictFile) throws IOException;
 }

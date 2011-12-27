@@ -23,7 +23,7 @@ public class LocalRawFileReader implements Closeable {
     /** underlying file handle. */
     private final VirtualFile rawFile;
     /** actual size of underlying file. */
-    private final long rawFileSize;
+    private final int rawFileSize;
     
     private final RawValueReader reader;
     /**
@@ -38,9 +38,9 @@ public class LocalRawFileReader implements Closeable {
     /** input stream of the raw file. */
     private InputStream rawStream;
     /** current byte position of the input stream. */
-    private long curPosition;
+    private int curPosition;
     /** returns current byte position of the input stream. */
-    public long getCurPosition() {
+    public int getCurPosition() {
         return curPosition;
     }
     
@@ -52,7 +52,10 @@ public class LocalRawFileReader implements Closeable {
      */
     public LocalRawFileReader (VirtualFile rawFile, int streamBufferSize) throws IOException {
         this.rawFile = rawFile;
-        rawFileSize = rawFile.length();
+        if (rawFile.length() > 0x7FFFFFFF) {
+            throw new IOException ("too large file: " + rawFile);
+        }
+        rawFileSize = (int) rawFile.length();
         this.streamBufferSize = streamBufferSize;
         if (streamBufferSize > 0) {
             rawStream = new BufferedInputStream(rawFile.getInputStream(), streamBufferSize);
@@ -80,7 +83,7 @@ public class LocalRawFileReader implements Closeable {
                 return read;
             }
             @Override
-            public void skipBytes(long length) throws IOException {
+            public void skipBytes(int length) throws IOException {
                 if (length < 0) {
                     throw new IOException ("negative skip length:" + length);
                 }
@@ -90,8 +93,8 @@ public class LocalRawFileReader implements Closeable {
                 // InputStream#skip() might skip fewer bytes than requested for legitimate reasons
                 // ex. buffered stream reached the end of the buffer.
                 // So, we need to repeatedly call it. (negative return is definitely an error though)
-                for (long totalSkipped = 0; totalSkipped < length;) {
-                    long skippedByte = rawStream.skip(length - totalSkipped);
+                for (int totalSkipped = 0; totalSkipped < length;) {
+                    int skippedByte = (int) rawStream.skip(length - totalSkipped);
                     if (skippedByte < 0) {
                         throw new IOException ("failed to skip??");
                     }
@@ -141,14 +144,14 @@ public class LocalRawFileReader implements Closeable {
      * @param bytePosition moves the input stream cursor to this position
      * @throws IOException
      */
-    public final void seekToByteAbsolute (long bytePosition) throws IOException {
+    public final void seekToByteAbsolute (int bytePosition) throws IOException {
         assert (bytePosition >= 0);
         if (bytePosition == curPosition) {
             return;
         }
         if (bytePosition < curPosition) {
             reopenStream ();
-            assert (curPosition == 0L);
+            assert (curPosition == 0);
         }
         if (bytePosition >= rawFileSize) {
             LOG.warn("too large byte position. adjusted to file size " + bytePosition + "/" + rawFileSize + " at " + this);
@@ -163,12 +166,12 @@ public class LocalRawFileReader implements Closeable {
      * @param bytesToSkip number of bytes to skip. negative values will reopen the file.
      * @throws IOException
      */
-    public final void seekToByteRelative (long bytesToSkip) throws IOException {
+    public final void seekToByteRelative (int bytesToSkip) throws IOException {
         seekToByteAbsolute (curPosition + bytesToSkip);
     }    
 
     /** returns actual size of underlying file. */
-    public long getRawFileSize() {
+    public int getRawFileSize() {
         return rawFileSize;
     }
 

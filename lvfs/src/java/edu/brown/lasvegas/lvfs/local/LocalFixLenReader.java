@@ -67,7 +67,7 @@ public final class LocalFixLenReader<T, AT> extends LocalTypedReaderBase<T, AT>{
         if (LOG.isDebugEnabled()) {
             LOG.debug("seeking to " + tuple + "th tuple..");
         }
-        getRawReader().seekToByteAbsolute((long) bitsPerValue * (long) tuple / 8L);
+        getRawReader().seekToByteAbsolute(bitsPerValue / 8 * tuple);
     }
 
     /**
@@ -77,7 +77,7 @@ public final class LocalFixLenReader<T, AT> extends LocalTypedReaderBase<T, AT>{
         if (LOG.isDebugEnabled()) {
             LOG.debug("jumping over " + tuple + " tuples..");
         }
-        getRawReader().seekToByteRelative((long) bitsPerValue * (long) tuple / 8L);
+        getRawReader().seekToByteRelative(bitsPerValue / 8 * tuple);
     }
     
     @Override
@@ -99,6 +99,6 @@ public final class LocalFixLenReader<T, AT> extends LocalTypedReaderBase<T, AT>{
     
     @Override
     public int getTotalTuples() {
-        return (int) (getRawReader().getRawFileSize() * 8 / bitsPerValue);
+        return getRawReader().getRawFileSize() / (bitsPerValue / 8);
     }
 }

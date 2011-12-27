@@ -7,6 +7,7 @@ import java.util.ArrayList;
 
 import org.apache.log4j.Logger;
 
+import edu.brown.lasvegas.lvfs.PositionIndex;
 import edu.brown.lasvegas.lvfs.VirtualFile;
 import edu.brown.lasvegas.lvfs.VirtualFileOutputStream;
 
@@ -25,10 +26,10 @@ import edu.brown.lasvegas.lvfs.VirtualFileOutputStream;
  * <p>Additionally, it's guaranteed that the first pair points to the first tuple
  * in the file, the last pair points to the last tuple + 1 (=the total number of tuples).</p>
  * 
- * <p>Writing is simply to dump the bunch of long-values. Reading
+ * <p>Writing is simply to dump the bunch of int-values. Reading
  * is a binary-search on the tuple-num.</p>
  */
-public final class LocalPosFile {
+public final class LocalPosFile implements PositionIndex {
     private static Logger LOG = Logger.getLogger(LocalPosFile.class);
     
     /**
@@ -40,14 +41,14 @@ public final class LocalPosFile {
      * @param totalBytes total byte size of the file
      * @throws IOException
      */
-    public static void createPosFile (VirtualFile file, ArrayList<Long> tuples, ArrayList<Long> positions,
-                    long totalTuples, long totalBytes) throws IOException {
+    public static void createPosFile (VirtualFile file, ArrayList<Integer> tuples, ArrayList<Integer> positions,
+                    int totalTuples, int totalBytes) throws IOException {
         assert (tuples.size() == positions.size());
         if (LOG.isDebugEnabled()) {
             LOG.debug("writing " + tuples.size() + " positions into a position file " + file.getAbsolutePath());
         }
         long startTime = LOG.isDebugEnabled() ? System.nanoTime() : 0L;
-        long[] array = new long[(tuples.size() + 1) * 2];
+        int[] array = new int[(tuples.size() + 1) * 2];
         for (int i = 0; i < tuples.size(); ++i) {
             array[i * 2] = tuples.get(i);
             array[i * 2 + 1] = positions.get(i);
@@ -61,25 +62,15 @@ public final class LocalPosFile {
         // last entry always gives the total number of tuples and end of file position 
         array[tuples.size() * 2] = totalTuples;
         array[tuples.size() * 2 + 1] = totalBytes;
-        byte[] bytes = new byte[array.length * 8];
-        ByteBuffer.wrap(bytes).asLongBuffer().put(array);
         long midTime = LOG.isDebugEnabled() ? System.nanoTime() : 0L; // after CPU intensive stuffs
-        if (file.exists()) {
-            file.delete();
-        }
-        VirtualFileOutputStream stream = file.getOutputStream();
-        stream.write(bytes);
-        stream.flush();
-        stream.close();
-        long endTime = LOG.isDebugEnabled() ? System.nanoTime() : 0L; // after all
         if (LOG.isDebugEnabled()) {
-            LOG.debug("wrote " + tuples.size() + " positions into a position file " + file.getAbsolutePath()
-                    + ". convert-time=" + (midTime - startTime) + "ns, IO-time=" + (endTime - midTime) + "ns");
+            LOG.debug("convert-time=" + (midTime - startTime) + "ns");
         }
+        writeToFile (file, array);
     }
     
     /** content of this file. see the class comment for the file format. */
-    private final long[] array;
+    private final int[] array;
 
     /**
      * Reads a position file into this object.
@@ -89,14 +80,14 @@ public final class LocalPosFile {
      * Adding complexity wouldn't worth it.
      */
     public LocalPosFile(VirtualFile file) throws IOException {
-        assert (file.length() % 16 == 0);
+        assert (file.length() % 8 == 0);
         if (file.length() > (1 << 22)) {
             throw new IOException ("this file seems too large as a position file:"
                 + file.getAbsolutePath()
                 + "=" + file.length() + " bytes (" + (file.length()<<20) + "MB)");
         }
         long startTime = LOG.isDebugEnabled() ? System.nanoTime() : 0L;
-        array = new long[(int) file.length() / 8];
+        array = new int[(int) file.length() / 4];
         byte[] bytes = new byte[(int) file.length()];
         InputStream stream = file.getInputStream();
         int read = stream.read(bytes);
@@ -104,40 +95,16 @@ public final class LocalPosFile {
         assert (read == bytes.length);
         // simply reads it to long[]. we don't convert it to Pos[] because
         // it will create a lot of unused objects.
-        ByteBuffer.wrap(bytes).asLongBuffer().get(array);
+        ByteBuffer.wrap(bytes).asIntBuffer().get(array);
         long endTime = LOG.isDebugEnabled() ? System.nanoTime() : 0L;
         if (LOG.isDebugEnabled()) {
             LOG.debug("read " + array.length + " long values from a position file " + file.getAbsolutePath()
                     + ". time=" + (endTime - startTime) + "ns");
         }
     }
-    
-    /**
-     * Tuple-number and byte-position pair.
-     */
-    public static class Pos {
-        Pos (long tuple, long bytePosition) {
-            this.tuple = tuple;
-            this.bytePosition = bytePosition;
-        }
-        public final long tuple;
-        public final long bytePosition;
-        @Override
-        public String toString() {
-            return "Pos: tuple=" + tuple + ", from " + bytePosition + "th bytes";
-        }
-    }
-    
-    /**
-     * Returns the best position to <b>start</b> reading the file.
-     * The returned position is probably not the searched tuple itself
-     * because a position file is a sparse index file.
-     * However, starting from the returned position will always find
-     * the searched tuple.
-     * @param tupleToFind the tuple position to find.
-     * @return the best position to <b>start</b> reading the file.
-     */
-    public Pos searchPosition (long tupleToFind) {
+
+    @Override
+    public Pos searchPosition (int tupleToFind) {
         if (tupleToFind < 0 || tupleToFind  >= getTotalTuples()) { 
             throw new IllegalArgumentException("this tuple position does not exist in this file:" + tupleToFind);
         }
@@ -154,7 +121,7 @@ public final class LocalPosFile {
         int mid = 0;
         while (low <= high) {
             mid = (low + high) >>> 1;
-            long midTuple = array[mid * 2];
+            int midTuple = array[mid * 2];
             if (midTuple < tupleToFind) {
                 low = mid + 1;
             } else if (midTuple > tupleToFind) {
@@ -172,18 +139,33 @@ public final class LocalPosFile {
         return new Pos (array[ret * 2], array[ret * 2 + 1]);
     }
     
-    /**
-     * Returns the total number of tuples in the data file.
-     */
+    @Override
     public int getTotalTuples () {
         // the last tuple must point to the end of the file (non existing tuple)
         return (int) array[array.length - 2];
     }
 
-    /**
-     * Returns the total byte size of the data file.
-     */
-    public long getTotalBytes () {
+    @Override
+    public int getTotalBytes () {
         return array[array.length - 1];
+    }
+    
+    @Override
+    public void writeToFile(VirtualFile file) throws IOException {
+        writeToFile (file, array);
+    }
+    private static void writeToFile (VirtualFile file, int[] theArray) throws IOException {
+        byte[] bytes = new byte[theArray.length * 4];
+        ByteBuffer.wrap(bytes).asIntBuffer().put(theArray);
+        long midTime = LOG.isDebugEnabled() ? System.nanoTime() : 0L; // after CPU intensive stuffs
+        VirtualFileOutputStream stream = file.getOutputStream();
+        stream.write(bytes);
+        stream.flush();
+        stream.close();
+        long endTime = LOG.isDebugEnabled() ? System.nanoTime() : 0L; // after all
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("wrote " + theArray.length + " integers into a position file " + file.getAbsolutePath()
+                    + ". IO-time=" + (endTime - midTime) + "ns");
+        }
     }
 }

@@ -1,5 +1,7 @@
 package edu.brown.lasvegas.lvfs;
 
+import java.io.IOException;
+
 /**
  * A position file is a sparse tuple-position index file for variable-length values
  * and a few non-seekable compressions (e.g., RLE, Snappy).
@@ -55,4 +57,10 @@ public interface PositionIndex {
      * Returns the total byte size of the data file.
      */
     public int getTotalBytes ();
+
+
+    /**
+     * Writes out the position file.
+     */
+    public void writeToFile (VirtualFile file) throws IOException;
 }

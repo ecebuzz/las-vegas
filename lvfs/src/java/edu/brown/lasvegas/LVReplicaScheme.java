@@ -34,9 +34,9 @@ public class LVReplicaScheme implements LVObject {
         return schemeId;
     }   
     /**
-     * ID of the column used as the in-block-sort key in this replica scheme.
+     * ID of the column used as the in-block-sort key in this replica scheme (NULL if no particular order).
      */
-    private int sortColumnId;
+    private Integer sortColumnId;
 
     /**
      * Each column's compression scheme.
@@ -75,7 +75,10 @@ public class LVReplicaScheme implements LVObject {
     public void write(DataOutput out) throws IOException {
         out.writeInt(groupId);
         out.writeInt(schemeId);
-        out.writeInt(sortColumnId);
+        out.writeBoolean(sortColumnId == null);
+        if (sortColumnId != null) {
+            out.writeInt(sortColumnId);
+        }
         Object[] array = columnCompressionSchemes.entrySet().toArray();
         out.writeInt(array.length);
         for (int i = 0; i < array.length; ++i) {
@@ -89,7 +92,11 @@ public class LVReplicaScheme implements LVObject {
     public void readFields(DataInput in) throws IOException {
         groupId = in.readInt();
         schemeId = in.readInt();
-        sortColumnId = in.readInt();
+        if (in.readBoolean()) {
+            sortColumnId = null;
+        } else {
+            sortColumnId = in.readInt();
+        }
         columnCompressionSchemes.clear();
         int count = in.readInt();
         for (int i = 0; i < count; ++i) {
@@ -148,20 +155,20 @@ public class LVReplicaScheme implements LVObject {
     }
 
     /**
-     * Gets the iD of the column used as the in-block-sort key in this replica scheme.
+     * Gets the iD of the column used as the in-block-sort key in this replica scheme (NULL if no particular order).
      *
-     * @return the iD of the column used as the in-block-sort key in this replica scheme
+     * @return the iD of the column used as the in-block-sort key in this replica scheme (NULL if no particular order)
      */
-    public int getSortColumnId() {
+    public Integer getSortColumnId() {
         return sortColumnId;
     }
 
     /**
-     * Sets the iD of the column used as the in-block-sort key in this replica scheme.
+     * Sets the iD of the column used as the in-block-sort key in this replica scheme (NULL if no particular order).
      *
-     * @param sortColumnId the new iD of the column used as the in-block-sort key in this replica scheme
+     * @param sortColumnId the new iD of the column used as the in-block-sort key in this replica scheme (NULL if no particular order)
      */
-    public void setSortColumnId(int sortColumnId) {
+    public void setSortColumnId(Integer sortColumnId) {
         this.sortColumnId = sortColumnId;
     }
 

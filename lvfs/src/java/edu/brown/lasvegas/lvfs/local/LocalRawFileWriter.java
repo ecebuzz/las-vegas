@@ -37,8 +37,8 @@ public final class LocalRawFileWriter implements Closeable {
         return writer;
     }
 
-    private long curPosition = 0L;
-    public final long getCurPosition () {
+    private int curPosition = 0;
+    public final int getCurPosition () {
         return curPosition;
     }
     // no setter because only this class should maintain it

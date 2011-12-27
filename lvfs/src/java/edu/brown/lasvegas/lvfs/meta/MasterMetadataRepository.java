@@ -532,9 +532,14 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
 
     @Override
     public LVReplicaGroup createNewReplicaGroup(LVTable table, LVColumn partitioningColumn) throws IOException {
+        return createNewReplicaGroup(table, partitioningColumn, null);
+    }
+    @Override
+    public LVReplicaGroup createNewReplicaGroup(LVTable table, LVColumn partitioningColumn, LVReplicaGroup linkedGroup) throws IOException {
         assert (table.getTableId() > 0);
         assert (partitioningColumn.getColumnId() > 0);
         assert (table.getTableId() == partitioningColumn.getTableId());
+        assert (linkedGroup == null || linkedGroup.getGroupId() > 0);
         // check other group
         for (LVReplicaGroup existing : bdbTableAccessors.replicaGroupAccessor.IX_TABLE_ID.subIndex(table.getTableId()).map().values()) {
             assert (table.getTableId() == existing.getTableId());
@@ -542,11 +547,21 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
                 throw new IOException ("another replica group with the same partitioning column already exists : " + existing);
             }
         }
+        // if linked group is specified, check partitioning column type
+        if (linkedGroup != null) {
+            // check column type
+            LVColumn linkedColumn = getColumn(linkedGroup.getPartitioningColumnId());
+            assert (linkedColumn != null);
+            if (linkedColumn.getType() != partitioningColumn.getType()) {
+                throw new IOException("linked group must be partitioned by a column in the same type: linked=" + linkedColumn.getType() + ", this=" + partitioningColumn.getType());
+            }
+        }
         
         LVReplicaGroup group = new LVReplicaGroup();
         group.setPartitioningColumnId(partitioningColumn.getColumnId());
         group.setTableId(table.getTableId());
         group.setGroupId(bdbTableAccessors.replicaGroupAccessor.issueNewId());
+        group.setLinkedGroupId(linkedGroup == null ? null : linkedGroup.getGroupId());
         bdbTableAccessors.replicaGroupAccessor.PKX.putNoReturn(group);
         
         return group;
@@ -589,8 +604,8 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     public LVReplicaScheme createNewReplicaScheme(LVReplicaGroup group, LVColumn sortingColumn, int[] columnIds, CompressionType[] columnCompressionSchemes)
                     throws IOException {
         assert (group.getGroupId() > 0);
-        assert (sortingColumn.getColumnId() > 0);
-        assert (group.getTableId() == sortingColumn.getTableId());
+        assert (sortingColumn == null || sortingColumn.getColumnId() > 0);
+        assert (sortingColumn == null || group.getTableId() == sortingColumn.getTableId());
         assert (columnIds.length == columnCompressionSchemes.length);
         
         HashMap<Integer, CompressionType> clonedCompressionSchemes = new HashMap<Integer, CompressionType> ();
@@ -600,7 +615,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         boolean foundSortingColumn = false;
         // complement compression type
         for (LVColumn column : getAllColumns(group.getTableId())) {
-            if (column.getColumnId() == sortingColumn.getColumnId()) {
+            if (sortingColumn != null && column.getColumnId() == sortingColumn.getColumnId()) {
                 foundSortingColumn = true;
             }
             if (!clonedCompressionSchemes.containsKey(column.getColumnId())) {
@@ -612,13 +627,13 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
                 }
             }
         }
-        assert (foundSortingColumn);
+        assert (sortingColumn == null || foundSortingColumn);
 
         LVReplicaScheme scheme = new LVReplicaScheme();
         scheme.setColumnCompressionSchemes(clonedCompressionSchemes);
         scheme.setGroupId(group.getGroupId());
         scheme.setSchemeId(bdbTableAccessors.replicaSchemeAccessor.issueNewId());
-        scheme.setSortColumnId(sortingColumn.getColumnId());
+        scheme.setSortColumnId(sortingColumn == null ? null : sortingColumn.getColumnId());
         bdbTableAccessors.replicaSchemeAccessor.PKX.putNoReturn(scheme);
         return scheme;
     }

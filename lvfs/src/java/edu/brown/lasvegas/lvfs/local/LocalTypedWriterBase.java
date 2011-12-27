@@ -21,7 +21,7 @@ public abstract class LocalTypedWriterBase<T, AT> implements TypedWriter<T, AT> 
     public final RawValueWriter getRawValueWriter () {
         return rawWriter.getRawValueWriter();
     }
-    public final long getRawCurPosition() {
+    public final int getRawCurPosition() {
         return rawWriter.getCurPosition();
     }
 

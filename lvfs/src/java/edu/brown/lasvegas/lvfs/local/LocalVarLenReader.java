@@ -6,9 +6,9 @@ import org.apache.log4j.Logger;
 
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 import edu.brown.lasvegas.lvfs.AllValueTraits;
+import edu.brown.lasvegas.lvfs.PositionIndex.Pos;
 import edu.brown.lasvegas.lvfs.VarLenValueTraits;
 import edu.brown.lasvegas.lvfs.VirtualFile;
-import edu.brown.lasvegas.lvfs.local.LocalPosFile.Pos;
 
 /**
  * File reader for variable-length entries.
@@ -114,7 +114,7 @@ public final class LocalVarLenReader<T> extends LocalTypedReaderBase<T, T[]> {
             // seek using the position file
             Pos pos = posIndex.searchPosition(tuple);
             getRawReader().seekToByteAbsolute(pos.bytePosition);
-            curTuple = (int) pos.tuple;
+            curTuple = pos.tuple;
             // remaining is sequential search
             while (tuple > curTuple) {
                 skipValue();

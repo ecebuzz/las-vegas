@@ -6,11 +6,11 @@ import org.apache.log4j.Logger;
 
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 import edu.brown.lasvegas.lvfs.AllValueTraits;
+import edu.brown.lasvegas.lvfs.PositionIndex.Pos;
 import edu.brown.lasvegas.lvfs.TypedRLEReader;
 import edu.brown.lasvegas.lvfs.ValueRun;
 import edu.brown.lasvegas.lvfs.ValueTraits;
 import edu.brown.lasvegas.lvfs.VirtualFile;
-import edu.brown.lasvegas.lvfs.local.LocalPosFile.Pos;
 
 /**
  * File reader for RLE compressed column.
@@ -195,7 +195,7 @@ public final class LocalRLEReader<T, AT> extends LocalTypedReaderBase<T, AT> imp
             // seek using the position file
             Pos pos = posIndex.searchPosition(tuple);
             getRawReader().seekToByteAbsolute(pos.bytePosition);
-            curTuple = (int) pos.tuple;
+            curTuple = pos.tuple;
             assert (curTuple <= tuple);
             // dummy run to do getNextRun()
             curRun.startTuple = curTuple;

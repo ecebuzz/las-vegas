@@ -82,16 +82,8 @@ public final class LocalDictFile implements OrderedDictionary<String> {
             long endMillisec = System.currentTimeMillis();
             LOG.info("sorted the dictionary in " + (endMillisec - startMillisec) + "ms");
         }
-        {
-            long startMillisec = System.currentTimeMillis();
-            // last, output it into the file
-            ObjectOutputStream out = new ObjectOutputStream(dictFile.getOutputStream());
-            out.writeObject(dict);
-            out.flush();
-            out.close();
-            long endMillisec = System.currentTimeMillis();
-            LOG.info("Wrote out a dict file:" + dict.length + " entries, " + dictFile.length() + " bytes, in " + (endMillisec - startMillisec) + "ms");
-        }
+        // last, output it into the file
+        writeToFile (dictFile, dict);
     }
 
     /**
@@ -236,6 +228,25 @@ public final class LocalDictFile implements OrderedDictionary<String> {
         LOG.info("compressed the data file in " + (endMillisec - startMillisec) + "ms");
     }
     
+    @Override
+    public void writeToFile (VirtualFile dictFile) throws IOException {
+        writeToFile (dictFile, dict);
+    }
+    private static void writeToFile (VirtualFile dictFile, String[] theDict) throws IOException {
+        long startMillisec = System.currentTimeMillis();
+        // last, output it into the file
+        ObjectOutputStream out = new ObjectOutputStream(dictFile.getOutputStream());
+        out.writeObject(theDict);
+        out.flush();
+        out.close();
+        long endMillisec = System.currentTimeMillis();
+        if (LOG.isInfoEnabled()) {
+            LOG.info("Wrote out a dict file (" + dictFile.getAbsolutePath()
+                            + "):" + theDict.length + " entries, " + dictFile.length()
+                            + " bytes, in " + (endMillisec - startMillisec) + "ms");
+        }
+    }
+
     /** 1/2/4 only.*/
     private final byte bytesPerEntry;
     /** stores all entries. entries are sorted by their values. */
