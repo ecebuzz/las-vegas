@@ -2,7 +2,9 @@ package edu.brown.lasvegas.lvfs.data;
 
 import java.io.Closeable;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 
 import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
@@ -91,8 +93,28 @@ public final class DataEngine implements LVDataProtocol, Closeable, Configurable
     
     @Override
     public byte[] getFileBody(String localPath, int offset, int len) throws IOException {
-        // TODO Auto-generated method stub
-        return null;
+        File file = new File (localPath);
+        if (!file.exists()) {
+            throw new FileNotFoundException(localPath + " doesn't exist");
+        }
+        if (file.isDirectory()) {
+            throw new IOException(localPath + " is a directory");
+        }
+        if (offset >= file.length()) {
+            throw new IOException("out of bounds. " + localPath + " has only " + file.length() + " bytes");
+        }
+        if (file.length() > 0x7FFFFFFF) {
+            throw new IOException(localPath + " is too large");
+        }
+        if (offset + len > file.length()) {
+            len = (int) file.length() - offset;
+        }
+        RandomAccessFile raf = new RandomAccessFile(file, "r");
+        raf.seek(offset);
+        byte[] bytes = new byte[len];
+        int read = raf.read(bytes);
+        assert (read == len);
+        return bytes;
     }
     @Override
     public int getFileLength(String localPath) throws IOException {
@@ -106,20 +128,27 @@ public final class DataEngine implements LVDataProtocol, Closeable, Configurable
     }
     @Override
     public boolean isDirectory(String localPath) throws IOException {
-        return new File (localPath).isDirectory();
+        File file = new File (localPath);
+        return file.exists() && file.isDirectory();
     }
     @Override
     public int[] getCombinedFileStatus(String localPath) throws IOException {
         File file = new File (localPath);
+        if (!file.exists()) {
+            return new int[]{0, 0, 0};
+        }
+        if (file.isDirectory()) {
+            return new int[]{0, 1, 1};
+        }
         assert (file.length() <= 0x7FFFFFFF);
-        return new int[]{(int) file.length(), file.exists() ? 1 : 0, file.isDirectory() ? 1 : 0};
+        return new int[]{(int) file.length(), 1, 0};
     }
     @Override
     public boolean deleteFile(String localPath, boolean recursive) throws IOException {
-        if (!localPath.startsWith(context.localLvfsRootDir.getAbsolutePath())) {
-            throw new IOException ("this file seems not part of LVFS. deletion refused: " + localPath);
-        }
         File file = new File (localPath);
+        if (!file.getAbsolutePath().startsWith(context.localLvfsRootDir.getAbsolutePath())) {
+            throw new IOException ("this file seems not part of LVFS. deletion refused: " + file.getAbsolutePath() + ". rootdir=" + context.localLvfsRootDir.getAbsolutePath());
+        }
         if (!file.exists()) {
             return false;
         }

@@ -13,8 +13,8 @@ public interface LVDataProtocol extends VersionedProtocol {
     /**
      * Returns the byte size of the specified LVFS file in the data node.
      * @param localPath file path in the data node.
-     * @return size in byte. ok to be a 4 bytes integer because it's a partitioned column file
-     * @throws IOException If the file doesn't exist or isn't readable.
+     * @return size in byte (0 if not exists). ok to be a 4 bytes integer because it's a partitioned column file
+     * @throws IOException
      */
     int getFileLength (String localPath) throws IOException;
     

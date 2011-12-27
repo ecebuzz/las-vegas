@@ -1,7 +1,6 @@
 package edu.brown.lasvegas.client;
 
 import java.io.IOException;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.retry.RetryPolicies;
@@ -17,6 +16,9 @@ public class ClientBase<T> {
     /** The RPC channel. */
     private T channel;
     
+    /** raw proxy object. */
+    private T proxy;
+    
     /**
      * Connects to the RPC service with address in configuration file.
      */
@@ -28,8 +30,9 @@ public class ClientBase<T> {
      */
     @SuppressWarnings("unchecked")
     protected ClientBase(Class<T> protocolClass, long protocolVersionID, Configuration conf, String address) throws IOException {
-        T proxy = RPC.getProxy(protocolClass, protocolVersionID, NetUtils.createSocketAddr(address), conf);
-        RetryPolicy retryPolicy = RetryPolicies.exponentialBackoffRetry(20, 200, TimeUnit.MILLISECONDS);
+        proxy = RPC.getProxy(protocolClass, protocolVersionID, NetUtils.createSocketAddr(address), conf);
+        // RetryPolicy retryPolicy = RetryPolicies.exponentialBackoffRetry(20, 200, TimeUnit.MILLISECONDS);
+        RetryPolicy retryPolicy = RetryPolicies.TRY_ONCE_THEN_FAIL;
         channel = (T) RetryProxy.create(protocolClass, proxy, retryPolicy);
     }
     
@@ -38,8 +41,9 @@ public class ClientBase<T> {
      */
     public void release () {
         if (channel != null) {
-            RPC.stopProxy(channel);
+            RPC.stopProxy(proxy);
             channel = null;
+            proxy = null;
         }
     }
     

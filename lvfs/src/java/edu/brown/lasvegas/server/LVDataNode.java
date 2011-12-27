@@ -30,12 +30,22 @@ import edu.brown.lasvegas.protocol.LVDataProtocol;
  * 
  * <p>In order to activate it, the user needs to put the following parameter
  * in Hadoop's configuration file (e.g., hdfs-default.xml).</p>
-<quote>
+<pre>
 &lt;property&gt;
   &lt;name&gt;dfs.datanode.plugins&lt;/name&gt;
   &lt;value&gt;edu.brown.lasvegas.server.LVFSDataNode&lt;/value&gt;
 &lt;/property&gt;
-</quote>
+
+&lt;property&gt;
+  &lt;name&gt;lasvegas.server.data.node_name&lt;/name&gt;
+  &lt;value&gt;node1&lt;/value&gt;
+&lt;/property&gt;
+
+&lt;property&gt;
+  &lt;name&gt;lasvegas.server.data.rack_name&lt;/name&gt;
+  &lt;value&gt;rack1&lt;/value&gt;
+&lt;/property&gt;
+</pre>
  * 
  */
 public final class LVDataNode implements ServicePlugin {
@@ -72,6 +82,12 @@ public final class LVDataNode implements ServicePlugin {
 
     public static final String DATA_ADDRESS_KEY = "lasvegas.server.data.address";
     public static final String DATA_ADDRESS_DEFAULT = "localhost:28712";
+
+    public static final String DATA_NODE_NAME_KEY = "lasvegas.server.data.node_name";
+    public static final String DATA_NODE_NAME_DEFAULT = "default_node";
+
+    public static final String DATA_RACK_NAME_KEY = "lasvegas.server.data.rack_name";
+    public static final String DATA_RACK_NAME_DEFAULT = "default_rack";
     
     /** server object to provide data accesses on LVFS files in this node. */
     private Server dataServer;
@@ -98,13 +114,15 @@ public final class LVDataNode implements ServicePlugin {
         String address = conf.get(DATA_ADDRESS_KEY, DATA_ADDRESS_DEFAULT);
         LOG.info("initializing LVFS Data Server. address=" + address);
         metaClient = new LVMetadataClient(conf);
-        String nodeName = hdfsDataNode.getMachineName();
+        // String nodeName = hdfsDataNode.getMachineName();
+        String nodeName = conf.get(DATA_NODE_NAME_KEY, DATA_NODE_NAME_DEFAULT);
         LVRackNode node = metaClient.getChannel().getRackNode(nodeName);
         if (node == null) {
             throw new IOException ("This node name doesn't exist: " + nodeName);
         }
+        // TODO register node/rack if needed
         InetSocketAddress sockAddress = NetUtils.createSocketAddr(address);
-        dataEngine = new DataEngine(metaClient.getChannel(), node.getNodeId());
+        dataEngine = new DataEngine(metaClient.getChannel(), node.getNodeId(), conf);
         dataEngine.start();
         dataServer = RPC.getServer(LVDataProtocol.class, dataEngine, sockAddress.getHostName(), sockAddress.getPort(), conf);
         LOG.info("initialized LVFS Data Server.");
