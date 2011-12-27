@@ -158,7 +158,7 @@ public final class DataEngine implements LVDataProtocol, Closeable, Configurable
         return deleteFileRecursive (file);
     }
     private final static String SAFE_DIR_PREFIX = "/home/hkimura/workspace/las-vegas/lvfs/test/";
-    private final static String SAFE_DIR_PREFIX2 = "/var/lib/jenkins/jobs/lvfs/test/";
+    private final static String SAFE_DIR_PREFIX2 = "/var/lib/jenkins/jobs/lvfs/";
     private boolean deleteFileRecursive (File dir) throws IOException {
         // TODO this additional check is a tentative code. will be removed when I become really confident
         if (!dir.getAbsolutePath().startsWith(SAFE_DIR_PREFIX) && !dir.getAbsolutePath().startsWith(SAFE_DIR_PREFIX2)) {
