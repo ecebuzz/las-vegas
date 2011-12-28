@@ -42,7 +42,7 @@ public class EquiWidthPartitioner<T extends Comparable<T>> {
      * @return designed partitions.
      * @throws IOException
      */
-    public static ValueRange<?>[] designPartitions (InputTableReader firstSplit, InputTableReader lastSplit, int partitioningColumnIndex, int numPartitions, int sampleByteSize) throws IOException {
+    public static ValueRange[] designPartitions (InputTableReader firstSplit, InputTableReader lastSplit, int partitioningColumnIndex, int numPartitions, int sampleByteSize) throws IOException {
         ColumnType type = firstSplit.getColumnType(partitioningColumnIndex);
         EquiWidthPartitioner<?> partitioner;
         switch(type) {
@@ -69,7 +69,7 @@ public class EquiWidthPartitioner<T extends Comparable<T>> {
      * overload that uses default sample size.
      * @see #designPartitions(InputTableReader, InputTableReader, int, int, int)
      */
-    public static ValueRange<?>[] designPartitions (InputTableReader firstSplit, InputTableReader lastSplit, int partitioningColumnIndex, int numPartitions) throws IOException {
+    public static ValueRange[] designPartitions (InputTableReader firstSplit, InputTableReader lastSplit, int partitioningColumnIndex, int numPartitions) throws IOException {
         return designPartitions(firstSplit, lastSplit, partitioningColumnIndex, numPartitions, DEFAULT_SAMPLE_BYTE_SIZE);
     }
     private final static int DEFAULT_SAMPLE_BYTE_SIZE = 1 << 20;
@@ -98,21 +98,23 @@ public class EquiWidthPartitioner<T extends Comparable<T>> {
     }
     
     
-    private ValueRange<?>[] design (InputTableReader firstSplit, InputTableReader lastSplit, int partitioningColumnIndex, int numPartitions, int sampleByteSize) throws IOException {
+    @SuppressWarnings("unchecked")
+    private ValueRange[] design (InputTableReader firstSplit, InputTableReader lastSplit, int partitioningColumnIndex, int numPartitions, int sampleByteSize) throws IOException {
         LOG.info("Designing " + numPartitions + " partitions from first-file:" + firstSplit + " and last-file:" + lastSplit);
         //first SAMPLE_BYTE_SIZE from first-file
         firstSplit.reset();
-        ValueRange<T> minmax1 = getMinMax(firstSplit, partitioningColumnIndex, sampleByteSize);
+        ValueRange minmax1 = getMinMax(firstSplit, partitioningColumnIndex, sampleByteSize);
         //last SAMPLE_BYTE_SIZE from last-file
         long lastSplitLen = lastSplit.length();
         long seekpos = lastSplitLen - sampleByteSize;
         if (seekpos < 0) seekpos = 0;
         lastSplit.seekApproximate(seekpos);
-        ValueRange<T> minmax2 = getMinMax(lastSplit, partitioningColumnIndex, sampleByteSize);
-        ValueRange<T> minmax = new ValueRange<T>(type, minmax1.getStartKey().compareTo(minmax2.getStartKey()) < 0 ? minmax1.getStartKey() : minmax2.getStartKey(),
-                    minmax1.getEndKey().compareTo(minmax2.getEndKey()) > 0 ? minmax1.getEndKey() : minmax2.getEndKey());
+        ValueRange minmax2 = getMinMax(lastSplit, partitioningColumnIndex, sampleByteSize);
+        ValueRange minmax = new ValueRange(type,
+            ((T) minmax1.getStartKey()).compareTo((T) minmax2.getStartKey()) < 0 ? minmax1.getStartKey() : minmax2.getStartKey(),
+            ((T) minmax1.getEndKey()).compareTo((T) minmax2.getEndKey()) > 0 ? minmax1.getEndKey() : minmax2.getEndKey());
         // uniformly divide the range
-        ValueRange<?>[] ret = splitter.split(type, minmax.getStartKey(), minmax.getEndKey(), numPartitions).toArray(new ValueRange<?>[0]);
+        ValueRange[] ret = splitter.split(type, (T) minmax.getStartKey(), (T) minmax.getEndKey(), numPartitions).toArray(new ValueRange[0]);
         if (LOG.isInfoEnabled()) {
             StringBuffer msg = new StringBuffer();
             for (int i = 0; i < ret.length; ++i) {
@@ -122,7 +124,7 @@ public class EquiWidthPartitioner<T extends Comparable<T>> {
         }
         return ret;
     }
-    private ValueRange<T> getMinMax (InputTableReader file, int partitioningColumnIndex, int sampleByteSize) throws IOException {
+    private ValueRange getMinMax (InputTableReader file, int partitioningColumnIndex, int sampleByteSize) throws IOException {
         T min = null, max = null;
         for (int totalRead = 0; totalRead < sampleByteSize;) {
             if (!file.next()) {
@@ -138,28 +140,28 @@ public class EquiWidthPartitioner<T extends Comparable<T>> {
             }
             totalRead += file.getCurrentTupleByteSize();
         }
-        return new ValueRange<T>(type, min, max);
+        return new ValueRange(type, min, max);
     }
     private interface ValueSplitter<T extends Comparable<T>> {
         /** uniformly split the range into numSplits partitions. */
-        List<ValueRange<T>> split (ColumnType type, T min, T max, int numSplits);
+        List<ValueRange> split (ColumnType type, T min, T max, int numSplits);
     }
     private static class ByteValueSplitter implements ValueSplitter<Byte> {
         @Override
-        public List<ValueRange<Byte>> split(ColumnType type, Byte min, Byte max, int numSplits) {
-            List<ValueRange<Byte>> list = new ArrayList<ValueRange<Byte>>();
+        public List<ValueRange> split(ColumnType type, Byte min, Byte max, int numSplits) {
+            List<ValueRange> list = new ArrayList<ValueRange>();
             if (numSplits == 1) {
-                list.add (new ValueRange<Byte>(type, null, null));
+                list.add (new ValueRange(type, null, null));
             } else {
                 Byte prevEnd = null;
                 for (int i = 0; i < numSplits; ++i) {
                     byte nextEnd = (byte) (min + ((double) (max - min) * i / numSplits));
                     if (prevEnd == null || nextEnd != prevEnd) {
-                        list.add(new ValueRange<Byte>(type, prevEnd, nextEnd));
+                        list.add(new ValueRange(type, prevEnd, nextEnd));
                         prevEnd = nextEnd;
                     }
                 }
-                list.add(new ValueRange<Byte>(type, prevEnd, null));
+                list.add(new ValueRange(type, prevEnd, null));
             }
             return list;
         }
@@ -167,20 +169,20 @@ public class EquiWidthPartitioner<T extends Comparable<T>> {
 
     private static class ShortValueSplitter implements ValueSplitter<Short> {
         @Override
-        public List<ValueRange<Short>> split(ColumnType type, Short min, Short max, int numSplits) {
-            List<ValueRange<Short>> list = new ArrayList<ValueRange<Short>>();
+        public List<ValueRange> split(ColumnType type, Short min, Short max, int numSplits) {
+            List<ValueRange> list = new ArrayList<ValueRange>();
             if (numSplits == 1) {
-                list.add (new ValueRange<Short>(type, null, null));
+                list.add (new ValueRange(type, null, null));
             } else {
                 Short prevEnd = null;
                 for (int i = 0; i < numSplits; ++i) {
                     short nextEnd = (short) (min + ((double) (max - min) * i / numSplits));
                     if (prevEnd == null || nextEnd != prevEnd) {
-                        list.add(new ValueRange<Short>(type, prevEnd, nextEnd));
+                        list.add(new ValueRange(type, prevEnd, nextEnd));
                         prevEnd = nextEnd;
                     }
                 }
-                list.add(new ValueRange<Short>(type, prevEnd, null));
+                list.add(new ValueRange(type, prevEnd, null));
             }
             return list;
         }
@@ -189,20 +191,20 @@ public class EquiWidthPartitioner<T extends Comparable<T>> {
 
     private static class IntegerValueSplitter implements ValueSplitter<Integer> {
         @Override
-        public List<ValueRange<Integer>> split(ColumnType type, Integer min, Integer max, int numSplits) {
-            List<ValueRange<Integer>> list = new ArrayList<ValueRange<Integer>>();
+        public List<ValueRange> split(ColumnType type, Integer min, Integer max, int numSplits) {
+            List<ValueRange> list = new ArrayList<ValueRange>();
             if (numSplits == 1) {
-                list.add (new ValueRange<Integer>(type, null, null));
+                list.add (new ValueRange(type, null, null));
             } else {
                 Integer prevEnd = null;
                 for (int i = 0; i < numSplits; ++i) {
                     int nextEnd = (int) (min + ((double) (max - min) * i / numSplits));
                     if (prevEnd == null || nextEnd != prevEnd) {
-                        list.add(new ValueRange<Integer>(type, prevEnd, nextEnd));
+                        list.add(new ValueRange(type, prevEnd, nextEnd));
                         prevEnd = nextEnd;
                     }
                 }
-                list.add(new ValueRange<Integer>(type, prevEnd, null));
+                list.add(new ValueRange(type, prevEnd, null));
             }
             return list;
         }
@@ -210,20 +212,20 @@ public class EquiWidthPartitioner<T extends Comparable<T>> {
 
     private static class LongValueSplitter implements ValueSplitter<Long> {
         @Override
-        public List<ValueRange<Long>> split(ColumnType type, Long min, Long max, int numSplits) {
-            List<ValueRange<Long>> list = new ArrayList<ValueRange<Long>>();
+        public List<ValueRange> split(ColumnType type, Long min, Long max, int numSplits) {
+            List<ValueRange> list = new ArrayList<ValueRange>();
             if (numSplits == 1) {
-                list.add (new ValueRange<Long>(type, null, null));
+                list.add (new ValueRange(type, null, null));
             } else {
                 Long prevEnd = null;
                 for (int i = 0; i < numSplits; ++i) {
                     long nextEnd = (long) (min + ((double) (max - min) * i / numSplits));
                     if (prevEnd == null || nextEnd != prevEnd) {
-                        list.add(new ValueRange<Long>(type, prevEnd, nextEnd));
+                        list.add(new ValueRange(type, prevEnd, nextEnd));
                         prevEnd = nextEnd;
                     }
                 }
-                list.add(new ValueRange<Long>(type, prevEnd, null));
+                list.add(new ValueRange(type, prevEnd, null));
             }
             return list;
         }
@@ -232,20 +234,20 @@ public class EquiWidthPartitioner<T extends Comparable<T>> {
 
     private static class FloatValueSplitter implements ValueSplitter<Float> {
         @Override
-        public List<ValueRange<Float>> split(ColumnType type, Float min, Float max, int numSplits) {
-            List<ValueRange<Float>> list = new ArrayList<ValueRange<Float>>();
+        public List<ValueRange> split(ColumnType type, Float min, Float max, int numSplits) {
+            List<ValueRange> list = new ArrayList<ValueRange>();
             if (numSplits == 1) {
-                list.add (new ValueRange<Float>(type, null, null));
+                list.add (new ValueRange(type, null, null));
             } else {
                 Float prevEnd = null;
                 for (int i = 0; i < numSplits; ++i) {
                     float nextEnd = (float) (min + ((double) (max - min) * i / numSplits));
                     if (prevEnd == null || nextEnd != prevEnd) {
-                        list.add(new ValueRange<Float>(type, prevEnd, nextEnd));
+                        list.add(new ValueRange(type, prevEnd, nextEnd));
                         prevEnd = nextEnd;
                     }
                 }
-                list.add(new ValueRange<Float>(type, prevEnd, null));
+                list.add(new ValueRange(type, prevEnd, null));
             }
             return list;
         }
@@ -253,20 +255,20 @@ public class EquiWidthPartitioner<T extends Comparable<T>> {
 
     private static class DoubleValueSplitter implements ValueSplitter<Double> {
         @Override
-        public List<ValueRange<Double>> split(ColumnType type, Double min, Double max, int numSplits) {
-            List<ValueRange<Double>> list = new ArrayList<ValueRange<Double>>();
+        public List<ValueRange> split(ColumnType type, Double min, Double max, int numSplits) {
+            List<ValueRange> list = new ArrayList<ValueRange>();
             if (numSplits == 1) {
-                list.add (new ValueRange<Double>(type, null, null));
+                list.add (new ValueRange(type, null, null));
             } else {
                 Double prevEnd = null;
                 for (int i = 0; i < numSplits; ++i) {
                     double nextEnd = (double) (min + ((double) (max - min) * i / numSplits));
                     if (prevEnd == null || nextEnd != prevEnd) {
-                        list.add(new ValueRange<Double>(type, prevEnd, nextEnd));
+                        list.add(new ValueRange(type, prevEnd, nextEnd));
                         prevEnd = nextEnd;
                     }
                 }
-                list.add(new ValueRange<Double>(type, prevEnd, null));
+                list.add(new ValueRange(type, prevEnd, null));
             }
             return list;
         }
@@ -275,10 +277,10 @@ public class EquiWidthPartitioner<T extends Comparable<T>> {
     /** this one is tricky... */
     private static class StringValueSplitter implements ValueSplitter<String> {
         @Override
-        public List<ValueRange<String>> split(ColumnType type, String min, String max, int numSplits) {
-            List<ValueRange<String>> list = new ArrayList<ValueRange<String>>();
+        public List<ValueRange> split(ColumnType type, String min, String max, int numSplits) {
+            List<ValueRange> list = new ArrayList<ValueRange>();
             if (numSplits == 1) {
-                list.add (new ValueRange<String>(type, null, null));
+                list.add (new ValueRange(type, null, null));
                 return list;
             }
             // first, we rip off common leading characters (prefix).
@@ -298,11 +300,11 @@ public class EquiWidthPartitioner<T extends Comparable<T>> {
             for (int i = 0; i < numSplits; ++i) {
                 char nextEnd = (char) (start + ((char) (end - start) * i / numSplits));
                 if (prevEnd == null || nextEnd != prevEnd) {
-                    list.add(new ValueRange<String>(type, prevEnd == null ? null : prefix + prevEnd, prefix + nextEnd));
+                    list.add(new ValueRange(type, prevEnd == null ? null : prefix + prevEnd, prefix + nextEnd));
                     prevEnd = nextEnd;
                 }
             }
-            list.add(new ValueRange<String>(type, prefix + prevEnd, null));
+            list.add(new ValueRange(type, prefix + prevEnd, null));
             return list;
         }
     }

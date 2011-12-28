@@ -115,7 +115,7 @@ public class LocalDictCompressionStringWriter implements TypedWriter<String, Str
     }
     private boolean wroteFileFooter = false;
     @Override
-    public void writeFileFooter() throws IOException {
+    public int writeFileFooter() throws IOException {
         LOG.info ("writing final files...");
         // first, finish writing to tentative file
         if (tentativeIntBufferUsed > 0) {
@@ -235,6 +235,7 @@ public class LocalDictCompressionStringWriter implements TypedWriter<String, Str
         }
 
         wroteFileFooter = true;
+        return 0; // TODO CRC32
     }
     @Override
     public void writeValue(String value) throws IOException {

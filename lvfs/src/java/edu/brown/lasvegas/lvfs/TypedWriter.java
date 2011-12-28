@@ -38,9 +38,10 @@ public interface TypedWriter<T, AT> extends Closeable {
      * This method should be called only once at the end of file creation.
      * Failing to call this method results in a corrupted file without footer
      * although only some files actually have a file-footer.
+     * @return CRC32 value of the written file.
      * @throws IOException
      */
-    void writeFileFooter () throws IOException;
+    int writeFileFooter () throws IOException;
 
     /**
      * this version only flushes the underlying stream, does not call sync.

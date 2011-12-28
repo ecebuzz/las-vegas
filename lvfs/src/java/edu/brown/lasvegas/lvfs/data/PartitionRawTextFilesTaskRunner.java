@@ -73,7 +73,7 @@ public final class PartitionRawTextFilesTaskRunner extends DataTaskRunner<Partit
 
         // partition the files for each replica group
         for (LVReplicaGroup group : groups) {
-            ValueRange<?>[] ranges = group.getRanges();
+            ValueRange[] ranges = group.getRanges();
             int partitions = ranges.length;
             LVColumn partitioningColumn = context.metaRepo.getColumn(group.getPartitioningColumnId());
             LOG.info("partitioning files for replica group:" + group);
@@ -119,7 +119,7 @@ public final class PartitionRawTextFilesTaskRunner extends DataTaskRunner<Partit
     }
 
     @SuppressWarnings("unchecked")
-    private static <T extends Comparable<T>> T[] extractStartKeys(T minValue, ValueRange<?>[] ranges, T[] startKeys) {
+    private static <T extends Comparable<T>> T[] extractStartKeys(T minValue, ValueRange[] ranges, T[] startKeys) {
         int partitions = ranges.length;
         assert (partitions == startKeys.length);
         for (int i = 0; i < partitions; ++i) {

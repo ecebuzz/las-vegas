@@ -15,22 +15,22 @@ import edu.brown.lasvegas.ColumnType;
  * Used to represent some value range.
  */
 @Persistent
-public class ValueRange<T extends Comparable<T>> implements Writable {
+public class ValueRange implements Writable {
     /** type of the value. */
     private ColumnType type;
 
     /**
      * The starting key of the range (inclusive).
      */
-    private T startKey;
+    private Comparable<?> startKey;
 
     /**
      * The ending key of the range (exclusive).
      */
-    private T endKey;
+    private Comparable<?> endKey;
     
     public ValueRange () {}
-    public ValueRange (ColumnType type, T startKey, T endKey) {
+    public ValueRange (ColumnType type, Comparable<?> startKey, Comparable<?> endKey) {
         this.type = type;
         this.startKey = startKey;
         this.endKey = endKey;
@@ -41,7 +41,7 @@ public class ValueRange<T extends Comparable<T>> implements Writable {
         if (obj == null || !(obj instanceof ValueRange)) {
             return false;
         }
-        ValueRange<?> o = (ValueRange<?>) obj;
+        ValueRange o = (ValueRange) obj;
         if (o.type != type) {
             return false;
         }
@@ -75,7 +75,7 @@ public class ValueRange<T extends Comparable<T>> implements Writable {
      *
      * @return the starting key of the range (inclusive)
      */
-    public T getStartKey() {
+    public Comparable<?> getStartKey() {
         return startKey;
     }
 
@@ -84,7 +84,7 @@ public class ValueRange<T extends Comparable<T>> implements Writable {
      *
      * @param startKey the new starting key of the range (inclusive)
      */
-    public void setStartKey(T startKey) {
+    public void setStartKey(Comparable<?> startKey) {
         this.startKey = startKey;
     }
 
@@ -93,7 +93,7 @@ public class ValueRange<T extends Comparable<T>> implements Writable {
      *
      * @return the ending key of the range (exclusive)
      */
-    public T getEndKey() {
+    public Comparable<?> getEndKey() {
         return endKey;
     }
 
@@ -102,7 +102,7 @@ public class ValueRange<T extends Comparable<T>> implements Writable {
      *
      * @param endKey the new ending key of the range (exclusive)
      */
-    public void setEndKey(T endKey) {
+    public void setEndKey(Comparable<?> endKey) {
         this.endKey = endKey;
     }
     
@@ -127,8 +127,25 @@ public class ValueRange<T extends Comparable<T>> implements Writable {
     /**
      * Returns if the given key falls into this range.
      */
-    public boolean contains (T key) {
-        return startKey.compareTo(key) >= 0 && endKey.compareTo(key) < 0;
+    @SuppressWarnings("unchecked")
+    public <T extends Comparable<T>> boolean contains (T key) {
+        // if startKey is null, no lower-bound
+        if (startKey != null) {
+            if (key == null) {
+                return false;
+            }
+            if (key.compareTo((T) startKey) < 0) {
+                return false;
+            }
+        }
+        if (endKey != null) {
+            if (key != null) {
+                if (key.compareTo((T) endKey) >= 0) { // endKey is exclusive, so >=
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     @Override
@@ -139,7 +156,7 @@ public class ValueRange<T extends Comparable<T>> implements Writable {
             writeValue(out, endKey);
         }
     }
-    private void writeValue(DataOutput out, T val) throws IOException {
+    private void writeValue(DataOutput out, Comparable<?> val) throws IOException {
         out.writeBoolean(val == null);
         if (val == null) {
             return;
@@ -168,14 +185,13 @@ public class ValueRange<T extends Comparable<T>> implements Writable {
             endKey = readValue(in);
         }
     }
-    public static ValueRange<?> read (DataInput in) throws IOException {
-        ValueRange<?> obj = new ValueRange<Integer>(); // whatever type works. the type parameter is anyway erased at runtime
+    public static ValueRange read (DataInput in) throws IOException {
+        ValueRange obj = new ValueRange();
         obj.readFields(in);
         return obj;
     }
 
-    @SuppressWarnings("unchecked")
-    private T readValue(DataInput in) throws IOException {
+    private Comparable<?> readValue(DataInput in) throws IOException {
         if (in.readBoolean()) {
             return null;
         }
@@ -183,14 +199,14 @@ public class ValueRange<T extends Comparable<T>> implements Writable {
         case DATE:
         case TIME:
         case TIMESTAMP:
-        case BIGINT: return (T) Long.valueOf(in.readLong());
-        case DOUBLE: return (T) Double.valueOf(in.readDouble());
-        case FLOAT: return (T) Float.valueOf(in.readFloat());
-        case INTEGER: return (T) Integer.valueOf(in.readInt());
-        case SMALLINT: return (T) Short.valueOf(in.readShort());
+        case BIGINT: return Long.valueOf(in.readLong());
+        case DOUBLE: return Double.valueOf(in.readDouble());
+        case FLOAT: return Float.valueOf(in.readFloat());
+        case INTEGER: return Integer.valueOf(in.readInt());
+        case SMALLINT: return Short.valueOf(in.readShort());
         case BOOLEAN:
-        case TINYINT: return (T) Byte.valueOf(in.readByte());
-        case VARCHAR: return (T) in.readUTF();
+        case TINYINT: return Byte.valueOf(in.readByte());
+        case VARCHAR: return in.readUTF();
         default: throw new IllegalArgumentException("Cannot deserialize this type:" + type);
         }
     }

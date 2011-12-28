@@ -54,7 +54,7 @@ public class LVFracture implements LVObject {
     /**
      * The key range of the fracturing key in this fracture.
      */
-    private ValueRange<?> range;
+    private ValueRange range;
 
     /**
      * The number of tuples in this fracture.
@@ -163,7 +163,7 @@ public class LVFracture implements LVObject {
      *
      * @return the key range of the fracturing key in this fracture.
      */
-    public ValueRange<?> getRange() {
+    public ValueRange getRange() {
         return range;
     }
 
@@ -172,7 +172,7 @@ public class LVFracture implements LVObject {
      *
      * @param range the key range of the fracturing key in this fracture.
      */
-    public void setRange(ValueRange<?> range) {
+    public void setRange(ValueRange range) {
         this.range = range;
     }
 }

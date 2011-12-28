@@ -140,10 +140,10 @@ public abstract class MetadataRepositoryTestBase {
         assertEquals(DEFAULT_TABLE.getTableId(), DEFAULT_FRACTURE.getTableId());
         
         DEFAULT_FRACTURE.setTupleCount(1000000L);
-        DEFAULT_FRACTURE.setRange(new ValueRange<Integer>(ColumnType.INTEGER, 0, 100));
+        DEFAULT_FRACTURE.setRange(new ValueRange(ColumnType.INTEGER, 0, 100));
         repository.finalizeFracture(DEFAULT_FRACTURE);
 
-        DEFAULT_GROUP = repository.createNewReplicaGroup(DEFAULT_TABLE, DEFAULT_COLUMNS[1], new ValueRange<?>[]{new ValueRange<Integer>(ColumnType.INTEGER, null, 140), new ValueRange<Integer>(ColumnType.INTEGER, 140, null)});
+        DEFAULT_GROUP = repository.createNewReplicaGroup(DEFAULT_TABLE, DEFAULT_COLUMNS[1], new ValueRange[]{new ValueRange(ColumnType.INTEGER, null, 140), new ValueRange(ColumnType.INTEGER, 140, null)});
         assertTrue (DEFAULT_GROUP.getGroupId() > 0);
         assertEquals(DEFAULT_TABLE.getTableId(), DEFAULT_GROUP.getTableId());
         assertEquals(DEFAULT_COLUMNS[1].getColumnId(), DEFAULT_GROUP.getPartitioningColumnId().intValue());
@@ -483,7 +483,7 @@ public abstract class MetadataRepositoryTestBase {
             assertEquals(DEFAULT_TABLE.getTableId(), fracture.getTableId());
             
             fracture.setTupleCount(123456789L);
-            fracture.setRange(new ValueRange<Integer>(ColumnType.INTEGER, 100, 300));
+            fracture.setRange(new ValueRange(ColumnType.INTEGER, 100, 300));
             repository.finalizeFracture(fracture);
             fractureId1 = fracture.getFractureId();
         }
@@ -494,7 +494,7 @@ public abstract class MetadataRepositoryTestBase {
             assertEquals(DEFAULT_TABLE.getTableId(), fracture.getTableId());
             
             fracture.setTupleCount(23456789L);
-            fracture.setRange(new ValueRange<Integer>(ColumnType.INTEGER, 300, 600));
+            fracture.setRange(new ValueRange(ColumnType.INTEGER, 300, 600));
             repository.finalizeFracture(fracture);
             fractureId2 = fracture.getFractureId();
         }
@@ -682,7 +682,7 @@ public abstract class MetadataRepositoryTestBase {
         LVFracture fracture2 = repository.createNewFracture(DEFAULT_TABLE);
 
         LVReplicaGroup group1 = DEFAULT_GROUP;
-        LVReplicaGroup group2 = repository.createNewReplicaGroup(DEFAULT_TABLE, DEFAULT_COLUMNS[3], new ValueRange<?>[]{new ValueRange<Float>(ColumnType.FLOAT, null, null)});
+        LVReplicaGroup group2 = repository.createNewReplicaGroup(DEFAULT_TABLE, DEFAULT_COLUMNS[3], new ValueRange[]{new ValueRange(ColumnType.FLOAT, null, null)});
 
         LVRack rack1 = DEFAULT_RACK;
         LVRack rack2 = repository.createNewRack("rack2");
@@ -782,14 +782,14 @@ public abstract class MetadataRepositoryTestBase {
     public void testReplicaGroupAssorted() throws IOException {
         int groupId1, groupId2;
         {
-            LVReplicaGroup group = repository.createNewReplicaGroup(DEFAULT_TABLE, DEFAULT_COLUMNS[3], new ValueRange<?>[]{new ValueRange<Float>(ColumnType.FLOAT, null, null)});
+            LVReplicaGroup group = repository.createNewReplicaGroup(DEFAULT_TABLE, DEFAULT_COLUMNS[3], new ValueRange[]{new ValueRange(ColumnType.FLOAT, null, null)});
             assertTrue (group.getGroupId() > 0);
             assertEquals(DEFAULT_TABLE.getTableId(), group.getTableId());
             assertEquals(DEFAULT_COLUMNS[3].getColumnId(), group.getPartitioningColumnId().intValue());
             groupId1 = group.getGroupId();
             // create another group with same partitioning
             try {
-                repository.createNewReplicaGroup(DEFAULT_TABLE, DEFAULT_COLUMNS[3], new ValueRange<?>[]{new ValueRange<Float>(ColumnType.FLOAT, null, null)});
+                repository.createNewReplicaGroup(DEFAULT_TABLE, DEFAULT_COLUMNS[3], new ValueRange[]{new ValueRange(ColumnType.FLOAT, null, null)});
                 fail ("duplicate replica group should have been rejected... ");
             } catch (IOException ex) {
                 // this IS the expected result
@@ -797,7 +797,7 @@ public abstract class MetadataRepositoryTestBase {
         }
         validateGroup (repository.getReplicaGroup(groupId1), groupId1, DEFAULT_COLUMNS[3].getColumnId());
         {
-            LVReplicaGroup group = repository.createNewReplicaGroup(DEFAULT_TABLE, DEFAULT_COLUMNS[2], new ValueRange<?>[]{new ValueRange<String>(ColumnType.VARCHAR, null, null)});
+            LVReplicaGroup group = repository.createNewReplicaGroup(DEFAULT_TABLE, DEFAULT_COLUMNS[2], new ValueRange[]{new ValueRange(ColumnType.VARCHAR, null, null)});
             assertTrue (group.getGroupId() > 0);
             assertEquals(DEFAULT_TABLE.getTableId(), group.getTableId());
             assertEquals(DEFAULT_COLUMNS[2].getColumnId(), group.getPartitioningColumnId().intValue());

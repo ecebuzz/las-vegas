@@ -47,8 +47,4 @@ public abstract class LocalTypedWriterBase<T, AT> implements TypedWriter<T, AT> 
         beforeClose();
         rawWriter.close();
     }
-
-    /** Override this to specific file footer. */
-    @Override
-    public void writeFileFooter() throws IOException {}
 }

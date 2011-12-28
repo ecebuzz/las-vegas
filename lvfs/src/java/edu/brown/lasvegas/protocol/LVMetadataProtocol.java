@@ -336,7 +336,7 @@ public interface LVMetadataProtocol extends VersionedProtocol {
      * @return new ReplicaGroup object
      * @throws IOException
      */
-    LVReplicaGroup createNewReplicaGroup(LVTable table, LVColumn partitioningColumn, ValueRange<?>[] ranges) throws IOException;
+    LVReplicaGroup createNewReplicaGroup(LVTable table, LVColumn partitioningColumn, ValueRange[] ranges) throws IOException;
 
     /**
      * Creates a new additional replica group in the given table with the specified partitioning column

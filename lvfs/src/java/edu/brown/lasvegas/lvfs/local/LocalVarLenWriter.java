@@ -67,4 +67,8 @@ public final class LocalVarLenWriter<T> extends LocalTypedWriterBase<T, T[]>  {
     public void writePositionFile (VirtualFile posFile) throws IOException {
         LocalPosFile.createPosFile(posFile, collectedTuples, collectedPositions, curTuple, getRawCurPosition());
     }
+    @Override
+    public int writeFileFooter() throws IOException {
+        return 0; // TODO CRC32
+    }
 }

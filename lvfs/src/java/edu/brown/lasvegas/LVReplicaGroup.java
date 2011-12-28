@@ -43,7 +43,7 @@ public class LVReplicaGroup implements LVObject {
      * The key ranges of the partitioning column in this replica group.
      * Sorted by the ranges themselves.
      */
-    private ValueRange<?>[] ranges;
+    private ValueRange[] ranges;
     
     /**
      * ID of the replica group <b>in another table</b> this group is linked to (NULL if this group is independent).
@@ -67,7 +67,7 @@ public class LVReplicaGroup implements LVObject {
             buffer.append("null");
         } else {
             buffer.append("{");
-            for (ValueRange<?> range : ranges) {
+            for (ValueRange range : ranges) {
                 buffer.append(range + ",");
             }
             buffer.append("}");
@@ -82,9 +82,9 @@ public class LVReplicaGroup implements LVObject {
         out.writeInt(tableId);
         out.writeInt(ranges == null ? -1 : ranges.length);
         if (ranges != null) {
-            for (ValueRange<?> range : ranges) {
+            for (ValueRange range : ranges) {
                 if (range == null) {
-                    range = new ValueRange<Integer>(); // this will not happen, but let's make it sure
+                    range = new ValueRange(); // this will not happen, but let's make it sure
                 }
                 range.write(out);
             }
@@ -103,7 +103,7 @@ public class LVReplicaGroup implements LVObject {
         if (len < 0) {
             ranges = null;
         } else {
-            ranges = new ValueRange<?>[len];
+            ranges = new ValueRange[len];
             for (int i = 0; i < len; ++i) {
                 ranges[i] = ValueRange.read(in);
             }
@@ -184,7 +184,7 @@ public class LVReplicaGroup implements LVObject {
      *
      * @return the key ranges of the partitioning column in this replica group
      */
-    public ValueRange<?>[] getRanges() {
+    public ValueRange[] getRanges() {
         return ranges;
     }
 
@@ -193,7 +193,7 @@ public class LVReplicaGroup implements LVObject {
      *
      * @param ranges the new key ranges of the partitioning column in this replica group
      */
-    public void setRanges(ValueRange<?>[] ranges) {
+    public void setRanges(ValueRange[] ranges) {
         this.ranges = ranges;
     }
 

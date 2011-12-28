@@ -136,9 +136,10 @@ public final class LocalRLEWriter<T, AT> extends LocalTypedWriterBase<T, AT> imp
     }
 
     @Override
-    public final void writeFileFooter() throws IOException {
+    public final int writeFileFooter() throws IOException {
         // this is not quite a file footer, but we need to flush the last run here.
         startNewRun(null, 0); // flush the current run
+        return 0; // TODO CRC32
     }
     
     /**

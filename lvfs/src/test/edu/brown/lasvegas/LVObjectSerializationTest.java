@@ -140,13 +140,13 @@ public class LVObjectSerializationTest {
     public void testFracture () throws IOException {
         LVFracture obj1 = new LVFracture();
         obj1.setFractureId(32);
-        obj1.setRange(new ValueRange<Long>(ColumnType.BIGINT, -902834L, 34342L));
+        obj1.setRange(new ValueRange(ColumnType.BIGINT, -902834L, 34342L));
         obj1.setTableId(6666);
         obj1.setTupleCount(243643545L);
         obj1.write(out);
         LVFracture obj2 = new LVFracture();
         obj2.setFractureId(543);
-        obj2.setRange(new ValueRange<Float>(ColumnType.FLOAT, null, 9823.348f));
+        obj2.setRange(new ValueRange(ColumnType.FLOAT, null, 9823.348f));
         obj2.setTableId(454);
         obj2.setTupleCount(0L);
         obj2.write(out);

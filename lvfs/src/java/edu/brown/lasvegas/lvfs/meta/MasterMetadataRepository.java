@@ -546,14 +546,14 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         return createNewReplicaGroup(table, null, null, null);
     }
     @Override
-    public LVReplicaGroup createNewReplicaGroup(LVTable table, LVColumn partitioningColumn, ValueRange<?>[] ranges) throws IOException {
+    public LVReplicaGroup createNewReplicaGroup(LVTable table, LVColumn partitioningColumn, ValueRange[] ranges) throws IOException {
         return createNewReplicaGroup(table, partitioningColumn, ranges, null);
     }
     @Override
     public LVReplicaGroup createNewReplicaGroup(LVTable table, LVColumn partitioningColumn, LVReplicaGroup linkedGroup) throws IOException {
         return createNewReplicaGroup(table, partitioningColumn, null, linkedGroup);
     }
-    private LVReplicaGroup createNewReplicaGroup(LVTable table, LVColumn partitioningColumn, ValueRange<?>[] ranges, LVReplicaGroup linkedGroup) throws IOException {
+    private LVReplicaGroup createNewReplicaGroup(LVTable table, LVColumn partitioningColumn, ValueRange[] ranges, LVReplicaGroup linkedGroup) throws IOException {
         assert (table.getTableId() > 0);
         assert (partitioningColumn == null || partitioningColumn.getColumnId() > 0);
         assert (partitioningColumn == null || table.getTableId() == partitioningColumn.getTableId());
