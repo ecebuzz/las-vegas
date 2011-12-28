@@ -32,7 +32,6 @@ import edu.brown.lasvegas.LVReplica;
 import edu.brown.lasvegas.LVReplicaGroup;
 import edu.brown.lasvegas.LVReplicaPartition;
 import edu.brown.lasvegas.LVReplicaScheme;
-import edu.brown.lasvegas.LVSubPartitionScheme;
 import edu.brown.lasvegas.LVTable;
 import edu.brown.lasvegas.LVTask;
 import edu.brown.lasvegas.RackNodeStatus;
@@ -91,12 +90,10 @@ public abstract class MetadataRepositoryTestBase {
     private LVRack DEFAULT_RACK;
     private LVRackNode DEFAULT_RACK_NODE;
     private LVRackAssignment DEFAULT_RACK_ASSIGNMENT;
-    /** intcol partition. */
+    /** intcol partition: 2 partitions (40-140, 140-300). */
     private LVReplicaGroup DEFAULT_GROUP;
     /** intcol sort. */
     private LVReplicaScheme DEFAULT_SCHEME;
-    /** 2 partitions (40-140, 140-300). */
-    private LVSubPartitionScheme DEFAULT_SUB_PARTITION_SCHEME;
     private LVReplica DEFAULT_REPLICA;
     /** 2 partitions. */
     private LVReplicaPartition[] DEFAULT_REPLICA_PARTITIONS;
@@ -143,22 +140,15 @@ public abstract class MetadataRepositoryTestBase {
         assertEquals(DEFAULT_TABLE.getTableId(), DEFAULT_FRACTURE.getTableId());
         
         DEFAULT_FRACTURE.setTupleCount(1000000L);
-        DEFAULT_FRACTURE.setRange(new ValueRange<Integer>(0, 100));
+        DEFAULT_FRACTURE.setRange(new ValueRange<Integer>(ColumnType.INTEGER, 0, 100));
         repository.finalizeFracture(DEFAULT_FRACTURE);
 
-        DEFAULT_GROUP = repository.createNewReplicaGroup(DEFAULT_TABLE, DEFAULT_COLUMNS[1]);
+        DEFAULT_GROUP = repository.createNewReplicaGroup(DEFAULT_TABLE, DEFAULT_COLUMNS[1], new ValueRange<?>[]{new ValueRange<Integer>(ColumnType.INTEGER, null, 140), new ValueRange<Integer>(ColumnType.INTEGER, 140, null)});
         assertTrue (DEFAULT_GROUP.getGroupId() > 0);
         assertEquals(DEFAULT_TABLE.getTableId(), DEFAULT_GROUP.getTableId());
-        assertEquals(DEFAULT_COLUMNS[1].getColumnId(), DEFAULT_GROUP.getPartitioningColumnId());
+        assertEquals(DEFAULT_COLUMNS[1].getColumnId(), DEFAULT_GROUP.getPartitioningColumnId().intValue());
         
         DEFAULT_RACK_ASSIGNMENT = repository.createNewRackAssignment(DEFAULT_RACK, DEFAULT_FRACTURE, DEFAULT_GROUP);
-        
-        DEFAULT_SUB_PARTITION_SCHEME = repository.createNewSubPartitionScheme(DEFAULT_FRACTURE, DEFAULT_GROUP);
-        assertTrue (DEFAULT_SUB_PARTITION_SCHEME.getSubPartitionSchemeId() > 0);
-        assertEquals(DEFAULT_FRACTURE.getFractureId(), DEFAULT_SUB_PARTITION_SCHEME.getFractureId());
-        assertEquals(DEFAULT_GROUP.getGroupId(), DEFAULT_SUB_PARTITION_SCHEME.getGroupId());
-        DEFAULT_SUB_PARTITION_SCHEME.setRanges(new ValueRange<?>[]{new ValueRange<Integer>(40, 140), new ValueRange<Integer>(140, 300)});
-        repository.finalizeSubPartitionScheme(DEFAULT_SUB_PARTITION_SCHEME);
 
         int[] columnIds = new int[]{DEFAULT_COLUMNS[0].getColumnId(), DEFAULT_COLUMNS[1].getColumnId(), DEFAULT_COLUMNS[2].getColumnId(), DEFAULT_COLUMNS[3].getColumnId()};
         CompressionType[] compressionTypes = new CompressionType[]{CompressionType.RLE, CompressionType.NULL_SUPPRESS, CompressionType.DICTIONARY, CompressionType.SNAPPY};
@@ -176,7 +166,7 @@ public abstract class MetadataRepositoryTestBase {
             DEFAULT_REPLICA_PARTITIONS[i] = repository.createNewReplicaPartition(DEFAULT_REPLICA, i);
             assertEquals(DEFAULT_REPLICA.getReplicaId(), DEFAULT_REPLICA_PARTITIONS[i].getReplicaId());
             assertEquals(i, DEFAULT_REPLICA_PARTITIONS[i].getRange());
-            assertEquals(DEFAULT_SUB_PARTITION_SCHEME.getSubPartitionSchemeId(), DEFAULT_REPLICA_PARTITIONS[i].getSubPartitionSchemeId());
+            assertEquals(DEFAULT_GROUP.getGroupId(), DEFAULT_REPLICA_PARTITIONS[i].getReplicaGroupId());
             assertEquals(ReplicaPartitionStatus.BEING_RECOVERED, DEFAULT_REPLICA_PARTITIONS[i].getStatus());
             DEFAULT_REPLICA_PARTITIONS[i] = repository.updateReplicaPartition(DEFAULT_REPLICA_PARTITIONS[i], ReplicaPartitionStatus.OK, DEFAULT_RACK_NODE);
             assertEquals(ReplicaPartitionStatus.OK, DEFAULT_REPLICA_PARTITIONS[i].getStatus());
@@ -493,7 +483,7 @@ public abstract class MetadataRepositoryTestBase {
             assertEquals(DEFAULT_TABLE.getTableId(), fracture.getTableId());
             
             fracture.setTupleCount(123456789L);
-            fracture.setRange(new ValueRange<Integer>(100, 300));
+            fracture.setRange(new ValueRange<Integer>(ColumnType.INTEGER, 100, 300));
             repository.finalizeFracture(fracture);
             fractureId1 = fracture.getFractureId();
         }
@@ -504,7 +494,7 @@ public abstract class MetadataRepositoryTestBase {
             assertEquals(DEFAULT_TABLE.getTableId(), fracture.getTableId());
             
             fracture.setTupleCount(23456789L);
-            fracture.setRange(new ValueRange<Integer>(300, 600));
+            fracture.setRange(new ValueRange<Integer>(ColumnType.INTEGER, 300, 600));
             repository.finalizeFracture(fracture);
             fractureId2 = fracture.getFractureId();
         }
@@ -692,7 +682,7 @@ public abstract class MetadataRepositoryTestBase {
         LVFracture fracture2 = repository.createNewFracture(DEFAULT_TABLE);
 
         LVReplicaGroup group1 = DEFAULT_GROUP;
-        LVReplicaGroup group2 = repository.createNewReplicaGroup(DEFAULT_TABLE, DEFAULT_COLUMNS[3]);
+        LVReplicaGroup group2 = repository.createNewReplicaGroup(DEFAULT_TABLE, DEFAULT_COLUMNS[3], new ValueRange<?>[]{new ValueRange<Float>(ColumnType.FLOAT, null, null)});
 
         LVRack rack1 = DEFAULT_RACK;
         LVRack rack2 = repository.createNewRack("rack2");
@@ -769,17 +759,37 @@ public abstract class MetadataRepositoryTestBase {
     }
 
     @Test
+    public void testReplicaGroupNoPartitioning() throws IOException {
+        LVReplicaGroup group = repository.createNewReplicaGroup(DEFAULT_TABLE);
+        assertTrue (group.getGroupId() > 0);
+        assertEquals(DEFAULT_TABLE.getTableId(), group.getTableId());
+        assertNull(group.getPartitioningColumnId());
+    }
+    @Test
+    public void testReplicaGroupLinked() throws IOException {
+        LVTable table = repository.createNewTable(DEFAULT_DATABASE.getDatabaseId(), "dddd", new String[]{"aaa","bbb"}, new ColumnType[]{ColumnType.INTEGER, ColumnType.FLOAT});
+        LVColumn[] columns = repository.getAllColumns(table.getTableId());
+        assertEquals (ColumnType.INTEGER, columns[1].getType());
+        assertEquals ("aaa", columns[1].getName());
+        LVReplicaGroup group = repository.createNewReplicaGroup(table, columns[1], DEFAULT_GROUP);
+        assertTrue (group.getGroupId() > 0);
+        assertEquals(table.getTableId(), group.getTableId());
+        assertEquals(columns[1].getColumnId(), group.getPartitioningColumnId().intValue());
+        assertEquals(DEFAULT_GROUP.getGroupId(), group.getLinkedGroupId().intValue());
+        assertArrayEquals(DEFAULT_GROUP.getRanges(), group.getRanges());
+    }
+    @Test
     public void testReplicaGroupAssorted() throws IOException {
         int groupId1, groupId2;
         {
-            LVReplicaGroup group = repository.createNewReplicaGroup(DEFAULT_TABLE, DEFAULT_COLUMNS[3]);
+            LVReplicaGroup group = repository.createNewReplicaGroup(DEFAULT_TABLE, DEFAULT_COLUMNS[3], new ValueRange<?>[]{new ValueRange<Float>(ColumnType.FLOAT, null, null)});
             assertTrue (group.getGroupId() > 0);
             assertEquals(DEFAULT_TABLE.getTableId(), group.getTableId());
-            assertEquals(DEFAULT_COLUMNS[3].getColumnId(), group.getPartitioningColumnId());
+            assertEquals(DEFAULT_COLUMNS[3].getColumnId(), group.getPartitioningColumnId().intValue());
             groupId1 = group.getGroupId();
             // create another group with same partitioning
             try {
-                repository.createNewReplicaGroup(DEFAULT_TABLE, DEFAULT_COLUMNS[3]);
+                repository.createNewReplicaGroup(DEFAULT_TABLE, DEFAULT_COLUMNS[3], new ValueRange<?>[]{new ValueRange<Float>(ColumnType.FLOAT, null, null)});
                 fail ("duplicate replica group should have been rejected... ");
             } catch (IOException ex) {
                 // this IS the expected result
@@ -787,10 +797,10 @@ public abstract class MetadataRepositoryTestBase {
         }
         validateGroup (repository.getReplicaGroup(groupId1), groupId1, DEFAULT_COLUMNS[3].getColumnId());
         {
-            LVReplicaGroup group = repository.createNewReplicaGroup(DEFAULT_TABLE, DEFAULT_COLUMNS[2]);
+            LVReplicaGroup group = repository.createNewReplicaGroup(DEFAULT_TABLE, DEFAULT_COLUMNS[2], new ValueRange<?>[]{new ValueRange<String>(ColumnType.VARCHAR, null, null)});
             assertTrue (group.getGroupId() > 0);
             assertEquals(DEFAULT_TABLE.getTableId(), group.getTableId());
-            assertEquals(DEFAULT_COLUMNS[2].getColumnId(), group.getPartitioningColumnId());
+            assertEquals(DEFAULT_COLUMNS[2].getColumnId(), group.getPartitioningColumnId().intValue());
             groupId2 = group.getGroupId();
         }
         validateGroup (repository.getReplicaGroup(groupId2), groupId2, DEFAULT_COLUMNS[2].getColumnId());
@@ -829,77 +839,7 @@ public abstract class MetadataRepositoryTestBase {
     private void validateGroup (LVReplicaGroup group, int groupId, int partitioningColumnId) {
         assertEquals (groupId, group.getGroupId());
         assertEquals (DEFAULT_TABLE.getTableId(), group.getTableId());
-        assertEquals (partitioningColumnId, group.getPartitioningColumnId());
-    }
-
-    @Test
-    public void testSubPartitionSchemeAssorted() throws IOException {
-        LVFracture fracture1 = DEFAULT_FRACTURE;
-        LVFracture fracture2 = repository.createNewFracture(DEFAULT_TABLE);
-
-        LVReplicaGroup group1 = DEFAULT_GROUP;
-        LVReplicaGroup group2 = repository.createNewReplicaGroup(DEFAULT_TABLE, DEFAULT_COLUMNS[2]);
-        
-        LVSubPartitionScheme subPartitionScheme11 = repository.getSubPartitionScheme(DEFAULT_SUB_PARTITION_SCHEME.getSubPartitionSchemeId());
-        LVSubPartitionScheme subPartitionScheme12 = createSubPartitionScheme(fracture1, group2, new ValueRange<?>[]{new ValueRange<String>("A", "C"), new ValueRange<String>("C", "E")});
-        LVSubPartitionScheme subPartitionScheme21 = createSubPartitionScheme(fracture2, group1, new ValueRange<?>[]{new ValueRange<Integer>(40, 150), new ValueRange<Integer>(150, 400)});
-        LVSubPartitionScheme subPartitionScheme22 = createSubPartitionScheme(fracture2, group2, new ValueRange<?>[]{new ValueRange<String>("A", "BD"), new ValueRange<String>("BD", "FF")});
-        
-        {
-            LVSubPartitionScheme[] array = repository.getAllSubPartitionSchemesByFractureId(fracture1.getFractureId());
-            assertEquals(2, array.length);
-            assertEquals(array[0].getSubPartitionSchemeId(), subPartitionScheme11.getSubPartitionSchemeId());
-            assertEquals(array[1].getSubPartitionSchemeId(), subPartitionScheme12.getSubPartitionSchemeId());
-        }
-        {
-            LVSubPartitionScheme[] array = repository.getAllSubPartitionSchemesByGroupId(group2.getGroupId());
-            assertEquals(2, array.length);
-            assertEquals(array[0].getSubPartitionSchemeId(), subPartitionScheme12.getSubPartitionSchemeId());
-            assertEquals(array[1].getSubPartitionSchemeId(), subPartitionScheme22.getSubPartitionSchemeId());
-        }
-        {
-            LVSubPartitionScheme ret = repository.getSubPartitionSchemeByFractureAndGroup(fracture2.getFractureId(), group1.getGroupId());
-            assertEquals(subPartitionScheme21.getSubPartitionSchemeId(), ret.getSubPartitionSchemeId());
-        }
-        
-        repository.dropSubPartitionScheme(subPartitionScheme12);
-        reloadRepository();
-
-        {
-            LVSubPartitionScheme[] array = repository.getAllSubPartitionSchemesByFractureId(fracture1.getFractureId());
-            assertEquals(1, array.length);
-            assertEquals(array[0].getSubPartitionSchemeId(), subPartitionScheme11.getSubPartitionSchemeId());
-        }
-        {
-            LVSubPartitionScheme[] array = repository.getAllSubPartitionSchemesByGroupId(group2.getGroupId());
-            assertEquals(1, array.length);
-            assertEquals(array[0].getSubPartitionSchemeId(), subPartitionScheme22.getSubPartitionSchemeId());
-        }
-        {
-            LVSubPartitionScheme ret = repository.getSubPartitionSchemeByFractureAndGroup(fracture2.getFractureId(), group1.getGroupId());
-            assertEquals(subPartitionScheme21.getSubPartitionSchemeId(), ret.getSubPartitionSchemeId());
-        }
-        assertNull(repository.getSubPartitionSchemeByFractureAndGroup(fracture1.getFractureId(), group2.getGroupId()));
-    }
-    private LVSubPartitionScheme createSubPartitionScheme (LVFracture fracture, LVReplicaGroup group, ValueRange<?>[] ranges) throws IOException {
-        LVSubPartitionScheme subPartitionScheme = repository.createNewSubPartitionScheme(fracture, group);
-        assertTrue (subPartitionScheme.getSubPartitionSchemeId() > 0);
-        assertEquals(fracture.getFractureId(), subPartitionScheme.getFractureId());
-        assertEquals(group.getGroupId(), subPartitionScheme.getGroupId());
-        subPartitionScheme.setRanges(ranges);
-        repository.finalizeSubPartitionScheme(subPartitionScheme);
-
-        LVSubPartitionScheme forCheck = repository.getSubPartitionScheme(subPartitionScheme.getSubPartitionSchemeId());
-        assertEquals(subPartitionScheme.getSubPartitionSchemeId(), forCheck.getSubPartitionSchemeId());
-        assertEquals(fracture.getFractureId(), forCheck.getFractureId());
-        assertEquals(group.getGroupId(), forCheck.getGroupId());
-        
-        assertEquals(ranges.length, forCheck.getRanges().length);
-        for (int i = 0; i < ranges.length; ++i) {
-            assertEquals(ranges[i], forCheck.getRanges()[i]);
-        }
-        
-        return subPartitionScheme;
+        assertEquals (partitioningColumnId, group.getPartitioningColumnId().intValue());
     }
 
     @Test
@@ -987,13 +927,6 @@ public abstract class MetadataRepositoryTestBase {
         LVFracture fracture1 = DEFAULT_FRACTURE;
         LVFracture fracture2 = repository.createNewFracture(DEFAULT_TABLE);
 
-        LVSubPartitionScheme subPartitionScheme2 = repository.createNewSubPartitionScheme(fracture2, DEFAULT_GROUP);
-        assertTrue (subPartitionScheme2.getSubPartitionSchemeId() > 0);
-        assertEquals(fracture2.getFractureId(), subPartitionScheme2.getFractureId());
-        assertEquals(DEFAULT_GROUP.getGroupId(), subPartitionScheme2.getGroupId());
-        subPartitionScheme2.setRanges(new ValueRange<?>[]{new ValueRange<Integer>(40, 160), new ValueRange<Integer>(160, 300)});
-        repository.finalizeSubPartitionScheme(subPartitionScheme2);
-
         LVReplicaScheme scheme1 = DEFAULT_SCHEME;
         LVReplicaScheme scheme2 = repository.createNewReplicaScheme(DEFAULT_GROUP, DEFAULT_COLUMNS[3], new int[0], new CompressionType[0]);
 
@@ -1060,7 +993,7 @@ public abstract class MetadataRepositoryTestBase {
         LVReplicaPartition partition = repository.getReplicaPartition(DEFAULT_REPLICA_PARTITIONS[1].getPartitionId());
         assertEquals(DEFAULT_REPLICA.getReplicaId(), partition.getReplicaId());
         assertEquals(1, partition.getRange());
-        assertEquals(DEFAULT_SUB_PARTITION_SCHEME.getSubPartitionSchemeId(), partition.getSubPartitionSchemeId());
+        assertEquals(DEFAULT_GROUP.getGroupId(), partition.getReplicaGroupId());
         assertEquals(ReplicaPartitionStatus.OK, partition.getStatus());
     }
 
@@ -1077,7 +1010,7 @@ public abstract class MetadataRepositoryTestBase {
         LVReplicaPartition partition = repository.getReplicaPartitionByReplicaAndRange(DEFAULT_REPLICA.getReplicaId(), 1);
         assertEquals(DEFAULT_REPLICA.getReplicaId(), partition.getReplicaId());
         assertEquals(1, partition.getRange());
-        assertEquals(DEFAULT_SUB_PARTITION_SCHEME.getSubPartitionSchemeId(), partition.getSubPartitionSchemeId());
+        assertEquals(DEFAULT_GROUP.getGroupId(), partition.getReplicaGroupId());
         assertEquals(ReplicaPartitionStatus.OK, partition.getStatus());
         assertNull(repository.getReplicaPartitionByReplicaAndRange(DEFAULT_REPLICA.getReplicaId(), 2));
     }
@@ -1090,14 +1023,13 @@ public abstract class MetadataRepositoryTestBase {
         assertTrue (replica.getReplicaId() > 0);
         assertEquals(scheme.getSchemeId(), replica.getSchemeId());
         assertEquals(DEFAULT_FRACTURE.getFractureId(), replica.getFractureId());
-        assertEquals(DEFAULT_SUB_PARTITION_SCHEME.getSubPartitionSchemeId(), replica.getSubPartitionSchemeId());
         
         LVReplicaPartition[] partitions = new LVReplicaPartition[2];
         for (int i = 0; i < 2; ++i) {
             partitions[i] = repository.createNewReplicaPartition(replica, i);
             assertEquals(replica.getReplicaId(), partitions[i].getReplicaId());
             assertEquals(i, partitions[i].getRange());
-            assertEquals(DEFAULT_SUB_PARTITION_SCHEME.getSubPartitionSchemeId(), partitions[i].getSubPartitionSchemeId());
+            assertEquals(DEFAULT_GROUP.getGroupId(), partitions[i].getReplicaGroupId());
             assertEquals(ReplicaPartitionStatus.BEING_RECOVERED, partitions[i].getStatus());
             partitions[i] = repository.updateReplicaPartition(partitions[i], ReplicaPartitionStatus.OK, DEFAULT_RACK_NODE);
             assertEquals(ReplicaPartitionStatus.OK, partitions[i].getStatus());

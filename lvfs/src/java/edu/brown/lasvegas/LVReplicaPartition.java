@@ -29,13 +29,13 @@ public class LVReplicaPartition implements LVObject {
     private int replicaId;
 
     /**
-     * ID of the sub-partition scheme this partition is based on.
+     * ID of the Replica Group this partition is based on.
      * Can be obtained from replicaId, but easier if we have this here too (de-normalization).
      */
-    private int subPartitionSchemeId;
+    private int replicaGroupId;
 
     /**
-     * The index in {@link LVSubPartitionScheme#getRanges()}.
+     * The index in {@link LVReplicaGroup#getRanges()}.
      * Represents the key range this partition stores.
      */
     private int range;
@@ -115,7 +115,7 @@ public class LVReplicaPartition implements LVObject {
     public String toString() {
         return "ReplicaPartition-" + partitionId + " (Replica=" + replicaId
             + ", Range=" + range + ")"
-            + " subPartitionSchemeId=" + subPartitionSchemeId
+            + " replicaGroupId=" + replicaGroupId
             + " Status=" + status
             + " nodeId=" + nodeId
             ;
@@ -128,7 +128,7 @@ public class LVReplicaPartition implements LVObject {
         out.writeInt(range);
         out.writeInt(replicaId);
         out.writeInt(status == null ? ReplicaPartitionStatus.INVALID.ordinal() : status.ordinal());
-        out.writeInt(subPartitionSchemeId);
+        out.writeInt(replicaGroupId);
     }
     @Override
     public void readFields(DataInput in) throws IOException {
@@ -138,7 +138,7 @@ public class LVReplicaPartition implements LVObject {
         range = in.readInt();
         replicaId = in.readInt();
         status = ReplicaPartitionStatus.values()[in.readInt()];
-        subPartitionSchemeId = in.readInt();
+        replicaGroupId = in.readInt();
         syncReplicaRange();
     }
     /** Creates and returns a new instance of this class from the data input.*/
@@ -210,7 +210,7 @@ public class LVReplicaPartition implements LVObject {
     }
 
     /**
-     * Gets the index in {@link LVSubPartitionScheme#getRanges()}.
+     * Gets the index in {@link LVReplicaGroup#getRanges()}.
      *
      * @return the index in {@link LVSubPartitionScheme#getRanges()}
      */
@@ -226,24 +226,6 @@ public class LVReplicaPartition implements LVObject {
     public void setRange(int range) {
         this.range = range;
         syncReplicaRange();
-    }
-
-    /**
-     * Gets the iD of the sub-partition scheme this partition is based on.
-     *
-     * @return the iD of the sub-partition scheme this partition is based on
-     */
-    public int getSubPartitionSchemeId() {
-        return subPartitionSchemeId;
-    }
-
-    /**
-     * Sets the iD of the sub-partition scheme this partition is based on.
-     *
-     * @param subPartitionSchemeId the new iD of the sub-partition scheme this partition is based on
-     */
-    public void setSubPartitionSchemeId(int subPartitionSchemeId) {
-        this.subPartitionSchemeId = subPartitionSchemeId;
     }
 
     /**
@@ -264,5 +246,21 @@ public class LVReplicaPartition implements LVObject {
         this.nodeId = nodeId;
     }
 
-    
+    /**
+     * Gets the iD of the Replica Group this partition is based on.
+     *
+     * @return the iD of the Replica Group this partition is based on
+     */
+    public int getReplicaGroupId() {
+        return replicaGroupId;
+    }
+
+    /**
+     * Sets the iD of the Replica Group this partition is based on.
+     *
+     * @param replicaGroupId the new iD of the Replica Group this partition is based on
+     */
+    public void setReplicaGroupId(int replicaGroupId) {
+        this.replicaGroupId = replicaGroupId;
+    }
 }

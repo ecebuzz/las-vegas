@@ -6,10 +6,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 
 import org.junit.After;
 import org.junit.Before;
@@ -142,15 +140,13 @@ public class LVObjectSerializationTest {
     public void testFracture () throws IOException {
         LVFracture obj1 = new LVFracture();
         obj1.setFractureId(32);
-        obj1.setKeyType(ColumnType.BIGINT);
-        obj1.setRange(new ValueRange<Long>(-902834L, 34342L));
+        obj1.setRange(new ValueRange<Long>(ColumnType.BIGINT, -902834L, 34342L));
         obj1.setTableId(6666);
         obj1.setTupleCount(243643545L);
         obj1.write(out);
         LVFracture obj2 = new LVFracture();
         obj2.setFractureId(543);
-        obj2.setKeyType(ColumnType.FLOAT);
-        obj2.setRange(new ValueRange<Float>(null, 9823.348f));
+        obj2.setRange(new ValueRange<Float>(ColumnType.FLOAT, null, 9823.348f));
         obj2.setTableId(454);
         obj2.setTupleCount(0L);
         obj2.write(out);
@@ -160,7 +156,6 @@ public class LVObjectSerializationTest {
         for (int i = 0; i < org.length; ++i) {
             LVFracture copied = LVFracture.read(in);
             assertEquals(org[i].getFractureId(), copied.getFractureId());
-            assertEquals(org[i].getKeyType(), copied.getKeyType());
             assertEquals(org[i].getRange(), copied.getRange());
             assertEquals(org[i].getTableId(), copied.getTableId());
             assertEquals(org[i].getTupleCount(), copied.getTupleCount());
@@ -253,14 +248,12 @@ public class LVObjectSerializationTest {
         obj1.setReplicaId(545454);
         obj1.setSchemeId(8730);
         obj1.setStatus(ReplicaStatus.NOT_READY);
-        obj1.setSubPartitionSchemeId(9988);
         obj1.write(out);
         LVReplica obj2 = new LVReplica();
         obj2.setFractureId(10);
         obj2.setReplicaId(1);
         obj2.setSchemeId(5536);
         obj2.setStatus(ReplicaStatus.OK);
-        obj2.setSubPartitionSchemeId(110);
         obj2.write(out);
 
         LVReplica[] org = new LVReplica[]{obj1, obj2};
@@ -271,7 +264,6 @@ public class LVObjectSerializationTest {
             assertEquals(org[i].getReplicaId(), copied.getReplicaId());
             assertEquals(org[i].getSchemeId(), copied.getSchemeId());
             assertEquals(org[i].getStatus(), copied.getStatus());
-            assertEquals(org[i].getSubPartitionSchemeId(), copied.getSubPartitionSchemeId());
             assertEquals(org[i].getPrimaryKey(), copied.getPrimaryKey());
         }
     }
@@ -308,7 +300,7 @@ public class LVObjectSerializationTest {
         obj1.setPartitionId(32);
         obj1.setRange(0);
         obj1.setReplicaId(555543);
-        obj1.setSubPartitionSchemeId(345);
+        obj1.setReplicaGroupId(345);
         obj1.setStatus(ReplicaPartitionStatus.BEING_RECOVERED);
         obj1.write(out);
         LVReplicaPartition obj2 = new LVReplicaPartition();
@@ -316,7 +308,7 @@ public class LVObjectSerializationTest {
         obj2.setPartitionId(333);
         obj2.setRange(11);
         obj2.setReplicaId(342312);
-        obj2.setSubPartitionSchemeId(2);
+        obj2.setReplicaGroupId(2);
         obj2.setStatus(ReplicaPartitionStatus.LOST);
         obj2.write(out);
 
@@ -329,7 +321,7 @@ public class LVObjectSerializationTest {
             assertEquals(org[i].getRange(), copied.getRange());
             assertEquals(org[i].getReplicaId(), copied.getReplicaId());
             assertEquals(org[i].getReplicaRange(), copied.getReplicaRange());
-            assertEquals(org[i].getSubPartitionSchemeId(), copied.getSubPartitionSchemeId());
+            assertEquals(org[i].getReplicaGroupId(), copied.getReplicaGroupId());
             assertEquals(org[i].getStatus(), copied.getStatus());
             assertEquals(org[i].getPrimaryKey(), copied.getPrimaryKey());
         }
@@ -366,44 +358,6 @@ public class LVObjectSerializationTest {
             assertEquals(org[i].getSchemeId(), copied.getSchemeId());
             assertEquals(org[i].getSortColumnId(), copied.getSortColumnId());
             assertEquals(org[i].getColumnCompressionSchemes(), copied.getColumnCompressionSchemes());
-            assertEquals(org[i].getPrimaryKey(), copied.getPrimaryKey());
-        }
-    }
-
-    @Test
-    public void testSubPartitionScheme () throws IOException {
-        LVSubPartitionScheme obj1 = new LVSubPartitionScheme();
-        obj1.setFractureId(545);
-        obj1.setGroupId(433);
-        obj1.setKeyType(ColumnType.SMALLINT);
-        obj1.setSubPartitionSchemeId(644);
-        List<ValueRange<?>> list1 = new ArrayList<ValueRange<?>>();
-        list1.add(new ValueRange<Short>(null, (short) -11));
-        list1.add(new ValueRange<Short>((short) -11, (short) 215));
-        list1.add(new ValueRange<Short>((short) 439, null));
-        obj1.setRanges(list1.toArray(new ValueRange<?>[0]));
-        obj1.write(out);
-        LVSubPartitionScheme obj2 = new LVSubPartitionScheme();
-        obj2.setFractureId(22);
-        obj2.setGroupId(11);
-        obj2.setKeyType(ColumnType.VARCHAR);
-        obj2.setSubPartitionSchemeId(32);
-        List<ValueRange<?>> list2 = new ArrayList<ValueRange<?>>();
-        list2.add(new ValueRange<String>("aac", "ab"));
-        list2.add(new ValueRange<String>("ab", "bz"));
-        list2.add(new ValueRange<String>("bz", null));
-        obj2.setRanges(list2.toArray(new ValueRange<?>[0]));
-        obj2.write(out);
-
-        LVSubPartitionScheme[] org = new LVSubPartitionScheme[]{obj1, obj2};
-        DataInputStream in = inFromOut();
-        for (int i = 0; i < org.length; ++i) {
-            LVSubPartitionScheme copied = LVSubPartitionScheme.read(in);
-            assertEquals(org[i].getFractureId(), copied.getFractureId());
-            assertEquals(org[i].getGroupId(), copied.getGroupId());
-            assertEquals(org[i].getKeyType(), copied.getKeyType());
-            assertEquals(org[i].getSubPartitionSchemeId(), copied.getSubPartitionSchemeId());
-            assertArrayEquals(org[i].getRanges(), copied.getRanges());
             assertEquals(org[i].getPrimaryKey(), copied.getPrimaryKey());
         }
     }

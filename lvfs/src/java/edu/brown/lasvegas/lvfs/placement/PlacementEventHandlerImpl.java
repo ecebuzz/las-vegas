@@ -15,7 +15,6 @@ import edu.brown.lasvegas.LVReplica;
 import edu.brown.lasvegas.LVReplicaGroup;
 import edu.brown.lasvegas.LVReplicaPartition;
 import edu.brown.lasvegas.LVReplicaScheme;
-import edu.brown.lasvegas.LVSubPartitionScheme;
 import edu.brown.lasvegas.LVTable;
 import edu.brown.lasvegas.RackNodeStatus;
 import edu.brown.lasvegas.RackStatus;
@@ -162,12 +161,7 @@ public final class PlacementEventHandlerImpl implements PlacementEventHandler {
             }
         }
 
-        LVSubPartitionScheme subPartitions = repository.getSubPartitionSchemeByFractureAndGroup(fracture.getFractureId(), group.getGroupId());
-        if (subPartitions == null) {
-            throw new IOException ("this fracture doesn't have sub-partition scheme yet, so cannot assign nodes. when you create a new fracture, first" +
-            		" determine the sub-partition scheme and create a sub-partition scheme!");
-        }
-        int partitionCount = subPartitions.getRanges().length;
+        int partitionCount = group.getRanges().length;
         for (int partition = 0; partition < partitionCount; ++partition) {
             // first, check which nodes already store some replica partitions
             HashSet<Integer> usedNodeIds = new HashSet<Integer>();

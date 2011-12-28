@@ -38,7 +38,6 @@ import edu.brown.lasvegas.LVRackNode;
 import edu.brown.lasvegas.LVReplica;
 import edu.brown.lasvegas.LVReplicaGroup;
 import edu.brown.lasvegas.LVReplicaPartition;
-import edu.brown.lasvegas.LVSubPartitionScheme;
 import edu.brown.lasvegas.LVTask;
 import edu.brown.lasvegas.RackNodeStatus;
 import edu.brown.lasvegas.RackStatus;
@@ -54,6 +53,7 @@ import edu.brown.lasvegas.TaskType;
 import edu.brown.lasvegas.lvfs.LVFSFilePath;
 import edu.brown.lasvegas.protocol.LVMetadataProtocol;
 import edu.brown.lasvegas.util.CompositeIntKey;
+import edu.brown.lasvegas.util.ValueRange;
 
 /**
  * Implementation of {@link LVMetadataProtocol} in the master namenode.
@@ -497,7 +497,6 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     public LVFracture createNewFracture(LVTable table) throws IOException {
         assert (table.getTableId() > 0);
         LVFracture fracture = new LVFracture();
-        fracture.setKeyType(getColumn(table.getFracturingColumnId()).getType());
         fracture.setTableId(table.getTableId());
         fracture.setFractureId(bdbTableAccessors.fractureAccessor.issueNewId());
         bdbTableAccessors.fractureAccessor.PKX.putNoReturn(fracture);
@@ -514,11 +513,6 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     public void dropFracture(LVFracture fracture) throws IOException {
         LOG.info("Dropping fracture : " + fracture);
         assert (fracture.getFractureId() > 0);
-        // drop child sub-partition schemes
-        LVSubPartitionScheme[] subPartitionSchemes = getAllSubPartitionSchemesByFractureId(fracture.getFractureId());
-        for (LVSubPartitionScheme subPartitionScheme : subPartitionSchemes) {
-            dropSubPartitionScheme(subPartitionScheme);
-        }
         // drop child replicas
         LVReplica[] replicas = getAllReplicasByFractureId(fracture.getFractureId());
         for (LVReplica replica : replicas) {
@@ -548,20 +542,30 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     }
 
     @Override
-    public LVReplicaGroup createNewReplicaGroup(LVTable table, LVColumn partitioningColumn) throws IOException {
-        return createNewReplicaGroup(table, partitioningColumn, null);
+    public LVReplicaGroup createNewReplicaGroup(LVTable table) throws IOException {
+        return createNewReplicaGroup(table, null, null, null);
+    }
+    @Override
+    public LVReplicaGroup createNewReplicaGroup(LVTable table, LVColumn partitioningColumn, ValueRange<?>[] ranges) throws IOException {
+        return createNewReplicaGroup(table, partitioningColumn, ranges, null);
     }
     @Override
     public LVReplicaGroup createNewReplicaGroup(LVTable table, LVColumn partitioningColumn, LVReplicaGroup linkedGroup) throws IOException {
+        return createNewReplicaGroup(table, partitioningColumn, null, linkedGroup);
+    }
+    private LVReplicaGroup createNewReplicaGroup(LVTable table, LVColumn partitioningColumn, ValueRange<?>[] ranges, LVReplicaGroup linkedGroup) throws IOException {
         assert (table.getTableId() > 0);
-        assert (partitioningColumn.getColumnId() > 0);
-        assert (table.getTableId() == partitioningColumn.getTableId());
+        assert (partitioningColumn == null || partitioningColumn.getColumnId() > 0);
+        assert (partitioningColumn == null || table.getTableId() == partitioningColumn.getTableId());
         assert (linkedGroup == null || linkedGroup.getGroupId() > 0);
+        assert (partitioningColumn == null || linkedGroup != null || ranges != null);
         // check other group
-        for (LVReplicaGroup existing : bdbTableAccessors.replicaGroupAccessor.IX_TABLE_ID.subIndex(table.getTableId()).map().values()) {
-            assert (table.getTableId() == existing.getTableId());
-            if (existing.getPartitioningColumnId() == partitioningColumn.getColumnId()) {
-                throw new IOException ("another replica group with the same partitioning column already exists : " + existing);
+        if (partitioningColumn != null) {
+            for (LVReplicaGroup existing : bdbTableAccessors.replicaGroupAccessor.IX_TABLE_ID.subIndex(table.getTableId()).map().values()) {
+                assert (table.getTableId() == existing.getTableId());
+                if (existing.getPartitioningColumnId() != null && existing.getPartitioningColumnId() == partitioningColumn.getColumnId()) {
+                    throw new IOException ("another replica group with the same partitioning column already exists : " + existing);
+                }
             }
         }
         // if linked group is specified, check partitioning column type
@@ -572,10 +576,40 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
             if (linkedColumn.getType() != partitioningColumn.getType()) {
                 throw new IOException("linked group must be partitioned by a column in the same type: linked=" + linkedColumn.getType() + ", this=" + partitioningColumn.getType());
             }
+            ranges = linkedGroup.getRanges();
+        }
+        // check range consistency.
+        if (ranges != null) {
+            if (ranges.length == 0) {
+                throw new IOException ("no partitioning ranges defined");
+            }
+            if (ranges[0].getStartKey() != null) {
+                throw new IOException ("the start-key of the first range must be null");
+            }
+            if (ranges.length != 1 && ranges[0].getEndKey() == null) {
+                throw new IOException ("the end-key of range 0 is null");
+            }
+            Comparable<?> prevEnd = ranges[0].getEndKey();
+            for (int i = 1; i < ranges.length; ++i) {
+                if (ranges[i].getStartKey() == null) {
+                    throw new IOException ("the start-key of range " + i + " is null");
+                }
+                if (!prevEnd.equals(ranges[i].getStartKey())) {
+                    throw new IOException ("the end-key of range " + (i - 1) + " doesn't match with the start-key of range " + i);
+                }
+                if (i != ranges.length - 1 && ranges[i].getEndKey() == null) {
+                    throw new IOException ("the end-key of range " + i + " is null");
+                }
+                prevEnd = ranges[i].getEndKey();
+            }
+            if (ranges[ranges.length - 1].getEndKey() != null) {
+                throw new IOException ("the end-key of the last range must be null");
+            }
         }
         
         LVReplicaGroup group = new LVReplicaGroup();
-        group.setPartitioningColumnId(partitioningColumn.getColumnId());
+        group.setPartitioningColumnId(partitioningColumn == null ? null : partitioningColumn.getColumnId());
+        group.setRanges(ranges);
         group.setTableId(table.getTableId());
         group.setGroupId(bdbTableAccessors.replicaGroupAccessor.issueNewId());
         group.setLinkedGroupId(linkedGroup == null ? null : linkedGroup.getGroupId());
@@ -588,11 +622,6 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     public void dropReplicaGroup(LVReplicaGroup group) throws IOException {
         LOG.info("Dropping replica group : " + group);
         assert (group.getGroupId() > 0);
-        // drop child sub-partition schemes
-        LVSubPartitionScheme[] subPartitionSchemes = getAllSubPartitionSchemesByGroupId(group.getGroupId());
-        for (LVSubPartitionScheme subPartitionScheme : subPartitionSchemes) {
-            dropSubPartitionScheme(subPartitionScheme);
-        }
         // drop child replica schemes
         LVReplicaScheme[] schemes = getAllReplicaSchemes(group.getGroupId());
         for (LVReplicaScheme scheme : schemes) {
@@ -697,7 +726,13 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
 
     @Override
     public LVReplica getReplicaFromSchemeAndFracture(int schemeId, int fractureId) throws IOException {
-        return bdbTableAccessors.replicaAccessor.IX_SCHEME_FRACTURE_ID.get(new CompositeIntKey(schemeId, fractureId));
+        // fracture ID should be enough selective
+        for (LVReplica replica : bdbTableAccessors.replicaAccessor.IX_FRACTURE_ID.subIndex(fractureId).map().values()) {
+            if (replica.getSchemeId() == schemeId) {
+                return replica;
+            }
+        }
+        return null;
     }
 
     @Override
@@ -709,11 +744,6 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         replica.setSchemeId(scheme.getSchemeId());
         replica.setStatus(ReplicaStatus.NOT_READY);
         replica.setReplicaId(bdbTableAccessors.replicaAccessor.issueNewId());
-
-        // also sets ReplicaPartitionSchemeId. this is a de-normalization
-        LVSubPartitionScheme subPartitionScheme = getSubPartitionSchemeByFractureAndGroup(fracture.getFractureId(), scheme.getGroupId());
-        replica.setSubPartitionSchemeId(subPartitionScheme.getSubPartitionSchemeId());
-
         bdbTableAccessors.replicaAccessor.PKX.putNoReturn(replica);
         return replica;
     }
@@ -737,65 +767,6 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
             LOG.warn("this replica has been already deleted?? :" + replica);
         }
     }
-
-    @Override
-    public LVSubPartitionScheme getSubPartitionScheme(int subPartitionSchemeId) throws IOException {
-        return bdbTableAccessors.subPartitionSchemeAccessor.PKX.get(subPartitionSchemeId);
-    }
-
-    @Override
-    public LVSubPartitionScheme[] getAllSubPartitionSchemesByFractureId(int fractureId) throws IOException {
-        // ID order
-        Collection<LVSubPartitionScheme> values = bdbTableAccessors.subPartitionSchemeAccessor.IX_FRACTURE_ID.subIndex(fractureId).sortedMap().values();
-        return values.toArray(new LVSubPartitionScheme[values.size()]);
-    }
-
-    @Override
-    public LVSubPartitionScheme[] getAllSubPartitionSchemesByGroupId(int groupId) throws IOException {
-        // ID order
-        Collection<LVSubPartitionScheme> values = bdbTableAccessors.subPartitionSchemeAccessor.IX_GROUP_ID.subIndex(groupId).sortedMap().values();
-        return values.toArray(new LVSubPartitionScheme[values.size()]);
-    }
-
-    @Override
-    public LVSubPartitionScheme getSubPartitionSchemeByFractureAndGroup(int fractureId, int groupId) throws IOException {
-        for (LVSubPartitionScheme value : bdbTableAccessors.subPartitionSchemeAccessor.IX_FRACTURE_ID.subIndex(fractureId).map().values()) {
-            if (value.getGroupId() == groupId) {
-                return value;
-            }
-        }
-        return null;
-    }
-
-    @Override
-    public LVSubPartitionScheme createNewSubPartitionScheme(LVFracture fracture, LVReplicaGroup group) throws IOException {
-        assert (fracture.getFractureId() > 0);
-        assert (group.getGroupId() > 0);
-        assert (fracture.getTableId() == group.getTableId());
-        LVSubPartitionScheme partitionScheme = new LVSubPartitionScheme();
-        partitionScheme.setFractureId(fracture.getFractureId());
-        partitionScheme.setGroupId(group.getGroupId());
-        partitionScheme.setSubPartitionSchemeId(bdbTableAccessors.subPartitionSchemeAccessor.issueNewId());
-        partitionScheme.setKeyType(getColumn(group.getPartitioningColumnId()).getType());
-        bdbTableAccessors.subPartitionSchemeAccessor.PKX.putNoReturn(partitionScheme);
-        return partitionScheme;
-    }
-
-    @Override
-    public void finalizeSubPartitionScheme(LVSubPartitionScheme subPartitionScheme) throws IOException {
-        assert (subPartitionScheme.getSubPartitionSchemeId() > 0);
-        bdbTableAccessors.subPartitionSchemeAccessor.PKX.putNoReturn(subPartitionScheme);
-    }
-
-    @Override
-    public void dropSubPartitionScheme(LVSubPartitionScheme subPartitionScheme) throws IOException {
-        assert (subPartitionScheme.getSubPartitionSchemeId() > 0);
-        boolean deleted = bdbTableAccessors.subPartitionSchemeAccessor.PKX.delete(subPartitionScheme.getSubPartitionSchemeId());
-        if (!deleted) {
-            LOG.warn("this sub-partition scheme has been already deleted?? :" + subPartitionScheme);
-        }
-    }
-
     @Override
     public LVReplicaPartition getReplicaPartition(int subPartitionId) throws IOException {
         return bdbTableAccessors.replicaPartitionAccessor.PKX.get(subPartitionId);
@@ -828,8 +799,9 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         subPartition.setReplicaId(replica.getReplicaId());
         subPartition.setStatus(ReplicaPartitionStatus.BEING_RECOVERED);
         subPartition.setPartitionId(bdbTableAccessors.replicaPartitionAccessor.issueNewId());
-        // also sets ReplicaPartitionSchemeId. this is a de-normalization
-        subPartition.setSubPartitionSchemeId(replica.getSubPartitionSchemeId());
+        // also sets ReplicaGroupId. this is a de-normalization
+        LVReplicaScheme scheme = getReplicaScheme(replica.getSchemeId());
+        subPartition.setReplicaGroupId(scheme.getGroupId());
 
         bdbTableAccessors.replicaPartitionAccessor.PKX.putNoReturn(subPartition);
         return subPartition;

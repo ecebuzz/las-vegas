@@ -9,6 +9,8 @@ import com.sleepycat.persist.model.PrimaryKey;
 import com.sleepycat.persist.model.Relationship;
 import com.sleepycat.persist.model.SecondaryKey;
 
+import edu.brown.lasvegas.util.ValueRange;
+
 /**
  * A conceptual group of replica schemes which share the partitioning scheme.
  * Replica schemes in the same replica group can recover files
@@ -33,9 +35,15 @@ public class LVReplicaGroup implements LVObject {
         return groupId;
     }   
     /**
-     * ID of the column used as the partitioning key in this replica group.
+     * ID of the column used as the partitioning key in this replica group. NULL if no partitioning.
      */
-    private int partitioningColumnId;
+    private Integer partitioningColumnId;
+
+    /**
+     * The key ranges of the partitioning column in this replica group.
+     * Sorted by the ranges themselves.
+     */
+    private ValueRange<?>[] ranges;
     
     /**
      * ID of the replica group <b>in another table</b> this group is linked to (NULL if this group is independent).
@@ -51,29 +59,58 @@ public class LVReplicaGroup implements LVObject {
      */
     @Override
     public String toString() {
-        return "ReplicaGroup-" + groupId + " in Table-" + tableId
-        + " partitioning-column-id=" + partitioningColumnId + ", linkedGroupId=" + linkedGroupId;
+        StringBuffer buffer = new StringBuffer();
+        buffer.append("ReplicaGroup-" + groupId + " in Table-" + tableId
+                        + " partitioning-column-id=" + partitioningColumnId + ", linkedGroupId=" + linkedGroupId);
+        buffer.append(" ranges=");
+        if (ranges == null) {
+            buffer.append("null");
+        } else {
+            buffer.append("{");
+            for (ValueRange<?> range : ranges) {
+                buffer.append(range + ",");
+            }
+            buffer.append("}");
+        }
+        return new String(buffer);
     }
 
     @Override
     public void write(DataOutput out) throws IOException {
         out.writeInt(groupId);
-        out.writeInt(partitioningColumnId);
+        out.writeInt(partitioningColumnId == null ? -1 : partitioningColumnId);
         out.writeInt(tableId);
-        out.writeBoolean(linkedGroupId == null);
-        if (linkedGroupId != null) {
-            out.writeInt(linkedGroupId);
+        out.writeInt(ranges == null ? -1 : ranges.length);
+        if (ranges != null) {
+            for (ValueRange<?> range : ranges) {
+                if (range == null) {
+                    range = new ValueRange<Integer>(); // this will not happen, but let's make it sure
+                }
+                range.write(out);
+            }
         }
+        out.writeInt(linkedGroupId == null ? -1 : linkedGroupId.intValue());
     }
     @Override
     public void readFields(DataInput in) throws IOException {
         groupId = in.readInt();
         partitioningColumnId = in.readInt();
+        if (partitioningColumnId < 0) {
+            partitioningColumnId = null;
+        }
         tableId = in.readInt();
-        if (in.readBoolean()) {
-            linkedGroupId = null;
+        int len = in.readInt();
+        if (len < 0) {
+            ranges = null;
         } else {
-            linkedGroupId = in.readInt();
+            ranges = new ValueRange<?>[len];
+            for (int i = 0; i < len; ++i) {
+                ranges[i] = ValueRange.read(in);
+            }
+        }
+        linkedGroupId = in.readInt();
+        if (linkedGroupId == -1) {
+            linkedGroupId = null;
         }
     }
     /** Creates and returns a new instance of this class from the data input.*/
@@ -125,24 +162,6 @@ public class LVReplicaGroup implements LVObject {
     }
 
     /**
-     * Gets the iD of the column used as the partitioning key in this replica group.
-     *
-     * @return the iD of the column used as the partitioning key in this replica group
-     */
-    public int getPartitioningColumnId() {
-        return partitioningColumnId;
-    }
-
-    /**
-     * Sets the iD of the column used as the partitioning key in this replica group.
-     *
-     * @param partitioningColumnId the new iD of the column used as the partitioning key in this replica group
-     */
-    public void setPartitioningColumnId(int partitioningColumnId) {
-        this.partitioningColumnId = partitioningColumnId;
-    }
-
-    /**
      * Gets the iD of the replica group <b>in another table</b> this group is linked to (NULL if this group is independent).
      *
      * @return the iD of the replica group <b>in another table</b> this group is linked to (NULL if this group is independent)
@@ -159,4 +178,41 @@ public class LVReplicaGroup implements LVObject {
     public void setLinkedGroupId(Integer linkedGroupId) {
         this.linkedGroupId = linkedGroupId;
     }
+
+    /**
+     * Gets the key ranges of the partitioning column in this replica group.
+     *
+     * @return the key ranges of the partitioning column in this replica group
+     */
+    public ValueRange<?>[] getRanges() {
+        return ranges;
+    }
+
+    /**
+     * Sets the key ranges of the partitioning column in this replica group.
+     *
+     * @param ranges the new key ranges of the partitioning column in this replica group
+     */
+    public void setRanges(ValueRange<?>[] ranges) {
+        this.ranges = ranges;
+    }
+
+    /**
+     * Gets the iD of the column used as the partitioning key in this replica group.
+     *
+     * @return the iD of the column used as the partitioning key in this replica group
+     */
+    public Integer getPartitioningColumnId() {
+        return partitioningColumnId;
+    }
+
+    /**
+     * Sets the iD of the column used as the partitioning key in this replica group.
+     *
+     * @param partitioningColumnId the new iD of the column used as the partitioning key in this replica group
+     */
+    public void setPartitioningColumnId(Integer partitioningColumnId) {
+        this.partitioningColumnId = partitioningColumnId;
+    }
+    
 }

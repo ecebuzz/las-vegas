@@ -19,7 +19,6 @@ import edu.brown.lasvegas.LVRackNode;
 import edu.brown.lasvegas.LVReplica;
 import edu.brown.lasvegas.LVReplicaGroup;
 import edu.brown.lasvegas.LVReplicaPartition;
-import edu.brown.lasvegas.LVSubPartitionScheme;
 import edu.brown.lasvegas.LVReplicaScheme;
 import edu.brown.lasvegas.LVTable;
 import edu.brown.lasvegas.LVColumn;
@@ -52,7 +51,6 @@ class BdbTableAccessors {
     final RackAssignmentAccessor rackAssignmentAccessor;
     final ReplicaGroupAccessor replicaGroupAccessor;
     final ReplicaSchemeAccessor replicaSchemeAccessor;
-    final SubPartitionSchemeAccessor subPartitionSchemeAccessor;
     final ReplicaPartitionAccessor replicaPartitionAccessor;
     final ReplicaAccessor replicaAccessor;
     final ColumnFileAccessor columnFileAccessor;
@@ -78,7 +76,6 @@ class BdbTableAccessors {
         rackAssignmentAccessor = new RackAssignmentAccessor();
         replicaGroupAccessor = new ReplicaGroupAccessor();
         replicaSchemeAccessor = new ReplicaSchemeAccessor();
-        subPartitionSchemeAccessor = new SubPartitionSchemeAccessor();
         replicaPartitionAccessor = new ReplicaPartitionAccessor();
         replicaAccessor = new ReplicaAccessor();
         columnFileAccessor = new ColumnFileAccessor();
@@ -235,17 +232,6 @@ class BdbTableAccessors {
         final SecondaryIndex<Integer, Integer, LVReplicaScheme> IX_GROUP_ID;
     }
 
-    class SubPartitionSchemeAccessor extends MetaTableAccessor<LVSubPartitionScheme> {
-        SubPartitionSchemeAccessor () {
-            super(LVSubPartitionScheme.class);
-            IX_GROUP_ID = store.getSecondaryIndex(PKX, Integer.class, LVSubPartitionScheme.IX_GROUP_ID);
-            IX_FRACTURE_ID = store.getSecondaryIndex(PKX, Integer.class, LVSubPartitionScheme.IX_FRACTURE_ID);
-        }
-        LVObjectType getType() { return LVObjectType.SUB_PARTITION_SCHEME;}
-        final SecondaryIndex<Integer, Integer, LVSubPartitionScheme> IX_GROUP_ID;
-        final SecondaryIndex<Integer, Integer, LVSubPartitionScheme> IX_FRACTURE_ID;
-    }
-
     class ReplicaPartitionAccessor extends MetaTableAccessor<LVReplicaPartition> {
         ReplicaPartitionAccessor () {
             super(LVReplicaPartition.class);
@@ -266,13 +252,11 @@ class BdbTableAccessors {
             super(LVReplica.class);
             IX_FRACTURE_ID = store.getSecondaryIndex(PKX, Integer.class, LVReplica.IX_FRACTURE_ID);
             IX_SCHEME_ID = store.getSecondaryIndex(PKX, Integer.class, LVReplica.IX_SCHEME_ID);
-            IX_SCHEME_FRACTURE_ID = store.getSecondaryIndex(PKX, CompositeIntKey.class, LVReplica.IX_SCHEME_FRACTURE_ID);
             IX_STATUS = store.getSecondaryIndex(PKX, ReplicaStatus.class, LVReplica.IX_SCHEME_ID);
         }
         LVObjectType getType() { return LVObjectType.REPLICA;}
         final SecondaryIndex<Integer, Integer, LVReplica> IX_FRACTURE_ID;
         final SecondaryIndex<Integer, Integer, LVReplica> IX_SCHEME_ID;
-        final SecondaryIndex<CompositeIntKey, Integer, LVReplica> IX_SCHEME_FRACTURE_ID;
         final SecondaryIndex<ReplicaStatus, Integer, LVReplica> IX_STATUS;
     }
 

@@ -17,7 +17,6 @@ public enum LVObjectType {
     REPLICA_GROUP,
     REPLICA_PARTITION,
     REPLICA_SCHEME,
-    SUB_PARTITION_SCHEME,
     TABLE,
     TASK,
     ;

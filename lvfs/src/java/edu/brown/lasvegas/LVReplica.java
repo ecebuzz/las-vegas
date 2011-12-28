@@ -9,8 +9,6 @@ import com.sleepycat.persist.model.PrimaryKey;
 import com.sleepycat.persist.model.Relationship;
 import com.sleepycat.persist.model.SecondaryKey;
 
-import edu.brown.lasvegas.util.CompositeIntKey;
-
 /**
  * Replica (Replicated Fracture) is a stored
  * table fracture with some replica scheme.
@@ -33,24 +31,6 @@ public class LVReplica implements LVObject {
     @SecondaryKey(name=IX_FRACTURE_ID, relate=Relationship.MANY_TO_ONE, relatedEntity=LVFracture.class)
     private int fractureId;
 
-    public static final String IX_SCHEME_FRACTURE_ID = "IX_SCHEME_FRACTURE_ID";
-    /**
-     * A hack to create a composite secondary index on Scheme-ID and Fracture-ID.
-     * Don't get or set this directly. Only BDB-JE should access it.
-     */
-    @SecondaryKey(name=IX_SCHEME_FRACTURE_ID, relate=Relationship.MANY_TO_ONE)
-    private CompositeIntKey schemeFractureId = new CompositeIntKey();
-    public CompositeIntKey getSchemeFractureId() {
-        return schemeFractureId;
-    }
-    private void syncSchemeFractureId() {
-        schemeFractureId.setValue1(schemeId);
-        schemeFractureId.setValue2(fractureId);
-    }
-    public void setSchemeFractureId(CompositeIntKey schemeFractureId) {
-        this.schemeFractureId = schemeFractureId;
-    }
-    
     /**
      * A unique (system-wide) ID of this replica.
      */
@@ -68,12 +48,6 @@ public class LVReplica implements LVObject {
     private ReplicaStatus status;
 
     /**
-     * ID of the sub-partition scheme this partition is based on.
-     * Can be obtained from replicaId, but easier if we have this here too (de-normalization).
-     */
-    private int subPartitionSchemeId;
-
-    /**
      * To string.
      *
      * @return the string
@@ -82,7 +56,7 @@ public class LVReplica implements LVObject {
     @Override
     public String toString() {
         return "Replica-" + replicaId + "(Scheme=" + schemeId + ", Fracture=" + fractureId + ") "
-        + "status=" + status + ", subPartitionSchemeId=" + subPartitionSchemeId
+        + "status=" + status
         ;
     }
 
@@ -92,7 +66,6 @@ public class LVReplica implements LVObject {
         out.writeInt(replicaId);
         out.writeInt(schemeId);
         out.writeInt(status == null ? ReplicaStatus.INVALID.ordinal() : status.ordinal());
-        out.writeInt(subPartitionSchemeId);
     }
     @Override
     public void readFields(DataInput in) throws IOException {
@@ -100,8 +73,6 @@ public class LVReplica implements LVObject {
         replicaId = in.readInt();
         schemeId = in.readInt();
         status = ReplicaStatus.values()[in.readInt()];
-        subPartitionSchemeId = in.readInt();
-        syncSchemeFractureId();
     }
     /** Creates and returns a new instance of this class from the data input.*/
     public static LVReplica read (DataInput in) throws IOException {
@@ -132,7 +103,6 @@ public class LVReplica implements LVObject {
      */
     public void setSchemeId(int schemeId) {
         this.schemeId = schemeId;
-        syncSchemeFractureId();
     }
 
     /**
@@ -151,7 +121,6 @@ public class LVReplica implements LVObject {
      */
     public void setFractureId(int fractureId) {
         this.fractureId = fractureId;
-        syncSchemeFractureId();
     }
 
     /**
@@ -188,23 +157,5 @@ public class LVReplica implements LVObject {
      */
     public void setStatus(ReplicaStatus status) {
         this.status = status;
-    }
-
-    /**
-     * Gets the iD of the sub-partition scheme this replica uses.
-     *
-     * @return the iD of the sub-partition scheme this replica uses
-     */
-    public int getSubPartitionSchemeId() {
-        return subPartitionSchemeId;
-    }
-
-    /**
-     * Sets the iD of the replica partition scheme this replica uses.
-     *
-     * @param subPartitionSchemeId the new iD of the sub-partition scheme this replica uses
-     */
-    public void setSubPartitionSchemeId(int subPartitionSchemeId) {
-        this.subPartitionSchemeId = subPartitionSchemeId;
     }
 }

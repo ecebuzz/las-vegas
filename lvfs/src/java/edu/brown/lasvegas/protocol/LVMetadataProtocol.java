@@ -19,7 +19,6 @@ import edu.brown.lasvegas.LVRackNode;
 import edu.brown.lasvegas.LVReplica;
 import edu.brown.lasvegas.LVReplicaGroup;
 import edu.brown.lasvegas.LVReplicaPartition;
-import edu.brown.lasvegas.LVSubPartitionScheme;
 import edu.brown.lasvegas.LVObjectType;
 import edu.brown.lasvegas.LVTask;
 import edu.brown.lasvegas.RackNodeStatus;
@@ -32,6 +31,7 @@ import edu.brown.lasvegas.LVFracture;
 import edu.brown.lasvegas.ReplicaStatus;
 import edu.brown.lasvegas.TaskStatus;
 import edu.brown.lasvegas.TaskType;
+import edu.brown.lasvegas.util.ValueRange;
 
 /**
  * Defines a protocol to access a repository of metadata in LVFS.
@@ -321,13 +321,22 @@ public interface LVMetadataProtocol extends VersionedProtocol {
     LVReplicaGroup[] getAllReplicaGroups(int tableId) throws IOException;
 
     /**
-     * Creates a new additional replica group in the given table with the specified partitioning column.
+     * Creates a new replica group without partitioning.
      * @param table the table to create a new group
-     * @param partitioningColumn the partitioning column of the new group
      * @return new ReplicaGroup object
      * @throws IOException
      */
-    LVReplicaGroup createNewReplicaGroup(LVTable table, LVColumn partitioningColumn) throws IOException;
+    LVReplicaGroup createNewReplicaGroup(LVTable table) throws IOException;
+
+    /**
+     * Creates a new replica group in the given table with the specified partitioning column.
+     * @param table the table to create a new group
+     * @param partitioningColumn the partitioning column of the new group
+     * @param ranges partition ranges
+     * @return new ReplicaGroup object
+     * @throws IOException
+     */
+    LVReplicaGroup createNewReplicaGroup(LVTable table, LVColumn partitioningColumn, ValueRange<?>[] ranges) throws IOException;
 
     /**
      * Creates a new additional replica group in the given table with the specified partitioning column
@@ -627,71 +636,6 @@ public interface LVMetadataProtocol extends VersionedProtocol {
      * @throws IOException
      */
     void dropReplica (LVReplica replica) throws IOException;
-
-    //////////////////////// Replica Partition Scheme (Sub-Partition Scheme) Methods : begin ////////////////////////////////
-    /**
-     * Returns the sub-partition scheme object with the given ID. 
-     * @param subPartitionSchemeId the ID of sub-partition scheme
-     * @return sub-partition scheme object. null if the ID is not found.
-     * @throws IOException
-     */
-    LVSubPartitionScheme getSubPartitionScheme(int subPartitionSchemeId) throws IOException;
-
-    /**
-     * Returns all sub-partition scheme objects  in the given fracture.
-     * @param fractureId Fracture the replica partition schemes are for.
-     * @return sub-partition scheme objects. in ID order.
-     * @throws IOException
-     */
-    LVSubPartitionScheme[] getAllSubPartitionSchemesByFractureId(int fractureId) throws IOException;
-
-    /**
-     * Returns all sub-partition scheme objects  of the given replica group.
-     * @param groupId Replica Group the partition schemes are for.
-     * @return sub-partition scheme objects. in ID order.
-     * @throws IOException
-     */
-    LVSubPartitionScheme[] getAllSubPartitionSchemesByGroupId(int groupId) throws IOException;
-
-    /**
-     * Returns the sub-partition scheme object for the given . 
-     * @param fractureId Fracture the sub-partition scheme is for.
-     * @param groupId Replica Group the sub-partition scheme is for.
-     * @return sub-partition scheme. null if the ID is not found.
-     * @throws IOException
-     */
-    LVSubPartitionScheme getSubPartitionSchemeByFractureAndGroup(int fractureId, int groupId) throws IOException;
-
-    /**
-     * Creates a new sub-partition scheme for the given fracture and replica group.
-     * As of this method call, the caller doesn't have to know the exact key range.
-     * So, this method merely acquires a unique ID for the new sub-partition scheme.
-     * As soon as the key ranges are finalized, call
-     * {@link #finalizeSubPartitionScheme(LVSubPartitionScheme)}.
-     * @param fracture Fracture the replica partition scheme is for.
-     * @param group Replica Group the partition scheme is for.
-     * @return new sub-partition scheme
-     * @throws IOException
-     */
-    LVSubPartitionScheme createNewSubPartitionScheme(
-                    LVFracture fracture, LVReplicaGroup group) throws IOException;
-
-    /**
-     * Saves and finalizes the sub-partition scheme definition.
-     * A newly created sub-partition scheme is inactive until this method call.
-     * @param subPartitionScheme the sub-partition scheme object with full details (eg key ranges).
-     * @throws IOException
-     */
-    void finalizeSubPartitionScheme(LVSubPartitionScheme subPartitionScheme) throws IOException;
-    
-    /**
-     * Deletes the sub-partition scheme metadata object.
-     * This method does not delete subsequent objects because the deletion of containing fracture/group
-     * will do it instead (fracture/group -> replica, subPartitionScheme -> subPartition is a lattice relationship).
-     * @param subPartitionScheme the sub-partition scheme object to delete
-     * @throws IOException
-     */
-    void dropSubPartitionScheme (LVSubPartitionScheme subPartitionScheme) throws IOException;
 
     //////////////////////// Replica Partition (Sub-Partition) Methods : begin ////////////////////////////////
     /**

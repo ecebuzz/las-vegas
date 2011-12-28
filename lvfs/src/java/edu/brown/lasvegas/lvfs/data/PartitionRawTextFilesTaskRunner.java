@@ -15,7 +15,6 @@ import edu.brown.lasvegas.JobType;
 import edu.brown.lasvegas.LVColumn;
 import edu.brown.lasvegas.LVFracture;
 import edu.brown.lasvegas.LVReplicaGroup;
-import edu.brown.lasvegas.LVSubPartitionScheme;
 import edu.brown.lasvegas.TaskType;
 import edu.brown.lasvegas.lvfs.imp.TextFileTableReader;
 import edu.brown.lasvegas.lvfs.local.LocalVirtualFile;
@@ -74,11 +73,7 @@ public final class PartitionRawTextFilesTaskRunner extends DataTaskRunner<Partit
 
         // partition the files for each replica group
         for (LVReplicaGroup group : groups) {
-            LVSubPartitionScheme partitionScheme = context.metaRepo.getSubPartitionSchemeByFractureAndGroup(fracture.getFractureId(), group.getGroupId());
-            if (partitionScheme == null) {
-                throw new IOException ("this fracture and group don't have a corresponding partition scheme yet:" + fracture + "," + group);
-            }
-            ValueRange<?>[] ranges = partitionScheme.getRanges();
+            ValueRange<?>[] ranges = group.getRanges();
             int partitions = ranges.length;
             LVColumn partitioningColumn = context.metaRepo.getColumn(group.getPartitioningColumnId());
             LOG.info("partitioning files for replica group:" + group);

@@ -4,6 +4,8 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
+import org.apache.hadoop.io.Writable;
+
 import com.sleepycat.persist.model.Persistent;
 
 import edu.brown.lasvegas.ColumnType;
@@ -13,7 +15,10 @@ import edu.brown.lasvegas.ColumnType;
  * Used to represent some value range.
  */
 @Persistent
-public class ValueRange<T extends Comparable<T>> {
+public class ValueRange<T extends Comparable<T>> implements Writable {
+    /** type of the value. */
+    private ColumnType type;
+
     /**
      * The starting key of the range (inclusive).
      */
@@ -25,7 +30,8 @@ public class ValueRange<T extends Comparable<T>> {
     private T endKey;
     
     public ValueRange () {}
-    public ValueRange (T startKey, T endKey) {
+    public ValueRange (ColumnType type, T startKey, T endKey) {
+        this.type = type;
         this.startKey = startKey;
         this.endKey = endKey;
     }
@@ -36,6 +42,9 @@ public class ValueRange<T extends Comparable<T>> {
             return false;
         }
         ValueRange<?> o = (ValueRange<?>) obj;
+        if (o.type != type) {
+            return false;
+        }
         if (startKey == null || o.startKey == null) {
             if (startKey != null || o.startKey != null) {
                 return false;
@@ -58,7 +67,7 @@ public class ValueRange<T extends Comparable<T>> {
      */
     @Override
     public String toString() {
-        return "[" + startKey + "-" + endKey + "]";
+        return "[type=" + type + ", " + startKey + "-" + endKey + "]";
     }
 
     /**
@@ -96,6 +105,24 @@ public class ValueRange<T extends Comparable<T>> {
     public void setEndKey(T endKey) {
         this.endKey = endKey;
     }
+    
+    /**
+     * Gets the type of the value.
+     *
+     * @return the type of the value
+     */
+    public ColumnType getType() {
+        return type;
+    }
+    
+    /**
+     * Sets the type of the value.
+     *
+     * @param type the new type of the value
+     */
+    public void setType(ColumnType type) {
+        this.type = type;
+    }
 
     /**
      * Returns if the given key falls into this range.
@@ -104,102 +131,67 @@ public class ValueRange<T extends Comparable<T>> {
         return startKey.compareTo(key) >= 0 && endKey.compareTo(key) < 0;
     }
 
-    
-    /**
-     * serializes a range object into {@link DataOutput}.
-     * To use this and deserialization method, the data type must be
-     * one of the types defined in {@link ColumnType}. Also, the caller has
-     * to provide the data type as a parameter because the type information is
-     * erased from ValueRange at runtime.
-     */
-    public static void writeRange(DataOutput out, ValueRange<?> range, ColumnType type) throws IOException {
-        out.writeBoolean(range == null);
-        if (range == null) {
-            return;
-        }
-        out.writeInt(type.ordinal());
-        writeRangeWithoutHeader(out, range, type);
-    }
-    private static void writeRangeWithoutHeader(DataOutput out, ValueRange<?> range, ColumnType type) throws IOException {
-        out.writeBoolean(range.startKey == null);
-        out.writeBoolean(range.endKey == null);
-        for (Object val : new Object[]{range.startKey, range.endKey}) {
-            if (val != null) {
-                switch (type) {
-                case BIGINT: out.writeLong((Long) val); break;
-                case BOOLEAN: out.writeBoolean((Boolean) val); break;
-                case DOUBLE: out.writeDouble((Double) val); break;
-                case FLOAT: out.writeFloat((Float) val); break;
-                case INTEGER: out.writeInt((Integer) val); break;
-                case SMALLINT: out.writeShort((Short) val); break;
-                case TINYINT: out.writeByte((Byte) val); break;
-                case VARCHAR: out.writeUTF((String) val); break;
-                default: throw new IllegalArgumentException("Cannot serialize this type:" + type);
-                }
-            }
+    @Override
+    public void write(DataOutput out) throws IOException {
+        out.writeInt(type == null ? ColumnType.INVALID.ordinal() : type.ordinal());
+        if (type != null && type != ColumnType.INVALID) {
+            writeValue(out, startKey);
+            writeValue(out, endKey);
         }
     }
-    /**
-     * serializes an array of range objects into {@link DataOutput}.
-     */
-    public static void writeRanges(DataOutput out, ValueRange<?>[] ranges, ColumnType type) throws IOException {
-        out.writeBoolean(ranges == null);
-        if (ranges == null) {
+    private void writeValue(DataOutput out, T val) throws IOException {
+        out.writeBoolean(val == null);
+        if (val == null) {
             return;
         }
-        out.writeInt(type.ordinal());
-        final int count = ranges.length;
-        out.writeInt(count);
-        for (int i = 0; i < count; ++i) {
-            out.writeBoolean(ranges[i] == null);
-            if (ranges[i] == null) {
-                continue;
-            }
-            writeRangeWithoutHeader(out, ranges[i], type);
+        switch (type) {
+        case DATE:
+        case TIME:
+        case TIMESTAMP:
+        case BIGINT: out.writeLong((Long) val); break;
+        case DOUBLE: out.writeDouble((Double) val); break;
+        case FLOAT: out.writeFloat((Float) val); break;
+        case INTEGER: out.writeInt((Integer) val); break;
+        case SMALLINT: out.writeShort((Short) val); break;
+        case BOOLEAN:
+        case TINYINT: out.writeByte((Byte) val); break;
+        case VARCHAR: out.writeUTF((String) val); break;
+        default: throw new IllegalArgumentException("Cannot serialize this type:" + type);
         }
     }
 
-    /** Deserializes a range object from {@link DataInput}. */
-    public static ValueRange<?> readRange(DataInput in) throws IOException {
-        boolean isNull = in.readBoolean();
-        if (isNull) {
+    @Override
+    public void readFields(DataInput in) throws IOException {
+        type = ColumnType.values()[in.readInt()];
+        if (type != ColumnType.INVALID) {
+            startKey = readValue(in);
+            endKey = readValue(in);
+        }
+    }
+    public static ValueRange<?> read (DataInput in) throws IOException {
+        ValueRange<?> obj = new ValueRange<Integer>(); // whatever type works. the type parameter is anyway erased at runtime
+        obj.readFields(in);
+        return obj;
+    }
+
+    @SuppressWarnings("unchecked")
+    private T readValue(DataInput in) throws IOException {
+        if (in.readBoolean()) {
             return null;
         }
-        ColumnType type = ColumnType.values()[in.readInt()];
-        return readRangeWithoutHeader(in, type);
-    }
-
-    private static ValueRange<?> readRangeWithoutHeader(DataInput in, ColumnType type) throws IOException {
-        boolean isStartNull = in.readBoolean();
-        boolean isEndNull = in.readBoolean();
         switch (type) {
-        case BIGINT: return new ValueRange<Long>(isStartNull ? null : in.readLong(), isEndNull ? null : in.readLong());
-        case BOOLEAN: return new ValueRange<Boolean>(isStartNull ? null : in.readBoolean(), isEndNull ? null : in.readBoolean());
-        case DOUBLE: return new ValueRange<Double>(isStartNull ? null : in.readDouble(), isEndNull ? null : in.readDouble());
-        case FLOAT: return new ValueRange<Float>(isStartNull ? null : in.readFloat(), isEndNull ? null : in.readFloat());
-        case INTEGER: return new ValueRange<Integer>(isStartNull ? null : in.readInt(), isEndNull ? null : in.readInt());
-        case SMALLINT: return new ValueRange<Short>(isStartNull ? null : in.readShort(), isEndNull ? null : in.readShort());
-        case TINYINT: return new ValueRange<Byte>(isStartNull ? null : in.readByte(), isEndNull ? null : in.readByte());
-        case VARCHAR: return new ValueRange<String>(isStartNull ? null : in.readUTF(), isEndNull ? null : in.readUTF());
+        case DATE:
+        case TIME:
+        case TIMESTAMP:
+        case BIGINT: return (T) Long.valueOf(in.readLong());
+        case DOUBLE: return (T) Double.valueOf(in.readDouble());
+        case FLOAT: return (T) Float.valueOf(in.readFloat());
+        case INTEGER: return (T) Integer.valueOf(in.readInt());
+        case SMALLINT: return (T) Short.valueOf(in.readShort());
+        case BOOLEAN:
+        case TINYINT: return (T) Byte.valueOf(in.readByte());
+        case VARCHAR: return (T) in.readUTF();
         default: throw new IllegalArgumentException("Cannot deserialize this type:" + type);
         }
-    }
-    /** Deserializes an array of range objects from {@link DataInput}. */
-    public static ValueRange<?>[] readRanges(DataInput in) throws IOException {
-        boolean isArrayNull = in.readBoolean();
-        if (isArrayNull) {
-            return null;
-        }
-        
-        ColumnType type = ColumnType.values()[in.readInt()];
-        int count = in.readInt();
-        ValueRange<?>[] array = new ValueRange<?>[count];
-        for (int i = 0; i < count; ++i) {
-            boolean isNull = in.readBoolean();
-            if (!isNull) {
-                array[i] = readRangeWithoutHeader(in, type);
-            }
-        }
-        return array;
     }
 }

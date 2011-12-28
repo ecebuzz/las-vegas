@@ -51,8 +51,6 @@ public class LVFracture implements LVObject {
     public int getPrimaryKey() {
         return fractureId;
     }
-    /** The type of the fracturing key. */
-    private ColumnType keyType;
     /**
      * The key range of the fracturing key in this fracture.
      */
@@ -70,25 +68,28 @@ public class LVFracture implements LVObject {
     @Override
     public String toString() {
         return "Fracture-" + fractureId + " in Table-" + tableId
-        + ": range=" + range + " (type=" + keyType + ")"
+        + ": range=" + range
         + ". tupleCount=" + tupleCount;
     }
 
     @Override
     public void write(DataOutput out) throws IOException {
         out.writeInt(fractureId);
-        out.writeInt(keyType == null ? ColumnType.INVALID.ordinal() : keyType.ordinal());
-        ValueRange.writeRange(out, range, keyType);
         out.writeInt(tableId);
         out.writeLong(tupleCount);
+        out.writeBoolean(range == null);
+        if (range != null) {
+            range.write(out);
+        }
     }
     @Override
     public void readFields(DataInput in) throws IOException {
         fractureId = in.readInt();
-        keyType = ColumnType.values()[in.readInt()];
-        range = ValueRange.readRange(in);
         tableId = in.readInt();
         tupleCount = in.readLong();
+        if (!in.readBoolean()) {
+            range = ValueRange.read(in);
+        }
     }
     /** Creates and returns a new instance of this class from the data input.*/
     public static LVFracture read (DataInput in) throws IOException {
@@ -173,23 +174,5 @@ public class LVFracture implements LVObject {
      */
     public void setRange(ValueRange<?> range) {
         this.range = range;
-    }
-
-    /**
-     * Gets the type of the fracturing key.
-     *
-     * @return the type of the fracturing key
-     */
-    public ColumnType getKeyType() {
-        return keyType;
-    }
-
-    /**
-     * Sets the type of the fracturing key.
-     *
-     * @param keyType the new type of the fracturing key
-     */
-    public void setKeyType(ColumnType keyType) {
-        this.keyType = keyType;
     }
 }
