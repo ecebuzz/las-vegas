@@ -17,6 +17,13 @@ import java.io.IOException;
  */
 public interface TypedWriter<T, AT> extends Closeable {
     /**
+     * Specifies whether the writer will calculate CRC-32 value of the file.
+     * To turn it on, this method has to be called before writing any contents.
+     * Initial value is false.
+     */
+    void setCRC32Enabled(boolean enabled);
+    
+    /**
      * Writes a single value. Avoid using this,
      * and instead use {@link #writeValues(Object, int, int)} whenever possible.
      * @param value the value to write out
@@ -38,10 +45,10 @@ public interface TypedWriter<T, AT> extends Closeable {
      * This method should be called only once at the end of file creation.
      * Failing to call this method results in a corrupted file without footer
      * although only some files actually have a file-footer.
-     * @return CRC32 value of the written file.
+     * @return CRC32 value of the written file (only if enabled by {@link #setCRC32Enabled(boolean)}).
      * @throws IOException
      */
-    int writeFileFooter () throws IOException;
+    long writeFileFooter () throws IOException;
 
     /**
      * this version only flushes the underlying stream, does not call sync.

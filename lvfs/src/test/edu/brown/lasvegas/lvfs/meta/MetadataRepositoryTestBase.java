@@ -173,12 +173,12 @@ public abstract class MetadataRepositoryTestBase {
             DEFAULT_COLUMN_FILES[i] = new LVColumnFile[DEFAULT_COLUMNS.length];
             for (int j = 0; j < DEFAULT_COLUMNS.length; ++j) {
                 DEFAULT_COLUMN_FILES[i][j] = repository.createNewColumnFile(DEFAULT_REPLICA_PARTITIONS[i],
-                                DEFAULT_COLUMNS[j], "hdfs://dummy_url_" + i + "/colfile" + j, 123456L + j, 654321 + j);
+                                DEFAULT_COLUMNS[j], "hdfs://dummy_url_" + i + "/colfile" + j, 123456 + j, 654321 + j);
                 assertEquals(DEFAULT_COLUMNS[j].getColumnId(), DEFAULT_COLUMN_FILES[i][j].getColumnId());
                 assertEquals(123456L + j, DEFAULT_COLUMN_FILES[i][j].getFileSize());
                 assertEquals(654321 + j, DEFAULT_COLUMN_FILES[i][j].getChecksum());
                 assertEquals(DEFAULT_REPLICA_PARTITIONS[i].getPartitionId(), DEFAULT_COLUMN_FILES[i][j].getPartitionId());
-                assertEquals("hdfs://dummy_url_" + i + "/colfile" + j, DEFAULT_COLUMN_FILES[i][j].getHdfsFilePath());
+                assertEquals("hdfs://dummy_url_" + i + "/colfile" + j, DEFAULT_COLUMN_FILES[i][j].getLocalFilePath());
             }
         }
         
@@ -1071,7 +1071,7 @@ public abstract class MetadataRepositoryTestBase {
         assertEquals(DEFAULT_COLUMN_FILES[partition][col].getFileSize(), file.getFileSize());
         assertEquals(DEFAULT_COLUMN_FILES[partition][col].getChecksum(), file.getChecksum());
         assertEquals(DEFAULT_REPLICA_PARTITIONS[partition].getPartitionId(), file.getPartitionId());
-        assertEquals("hdfs://dummy_url_" + partition + "/colfile" + col, file.getHdfsFilePath());
+        assertEquals("hdfs://dummy_url_" + partition + "/colfile" + col, file.getLocalFilePath());
     }
 
     @Test
@@ -1092,9 +1092,9 @@ public abstract class MetadataRepositoryTestBase {
         LVColumnFile[] files = new LVColumnFile[2];
         for (int i = 0; i < 2; ++i) {
             files[i] = repository.createNewColumnFile(DEFAULT_REPLICA_PARTITIONS[i],
-                            column, "hdfs://dummy_url_" + i + "/newcolfile" + i, 5763241L, 12176);
+                            column, "hdfs://dummy_url_" + i + "/newcolfile" + i, 576324, 12176);
             assertEquals(column.getColumnId(), files[i].getColumnId());
-            assertEquals(5763241L, files[i].getFileSize());
+            assertEquals(576324, files[i].getFileSize());
             assertEquals(12176, files[i].getChecksum());
             assertEquals(DEFAULT_REPLICA_PARTITIONS[i].getPartitionId(), files[i].getPartitionId());
         }

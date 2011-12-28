@@ -1,10 +1,12 @@
 package edu.brown.lasvegas.lvfs.local;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.util.ChecksumUtil;
 
 /**
  * Testcases for LocalFixLenWriter.
@@ -26,6 +28,7 @@ public class LocalFixLenWriterTest {
         }
         file.delete();
         LocalFixLenWriter<Integer, int[]> writer = LocalFixLenWriter.getInstanceInteger(file);
+        writer.setCRC32Enabled(true);
         int[] buf = new int[1 << 14];
         for (int i = 0; i < 25; ++i) {
             for (int j = 0; j < buf.length; ++j) {
@@ -33,9 +36,12 @@ public class LocalFixLenWriterTest {
             }
             writer.writeValues(buf, 0, buf.length);
         }
-        writer.writeFileFooter();
+        long crc32 = writer.writeFileFooter();
+        assertTrue (crc32 != 0);
         writer.flush();
         writer.close();
+        long correctCrc32 = ChecksumUtil.getFileCheckSum(file);
+        assertEquals (correctCrc32, crc32);
         assertEquals ((25 << 14) * 4, file.length());
 
         LocalFixLenReader<Integer, int[]> reader = LocalFixLenReader.getInstanceInteger(file);

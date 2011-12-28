@@ -3,6 +3,7 @@ package edu.brown.lasvegas.lvfs;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.util.zip.CRC32;
 
 /**
  * Interface to receive raw values (no notion of tuples here) to write out.
@@ -128,5 +129,41 @@ public abstract class RawValueWriter {
         writeBytes(conversionBuffer, 0, len * 8);
     }
     
+    /** Returns CRC-32 checksum of the written file. */
+    public final long getCRC32Value () {
+        if (checksum == null) {
+            return 0;
+        }
+        return checksum.getValue();
+    }
+    /**
+     * Specifies whether the writer will calculate CRC-32 value of the file.
+     * To turn it on, this method has to be called before writing any contents.
+     * Initial value is false.
+     */
+    public final void setCRC32Enabled(boolean enabled) {
+        if (enabled) {
+            assert (checksum == null);
+            checksum = new CRC32();
+        } else {
+            checksum = null;
+        }
+    }
+    public final boolean isCRC32Enabled () {
+        return checksum != null;
+    }
+    protected final void updateCRC32 (byte[] buf, int off, int len) {
+        if (checksum != null) {
+            checksum.update(buf, off, len);
+        }
+    }
+    protected final void updateCRC32 (byte b) {
+        if (checksum != null) {
+            checksum.update(b);
+        }
+    }
+    
+    private CRC32 checksum;
+
     public static final Charset CHARSET = Charset.forName("UTF-8");
 }

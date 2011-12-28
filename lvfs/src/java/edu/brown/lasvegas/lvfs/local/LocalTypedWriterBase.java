@@ -18,6 +18,15 @@ public abstract class LocalTypedWriterBase<T, AT> implements TypedWriter<T, AT> 
         //this.traits = traits;
     }
 
+    @Override
+    public void setCRC32Enabled(boolean enabled) {
+        rawWriter.getRawValueWriter().setCRC32Enabled(enabled);
+    }
+    @Override
+    public long writeFileFooter() throws IOException {
+        return rawWriter.getRawValueWriter().getCRC32Value();
+    }
+    
     public final RawValueWriter getRawValueWriter () {
         return rawWriter.getRawValueWriter();
     }

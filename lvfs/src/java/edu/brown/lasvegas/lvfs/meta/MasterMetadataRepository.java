@@ -867,14 +867,14 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     }
 
     @Override
-    public LVColumnFile createNewColumnFile(LVReplicaPartition subPartition, LVColumn column, String hdfsFilePath, long fileSize, int checksum) throws IOException {
+    public LVColumnFile createNewColumnFile(LVReplicaPartition subPartition, LVColumn column, String localFilePath, int fileSize, long checksum) throws IOException {
         assert (column.getColumnId() > 0);
         assert (subPartition.getPartitionId() > 0);
         LVColumnFile file = new LVColumnFile();
         file.setColumnFileId(bdbTableAccessors.columnFileAccessor.issueNewId());
         file.setColumnId(column.getColumnId());
         file.setFileSize(fileSize);
-        file.setHdfsFilePath(hdfsFilePath);
+        file.setLocalFilePath(localFilePath);
         file.setPartitionId(subPartition.getPartitionId());
         file.setChecksum(checksum);
         bdbTableAccessors.columnFileAccessor.PKX.putNoReturn(file);

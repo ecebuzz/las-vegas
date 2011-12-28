@@ -43,49 +43,48 @@ public class LVColumnFile implements LVObject {
     }
 
     /**
-     * The file path of this columnar file in HDFS.
+     * The file path of this columnar file in data node.
      */
-    private String hdfsFilePath;
+    private String localFilePath;
 
     /**
      * Byte size of this file. Only used as statistics.
      */
-    private long fileSize;
+    private int fileSize;
     
     /** CRC32 of the file. */
-    private int checksum;
+    private long checksum;
     
     /**
      * @see java.lang.Object#toString()
      */
     public String toString() {
         return "ColumnFile-" + columnFileId + " (Column=" + columnId + ", Partition=" + partitionId + ")"
-            + " HDFS-PATH=" + hdfsFilePath + ", FileSize=" + fileSize + ", checksum=" + checksum;
+            + " localFilePath=" + localFilePath + ", FileSize=" + fileSize + ", checksum=" + checksum;
     }
 
     @Override
     public void write(DataOutput out) throws IOException {
-        out.writeInt(checksum);
+        out.writeLong(checksum);
         out.writeInt(columnFileId);
         out.writeInt(columnId);
-        out.writeLong(fileSize);
-        out.writeBoolean(hdfsFilePath == null);
-        if (hdfsFilePath != null) {
-            out.writeUTF(hdfsFilePath);
+        out.writeInt(fileSize);
+        out.writeBoolean(localFilePath == null);
+        if (localFilePath != null) {
+            out.writeUTF(localFilePath);
         }
         out.writeInt(partitionId);
     }
     @Override
     public void readFields(DataInput in) throws IOException {
-        checksum = in.readInt();
+        checksum = in.readLong();
         columnFileId = in.readInt();
         columnId = in.readInt();
-        fileSize = in.readLong();
-        boolean isHdfsFilePathNull = in.readBoolean();
-        if (isHdfsFilePathNull) {
-            hdfsFilePath = null;
+        fileSize = in.readInt();
+        if (in.readBoolean()) {
+            localFilePath = null;
         } else {
-            hdfsFilePath = in.readUTF();
+            localFilePath = in.readUTF();
         }
         partitionId = in.readInt();
     }
@@ -157,21 +156,21 @@ public class LVColumnFile implements LVObject {
     }
 
     /**
-     * Gets the file path of this columnar file in HDFS.
+     * Gets the file path of this columnar file in data node.
      *
-     * @return the file path of this columnar file in HDFS
+     * @return the file path of this columnar file in data node
      */
-    public String getHdfsFilePath() {
-        return hdfsFilePath;
+    public String getLocalFilePath() {
+        return localFilePath;
     }
 
     /**
-     * Sets the file path of this columnar file in HDFS.
+     * Sets the file path of this columnar file in data node.
      *
-     * @param hdfsFilePath the new file path of this columnar file in HDFS
+     * @param localFilePath the new file path of this columnar file in data node
      */
-    public void setHdfsFilePath(String hdfsFilePath) {
-        this.hdfsFilePath = hdfsFilePath;
+    public void setLocalFilePath(String localFilePath) {
+        this.localFilePath = localFilePath;
     }
 
     /**
@@ -179,7 +178,7 @@ public class LVColumnFile implements LVObject {
      *
      * @return the byte size of this file
      */
-    public long getFileSize() {
+    public int getFileSize() {
         return fileSize;
     }
 
@@ -188,7 +187,7 @@ public class LVColumnFile implements LVObject {
      *
      * @param fileSize the new byte size of this file
      */
-    public void setFileSize(long fileSize) {
+    public void setFileSize(int fileSize) {
         this.fileSize = fileSize;
     }
     
@@ -197,7 +196,7 @@ public class LVColumnFile implements LVObject {
      *
      * @return the cRC32 of the file
      */
-    public int getChecksum() {
+    public long getChecksum() {
         return checksum;
     }
     
@@ -206,7 +205,7 @@ public class LVColumnFile implements LVObject {
      *
      * @param checksum the new cRC32 of the file
      */
-    public void setChecksum(int checksum) {
+    public void setChecksum(long checksum) {
         this.checksum = checksum;
     }
 }

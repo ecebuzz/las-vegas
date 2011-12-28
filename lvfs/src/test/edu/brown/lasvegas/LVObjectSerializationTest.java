@@ -86,7 +86,7 @@ public class LVObjectSerializationTest {
         obj1.setChecksum(123456);
         obj1.setColumnId(88);
         obj1.setFileSize(6666);
-        obj1.setHdfsFilePath(null);
+        obj1.setLocalFilePath(null);
         obj1.setPartitionId(5544);
         obj1.write(out);
         LVColumnFile obj2 = new LVColumnFile();
@@ -94,7 +94,7 @@ public class LVObjectSerializationTest {
         obj2.setChecksum(1234567);
         obj2.setColumnId(885);
         obj2.setFileSize(66665);
-        obj2.setHdfsFilePath("dfgkj");
+        obj2.setLocalFilePath("dfgkj");
         obj2.setPartitionId(88863);
         obj2.write(out);
 
@@ -106,7 +106,7 @@ public class LVObjectSerializationTest {
             assertEquals(org[i].getColumnFileId(), copied.getColumnFileId());
             assertEquals(org[i].getColumnId(), copied.getColumnId());
             assertEquals(org[i].getFileSize(), copied.getFileSize());
-            assertEquals(org[i].getHdfsFilePath(), copied.getHdfsFilePath());
+            assertEquals(org[i].getLocalFilePath(), copied.getLocalFilePath());
             assertEquals(org[i].getPartitionId(), copied.getPartitionId());
             assertEquals(org[i].getPrimaryKey(), copied.getPrimaryKey());
         }
@@ -274,6 +274,7 @@ public class LVObjectSerializationTest {
         obj1.setGroupId(32);
         obj1.setPartitioningColumnId(21);
         obj1.setTableId(54);
+        obj1.setRanges(new ValueRange[]{new ValueRange(ColumnType.INTEGER, null, 20), new ValueRange(ColumnType.INTEGER, 20, 50), new ValueRange(ColumnType.INTEGER, 50, null)});
         obj1.write(out);
         LVReplicaGroup obj2 = new LVReplicaGroup();
         obj2.setGroupId(42);
@@ -288,6 +289,7 @@ public class LVObjectSerializationTest {
             assertEquals(org[i].getGroupId(), copied.getGroupId());
             assertEquals(org[i].getPartitioningColumnId(), copied.getPartitioningColumnId());
             assertEquals(org[i].getTableId(), copied.getTableId());
+            assertArrayEquals(org[i].getRanges(), copied.getRanges());
             assertEquals(org[i].getPrimaryKey(), copied.getPrimaryKey());
         }
     }

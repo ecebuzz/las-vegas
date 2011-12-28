@@ -1,6 +1,6 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -13,6 +13,7 @@ import org.junit.Test;
 import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.lvfs.FixLenValueTraits;
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.util.ChecksumUtil;
 
 /**
  * Base class of testcases for {@link LocalBlockCompressionFixLenReader} and {@link LocalBlockCompressionFixLenWriter}.
@@ -57,10 +58,14 @@ public abstract class LocalBlockCompressionFixLenTestBase<T, AT> {
             setToArray(buf, i, generateValue(i));
         }
         LocalBlockCompressionFixLenWriter<T, AT> writer = new LocalBlockCompressionFixLenWriter<T, AT>(file, traits, getType());
+        writer.setCRC32Enabled(true);
         writer.writeValues(buf, 0, VALUE_COUNT);
-        writer.writeFileFooter();
+        long crc32 = writer.writeFileFooter();
+        assertTrue (crc32 != 0);
         writer.flush();
         writer.close();
+        long correctCrc32 = ChecksumUtil.getFileCheckSum(file);
+        assertEquals (correctCrc32, crc32);
     }
     @AfterClass
     public static void tearDownAfterClass() throws Exception {

@@ -723,14 +723,14 @@ public interface LVMetadataProtocol extends VersionedProtocol {
      * Column file is purely write-once read-only, so there is no updateColumnFile() method.
      * @param subPartition the sub-partition the column file belongs to.
      * @param column Column
-     * @param hdfsFilePath the file path of the column file in HDFS
+     * @param localFilePath the file path of the column file in data node
      * @param fileSize the byte size of the file
      * @param checksum CRC32 checksum of the file
      * @return new column file
      * @throws IOException
      */
     LVColumnFile createNewColumnFile(LVReplicaPartition subPartition, LVColumn column,
-                    String hdfsFilePath, long fileSize, int checksum) throws IOException;
+                    String localFilePath, int fileSize, long checksum) throws IOException;
     
     /**
      * Deletes the column file metadata object from this repository.

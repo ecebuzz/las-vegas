@@ -1,6 +1,7 @@
 package edu.brown.lasvegas.lvfs.local;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -12,6 +13,7 @@ import org.junit.Test;
 
 import edu.brown.lasvegas.lvfs.ValueTraits;
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.util.ChecksumUtil;
 
 /**
  * Base class of testcases for {@link LocalRLEReader} and {@link LocalRLEWriter}.
@@ -59,10 +61,14 @@ public abstract class LocalRLETestBase<T, AT> {
             setToArray(buf, i, generateValue(i));
         }
         LocalRLEWriter<T, AT> writer = new LocalRLEWriter<T, AT>(file, traits);
+        writer.setCRC32Enabled(true);
         writer.writeValues(buf, 0, VALUE_COUNT);
-        writer.writeFileFooter();
+        long crc32 = writer.writeFileFooter();
+        assertTrue (crc32 != 0);
         writer.flush();
         writer.close();
+        long correctCrc32 = ChecksumUtil.getFileCheckSum(file);
+        assertEquals (correctCrc32, crc32);
         writer.writePositionFile(pos);
         runCount = writer.getRunCount();
     }

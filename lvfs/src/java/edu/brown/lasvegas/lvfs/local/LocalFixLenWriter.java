@@ -56,8 +56,4 @@ public final class LocalFixLenWriter<T, AT> extends LocalTypedWriterBase<T, AT> 
     public void writeValue(T value) throws IOException {
         traits.writeValue(getRawValueWriter(), value);
     }
-    @Override
-    public int writeFileFooter() throws IOException {
-        return 0; // TODO CRC32
-    }
 }

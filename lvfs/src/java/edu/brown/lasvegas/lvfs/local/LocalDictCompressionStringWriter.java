@@ -115,7 +115,7 @@ public class LocalDictCompressionStringWriter implements TypedWriter<String, Str
     }
     private boolean wroteFileFooter = false;
     @Override
-    public int writeFileFooter() throws IOException {
+    public long writeFileFooter() throws IOException {
         LOG.info ("writing final files...");
         // first, finish writing to tentative file
         if (tentativeIntBufferUsed > 0) {
@@ -178,6 +178,7 @@ public class LocalDictCompressionStringWriter implements TypedWriter<String, Str
         }
 
         // finally, convert the tentative integer file to the final integer file.
+        long crc32Value;
         {
             long startMillisec = System.currentTimeMillis();
             LocalFixLenReader<Integer, int[]> tentativeReader = LocalFixLenReader.getInstanceInteger(new LocalVirtualFile(tmpFile));
@@ -185,6 +186,7 @@ public class LocalDictCompressionStringWriter implements TypedWriter<String, Str
             case 1:
             {
                 finalByteWriter = LocalFixLenWriter.getInstanceTinyint(finalDataFile);
+                finalByteWriter.getRawValueWriter().setCRC32Enabled(crc32Enabled);
                 byte[] buf = new byte[tentativeIntBuffer.length];
                 while (true) {
                     int read = tentativeReader.readValues(tentativeIntBuffer, 0, tentativeIntBuffer.length);
@@ -194,11 +196,13 @@ public class LocalDictCompressionStringWriter implements TypedWriter<String, Str
                     }
                     finalByteWriter.writeValues(buf, 0, read);
                 }
+                crc32Value = finalByteWriter.getRawValueWriter().getCRC32Value();
                 break;
             }
             case 2:
             {
                 finalShortWriter = LocalFixLenWriter.getInstanceSmallint(finalDataFile);
+                finalShortWriter.getRawValueWriter().setCRC32Enabled(crc32Enabled);
                 short[] buf = new short[tentativeIntBuffer.length];
                 while (true) {
                     int read = tentativeReader.readValues(tentativeIntBuffer, 0, tentativeIntBuffer.length);
@@ -208,12 +212,14 @@ public class LocalDictCompressionStringWriter implements TypedWriter<String, Str
                     }
                     finalShortWriter.writeValues(buf, 0, read);
                 }
+                crc32Value = finalShortWriter.getRawValueWriter().getCRC32Value();
                 break;
             }
             default:
             {
                 assert(bytesPerEntry == 4);
                 finalIntWriter = LocalFixLenWriter.getInstanceInteger(finalDataFile);
+                finalIntWriter.getRawValueWriter().setCRC32Enabled(crc32Enabled);
                 int[] buf = new int[tentativeIntBuffer.length];
                 while (true) {
                     int read = tentativeReader.readValues(tentativeIntBuffer, 0, tentativeIntBuffer.length);
@@ -223,6 +229,7 @@ public class LocalDictCompressionStringWriter implements TypedWriter<String, Str
                     }
                     finalIntWriter.writeValues(buf, 0, read);
                 }
+                crc32Value = finalIntWriter.getRawValueWriter().getCRC32Value();
                 break;
             }
             }
@@ -235,7 +242,7 @@ public class LocalDictCompressionStringWriter implements TypedWriter<String, Str
         }
 
         wroteFileFooter = true;
-        return 0; // TODO CRC32
+        return crc32Value;
     }
     @Override
     public void writeValue(String value) throws IOException {
@@ -263,4 +270,9 @@ public class LocalDictCompressionStringWriter implements TypedWriter<String, Str
             writeValue (values[i]);
         }
     }
+    @Override
+    public void setCRC32Enabled(boolean enabled) {
+        crc32Enabled = enabled; // just keep the setting because the final writer will be constructed later
+    }
+    private boolean crc32Enabled = false;
 }

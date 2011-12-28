@@ -163,7 +163,7 @@ public abstract class LocalBlockCompressionWriter<T, AT> extends LocalTypedWrite
     }
     private boolean footerWritten = false;
     @Override
-    public final int writeFileFooter () throws IOException {
+    public final long writeFileFooter () throws IOException {
         if (footerWritten) {
             throw new IOException ("file footer already written");
         }
@@ -188,7 +188,7 @@ public abstract class LocalBlockCompressionWriter<T, AT> extends LocalTypedWrite
         footer[footer.length - 1] = curTuple;
         getRawValueWriter().writeInts(footer, 0, footer.length);
         footerWritten = true;
-        return 0; // TODO CRC32
+        return getRawValueWriter().getCRC32Value();
     }
     @Override
     protected void beforeClose() throws IOException {

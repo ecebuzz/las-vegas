@@ -58,11 +58,13 @@ public final class LocalRawFileWriter implements Closeable {
             @Override
             public void writeBytes(byte[] buf, int off, int len) throws IOException {
                 stream.write(buf, off, len);
+                updateCRC32(buf, off, len);
                 curPosition += len;
             }
             @Override
             public void writeByte(byte v) throws IOException {
                 stream.write(v);
+                updateCRC32(v);
                 ++curPosition;
             }
         };

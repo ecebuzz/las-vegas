@@ -1,9 +1,13 @@
 package edu.brown.lasvegas.lvfs.local;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 import edu.brown.lasvegas.lvfs.RawValueWriter;
+import edu.brown.lasvegas.util.ChecksumUtil;
 
 /**
  * Testcases for {@link LocalRawFileWriter}.
@@ -19,6 +23,7 @@ public class LocalRawFileWriterTest extends LocalRawFileTestBase {
         file.delete();
         LocalRawFileWriter rawWriter = new LocalRawFileWriter(file, 0);
         RawValueWriter out = rawWriter.getRawValueWriter();
+        out.setCRC32Enabled(true);
 
         out.writeBytes(new byte[] { (byte)-120, (byte)0, (byte)40}, 0, 3);//0-3
         out.writeBoolean(false);//3-4
@@ -40,8 +45,12 @@ public class LocalRawFileWriterTest extends LocalRawFileTestBase {
         out.writeDouble(0.00000000345d); // 43-51
         out.writeDouble(-9872495734907234324.09d); // 51-59
 
+        long crc32 = out.getCRC32Value();
+        assertTrue (crc32 != 0);
         rawWriter.flush();
         rawWriter.close();
+        long correctCrc32 = ChecksumUtil.getFileCheckSum(file);
+        assertEquals (correctCrc32, crc32);
     }
     @AfterClass
     public static void tearDownAfterClass() throws Exception {

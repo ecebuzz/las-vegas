@@ -10,6 +10,7 @@ import org.junit.Test;
 
 import edu.brown.lasvegas.lvfs.PositionIndex.Pos;
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.util.ChecksumUtil;
 
 /**
  * Testcase for {@link LocalVarLenWriter}.
@@ -46,15 +47,19 @@ public class LocalVarLenWriterTest {
         {
             LocalVarLenWriter<String> writer
                 = LocalVarLenWriter.getInstanceVarchar(dataFile, 100); // collect often to test the position file easily
+            writer.setCRC32Enabled(true);
             for (int i = 0; i < COUNT; ++i) {
                 writer.writeValue(generateValue(i));
             }
             // collect per 100 bytes. data is about 20-30bytes per value. position per 4-5 values.
             writer.writePositionFile(posFile);
             assertTrue (posFile.length() > 0);
-            writer.writeFileFooter();
+            long crc32 = writer.writeFileFooter();
+            assertTrue (crc32 != 0);
             writer.flush();
             writer.close();
+            long correctCrc32 = ChecksumUtil.getFileCheckSum(dataFile);
+            assertEquals (correctCrc32, crc32);
         }        
         
         // test sequential scan
@@ -103,15 +108,19 @@ public class LocalVarLenWriterTest {
         {
             LocalVarLenWriter<byte[]> writer
                 = LocalVarLenWriter.getInstanceVarbin(dataFile, 100); // collect often to test the position file easily
+            writer.setCRC32Enabled(true);
             for (int i = 0; i < COUNT; ++i) {
                 writer.writeValue(generateValue(i).getBytes("UTF-8"));
             }
             // collect per 100 bytes. data is about 20-30bytes per value. position per 4-5 values.
             writer.writePositionFile(posFile);
             assertTrue (posFile.length() > 0);
-            writer.writeFileFooter();
+            long crc32 = writer.writeFileFooter();
+            assertTrue (crc32 != 0);
             writer.flush();
             writer.close();
+            long correctCrc32 = ChecksumUtil.getFileCheckSum(dataFile);
+            assertEquals (correctCrc32, crc32);
         }        
         
         // test sequential scan

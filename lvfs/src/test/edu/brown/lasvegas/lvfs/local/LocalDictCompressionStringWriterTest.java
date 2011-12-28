@@ -9,6 +9,7 @@ import java.util.Random;
 import org.junit.Test;
 
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.util.ChecksumUtil;
 
 /**
  * Testcases for {@link LocalDictCompressionStringWriter}.
@@ -30,14 +31,18 @@ public class LocalDictCompressionStringWriterTest {
         File tmp = new File("test/local/str_dict.dat.tmp");
         tmp.delete();
         LocalDictCompressionStringWriter writer = new LocalDictCompressionStringWriter(dataFile, dictFile, tmp);
+        writer.setCRC32Enabled(true);
         
         Random rand = getDeterministicRandom();
         for (int i = 0; i < COUNT; ++i) {
             writer.writeValue(generateRandom(rand));
         }
-        writer.writeFileFooter();
+        long crc32 = writer.writeFileFooter();
+        assertTrue (crc32 != 0);
         writer.flush();
         writer.close();
+        long correctCrc32 = ChecksumUtil.getFileCheckSum(dataFile);
+        assertEquals (correctCrc32, crc32);
     }
     private static Random getDeterministicRandom () {
         return new Random (22331L); // fixed seed;

@@ -11,6 +11,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.util.ChecksumUtil;
 /**
  * Testcase for {@link LocalDictFile}.
  */
@@ -52,12 +53,16 @@ public class LocalDictFileTest {
 
     private void createOriginalFile (int count, int dv) throws IOException {
         LocalVarLenWriter<String> writer = LocalVarLenWriter.getInstanceVarchar(dataFile, 1024);
+        writer.setCRC32Enabled(true);
         for (int i = 0; i < count; ++i) {
             writer.writeValue(generateValue(i, dv));
         }
-        writer.writeFileFooter();
+        long crc32 = writer.writeFileFooter();
+        assertTrue (crc32 != 0);
         writer.flush();
         writer.close();
+        long correctCrc32 = ChecksumUtil.getFileCheckSum(dataFile);
+        assertEquals (correctCrc32, crc32);
     }
 
     @Test
