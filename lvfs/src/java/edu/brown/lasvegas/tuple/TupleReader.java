@@ -23,8 +23,23 @@ public interface TupleReader extends Closeable {
     /**
      * This method is called to read a tuple, including the first tuple.
      * @return whether there is a tuple to return.
+     * @see #nextBatch(int, TupleBuffer)
      */
     boolean next() throws IOException;
+    
+    /**
+     * This method reads multiple tuples at once and appends the tuples
+     * to the given buffer. In many implementations, this will be much
+     * more efficient than {@link #next()}.
+     * @param len the maximum number of tuples to read
+     * @param buffer the buffer to append the tuples read from this reader.
+     * if the buffer becomes full before reading len tuples, this method
+     * stops reading tuples.
+     * @return the number of tuples read and appended to the buffer. -1 if
+     * the reader reaches the end.
+     * @throws IOException
+     */
+    int nextBatch (int len, TupleBuffer buffer) throws IOException;
     
     /** Returns the current tuple position. */
     int getCurrentTuple () throws IOException;
@@ -95,43 +110,27 @@ public interface TupleReader extends Closeable {
     
     /** Reads a TINYINT column value. Consider using batched version for better performance. */
     byte getTinyint (int columnIndex) throws IOException;
-    /** batched version. */
-    int getTinyints (int columnIndex, byte[] buffer, int off, int len) throws IOException;
 
     /** Reads a SMALLINT column value. Consider using batched version for better performance. */
     short getSmallint (int columnIndex) throws IOException;
-    /** batched version. */
-    int getSmallints (int columnIndex, short[] buffer, int off, int len) throws IOException;
 
     /** Reads a INTEGER column value. Consider using batched version for better performance. */
     int getInteger (int columnIndex) throws IOException;
-    /** batched version. */
-    int getIntegers (int columnIndex, int[] buffer, int off, int len) throws IOException;
 
     /** Reads a BIGINT column value. Consider using batched version for better performance. */
     long getBigint (int columnIndex) throws IOException;
-    /** batched version. */
-    int getBigints (int columnIndex, long[] buffer, int off, int len) throws IOException;
 
     /** Reads a FLOAT column value. Consider using batched version for better performance. */
     float getFloat (int columnIndex) throws IOException;
-    /** batched version. */
-    int getFloats (int columnIndex, float[] buffer, int off, int len) throws IOException;
 
     /** Reads a DOUBLE column value. Consider using batched version for better performance. */
     double getDouble (int columnIndex) throws IOException;
-    /** batched version. */
-    int getDoubles (int columnIndex, double[] buffer, int off, int len) throws IOException;
 
     /** Reads a VARCHAR column value. Consider using batched version for better performance. */
     String getVarchar (int columnIndex) throws IOException;
-    /** batched version. */
-    int getVarchars (int columnIndex, String[] buffer, int off, int len) throws IOException;
 
     /** Reads a VARBIN column value. Consider using batched version for better performance. */
     byte[] getVarbin (int columnIndex) throws IOException;
-    /** batched version. */
-    int getVarbins (int columnIndex, byte[][] buffer, int off, int len) throws IOException;
 
 
     /**

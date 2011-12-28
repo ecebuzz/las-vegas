@@ -280,10 +280,10 @@ class BdbTableAccessors {
         ColumnFileAccessor () {
             super(LVColumnFile.class);
             IX_PARTITION_ID = store.getSecondaryIndex(PKX, Integer.class, LVColumnFile.IX_PARTITION_ID);
-            IX_PARTITION_COLUMN_ID = store.getSecondaryIndex(PKX, CompositeIntKey.class, LVColumnFile.IX_PARTITION_COLUMN_ID);
+            IX_COLUMN_ID = store.getSecondaryIndex(PKX, Integer.class, LVColumnFile.IX_COLUMN_ID);
         }
         LVObjectType getType() { return LVObjectType.COLUMN_FILE;}
         final SecondaryIndex<Integer, Integer, LVColumnFile> IX_PARTITION_ID;
-        final SecondaryIndex<CompositeIntKey, Integer, LVColumnFile> IX_PARTITION_COLUMN_ID;
+        final SecondaryIndex<Integer, Integer, LVColumnFile> IX_COLUMN_ID;
     }
 }

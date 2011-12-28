@@ -530,4 +530,77 @@ public class KeyValueArraysTest {
             assertTrue (found[i]);
         }
     }
+
+
+    @Test
+    public void testSortString() {
+        String[] keys = new String[LEN];
+        for (int i = 0; i < LEN; ++i) {
+            keys[i] = String.format("abc%10d", Math.abs(rand.nextInt()));
+            if (i % 79 == 0) keys[i] = null;
+            if (i % TIE_PER == TIE_MOD) keys[i] = keys[i - TIE_MOD]; // to introduce a few 'ties'
+        }
+        String[] orgKeys = keys.clone();
+        
+        KeyValueArrays.sort(keys, values);
+        
+        boolean[] found = new boolean[LEN];
+        Arrays.fill(found, false);
+        for (int i = 0; i < LEN; ++i) {
+            int v = values[i];
+            assertFalse (found[v]);
+            found[v] = true;
+            assertEquals (orgKeys[v], keys[i]);
+            if (i != 0) {
+                assertTrue(keys[i - 1] == null || keys[i].compareTo(keys[i - 1]) >= 0);
+            }
+        }
+        
+        for (int i = 0; i < LEN; ++i) {
+            assertTrue (found[i]);
+        }
+    }
+
+    @Test
+    public void testSortStringRange () {
+        String[] keys = new String[LEN];
+        for (int i = 0; i < LEN; ++i) {
+            keys[i] = String.format("abc%10d", Math.abs(rand.nextInt()));
+            if (i % 79 == 0) keys[i] = null;
+            if (i % TIE_PER == TIE_MOD) keys[i] = keys[i - TIE_MOD]; // to introduce a few 'ties'
+        }
+        String[] orgKeys = keys.clone();
+        
+        KeyValueArrays.sort(keys, values, RANGE_FROM, RANGE_TO);
+        
+        boolean[] found = new boolean[LEN];
+        Arrays.fill(found, false);
+        for (int i = 0; i < RANGE_FROM; ++i) {
+            assertEquals (orgKeys[i], keys[i]);
+            int v = values[i];
+            assertEquals (i, v);
+            assertFalse (found[v]);
+            found[v] = true;
+        }
+        for (int i = RANGE_FROM; i < RANGE_TO; ++i) {
+            int v = values[i];
+            assertFalse (found[v]);
+            found[v] = true;
+            assertEquals (orgKeys[v], keys[i]);
+            if (i != RANGE_FROM) {
+                assertTrue(keys[i - 1] == null || keys[i].compareTo(keys[i - 1]) >= 0);
+            }
+        }
+        for (int i = RANGE_TO; i < LEN; ++i) {
+            assertEquals (orgKeys[i], keys[i]);
+            int v = values[i];
+            assertEquals (i, v);
+            assertFalse (found[v]);
+            found[v] = true;
+        }
+        
+        for (int i = 0; i < LEN; ++i) {
+            assertTrue (found[i]);
+        }
+    }
 }

@@ -37,7 +37,6 @@ public class BufferedTupleWriter implements TupleWriter {
     private final ColumnType[] columnTypesBeforeDecompression;
 
     private TupleReader reader;
-    private BufferedTupleReader bufferedReader;
     private CompressionType[] readerCompressionTypes;
     private OrderedDictionary<?>[] readerDictionaries;
     
@@ -46,9 +45,6 @@ public class BufferedTupleWriter implements TupleWriter {
     @Override
     public void init(TupleReader reader) throws IOException {
         this.reader = reader;
-        if (reader instanceof BufferedTupleReader) {
-            this.bufferedReader = (BufferedTupleReader) reader;
-        }
         if (reader.getColumnCount() != columnCount) {
             throw new IOException ("column count doesn't match. writer=" + columnCount + ", reader=" + reader.getColumnCount());
         }
@@ -81,21 +77,8 @@ public class BufferedTupleWriter implements TupleWriter {
         this.buffer = new TupleBuffer(columnTypesBeforeDecompression, bufferSize);
     }
 
-
-    @Override
-    public void appendTuple() throws IOException {
-        // TODO Auto-generated method stub
-        
-    }
-
     @Override
     public int appendAllTuples() throws IOException {
-        // TODO Auto-generated method stub
-        return 0;
-    }
-
-    @Override
-    public int appendTuples(int maxTuples) throws IOException {
         // TODO Auto-generated method stub
         return 0;
     }

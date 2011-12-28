@@ -17,26 +17,11 @@ public interface TupleWriter extends Closeable {
     public void init (TupleReader reader) throws IOException;
     
     /**
-     * Retrieves one tuple from the reader and appends it to the column files.
-     * @throws IOException if reader doesn't have any more tuple to provide, etc
-     */
-    public void appendTuple () throws IOException;
-
-    /**
      * Retrieves all tuples from the reader and appends them to the column files.
      * @param int the number of tuples written
      * @throws IOException
      */
     public int appendAllTuples () throws IOException;
-
-    /**
-     * Retrieves the specified number of tuples from the reader and appends them to the column files.
-     * @param maxTuples the number of tuples to write
-     * @param int the number of tuples written (might be smaller than maxTuples)
-     * @throws IOException
-     */
-    public int appendTuples (int maxTuples) throws IOException;
-
     /**
      * flushes the underlying stream.
      * @param sync whether to make the written data all the way down to the disk, calling getFD().sync().

@@ -9,8 +9,6 @@ import com.sleepycat.persist.model.PrimaryKey;
 import com.sleepycat.persist.model.Relationship;
 import com.sleepycat.persist.model.SecondaryKey;
 
-import edu.brown.lasvegas.util.CompositeIntKey;
-
 /**
  * A columnar file in a replica partition.
  * The smallest unit of data file objects.
@@ -27,28 +25,12 @@ public class LVColumnFile implements LVObject {
     @SecondaryKey(name=IX_PARTITION_ID, relate=Relationship.MANY_TO_ONE, relatedEntity=LVReplicaPartition.class)
     private int partitionId;
 
+    public static final String IX_COLUMN_ID = "IX_COLUMN_ID";
     /**
      * ID of the column this file stores.
      */
+    @SecondaryKey(name=IX_COLUMN_ID, relate=Relationship.MANY_TO_ONE, relatedEntity=LVColumn.class)
     private int columnId;
-    public static final String IX_PARTITION_COLUMN_ID = "IX_PARTITION_COLUMN_ID";
-    /**
-     * A hack to create a composite secondary index on Partition-ID and Column-ID.
-     * Don't get or set this directly. Only BDB-JE should access it.
-     */
-    @SecondaryKey(name=IX_PARTITION_COLUMN_ID, relate=Relationship.MANY_TO_ONE)
-    private CompositeIntKey partitionColumnId = new CompositeIntKey();
-    public CompositeIntKey getPartitionColumnId() {
-        return partitionColumnId;
-    }
-    private void syncPartitionColumnId() {
-        partitionColumnId.setValue1(partitionId);
-        partitionColumnId.setValue2(columnId);
-    }
-    public void setPartitionColumnId(CompositeIntKey partitionColumnId) {
-        this.partitionColumnId = partitionColumnId;
-    }
-
     
     /**
      * Unique ID of this file.
@@ -106,7 +88,6 @@ public class LVColumnFile implements LVObject {
             hdfsFilePath = in.readUTF();
         }
         partitionId = in.readInt();
-        syncPartitionColumnId();
     }
     /** Creates and returns a new instance of this class from the data input.*/
     public static LVColumnFile read (DataInput in) throws IOException {
@@ -137,7 +118,6 @@ public class LVColumnFile implements LVObject {
      */
     public void setPartitionId(int partitionId) {
         this.partitionId = partitionId;
-        syncPartitionColumnId();
     }
 
     /**
@@ -156,7 +136,6 @@ public class LVColumnFile implements LVObject {
      */
     public void setColumnId(int columnId) {
         this.columnId = columnId;
-        syncPartitionColumnId();
     }
 
     /**

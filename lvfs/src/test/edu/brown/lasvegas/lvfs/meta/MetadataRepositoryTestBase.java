@@ -470,11 +470,18 @@ public abstract class MetadataRepositoryTestBase {
 
     @Test
     public void testDropColumn() throws IOException {
-        assertNotNull(repository.getColumn(DEFAULT_COLUMNS[1].getColumnId()));
-        repository.dropColumn(DEFAULT_COLUMNS[1]);
-        assertNull(repository.getColumn(DEFAULT_COLUMNS[1].getColumnId()));
+        try {
+            repository.dropColumn(DEFAULT_COLUMNS[1]); // it's partitioning column, so can't be deleted
+            fail ();
+        } catch (IOException ex) {
+        }
+
+        assertNotNull(repository.getColumn(DEFAULT_COLUMNS[2].getColumnId()));
+        repository.dropColumn(DEFAULT_COLUMNS[2]);
+        assertNull(repository.getColumn(DEFAULT_COLUMNS[2].getColumnId()));
         reloadRepository();
-        assertNull(repository.getColumn(DEFAULT_COLUMNS[1].getColumnId()));
+        assertNull(repository.getColumn(DEFAULT_COLUMNS[2].getColumnId()));
+        
     }
 
     @Test
@@ -919,11 +926,11 @@ public abstract class MetadataRepositoryTestBase {
 
     @Test
     public void testReplicaSchemeNoOrder() throws IOException {
-        // TODO
-        LVReplicaScheme scheme = repository.createNewReplicaScheme(DEFAULT_GROUP, DEFAULT_COLUMNS[2],
+        LVReplicaScheme scheme = repository.createNewReplicaScheme(DEFAULT_GROUP, null,
             new int[]{DEFAULT_COLUMNS[0].getColumnId(), DEFAULT_COLUMNS[1].getColumnId(), DEFAULT_COLUMNS[2].getColumnId()},
             new CompressionType[]{CompressionType.RLE, CompressionType.RLE, CompressionType.NONE});
         assertTrue (scheme.getSchemeId() > 0);
+        assertNull (scheme.getSortColumnId());
     }
     @Test
     public void testReplicaSchemeAssorted() throws IOException {

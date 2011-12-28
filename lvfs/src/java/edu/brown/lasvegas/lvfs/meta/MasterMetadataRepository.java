@@ -458,6 +458,23 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     @Override
     public void dropColumn(LVColumn column) throws IOException {
         assert (column.getColumnId() > 0);
+        // check if this column can't be deleted
+        for (LVReplicaGroup group : getAllReplicaGroups(column.getTableId())) { 
+            if (group.getPartitioningColumnId() == column.getColumnId()) {
+                throw new IOException ("partitioning column can't be deleted. drop this replica group first:" + group);
+            }
+            for (LVReplicaScheme scheme : getAllReplicaSchemes(group.getGroupId())) {
+                if (scheme.getSortColumnId() != null && scheme.getSortColumnId().intValue() == column.getColumnId()) {
+                    throw new IOException ("sorting column can't be deleted. drop this replica scheme first:" + scheme);
+                }
+            }
+        }
+        // delete column files
+        for (LVColumnFile file : bdbTableAccessors.columnFileAccessor.IX_COLUMN_ID.subIndex(column.getColumnId()).map().values()) {
+            dropColumnFile(file);
+        }
+        
+        // then delete the column
         boolean deleted = bdbTableAccessors.columnAccessor.PKX.delete(column.getColumnId());
         if (!deleted) {
             LOG.warn("this column has been already deleted?? :" + column);
@@ -855,14 +872,26 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
 
     @Override
     public LVColumnFile[] getAllColumnFilesByReplicaPartitionId(int subPartitionId) throws IOException {
-        Collection<LVColumnFile> values = bdbTableAccessors.columnFileAccessor.IX_PARTITION_ID.subIndex(subPartitionId).sortedMap().values();
-        // TODO sort by column's order... although this is not quite an important contract
-        return values.toArray(new LVColumnFile[values.size()]);
+        Collection<LVColumnFile> values = bdbTableAccessors.columnFileAccessor.IX_PARTITION_ID.subIndex(subPartitionId).map().values();
+        SortedMap<Integer, LVColumnFile> orderedMap = new TreeMap<Integer, LVColumnFile>(); // sorted by column order
+        for (LVColumnFile file : values) {
+            LVColumn column = getColumn(file.getColumnId());
+            assert (column != null);
+            assert (!orderedMap.containsKey(column.getOrder()));
+            orderedMap.put(column.getOrder(), file);
+        }
+        return orderedMap.values().toArray(new LVColumnFile[orderedMap.size()]);
     }
 
     @Override
     public LVColumnFile getColumnFileByReplicaPartitionAndColumn(int subPartitionId, int columnId) throws IOException {
-        return bdbTableAccessors.columnFileAccessor.IX_PARTITION_COLUMN_ID.get(new CompositeIntKey(subPartitionId, columnId));
+        // partition ID is enough selective. no composite index is needed.
+        for (LVColumnFile file : bdbTableAccessors.columnFileAccessor.IX_PARTITION_ID.subIndex(subPartitionId).map().values()) {
+            if (file.getColumnId() == columnId) {
+                return file;
+            }
+        }
+        return null;
     }
 
     @Override

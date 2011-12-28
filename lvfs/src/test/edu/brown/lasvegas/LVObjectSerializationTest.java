@@ -109,7 +109,6 @@ public class LVObjectSerializationTest {
             assertEquals(org[i].getColumnId(), copied.getColumnId());
             assertEquals(org[i].getFileSize(), copied.getFileSize());
             assertEquals(org[i].getHdfsFilePath(), copied.getHdfsFilePath());
-            assertEquals(org[i].getPartitionColumnId(), copied.getPartitionColumnId());
             assertEquals(org[i].getPartitionId(), copied.getPartitionId());
             assertEquals(org[i].getPrimaryKey(), copied.getPrimaryKey());
         }

@@ -104,6 +104,25 @@ public final class KeyValueArrays {
         rangeCheck(keys.length, values.length, fromIndex, toIndex);
         sort1(keys, values, fromIndex, toIndex-fromIndex);
     }
+    
+    /**
+     * Sorts the specified array of generic-keys with int-values into ascending numerical order of the keys.
+     * This method wouldn't be fast, but provided here for convenience.
+     * NULL keys will be placed at the beginning (considered as negative infinite).
+     */
+    public static <T extends Comparable<T>> void sort(T[] keys, int[] values) {
+        sort2(keys, values, 0, keys.length);
+    }
+
+    /**
+     * Sorts the given range of the specified array of generic-keys with int-values into ascending numerical order of the keys.
+     * This method wouldn't be fast, but provided here for convenience.
+     * NULL keys will be placed at the beginning (considered as negative infinite).
+     */
+    public static <T extends Comparable<T>> void sort(T[] keys, int[] values, int fromIndex, int toIndex) {
+        rangeCheck(keys.length, values.length, fromIndex, toIndex);
+        sort2(keys, values, fromIndex, toIndex);
+    }
 
     /**
      * Sorts the specified array of double-keys with int-values into ascending numerical order of the keys.
@@ -579,6 +598,105 @@ public final class KeyValueArrays {
                 (keys[b] > keys[c] ? b : keys[a] > keys[c] ? c : a));
     }
     
+    private static <T extends Comparable<T>> void sort2(T[] keys, int[] values, int fromIndex, int toIndex) {
+        // Move any NULLs to beginning of array.
+        int nonNullBegin = fromIndex;
+        for (int i = fromIndex; i < toIndex; ++i) {
+            if (keys[i] == null) {
+                swap(keys, values, nonNullBegin, i);
+                ++nonNullBegin;
+            }
+        }
+
+        sort1(keys, values, nonNullBegin, toIndex - nonNullBegin);
+    }
+
+    /**
+     * Sorts the specified sub-array of Ts into ascending order.
+     */
+    private static <T extends Comparable<T>> void sort1(T[] keys, int[] values, int off, int len) {
+        // Insertion sort on smallest arrays
+        if (len < 7) {
+            for (int i=off; i<len+off; i++)
+                for (int j=i; j>off && keys[j-1].compareTo(keys[j])>0; j--)
+                    swap(keys, values, j, j-1);
+            return;
+        }
+
+        // Choose a partition element, v
+        int m = off + (len >> 1);       // Small arrays, middle element
+        if (len > 7) {
+            int l = off;
+            int n = off + len - 1;
+            if (len > 40) {        // Big arrays, pseudomedian of 9
+                int s = len/8;
+                l = med3(keys, l,     l+s, l+2*s);
+                m = med3(keys, m-s,   m,   m+s);
+                n = med3(keys, n-2*s, n-s, n);
+            }
+            m = med3(keys, l, m, n); // Mid-size, med of 3
+        }
+        T v = keys[m];
+
+        // Establish Invariant: v* (<v)* (>v)* v*
+        int a = off, b = a, c = off + len - 1, d = c;
+        while(true) {
+            while (b <= c && keys[b].compareTo(v) <= 0) {
+                if (keys[b] == v)
+                    swap(keys, values, a++, b);
+                b++;
+            }
+            while (c >= b && keys[c].compareTo(v) >= 0) {
+                if (keys[c] == v)
+                    swap(keys, values, c, d--);
+                c--;
+            }
+            if (b > c)
+                break;
+            swap(keys, values, b++, c--);
+        }
+
+        // Swap partition elements back to middle
+        int s, n = off + len;
+        s = Math.min(a-off, b-a  );  vecswap(keys, values, off, b-s, s);
+        s = Math.min(d-c,   n-d-1);  vecswap(keys, values, b,   n-s, s);
+
+        // Recursively sort non-partition-elements
+        if ((s = b-a) > 1)
+            sort1(keys, values, off, s);
+        if ((s = d-c) > 1)
+            sort1(keys, values, n-s, s);
+    }
+    
+    /**
+     * Swaps key/value[a] with key/value[b].
+     */
+    private static <T extends Comparable<T>> void swap(T keys[], int values[], int a, int b) {
+        T k = keys[a];
+        keys[a] = keys[b];
+        keys[b] = k;
+        int v = values[a];
+        values[a] = values[b];
+        values[b] = v;
+    }
+
+    /**
+     * Swaps key/value[a .. (a+n-1)] with key/value[b .. (b+n-1)].
+     */
+    private static <T extends Comparable<T>> void vecswap(T keys[], int values[], int a, int b, int n) {
+        for (int i=0; i<n; i++, a++, b++)
+            swap(keys, values, a, b);
+    }
+
+    /**
+     * Returns the index of the median of the three indexed Ts.
+     */
+    private static <T extends Comparable<T>> int med3(T keys[], int a, int b, int c) {
+        return (keys[a].compareTo(keys[b]) < 0 ?
+                (keys[b].compareTo(keys[c]) < 0 ? b : keys[a].compareTo(keys[c]) < 0 ? c : a) :
+                (keys[b].compareTo(keys[c]) > 0 ? b : keys[a].compareTo(keys[c]) > 0 ? c : a));
+    }
+
     /**
      * Sorts the specified sub-array of bytes into ascending order.
      */
