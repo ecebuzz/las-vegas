@@ -12,11 +12,19 @@ public enum LVFSFileType {
         }
     },
 
-    /** Sparse position file. */
+    /** Sparse position index file. */
     POSITION_FILE {
         @Override
         public String getExtension() {
             return "pos";
+        }
+    },
+
+    /** Sparse value index file for sorting columns. */
+    VALUE_FILE {
+        @Override
+        public String getExtension() {
+            return "vdx";
         }
     },
 
@@ -35,6 +43,7 @@ public enum LVFSFileType {
     public static LVFSFileType getFromExtension (String extension) {
         if (extension.equals(DATA_FILE.getExtension())) return DATA_FILE;
         if (extension.equals(POSITION_FILE.getExtension())) return POSITION_FILE;
+        if (extension.equals(VALUE_FILE.getExtension())) return VALUE_FILE;
         if (extension.equals(DICTIONARY_FILE.getExtension())) return DICTIONARY_FILE;
         return null;
     }

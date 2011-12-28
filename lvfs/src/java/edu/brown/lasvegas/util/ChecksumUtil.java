@@ -2,7 +2,8 @@ package edu.brown.lasvegas.util;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.zip.CRC32;
+
+import org.apache.hadoop.util.PureJavaCrc32;
 
 import edu.brown.lasvegas.lvfs.VirtualFile;
 
@@ -18,7 +19,7 @@ public final class ChecksumUtil {
     public static long getFileCheckSum (VirtualFile file) throws IOException {
         InputStream in = file.getInputStream();
         byte[] buffer = new byte[1 << 16];
-        CRC32 checksum = new CRC32();
+        PureJavaCrc32 checksum = new PureJavaCrc32();
         while (true) {
             int read = in.read(buffer);
             if (read == -1) {

@@ -6,18 +6,18 @@ import java.io.IOException;
  * A position file is a sparse tuple-position index file for variable-length values
  * and a few non-seekable compressions (e.g., RLE, Snappy).
  * 
- * <p>A position file simply stores lots of long values so that both reading and
+ * <p>A position file simply stores lots of integer values so that both reading and
  * writing are extremely simple and fast. Also, a position file should be small,
  * most likely 100-200KB or so. So, we read/write them at once.</p>
  * 
- * <p>The file format is a series of long-pairs.
+ * <p>The file format is a series of int-pairs.
  * 1) tuple-num of the pointed tuple.
  * 2) byte position of the tuple.</p>
  * 
  * <p>Additionally, it's guaranteed that the first pair points to the first tuple
  * in the file, the last pair points to the last tuple + 1 (=the total number of tuples).</p>
  * 
- * <p>Writing is simply to dump the bunch of long-values. Reading
+ * <p>Writing is simply to dump the bunch of int-values. Reading
  * is a binary-search on the tuple-num.</p>
  */
 public interface PositionIndex {
@@ -47,6 +47,17 @@ public interface PositionIndex {
      * @return the best position to <b>start</b> reading the file.
      */
     public Pos searchPosition (int tupleToFind);
+    
+    /**
+     * Returns the number of entries (tuple/position pair) in this position file.
+     */
+    public int getEntryCount ();
+    
+    /**
+     * Returns the specified entry in this position file.
+     * @param entry 0 to getEntryCount() - 1. 
+     */
+    public Pos getEntry (int entry); 
     
     /**
      * Returns the total number of tuples in the data file.

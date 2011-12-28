@@ -3,7 +3,8 @@ package edu.brown.lasvegas.lvfs;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-import java.util.zip.CRC32;
+
+import org.apache.hadoop.util.PureJavaCrc32;
 
 /**
  * Interface to receive raw values (no notion of tuples here) to write out.
@@ -144,7 +145,7 @@ public abstract class RawValueWriter {
     public final void setCRC32Enabled(boolean enabled) {
         if (enabled) {
             assert (checksum == null);
-            checksum = new CRC32();
+            checksum = new PureJavaCrc32();
         } else {
             checksum = null;
         }
@@ -163,7 +164,7 @@ public abstract class RawValueWriter {
         }
     }
     
-    private CRC32 checksum;
+    private PureJavaCrc32 checksum;
 
     public static final Charset CHARSET = Charset.forName("UTF-8");
 }

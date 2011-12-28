@@ -1,11 +1,14 @@
 package edu.brown.lasvegas.lvfs;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.Collection;
 
 /**
  * Functor to read/write java objects and their arrays.
  * @param <T> Value type
- * @param <AT> Array type 
+ * @param <AT> Array type. This might not be T[] but the primitive array for speed (that's why we need this class).
  */
 public interface ValueTraits<T, AT> {
     /**
@@ -59,4 +62,38 @@ public interface ValueTraits<T, AT> {
      * Put to the array (array[index]=value). Minimize the use of this function as it's slow.
      */
     void set (AT array, int index, T value);
+    
+    /**
+     * Converts the given collection to an array. When T[]!=AT (e.g., Long/long[]), this will produce
+     * a more compact representation of the values. Otherwise, it's same as {@link Collection#toArray()}.
+     */
+    AT toArray (Collection<T> values);
+
+
+    /**
+     * Call binarySearch() in Arrays.
+     * @see Arrays
+     */
+    int binarySearch (AT array, T value);
+    
+    /**
+     * Deserializes an array from byte buffer. This method is a batched read and supposed
+     * to be as low-overhead as possible.
+     * @param buffer byte buffer to read an array from
+     * @return deserialized array 
+     */
+    AT deserializeArray (ByteBuffer buffer) throws IOException;
+
+    /**
+     * Serializes an array and writes it out to byte buffer.
+     * @param array the array to write out.
+     * @param buffer byte buffer to write out the array. use {@link #getSerializedByteSize(Object)}
+     * to know the required size.
+     * @param number of bytes written
+     */
+    int serializeArray (AT array, ByteBuffer buffer);
+    /**
+     * Returns the required bytes to serialize the given array. 
+     */
+    int getSerializedByteSize (AT array);
 }

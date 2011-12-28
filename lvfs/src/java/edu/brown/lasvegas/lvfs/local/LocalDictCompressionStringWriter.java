@@ -2,14 +2,16 @@ package edu.brown.lasvegas.lvfs.local;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.ObjectOutputStream;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 
 import org.apache.log4j.Logger;
 
+import edu.brown.lasvegas.lvfs.AllValueTraits;
 import edu.brown.lasvegas.lvfs.TypedWriter;
+import edu.brown.lasvegas.lvfs.ValueTraits;
 import edu.brown.lasvegas.lvfs.VirtualFile;
 import edu.brown.lasvegas.lvfs.VirtualFileOutputStream;
 
@@ -167,9 +169,14 @@ public class LocalDictCompressionStringWriter implements TypedWriter<String, Str
         {
             long startMillisec = System.currentTimeMillis();
             // output into the final dict file
-            ObjectOutputStream out = new ObjectOutputStream(finalDictWriter);
-            out.writeObject(dict);
-            out.flush();
+            ValueTraits<String, String[]> traits = new AllValueTraits.VarcharValueTraits();
+            byte[] bytes = new byte[traits.getSerializedByteSize(dict)];
+            ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
+            int writtenBytes = traits.serializeArray(dict, byteBuffer);
+            assert (bytes.length == writtenBytes);
+            assert (byteBuffer.position() == writtenBytes);
+            finalDictWriter.write(bytes);
+            finalDictWriter.flush();
             long endMillisec = System.currentTimeMillis();
             if (LOG.isInfoEnabled()) {
                 LOG.info("Wrote out a dict file:" + dict.length + " entries, "

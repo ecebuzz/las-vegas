@@ -4,7 +4,6 @@ import java.io.Closeable;
 import java.io.IOException;
 
 import edu.brown.lasvegas.ColumnType;
-import edu.brown.lasvegas.lvfs.LasVegasFileSystem;
 import edu.brown.lasvegas.lvfs.imp.EquiWidthPartitioner;
 import edu.brown.lasvegas.lvfs.imp.TextFileTableReader;
 
@@ -14,7 +13,7 @@ import edu.brown.lasvegas.lvfs.imp.TextFileTableReader;
  * 
  * Mainly used while importing a local file or a raw HDFS file.
  * If the user program needs to implement its own import program,
- * implement this class and give it to {@link LasVegasFileSystem} to import
+ * implement this class and give it to import
  * their own files. But, usually the built-in implementation of this class,
  * {@link TextFileTableReader}, which assumes simple
  * line-delimiters/column-delimiters should suffice.

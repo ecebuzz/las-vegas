@@ -1,17 +1,20 @@
 package edu.brown.lasvegas.lvfs.local;
 
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 
 import org.apache.log4j.Logger;
 
+import edu.brown.lasvegas.lvfs.AllValueTraits;
 import edu.brown.lasvegas.lvfs.OrderedDictionary;
 import edu.brown.lasvegas.lvfs.TypedReader;
 import edu.brown.lasvegas.lvfs.TypedWriter;
+import edu.brown.lasvegas.lvfs.ValueTraits;
 import edu.brown.lasvegas.lvfs.VirtualFile;
 
 /**
@@ -90,13 +93,23 @@ public final class LocalDictFile implements OrderedDictionary<String> {
      * Loads an existing dictionary file.
      */
     public LocalDictFile(VirtualFile dictFile) throws IOException {
-        ObjectInputStream in = new ObjectInputStream(dictFile.getInputStream());
+        ValueTraits<String, String[]> traits = new AllValueTraits.VarcharValueTraits();
+        int fileSize = (int) dictFile.length();
+        if (fileSize > 1 << 26) {
+            throw new IOException ("This dictionary seems too large: " + dictFile.getAbsolutePath() + ": " + (dictFile.length() >> 20) + "MB");
+        }
+        byte[] bytes = new byte[fileSize];
+        InputStream in = dictFile.getInputStream();
+        int read = in.read(bytes);
+        in.close();
+        assert (read == bytes.length);
+        ByteBuffer buffer = ByteBuffer.wrap(bytes);
         try {
-            dict = (String[]) in.readObject();
-        } catch (Exception ex) {
+            dict = traits.deserializeArray(buffer);
+        } catch (IOException ex) {
             throw new IOException ("unexpected exception when loading a dictionary. corrupted dictionary?:" + dictFile.getAbsolutePath(), ex);
         }
-        in.close();
+        assert (buffer.position() == bytes.length);
         if (dict.length <= (1 << 8)) {
             bytesPerEntry = 1;
         } else if (dict.length <= (1 << 16)) {
@@ -235,8 +248,18 @@ public final class LocalDictFile implements OrderedDictionary<String> {
     private static void writeToFile (VirtualFile dictFile, String[] theDict) throws IOException {
         long startMillisec = System.currentTimeMillis();
         // last, output it into the file
-        ObjectOutputStream out = new ObjectOutputStream(dictFile.getOutputStream());
-        out.writeObject(theDict);
+        ValueTraits<String, String[]> traits = new AllValueTraits.VarcharValueTraits();
+        int fileSize = traits.getSerializedByteSize(theDict);
+        if (fileSize > 1 << 26) {
+            throw new IOException ("This dictionary will be too large: " + (fileSize >> 20) + "MB");
+        }
+        byte[] bytes = new byte[fileSize];
+        ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
+        int writtenBytes = traits.serializeArray(theDict, byteBuffer);
+        assert (bytes.length == writtenBytes);
+        assert (byteBuffer.position() == writtenBytes);
+        OutputStream out = dictFile.getOutputStream();
+        out.write(bytes);
         out.flush();
         out.close();
         long endMillisec = System.currentTimeMillis();

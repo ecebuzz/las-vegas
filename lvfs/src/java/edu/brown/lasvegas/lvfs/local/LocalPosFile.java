@@ -19,7 +19,7 @@ import edu.brown.lasvegas.lvfs.VirtualFileOutputStream;
  * writing are extremely simple and fast. Also, a position file should be small,
  * most likely 100-200KB or so. So, we read/write them at once.</p>
  * 
- * <p>The file format is a series of long-pairs.
+ * <p>The file format is a series of int-pairs.
  * 1) tuple-num of the pointed tuple.
  * 2) byte position of the tuple.</p>
  * 
@@ -93,7 +93,7 @@ public final class LocalPosFile implements PositionIndex {
         int read = stream.read(bytes);
         stream.close();
         assert (read == bytes.length);
-        // simply reads it to long[]. we don't convert it to Pos[] because
+        // simply reads it to int[]. we don't convert it to Pos[] because
         // it will create a lot of unused objects.
         ByteBuffer.wrap(bytes).asIntBuffer().get(array);
         long endTime = LOG.isDebugEnabled() ? System.nanoTime() : 0L;
@@ -136,7 +136,15 @@ public final class LocalPosFile implements PositionIndex {
         assert (ret < array.length / 2);
         assert (array[ret * 2] < tupleToFind);
         assert (ret == (array.length / 2) - 1 || array[(ret + 1) * 2] > tupleToFind);
-        return new Pos (array[ret * 2], array[ret * 2 + 1]);
+        return getEntry(ret);
+    }
+    @Override
+    public int getEntryCount() {
+        return array.length / 2;
+    }
+    @Override
+    public Pos getEntry(int entry) {
+        return new Pos (array[entry * 2], array[entry * 2 + 1]);
     }
     
     @Override
