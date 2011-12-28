@@ -73,24 +73,23 @@ public class EquiWidthPartitioner<T extends Comparable<T>> {
         return designPartitions(firstSplit, lastSplit, partitioningColumnIndex, numPartitions, DEFAULT_SAMPLE_BYTE_SIZE);
     }
     private final static int DEFAULT_SAMPLE_BYTE_SIZE = 1 << 20;
-    private final ValueSplitter<T> splitter;
+    private final ValueSplitter splitter;
     private final ColumnType type;
-    @SuppressWarnings("unchecked")
     private EquiWidthPartitioner(ColumnType type) {
         this.type = type;
         switch(type) {
         case DATE:
         case TIME:
         case TIMESTAMP:
-        case BIGINT: splitter = (ValueSplitter<T>) new LongValueSplitter(); break;
-        case DOUBLE: splitter = (ValueSplitter<T>) new DoubleValueSplitter(); break;
-        case FLOAT: splitter = (ValueSplitter<T>) new FloatValueSplitter(); break;
-        case INTEGER: splitter = (ValueSplitter<T>) new IntegerValueSplitter(); break;
-        case SMALLINT: splitter = (ValueSplitter<T>) new ShortValueSplitter(); break;
+        case BIGINT: splitter = new LongValueSplitter(); break;
+        case DOUBLE: splitter = new DoubleValueSplitter(); break;
+        case FLOAT: splitter = new FloatValueSplitter(); break;
+        case INTEGER: splitter = new IntegerValueSplitter(); break;
+        case SMALLINT: splitter = new ShortValueSplitter(); break;
         case BOOLEAN:
-        case TINYINT: splitter = (ValueSplitter<T>) new ByteValueSplitter(); break;
+        case TINYINT: splitter = new ByteValueSplitter(); break;
         case VARBINARY: throw new IllegalArgumentException("partitioning by VARBINARY column is not supported");
-        case VARCHAR: splitter = (ValueSplitter<T>) new StringValueSplitter(); break;
+        case VARCHAR: splitter = new StringValueSplitter(); break;
 
         default:
             throw new IllegalArgumentException ("Unexpected column type:" + type);
@@ -114,7 +113,7 @@ public class EquiWidthPartitioner<T extends Comparable<T>> {
             ((T) minmax1.getStartKey()).compareTo((T) minmax2.getStartKey()) < 0 ? minmax1.getStartKey() : minmax2.getStartKey(),
             ((T) minmax1.getEndKey()).compareTo((T) minmax2.getEndKey()) > 0 ? minmax1.getEndKey() : minmax2.getEndKey());
         // uniformly divide the range
-        ValueRange[] ret = splitter.split(type, (T) minmax.getStartKey(), (T) minmax.getEndKey(), numPartitions).toArray(new ValueRange[0]);
+        ValueRange[] ret = splitter.split(type, minmax.getStartKey(), minmax.getEndKey(), numPartitions).toArray(new ValueRange[0]);
         if (LOG.isInfoEnabled()) {
             StringBuffer msg = new StringBuffer();
             for (int i = 0; i < ret.length; ++i) {
@@ -142,13 +141,11 @@ public class EquiWidthPartitioner<T extends Comparable<T>> {
         }
         return new ValueRange(type, min, max);
     }
-    private interface ValueSplitter<T extends Comparable<T>> {
-        /** uniformly split the range into numSplits partitions. */
-        List<ValueRange> split (ColumnType type, T min, T max, int numSplits);
-    }
-    private static class ByteValueSplitter implements ValueSplitter<Byte> {
+    private static class ByteValueSplitter implements ValueSplitter {
         @Override
-        public List<ValueRange> split(ColumnType type, Byte min, Byte max, int numSplits) {
+        public List<ValueRange> split(ColumnType type, Comparable<?> minC, Comparable<?> maxC, int numSplits) {
+            Byte min = (Byte) minC;
+            Byte max = (Byte) maxC;
             List<ValueRange> list = new ArrayList<ValueRange>();
             if (numSplits == 1) {
                 list.add (new ValueRange(type, null, null));
@@ -167,9 +164,11 @@ public class EquiWidthPartitioner<T extends Comparable<T>> {
         }
     }
 
-    private static class ShortValueSplitter implements ValueSplitter<Short> {
+    private static class ShortValueSplitter implements ValueSplitter {
         @Override
-        public List<ValueRange> split(ColumnType type, Short min, Short max, int numSplits) {
+        public List<ValueRange> split(ColumnType type, Comparable<?> minC, Comparable<?> maxC, int numSplits) {
+            Short min = (Short) minC;
+            Short max = (Short) maxC;
             List<ValueRange> list = new ArrayList<ValueRange>();
             if (numSplits == 1) {
                 list.add (new ValueRange(type, null, null));
@@ -189,9 +188,11 @@ public class EquiWidthPartitioner<T extends Comparable<T>> {
     }
 
 
-    private static class IntegerValueSplitter implements ValueSplitter<Integer> {
+    private static class IntegerValueSplitter implements ValueSplitter {
         @Override
-        public List<ValueRange> split(ColumnType type, Integer min, Integer max, int numSplits) {
+        public List<ValueRange> split(ColumnType type, Comparable<?> minC, Comparable<?> maxC, int numSplits) {
+            Integer min = (Integer) minC;
+            Integer max = (Integer) maxC;
             List<ValueRange> list = new ArrayList<ValueRange>();
             if (numSplits == 1) {
                 list.add (new ValueRange(type, null, null));
@@ -210,9 +211,11 @@ public class EquiWidthPartitioner<T extends Comparable<T>> {
         }
     }
 
-    private static class LongValueSplitter implements ValueSplitter<Long> {
+    private static class LongValueSplitter implements ValueSplitter {
         @Override
-        public List<ValueRange> split(ColumnType type, Long min, Long max, int numSplits) {
+        public List<ValueRange> split(ColumnType type, Comparable<?> minC, Comparable<?> maxC, int numSplits) {
+            Long min = (Long) minC;
+            Long max = (Long) maxC;
             List<ValueRange> list = new ArrayList<ValueRange>();
             if (numSplits == 1) {
                 list.add (new ValueRange(type, null, null));
@@ -232,9 +235,11 @@ public class EquiWidthPartitioner<T extends Comparable<T>> {
     }
 
 
-    private static class FloatValueSplitter implements ValueSplitter<Float> {
+    private static class FloatValueSplitter implements ValueSplitter {
         @Override
-        public List<ValueRange> split(ColumnType type, Float min, Float max, int numSplits) {
+        public List<ValueRange> split(ColumnType type, Comparable<?> minC, Comparable<?> maxC, int numSplits) {
+            Float min = (Float) minC;
+            Float max = (Float) maxC;
             List<ValueRange> list = new ArrayList<ValueRange>();
             if (numSplits == 1) {
                 list.add (new ValueRange(type, null, null));
@@ -253,9 +258,11 @@ public class EquiWidthPartitioner<T extends Comparable<T>> {
         }
     }
 
-    private static class DoubleValueSplitter implements ValueSplitter<Double> {
+    private static class DoubleValueSplitter implements ValueSplitter {
         @Override
-        public List<ValueRange> split(ColumnType type, Double min, Double max, int numSplits) {
+        public List<ValueRange> split(ColumnType type, Comparable<?> minC, Comparable<?> maxC, int numSplits) {
+            Double min = (Double) minC;
+            Double max = (Double) maxC;
             List<ValueRange> list = new ArrayList<ValueRange>();
             if (numSplits == 1) {
                 list.add (new ValueRange(type, null, null));
@@ -275,9 +282,11 @@ public class EquiWidthPartitioner<T extends Comparable<T>> {
     }
 
     /** this one is tricky... */
-    private static class StringValueSplitter implements ValueSplitter<String> {
+    private static class StringValueSplitter implements ValueSplitter {
         @Override
-        public List<ValueRange> split(ColumnType type, String min, String max, int numSplits) {
+        public List<ValueRange> split(ColumnType type, Comparable<?> minC, Comparable<?> maxC, int numSplits) {
+            String min = (String) minC;
+            String max = (String) maxC;
             List<ValueRange> list = new ArrayList<ValueRange>();
             if (numSplits == 1) {
                 list.add (new ValueRange(type, null, null));

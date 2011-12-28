@@ -4,7 +4,6 @@ import java.io.IOException;
 
 import org.apache.log4j.Logger;
 
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 import edu.brown.lasvegas.lvfs.AllValueTraits;
 import edu.brown.lasvegas.lvfs.PositionIndex.Pos;
 import edu.brown.lasvegas.lvfs.TypedRLEReader;
@@ -211,7 +210,7 @@ public final class LocalRLEReader<T, AT> extends LocalTypedReaderBase<T, AT> imp
     public final int getTotalTuples() {
         // we can answer the number of tuples only when position file is given
         if (posIndex == null) {
-            throw new NotImplementedException();
+            throw new UnsupportedOperationException();
         } else {
             return posIndex.getTotalTuples();
         }
