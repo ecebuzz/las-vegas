@@ -3,31 +3,26 @@ package edu.brown.lasvegas.tuple;
 import java.io.Closeable;
 import java.io.IOException;
 
+import edu.brown.lasvegas.lvfs.ColumnFileWriterBundle;
+
 /**
- * Interface to write a set of column data (Tuple).
+ * Interface to write a set of column data (Tuple) received from {@link TupleReader}.
+ * <p>
  * A tuple might be a complete set of columns in a table,
  * or might be its subset (projection).
+ * </p>
+ * <p>
+ * This writer sequentially appends tuples in the order received from the reader.
+ * It does NOT sort the column files. Sorting is efficiently done later by TODO XXX.
+ * </p>
  */
 public interface TupleWriter extends Closeable {
-    /**
-     * Called once before all the other method calls to prepare for the writes.
-     * @param reader the interface to provide tuples
-     * @throws IOException
-     */
-    public void init (TupleReader reader) throws IOException;
-    
     /**
      * Retrieves all tuples from the reader and appends them to the column files.
      * @param int the number of tuples written
      * @throws IOException
      */
     public int appendAllTuples () throws IOException;
-    /**
-     * flushes the underlying stream.
-     * @param sync whether to make the written data all the way down to the disk, calling getFD().sync().
-     * @throws IOException
-     */
-    public void flush(boolean sync) throws IOException;
 
     /**
      * Finish up writing and write footer for the column files.
@@ -35,10 +30,20 @@ public interface TupleWriter extends Closeable {
      * Failing to call this method results in corrupted files without footer.
      * @throws IOException
      */
-    void writeFileFooter () throws IOException;
+    void finish () throws IOException;
 
     /**
      * Returns the total number of tuples written to this writer.
      */
     int getTupleCount () throws IOException;
+    
+    /** Returns the number of columns. */
+    int getColumnCount ();
+
+    /**
+     * Returns the column file writer instances for the specified column.
+     * This method makes sense only when the implementation class writes out columnar files,
+     * which is always true so far.
+     */
+    ColumnFileWriterBundle<?, ?, ?> getColumnWriterBundle (int col);
 }

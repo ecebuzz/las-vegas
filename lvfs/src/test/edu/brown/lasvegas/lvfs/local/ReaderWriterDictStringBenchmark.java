@@ -38,7 +38,7 @@ public class ReaderWriterDictStringBenchmark {
                     writer.close();
                 }
                 {
-                    LocalDictFile dict = new LocalDictFile(dummyDict);
+                    LocalStringDictFile dict = new LocalStringDictFile(dummyDict);
                     assert (dict.getBytesPerEntry() == 2);
                     assert (dict.getDictionary().length == 65536);
                 }
@@ -66,7 +66,7 @@ public class ReaderWriterDictStringBenchmark {
 
         if (args.length == 0 || args[0].equalsIgnoreCase("readonly")) {
             long startTime = System.currentTimeMillis();
-            LocalDictFile dict = new LocalDictFile(dictFile);
+            LocalStringDictFile dict = new LocalStringDictFile(dictFile);
             assert (dict.getBytesPerEntry() == 2);
             assert (dict.getDictionary().length == 65536);
             LocalFixLenReader<Short, short[]> reader = LocalFixLenReader.getInstanceSmallint(file);

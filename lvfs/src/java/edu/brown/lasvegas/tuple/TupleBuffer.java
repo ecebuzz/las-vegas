@@ -25,8 +25,8 @@ public class TupleBuffer {
         this.data = new Object[columnCount];
         this.accessors = new ColumnAccessor[columnCount];
         for (int i = 0; i < columnCount; ++i) {
-            if (this.types[i] == null) {
-                continue;
+            if (this.types[i] == null || this.types[i] == ColumnType.INVALID) {
+                continue; // then skip the column
             }
             switch (this.types[i]) {
             case BIGINT:
@@ -82,6 +82,10 @@ public class TupleBuffer {
     /** returns the maximum number of tuples this buffer can hold. */
     public int getBufferSize()  {
         return bufferSize;
+    }
+    /** returns if this buffer cannot hold any more tuples. */
+    public boolean isFull () {
+        return count == bufferSize;
     }
     /** returns the number of columns this buffer assume. */
     public int getColumnCount()  {
@@ -162,7 +166,8 @@ public class TupleBuffer {
         int actuallyRead = -1;
         for (int i = 0; i < columnCount; ++i) {
             if (accessors[i] != null) {
-                int read = accessors[i].put(tuplesToRead, columnReaders[i]);
+                @SuppressWarnings({ "unchecked", "rawtypes" })
+                int read = ((ColumnAccessor) accessors[i]).put(tuplesToRead, columnReaders[i]);
                 if (actuallyRead == -1) {
                     actuallyRead = read; 
                 } else {
@@ -187,164 +192,131 @@ public class TupleBuffer {
     
     private final int columnCount;
     
-    private final ColumnAccessor[] accessors;
+    private final ColumnAccessor<?, ?>[] accessors;
     
-    private interface ColumnAccessor {
-        public void put (TupleReader reader) throws IOException;
-        public int put (int tuplesToRead, TypedReader<?,?> reader) throws IOException;
+    private abstract class ColumnAccessor<T extends Comparable<T>, AT> {
+        @SuppressWarnings("unchecked")
+        ColumnAccessor (int col) {
+            this.col = col;
+            this.array = (AT) data[col];
+        }
+        public abstract void put (TupleReader reader) throws IOException;
+        public abstract int put (int tuplesToRead, TypedReader<T,AT> reader) throws IOException;
+        final AT array;
+        final int col;
     }
     
-    private class LongColumnAccessor implements ColumnAccessor {
+    private class LongColumnAccessor extends ColumnAccessor<Long, long[]> {
         private LongColumnAccessor (int col) {
-            this.col = col;
-            this.array = (long[]) data[col];
+            super(col);
         }
         @Override
         public void put(TupleReader reader) throws IOException {
             array[count] = reader.getBigint(col);
         }
         @Override
-        public int put(int tuplesToRead, TypedReader<?, ?> reader) throws IOException {
-            @SuppressWarnings("unchecked")
-            TypedReader<?, long[]> typedReader = (TypedReader<?, long[]>) reader;
-            return typedReader.readValues(array, count, tuplesToRead);
+        public int put(int tuplesToRead, TypedReader<Long, long[]> reader) throws IOException {
+            return reader.readValues(array, count, tuplesToRead);
         }
-        long[] array;
-        int col;
     }
 
-    private class IntColumnAccessor implements ColumnAccessor {
+    private class IntColumnAccessor extends ColumnAccessor<Integer, int[]> {
         private IntColumnAccessor (int col) {
-            this.col = col;
-            this.array = (int[]) data[col];
+            super(col);
         }
         @Override
         public void put(TupleReader reader) throws IOException {
             array[count] = reader.getInteger(col);
         }
         @Override
-        public int put(int tuplesToRead, TypedReader<?, ?> reader) throws IOException {
-            @SuppressWarnings("unchecked")
-            TypedReader<?, int[]> typedReader = (TypedReader<?, int[]>) reader;
-            return typedReader.readValues(array, count, tuplesToRead);
+        public int put(int tuplesToRead, TypedReader<Integer, int[]> reader) throws IOException {
+            return reader.readValues(array, count, tuplesToRead);
         }
-        int[] array;
-        int col;
     }
 
-    private class ShortColumnAccessor implements ColumnAccessor {
+    private class ShortColumnAccessor extends ColumnAccessor<Short, short[]> {
         private ShortColumnAccessor (int col) {
-            this.col = col;
-            this.array = (short[]) data[col];
+            super(col);
         }
         @Override
         public void put(TupleReader reader) throws IOException {
             array[count] = reader.getSmallint(col);
         }
         @Override
-        public int put(int tuplesToRead, TypedReader<?, ?> reader) throws IOException {
-            @SuppressWarnings("unchecked")
-            TypedReader<?, short[]> typedReader = (TypedReader<?, short[]>) reader;
-            return typedReader.readValues(array, count, tuplesToRead);
+        public int put(int tuplesToRead, TypedReader<Short, short[]> reader) throws IOException {
+            return reader.readValues(array, count, tuplesToRead);
         }
-        short[] array;
-        int col;
     }
 
-    private class ByteColumnAccessor implements ColumnAccessor {
+    private class ByteColumnAccessor extends ColumnAccessor<Byte, byte[]> {
         private ByteColumnAccessor (int col) {
-            this.col = col;
-            this.array = (byte[]) data[col];
+            super(col);
         }
         @Override
         public void put(TupleReader reader) throws IOException {
             array[count] = reader.getTinyint(col);
         }
         @Override
-        public int put(int tuplesToRead, TypedReader<?, ?> reader) throws IOException {
-            @SuppressWarnings("unchecked")
-            TypedReader<?, byte[]> typedReader = (TypedReader<?, byte[]>) reader;
-            return typedReader.readValues(array, count, tuplesToRead);
+        public int put(int tuplesToRead, TypedReader<Byte, byte[]> reader) throws IOException {
+            return reader.readValues(array, count, tuplesToRead);
         }
-        byte[] array;
-        int col;
     }
 
-    private class FloatColumnAccessor implements ColumnAccessor {
+    private class FloatColumnAccessor extends ColumnAccessor<Float, float[]> {
         private FloatColumnAccessor (int col) {
-            this.col = col;
-            this.array = (float[]) data[col];
+            super(col);
         }
         @Override
         public void put(TupleReader reader) throws IOException {
             array[count] = reader.getFloat(col);
         }
         @Override
-        public int put(int tuplesToRead, TypedReader<?, ?> reader) throws IOException {
-            @SuppressWarnings("unchecked")
-            TypedReader<?, float[]> typedReader = (TypedReader<?, float[]>) reader;
-            return typedReader.readValues(array, count, tuplesToRead);
+        public int put(int tuplesToRead, TypedReader<Float, float[]> reader) throws IOException {
+            return reader.readValues(array, count, tuplesToRead);
         }
-        float[] array;
-        int col;
     }
 
 
-    private class DoubleColumnAccessor implements ColumnAccessor {
+    private class DoubleColumnAccessor extends ColumnAccessor<Double, double[]> {
         private DoubleColumnAccessor (int col) {
-            this.col = col;
-            this.array = (double[]) data[col];
+            super(col);
         }
         @Override
         public void put(TupleReader reader) throws IOException {
             array[count] = reader.getDouble(col);
         }
         @Override
-        public int put(int tuplesToRead, TypedReader<?, ?> reader) throws IOException {
-            @SuppressWarnings("unchecked")
-            TypedReader<?, double[]> typedReader = (TypedReader<?, double[]>) reader;
-            return typedReader.readValues(array, count, tuplesToRead);
+        public int put(int tuplesToRead, TypedReader<Double, double[]> reader) throws IOException {
+            return reader.readValues(array, count, tuplesToRead);
         }
-        double[] array;
-        int col;
     }
 
-    private class StringColumnAccessor implements ColumnAccessor {
+    private class StringColumnAccessor extends ColumnAccessor<String, String[]> {
         private StringColumnAccessor (int col) {
-            this.col = col;
-            this.array = (String[]) data[col];
+            super(col);
         }
         @Override
         public void put(TupleReader reader) throws IOException {
             array[count] = reader.getVarchar(col);
         }
         @Override
-        public int put(int tuplesToRead, TypedReader<?, ?> reader) throws IOException {
-            @SuppressWarnings("unchecked")
-            TypedReader<?, String[]> typedReader = (TypedReader<?, String[]>) reader;
-            return typedReader.readValues(array, count, tuplesToRead);
+        public int put(int tuplesToRead, TypedReader<String, String[]> reader) throws IOException {
+            return reader.readValues(array, count, tuplesToRead);
         }
-        String[] array;
-        int col;
     }
 
 
-    private class ByteArrayColumnAccessor implements ColumnAccessor {
+    private class ByteArrayColumnAccessor extends ColumnAccessor<ByteArray, ByteArray[]> {
         private ByteArrayColumnAccessor (int col) {
-            this.array = (ByteArray[]) data[col];
-            this.col = col;
+            super(col);
         }
         @Override
         public void put(TupleReader reader) throws IOException {
             array[count] = reader.getVarbin(col);
         }
         @Override
-        public int put(int tuplesToRead, TypedReader<?, ?> reader) throws IOException {
-            @SuppressWarnings("unchecked")
-            TypedReader<?, ByteArray[]> typedReader = (TypedReader<?, ByteArray[]>) reader;
-            return typedReader.readValues(array, count, tuplesToRead);
+        public int put(int tuplesToRead, TypedReader<ByteArray, ByteArray[]> reader) throws IOException {
+            return reader.readValues(array, count, tuplesToRead);
         }
-        ByteArray[] array;
-        int col;
     }
 }

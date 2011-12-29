@@ -10,6 +10,7 @@ import java.util.Iterator;
 
 import edu.brown.lasvegas.ColumnType;
 import edu.brown.lasvegas.util.ByteArray;
+import edu.brown.lasvegas.util.KeyValueArrays;
 
 /**
  * Defines all value traits classes.
@@ -109,6 +110,22 @@ public final class AllValueTraits {
             return Arrays.binarySearch(array, value);
         }
         @Override
+        public void sort(byte[] keys) {
+            sort (keys, 0, keys.length);
+        }
+        @Override
+        public void sort(byte[] keys, int fromIndex, int toIndex) {
+            Arrays.sort(keys, fromIndex, toIndex);
+        }
+        @Override
+        public void sortKeyValue(byte[] keys, int[] values) {
+            sortKeyValue (keys, values, 0, keys.length);
+        }
+        @Override
+        public void sortKeyValue(byte[] keys, int[] values, int fromIndex, int toIndex) {
+            KeyValueArrays.sort(keys, values, fromIndex, toIndex);
+        }
+        @Override
         public void fillArray(Byte value, byte[] array, int off, int len) {
             Arrays.fill(array, off, off + len, value);
         }
@@ -202,6 +219,22 @@ public final class AllValueTraits {
         @Override
         public int binarySearch(short[] array, Short value) {
             return Arrays.binarySearch(array, value);
+        }
+        @Override
+        public void sort(short[] keys) {
+            sort (keys, 0, keys.length);
+        }
+        @Override
+        public void sort(short[] keys, int fromIndex, int toIndex) {
+            Arrays.sort(keys, fromIndex, toIndex);
+        }
+        @Override
+        public void sortKeyValue(short[] keys, int[] values) {
+            sortKeyValue (keys, values, 0, keys.length);
+        }
+        @Override
+        public void sortKeyValue(short[] keys, int[] values, int fromIndex, int toIndex) {
+            KeyValueArrays.sort(keys, values, fromIndex, toIndex);
         }
         @Override
         public void fillArray(Short value, short[] array, int off, int len) {
@@ -302,6 +335,22 @@ public final class AllValueTraits {
             return Arrays.binarySearch(array, value);
         }
         @Override
+        public void sort(int[] keys) {
+            sort (keys, 0, keys.length);
+        }
+        @Override
+        public void sort(int[] keys, int fromIndex, int toIndex) {
+            Arrays.sort(keys, fromIndex, toIndex);
+        }
+        @Override
+        public void sortKeyValue(int[] keys, int[] values) {
+            sortKeyValue (keys, values, 0, keys.length);
+        }
+        @Override
+        public void sortKeyValue(int[] keys, int[] values, int fromIndex, int toIndex) {
+            KeyValueArrays.sort(keys, values, fromIndex, toIndex);
+        }
+        @Override
         public void fillArray(Integer value, int[] array, int off, int len) {
             Arrays.fill(array, off, off + len, value);
         }
@@ -397,6 +446,22 @@ public final class AllValueTraits {
         @Override
         public int binarySearch(long[] array, Long value) {
             return Arrays.binarySearch(array, value);
+        }
+        @Override
+        public void sort(long[] keys) {
+            sort (keys, 0, keys.length);
+        }
+        @Override
+        public void sort(long[] keys, int fromIndex, int toIndex) {
+            Arrays.sort(keys, fromIndex, toIndex);
+        }
+        @Override
+        public void sortKeyValue(long[] keys, int[] values) {
+            sortKeyValue (keys, values, 0, keys.length);
+        }
+        @Override
+        public void sortKeyValue(long[] keys, int[] values, int fromIndex, int toIndex) {
+            KeyValueArrays.sort(keys, values, fromIndex, toIndex);
         }
         @Override
         public void fillArray(Long value, long[] array, int off, int len) {
@@ -496,6 +561,22 @@ public final class AllValueTraits {
             return Arrays.binarySearch(array, value);
         }
         @Override
+        public void sort(float[] keys) {
+            sort (keys, 0, keys.length);
+        }
+        @Override
+        public void sort(float[] keys, int fromIndex, int toIndex) {
+            Arrays.sort(keys, fromIndex, toIndex);
+        }
+        @Override
+        public void sortKeyValue(float[] keys, int[] values) {
+            sortKeyValue (keys, values, 0, keys.length);
+        }
+        @Override
+        public void sortKeyValue(float[] keys, int[] values, int fromIndex, int toIndex) {
+            KeyValueArrays.sort(keys, values, fromIndex, toIndex);
+        }
+        @Override
         public void fillArray(Float value, float[] array, int off, int len) {
             Arrays.fill(array, off, off + len, value);
         }
@@ -578,6 +659,22 @@ public final class AllValueTraits {
         @Override
         public int binarySearch(double[] array, Double value) {
             return Arrays.binarySearch(array, value);
+        }
+        @Override
+        public void sort(double[] keys) {
+            sort (keys, 0, keys.length);
+        }
+        @Override
+        public void sort(double[] keys, int fromIndex, int toIndex) {
+            Arrays.sort(keys, fromIndex, toIndex);
+        }
+        @Override
+        public void sortKeyValue(double[] keys, int[] values) {
+            sortKeyValue (keys, values, 0, keys.length);
+        }
+        @Override
+        public void sortKeyValue(double[] keys, int[] values, int fromIndex, int toIndex) {
+            KeyValueArrays.sort(keys, values, fromIndex, toIndex);
         }
         @Override
         public void writeRunLengthes(TypedRLEWriter<Double, double[]> writer, double[] values, int off, int len) throws IOException {
@@ -676,6 +773,22 @@ public final class AllValueTraits {
         @Override
         public int binarySearch(String[] array, String value) {
             return Arrays.binarySearch(array, value);
+        }
+        @Override
+        public void sort(String[] keys) {
+            sort (keys, 0, keys.length);
+        }
+        @Override
+        public void sort(String[] keys, int fromIndex, int toIndex) {
+            Arrays.sort(keys, fromIndex, toIndex);
+        }
+        @Override
+        public void sortKeyValue(String[] keys, int[] values) {
+            sortKeyValue (keys, values, 0, keys.length);
+        }
+        @Override
+        public void sortKeyValue(String[] keys, int[] values, int fromIndex, int toIndex) {
+            KeyValueArrays.sort(keys, values, fromIndex, toIndex);
         }
         @Override
         public void fillArray(String value, String[] array, int off, int len) {
@@ -810,6 +923,22 @@ public final class AllValueTraits {
         @Override
         public int binarySearch(ByteArray[] array, ByteArray value) {
             return Arrays.binarySearch(array, value);
+        }
+        @Override
+        public void sort(ByteArray[] keys) {
+            sort (keys, 0, keys.length);
+        }
+        @Override
+        public void sort(ByteArray[] keys, int fromIndex, int toIndex) {
+            Arrays.sort(keys, fromIndex, toIndex);
+        }
+        @Override
+        public void sortKeyValue(ByteArray[] keys, int[] values) {
+            sortKeyValue (keys, values, 0, keys.length);
+        }
+        @Override
+        public void sortKeyValue(ByteArray[] keys, int[] values, int fromIndex, int toIndex) {
+            KeyValueArrays.sort(keys, values, fromIndex, toIndex);
         }
         @Override
         public void fillArray(ByteArray value, ByteArray[] array, int off, int len) {

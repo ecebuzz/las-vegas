@@ -13,15 +13,16 @@ import java.sql.Timestamp;
  */
 public abstract class DefaultTupleReader implements TupleReader {
     @Override
-    public int nextBatch(int len, TupleBuffer buffer) throws IOException {
+    public int nextBatch(TupleBuffer buffer) throws IOException {
         // simply iterate
-        for (int i = 0; i < len; ++i) {
+        int count = 0;
+        while (!buffer.isFull()) {
             boolean appended = buffer.appendTuple(this);
             if (!appended) {
-                return i;
+                break;
             }
         }
-        return len;
+        return count;
     }
     @Override
     public boolean getBoolean(int columnIndex) throws IOException {

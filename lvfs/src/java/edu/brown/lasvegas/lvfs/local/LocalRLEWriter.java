@@ -143,10 +143,7 @@ public final class LocalRLEWriter<T extends Comparable<T>, AT> extends LocalType
         return getRawValueWriter().getCRC32Value();
     }
     
-    /**
-     * Returns the number of runs we have so far output.
-     * After writeFileFooter(), this gives the exact number of runs in this file.
-     */
+    @Override
     public final int getRunCount () {
         return runCount;
     }

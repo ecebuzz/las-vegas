@@ -8,7 +8,7 @@ package edu.brown.lasvegas.lvfs;
  */
 public class ColumnFileReaderBundle<T extends Comparable<T>, DT extends Comparable<DT>, DA> {
     private TypedReader<DT, DA> dataReader;
-    private OrderedDictionary<T> dictionary;
+    private OrderedDictionary<T, T[]> dictionary;
     private PositionIndex positionFile;
     private ValueIndex<DT> valueFile;
     

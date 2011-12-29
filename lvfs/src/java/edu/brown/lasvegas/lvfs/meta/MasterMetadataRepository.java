@@ -567,6 +567,9 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
                     throw new IOException ("another replica group with the same partitioning column already exists : " + existing);
                 }
             }
+        } else {
+            // if no partitioning, there is a single partition spanning all ranges (this makes sure #partitions>0 always)
+            ranges = new ValueRange[]{new ValueRange(ColumnType.INVALID, null, null)};
         }
         // if linked group is specified, check partitioning column type
         if (linkedGroup != null) {
@@ -579,32 +582,31 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
             ranges = linkedGroup.getRanges();
         }
         // check range consistency.
-        if (ranges != null) {
-            if (ranges.length == 0) {
-                throw new IOException ("no partitioning ranges defined");
+        assert (ranges != null);
+        if (ranges.length == 0) {
+            throw new IOException ("no partitioning ranges defined");
+        }
+        if (ranges[0].getStartKey() != null) {
+            throw new IOException ("the start-key of the first range must be null");
+        }
+        if (ranges.length != 1 && ranges[0].getEndKey() == null) {
+            throw new IOException ("the end-key of range 0 is null");
+        }
+        Comparable<?> prevEnd = ranges[0].getEndKey();
+        for (int i = 1; i < ranges.length; ++i) {
+            if (ranges[i].getStartKey() == null) {
+                throw new IOException ("the start-key of range " + i + " is null");
             }
-            if (ranges[0].getStartKey() != null) {
-                throw new IOException ("the start-key of the first range must be null");
+            if (!prevEnd.equals(ranges[i].getStartKey())) {
+                throw new IOException ("the end-key of range " + (i - 1) + " doesn't match with the start-key of range " + i);
             }
-            if (ranges.length != 1 && ranges[0].getEndKey() == null) {
-                throw new IOException ("the end-key of range 0 is null");
+            if (i != ranges.length - 1 && ranges[i].getEndKey() == null) {
+                throw new IOException ("the end-key of range " + i + " is null");
             }
-            Comparable<?> prevEnd = ranges[0].getEndKey();
-            for (int i = 1; i < ranges.length; ++i) {
-                if (ranges[i].getStartKey() == null) {
-                    throw new IOException ("the start-key of range " + i + " is null");
-                }
-                if (!prevEnd.equals(ranges[i].getStartKey())) {
-                    throw new IOException ("the end-key of range " + (i - 1) + " doesn't match with the start-key of range " + i);
-                }
-                if (i != ranges.length - 1 && ranges[i].getEndKey() == null) {
-                    throw new IOException ("the end-key of range " + i + " is null");
-                }
-                prevEnd = ranges[i].getEndKey();
-            }
-            if (ranges[ranges.length - 1].getEndKey() != null) {
-                throw new IOException ("the end-key of the last range must be null");
-            }
+            prevEnd = ranges[i].getEndKey();
+        }
+        if (ranges[ranges.length - 1].getEndKey() != null) {
+            throw new IOException ("the end-key of the last range must be null");
         }
         
         LVReplicaGroup group = new LVReplicaGroup();
@@ -874,6 +876,8 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
                     ) throws IOException {
         assert (column.getColumnId() > 0);
         assert (subPartition.getPartitionId() > 0);
+        LVReplica replica = getReplica(subPartition.getReplicaId());
+        LVReplicaScheme scheme = getReplicaScheme(replica.getSchemeId());
         LVColumnFile file = new LVColumnFile();
         file.setColumnFileId(bdbTableAccessors.columnFileAccessor.issueNewId());
         file.setColumnId(column.getColumnId());
@@ -884,6 +888,10 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         file.setDictionaryBytesPerEntry(dictionaryBytesPerEntry);
         file.setDistinctValues(distinctValues);
         file.setAverageRunLength(averageRunLength);
+        // de-normalization attributes
+        file.setColumnType(column.getType());
+        file.setCompressionType(scheme.getColumnCompressionScheme(column.getColumnId()));
+        file.setSorted(scheme.getSortColumnId() != null && scheme.getSortColumnId().intValue() == column.getColumnId());
         bdbTableAccessors.columnFileAccessor.PKX.putNoReturn(file);
         return file;
     }

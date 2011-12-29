@@ -19,4 +19,10 @@ public interface TypedRLEWriter<T extends Comparable<T>, AT> extends TypedWriter
      * Returns the current run of the values being compressed.
      */
     ValueRun<T> getCurrentRun ();
+    
+    /**
+     * Returns the number of runs we have so far output.
+     * After writeFileFooter(), this gives the exact number of runs in this file.
+     */
+    int getRunCount ();
 }

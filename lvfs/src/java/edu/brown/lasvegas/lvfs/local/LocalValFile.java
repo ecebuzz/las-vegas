@@ -67,15 +67,17 @@ public class LocalValFile<T extends Comparable<T>, AT> implements ValueIndex<T> 
     
     /** used for assertion. not supposed to be fast. */
     private boolean validateValueArray() {
-        T prev = traits.get(valueArray, 0);
-        assert (tuplePosArray[0] == 0);
-        for (int i = 1; i < valueCount; ++i) {
-            T cur = traits.get(valueArray, i);
-            if (prev.compareTo(cur) > 0) {
-                return false;
+        if (LOG.isDebugEnabled()) {
+            T prev = traits.get(valueArray, 0);
+            assert (tuplePosArray[0] == 0);
+            for (int i = 1; i < valueCount; ++i) {
+                T cur = traits.get(valueArray, i);
+                if (prev.compareTo(cur) > 0) {
+                    return false;
+                }
+                prev = cur;
+                assert (tuplePosArray[i] > tuplePosArray[i - 1]);
             }
-            prev = cur;
-            assert (tuplePosArray[i] > tuplePosArray[i - 1]);
         }
         return true;
     }

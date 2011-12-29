@@ -5,6 +5,8 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collection;
 
+import edu.brown.lasvegas.util.KeyValueArrays;
+
 /**
  * Functor to read/write java objects and their arrays.
  * @param <T> Value type
@@ -79,6 +81,31 @@ public interface ValueTraits<T extends Comparable<T>, AT> {
      */
     int binarySearch (AT array, T value);
     
+    /**
+     * Call sort() in Arrays.
+     * @see Arrays
+     */
+    void sort (AT keys);
+
+    /**
+     * Call sort() in Arrays.
+     * @see Arrays
+     */
+    void sort (AT keys, int fromIndex, int toIndex);
+    
+    
+    /**
+     * Call sort() in {@link KeyValueArrays}.
+     * @see KeyValueArrays
+     */
+    void sortKeyValue (AT keys, int[] values);
+
+    /**
+     * Call sort() in KeyValueArrays.
+     * @see KeyValueArrays
+     */
+    void sortKeyValue (AT keys, int[] values, int fromIndex, int toIndex);
+
     /**
      * Deserializes an array from byte buffer. This method is a batched read and supposed
      * to be as low-overhead as possible.

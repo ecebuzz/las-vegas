@@ -9,15 +9,33 @@ import com.sleepycat.persist.model.PrimaryKey;
 import com.sleepycat.persist.model.Relationship;
 import com.sleepycat.persist.model.SecondaryKey;
 
+import edu.brown.lasvegas.lvfs.LVFSFileType;
+import edu.brown.lasvegas.lvfs.OrderedDictionary;
+import edu.brown.lasvegas.lvfs.PositionIndex;
+import edu.brown.lasvegas.lvfs.ValueIndex;
+
 /**
  * A columnar file in a replica partition.
  * The smallest unit of data file objects.
- * Each column file belongs to one {@link LVReplicaPartition}.
+ * 
+ * <p>
+ * Each columnar file might come with optional index files;
+ * Value-Index file ({@link ValueIndex}), Position-Index file ({@link PositionIndex}),
+ * and Dictionary file ({@link OrderedDictionary}).
+ * One LVColumnFile represents a bundle of the data file and the above three index files.
+ * {@link #getLocalFilePath()} returns a file path without extension, which is shared between the four files.
+ * So, append a file extension for each file type to get the actual file path.
+ * Remember, the returned path itself points to no file!
+ * </p>
+ * 
+ * <p>A column file belongs to one {@link LVReplicaPartition}.
  * All column files that belong to the same replica partition
- * are located in the same node.
+ * are located in the same node.</p>
  */
 @Entity
 public class LVColumnFile implements LVObject {
+    
+    /** The Constant IX_PARTITION_ID. */
     public static final String IX_PARTITION_ID = "IX_PARTITION_ID";
     /**
      * ID of the sub-partition this column file belongs to.
@@ -25,6 +43,7 @@ public class LVColumnFile implements LVObject {
     @SecondaryKey(name=IX_PARTITION_ID, relate=Relationship.MANY_TO_ONE, relatedEntity=LVReplicaPartition.class)
     private int partitionId;
 
+    /** The Constant IX_COLUMN_ID. */
     public static final String IX_COLUMN_ID = "IX_COLUMN_ID";
     /**
      * ID of the column this file stores.
@@ -37,13 +56,17 @@ public class LVColumnFile implements LVObject {
      */
     @PrimaryKey
     private int columnFileId;
+    
+    /**
+     * @see edu.brown.lasvegas.LVObject#getPrimaryKey()
+     */
     @Override
     public int getPrimaryKey() {
         return columnFileId;
     }
 
     /**
-     * The file path of this columnar file in data node.
+     * The file path of this columnar file in data node (without extension, see {@link LVFSFileType}).
      */
     private String localFilePath;
 
@@ -54,7 +77,20 @@ public class LVColumnFile implements LVObject {
     
     /** CRC32 of the file. */
     private long checksum;
+
+    /** Original (before dictionary compression, if any) value type of the column file. de-normalization from {@link LVColumn}. */
+    private ColumnType columnType;
+
+    /** Compression type of the column file. de-normalization from {@link LVReplicaScheme}. */
+    private CompressionType compressionType;
     
+    /**
+     * Whether the column file is sorted by the column.
+     * de-normalization from {@link LVReplicaScheme}.
+     * If true, the column file comes with a Value-Index file ({@link ValueIndex}).
+     */
+    private boolean sorted;
+
     /** The size of one entry after dictionary-compression (1/2/4), Set only when the column file is dictionary-compressed (otherwise 0).*/
     private byte dictionaryBytesPerEntry;
     
@@ -70,13 +106,20 @@ public class LVColumnFile implements LVObject {
     public String toString() {
         return "ColumnFile-" + columnFileId + " (Column=" + columnId + ", Partition=" + partitionId + ")"
             + " localFilePath=" + localFilePath + ", FileSize=" + fileSize + ", checksum=" + checksum
+            + ", columnType=" + columnType + ", compressionType=" + compressionType + ", sorted=" + sorted
             + ", dictionaryBytesPerEntry=" + dictionaryBytesPerEntry + ", distinctValues=" + distinctValues
             + ", averageRunLength=" + averageRunLength;
     }
 
+    /**
+     * @see org.apache.hadoop.io.Writable#write(java.io.DataOutput)
+     */
     @Override
     public void write(DataOutput out) throws IOException {
         out.writeLong(checksum);
+        out.writeInt(columnType == null ? ColumnType.INVALID.ordinal() : columnType.ordinal());
+        out.writeInt(compressionType == null ? CompressionType.INVALID.ordinal() : compressionType.ordinal());
+        out.writeBoolean(sorted);
         out.writeByte(dictionaryBytesPerEntry);
         out.writeInt(distinctValues);
         out.writeInt(averageRunLength);
@@ -89,9 +132,16 @@ public class LVColumnFile implements LVObject {
         }
         out.writeInt(partitionId);
     }
+    
+    /**
+     * @see org.apache.hadoop.io.Writable#readFields(java.io.DataInput)
+     */
     @Override
     public void readFields(DataInput in) throws IOException {
         checksum = in.readLong();
+        columnType = ColumnType.values()[in.readInt()];
+        compressionType = CompressionType.values()[in.readInt()];
+        sorted = in.readBoolean();
         dictionaryBytesPerEntry = in.readByte();
         distinctValues = in.readInt();
         averageRunLength = in.readInt();
@@ -112,6 +162,9 @@ public class LVColumnFile implements LVObject {
         return obj;
     }
 
+    /**
+     * @see edu.brown.lasvegas.LVObject#getObjectType()
+     */
     @Override
     public LVObjectType getObjectType() {
         return LVObjectType.COLUMN_FILE;
@@ -173,18 +226,18 @@ public class LVColumnFile implements LVObject {
     }
 
     /**
-     * Gets the file path of this columnar file in data node.
+     * Gets the file path of this columnar file in data node (without extension, see {@link LVFSFileType}).
      *
-     * @return the file path of this columnar file in data node
+     * @return the file path of this columnar file in data node (without extension, see {@link LVFSFileType})
      */
     public String getLocalFilePath() {
         return localFilePath;
     }
 
     /**
-     * Sets the file path of this columnar file in data node.
+     * Sets the file path of this columnar file in data node (without extension, see {@link LVFSFileType}).
      *
-     * @param localFilePath the new file path of this columnar file in data node
+     * @param localFilePath the new file path of this columnar file in data node (without extension, see {@link LVFSFileType})
      */
     public void setLocalFilePath(String localFilePath) {
         this.localFilePath = localFilePath;
@@ -279,5 +332,60 @@ public class LVColumnFile implements LVObject {
     public void setAverageRunLength(int averageRunLength) {
         this.averageRunLength = averageRunLength;
     }
+
+    /**
+     * Gets the original (before dictionary compression, if any) value type of the column file.
+     *
+     * @return the original (before dictionary compression, if any) value type of the column file
+     */
+    public ColumnType getColumnType() {
+        return columnType;
+    }
+
+    /**
+     * Sets the original (before dictionary compression, if any) value type of the column file.
+     *
+     * @param columnType the new original (before dictionary compression, if any) value type of the column file
+     */
+    public void setColumnType(ColumnType columnType) {
+        this.columnType = columnType;
+    }
+
+    /**
+     * Gets the compression type of the column file.
+     *
+     * @return the compression type of the column file
+     */
+    public CompressionType getCompressionType() {
+        return compressionType;
+    }
+
+    /**
+     * Sets the compression type of the column file.
+     *
+     * @param compressionType the new compression type of the column file
+     */
+    public void setCompressionType(CompressionType compressionType) {
+        this.compressionType = compressionType;
+    }
+
+    /**
+     * Checks if is whether the column file is sorted by the column.
+     *
+     * @return the whether the column file is sorted by the column
+     */
+    public boolean isSorted() {
+        return sorted;
+    }
+
+    /**
+     * Sets the whether the column file is sorted by the column.
+     *
+     * @param sorted the new whether the column file is sorted by the column
+     */
+    public void setSorted(boolean sorted) {
+        this.sorted = sorted;
+    }
+
     
 }

@@ -183,6 +183,9 @@ public class ValueRange implements Writable {
         if (type != ColumnType.INVALID) {
             startKey = readValue(in);
             endKey = readValue(in);
+        } else {
+            startKey = null;
+            endKey = null;
         }
     }
     public static ValueRange read (DataInput in) throws IOException {

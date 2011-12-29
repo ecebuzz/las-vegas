@@ -64,7 +64,7 @@ public class LocalDictCompressionStringWriterTest {
         init (256);
         assertEquals (1 * COUNT, dataFile.length());
         LocalFixLenReader<Byte, byte[]> reader = LocalFixLenReader.getInstanceTinyint(dataFile);
-        LocalDictFile dict = new LocalDictFile(dictFile);
+        LocalStringDictFile dict = new LocalStringDictFile(dictFile);
         assertEquals (1, dict.getBytesPerEntry());
         assertTrue (dict.getDictionary().length <= 256);
         assertTrue (dict.getDictionary().length > 128);
@@ -92,7 +92,7 @@ public class LocalDictCompressionStringWriterTest {
         init (1 << 16);
         assertEquals (2 * COUNT, dataFile.length());
         LocalFixLenReader<Short, short[]> reader = LocalFixLenReader.getInstanceSmallint(dataFile);
-        LocalDictFile dict = new LocalDictFile(dictFile);
+        LocalStringDictFile dict = new LocalStringDictFile(dictFile);
         assertEquals (2, dict.getBytesPerEntry());
         assertTrue (dict.getDictionary().length <= (1 << 16));
         assertTrue (dict.getDictionary().length > 256);
@@ -120,7 +120,7 @@ public class LocalDictCompressionStringWriterTest {
         init (0x7FFFFFFF);
         assertEquals (4 * COUNT, dataFile.length());
         LocalFixLenReader<Integer, int[]> reader = LocalFixLenReader.getInstanceInteger(dataFile);
-        LocalDictFile dict = new LocalDictFile(dictFile);
+        LocalStringDictFile dict = new LocalStringDictFile(dictFile);
         assertEquals (4, dict.getBytesPerEntry());
         assertTrue (dict.getDictionary().length <= (0x7FFFFFF));
         assertTrue (dict.getDictionary().length > (1 << 16));

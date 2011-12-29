@@ -5,7 +5,7 @@ import java.io.IOException;
 
 import edu.brown.lasvegas.ColumnType;
 import edu.brown.lasvegas.CompressionType;
-import edu.brown.lasvegas.lvfs.OrderedDictionary;
+import edu.brown.lasvegas.lvfs.ColumnFileWriterBundle;
 
 /**
  * Buffered implementation of TupleWriter.
@@ -13,69 +13,74 @@ import edu.brown.lasvegas.lvfs.OrderedDictionary;
  * to the local file system.
  */
 public class BufferedTupleWriter implements TupleWriter {
-    public BufferedTupleWriter(ColumnType[] columnTypes, CompressionType[] compressionTypes, int bufferSize, File folder, String[] fileNameSeeds) {
-        assert (columnTypes.length == compressionTypes.length);
-        assert (columnTypes.length == fileNameSeeds.length);
-        this.columnTypes = columnTypes;
+    /**
+     * Callback interface for {@link TupleWriter#appendAllTuples()} to do something after each batch write.
+     */
+    public static interface BatchCallback {
+        /**
+         * Called after each batch write during {@link TupleWriter#appendAllTuples()}.
+         * @param totalTuplesWritten total number of tuples written to files so far.
+         * @return true to continue. false to terminate the writer.
+         */
+        boolean onBatchWritten (int totalTuplesWritten) throws IOException;
+    }
+
+    public BufferedTupleWriter(TupleReader reader, int bufferSize, File outputFolder, CompressionType[] compressionTypes, String[] fileNameSeeds) throws IOException {
+        this (reader, bufferSize, outputFolder, compressionTypes, fileNameSeeds, null);
+    }
+    public BufferedTupleWriter(
+            TupleReader reader,
+            int bufferSize,
+            File outputFolder,
+            CompressionType[] compressionTypes,
+            String[] fileNameSeeds,
+            BatchCallback callback) throws IOException {
+        this.columnTypes = reader.getColumnTypes();
         this.compressionTypes = compressionTypes;
         this.columnCount = columnTypes.length;
-        this.bufferSize = bufferSize;
-        this.folder = folder;
+        this.outputFolder = outputFolder;
         this.fileNameSeeds = fileNameSeeds;
-        columnTypesBeforeDecompression = new ColumnType[columnCount];
-    }
-    private final int bufferSize;
-    private final int columnCount;
-    private final ColumnType[] columnTypes;
-    private final CompressionType[] compressionTypes;
-    private final File folder;
-    /** filename without extension (e.g., "1_2_3" will generate "1_2_3.dat", "1_2_3.pos", and "1_2_3.dic"). */
-    private final String[] fileNameSeeds;
-    private TupleBuffer buffer;
-    
-    /** consider VARCHAR as byte/short/int if it's dictionary-compressed. */
-    private final ColumnType[] columnTypesBeforeDecompression;
-
-    private TupleReader reader;
-    private CompressionType[] readerCompressionTypes;
-    private OrderedDictionary<?>[] readerDictionaries;
-    
-    private int tuplesWritten = 0;
-    
-    @Override
-    public void init(TupleReader reader) throws IOException {
+        this.buffer = new TupleBuffer(columnTypes, bufferSize);
         this.reader = reader;
+        this.callback = callback;
+        this.columnWriters = new ColumnFileWriterBundle<?, ?, ?>[columnCount];
+
+        // check parameters
+        if (columnTypes.length != compressionTypes.length) {
+            throw new IllegalArgumentException("length of columnTypes/compressionTypes doesn't match");
+        }
+        if (columnTypes.length != fileNameSeeds.length) {
+            throw new IllegalArgumentException("length of columnTypes/fileNameSeeds doesn't match");
+        }
         if (reader.getColumnCount() != columnCount) {
-            throw new IOException ("column count doesn't match. writer=" + columnCount + ", reader=" + reader.getColumnCount());
+            throw new IllegalArgumentException ("column count doesn't match. writer=" + columnCount + ", reader=" + reader.getColumnCount());
         }
         for (int i = 0; i < columnCount; ++i) {
             if (reader.getColumnType(i) != columnTypes[i]) {
-                throw new IOException ("column type[" + i + "] doesn't match. writer=" + columnTypes[i] + ", reader=" + reader.getColumnType(i));
+                throw new IllegalArgumentException ("column type[" + i + "] doesn't match. writer=" + columnTypes[i] + ", reader=" + reader.getColumnType(i));
             }
+            // although column types must match between reader/writer, compression types are often different.
         }
-        readerCompressionTypes = reader.getCompressionTypes().clone();
-        readerDictionaries = new OrderedDictionary<?>[columnCount];
-
-        // if the reader (original file) is dictionary compressed, reuse it!
-        // then we simply treat the data as integers.
-        for (int i = 0; i < columnCount; ++i) {
-            if (compressionTypes[i] == CompressionType.DICTIONARY) {
-                readerDictionaries[i] = reader.getDictionary(i);
-                switch (readerDictionaries[i].getBytesPerEntry()) {
-                case 1: columnTypesBeforeDecompression[i] = ColumnType.TINYINT;break;
-                case 2: columnTypesBeforeDecompression[i] = ColumnType.SMALLINT;break;
-                default:
-                    assert (readerDictionaries[i].getBytesPerEntry() == 4);
-                    columnTypesBeforeDecompression[i] = ColumnType.INTEGER;
-                    break;
-                }
-                // TODO copy dictionary file
-            } else {
-                columnTypesBeforeDecompression[i] = columnTypes[i];
-            }
-        }
-        this.buffer = new TupleBuffer(columnTypesBeforeDecompression, bufferSize);
     }
+    private void initColumnWriters () throws IOException {
+        for (int i = 0; i < columnCount; ++i) {
+            
+        }
+    }
+    private final int columnCount;
+    private final ColumnType[] columnTypes;
+    private final CompressionType[] compressionTypes;
+    /** folder to output all columnar files. */
+    private final File outputFolder;
+    /** filename without extension (e.g., "1_2_3" will generate "1_2_3.dat", "1_2_3.pos", and "1_2_3.dic"). */
+    private final String[] fileNameSeeds;
+    private final TupleBuffer buffer;
+    private final TupleReader reader;
+    private final BatchCallback callback;
+    
+    private ColumnFileWriterBundle<?, ?, ?>[] columnWriters;
+    
+    private int tuplesWritten = 0;
 
     @Override
     public int appendAllTuples() throws IOException {
@@ -84,13 +89,7 @@ public class BufferedTupleWriter implements TupleWriter {
     }
 
     @Override
-    public void flush(boolean sync) throws IOException {
-        // TODO Auto-generated method stub
-        
-    }
-
-    @Override
-    public void writeFileFooter() throws IOException {
+    public void finish() throws IOException {
         // TODO Auto-generated method stub
         
     }
@@ -103,5 +102,14 @@ public class BufferedTupleWriter implements TupleWriter {
     @Override
     public int getTupleCount() throws IOException {
         return tuplesWritten;
+    }
+    @Override
+    public int getColumnCount() {
+        return columnCount;
+    }
+    
+    @Override
+    public ColumnFileWriterBundle<?, ?, ?> getColumnWriterBundle(int col) {
+        return columnWriters[col];
     }
 }

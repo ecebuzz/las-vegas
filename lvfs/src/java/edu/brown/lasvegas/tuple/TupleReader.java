@@ -32,15 +32,13 @@ public interface TupleReader extends Closeable {
      * This method reads multiple tuples at once and appends the tuples
      * to the given buffer. In many implementations, this will be much
      * more efficient than {@link #next()}.
-     * @param len the maximum number of tuples to read
      * @param buffer the buffer to append the tuples read from this reader.
-     * if the buffer becomes full before reading len tuples, this method
-     * stops reading tuples.
+     * if the buffer becomes full, this method stops reading tuples.
      * @return the number of tuples read and appended to the buffer. -1 if
      * the reader reaches the end.
      * @throws IOException
      */
-    int nextBatch (int len, TupleBuffer buffer) throws IOException;
+    int nextBatch (TupleBuffer buffer) throws IOException;
     
     /** Returns the current tuple position. */
     int getCurrentTuple () throws IOException;
@@ -74,7 +72,7 @@ public interface TupleReader extends Closeable {
      * Returns the dictionary <b>assuming the underlying column data is dictionary compressed</b>.
      * This method is used to exploit the underlying compression.
      */
-    OrderedDictionary<?> getDictionary (int columnIndex);
+    OrderedDictionary<?, ?> getDictionary (int columnIndex);
     /**
      * Returns the values before de-compression <b>assuming the underlying column data is dictionary compressed with 1-byte integers (0-256 distinct values)</b>.
      * @see #getDictionary(int)
