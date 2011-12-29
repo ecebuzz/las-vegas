@@ -10,12 +10,13 @@ import edu.brown.lasvegas.lvfs.TypedRLEReader;
 import edu.brown.lasvegas.lvfs.ValueRun;
 import edu.brown.lasvegas.lvfs.ValueTraits;
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.util.ByteArray;
 
 /**
  * File reader for RLE compressed column.
  * For the description of file format, see the comments of {@link LocalRLEWriter}.
  */
-public final class LocalRLEReader<T, AT> extends LocalTypedReaderBase<T, AT> implements TypedRLEReader<T, AT> {
+public final class LocalRLEReader<T extends Comparable<T>, AT> extends LocalTypedReaderBase<T, AT> implements TypedRLEReader<T, AT> {
     private static Logger LOG = Logger.getLogger(LocalRLEWriter.class);
     private final ValueTraits<T, AT> traits;
 
@@ -48,8 +49,8 @@ public final class LocalRLEReader<T, AT> extends LocalTypedReaderBase<T, AT> imp
         return new LocalRLEReader<String, String[]>(dataFile, new AllValueTraits.VarcharValueTraits());
     }
     /** Constructs an instance of varbinary column. */
-    public static LocalRLEReader<byte[], byte[][]> getInstanceVarbin(VirtualFile dataFile) throws IOException {
-        return new LocalRLEReader<byte[], byte[][]>(dataFile, new AllValueTraits.VarbinValueTraits());
+    public static LocalRLEReader<ByteArray, ByteArray[]> getInstanceVarbin(VirtualFile dataFile) throws IOException {
+        return new LocalRLEReader<ByteArray, ByteArray[]>(dataFile, new AllValueTraits.VarbinValueTraits());
     }
 
     public LocalRLEReader(VirtualFile dataFile, ValueTraits<T, AT> traits) throws IOException {

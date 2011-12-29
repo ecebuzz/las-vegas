@@ -10,7 +10,7 @@ import java.util.Collection;
  * @param <T> Value type
  * @param <AT> Array type. This might not be T[] but the primitive array for speed (that's why we need this class).
  */
-public interface ValueTraits<T, AT> {
+public interface ValueTraits<T extends Comparable<T>, AT> {
     /**
      * Reads one value from the given stream.
      */

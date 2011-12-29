@@ -15,7 +15,7 @@ import edu.brown.lasvegas.lvfs.VirtualFile;
  * @param <T> Value type (e.g., Integer)
  * @param <AT> Array type (e.g., int[]).
  */
-public final class LocalFixLenWriter<T, AT> extends LocalTypedWriterBase<T, AT> {
+public final class LocalFixLenWriter<T extends Comparable<T>, AT> extends LocalTypedWriterBase<T, AT> {
     private final FixLenValueTraits<T, AT> traits;
     
     /** Constructs an instance for 1-byte fixed length integer values. */

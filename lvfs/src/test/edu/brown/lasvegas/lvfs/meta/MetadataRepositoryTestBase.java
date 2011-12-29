@@ -173,7 +173,7 @@ public abstract class MetadataRepositoryTestBase {
             DEFAULT_COLUMN_FILES[i] = new LVColumnFile[DEFAULT_COLUMNS.length];
             for (int j = 0; j < DEFAULT_COLUMNS.length; ++j) {
                 DEFAULT_COLUMN_FILES[i][j] = repository.createNewColumnFile(DEFAULT_REPLICA_PARTITIONS[i],
-                                DEFAULT_COLUMNS[j], "hdfs://dummy_url_" + i + "/colfile" + j, 123456 + j, 654321 + j);
+                                DEFAULT_COLUMNS[j], "hdfs://dummy_url_" + i + "/colfile" + j, 123456 + j, 654321 + j, (byte)0, 0, 0);
                 assertEquals(DEFAULT_COLUMNS[j].getColumnId(), DEFAULT_COLUMN_FILES[i][j].getColumnId());
                 assertEquals(123456L + j, DEFAULT_COLUMN_FILES[i][j].getFileSize());
                 assertEquals(654321 + j, DEFAULT_COLUMN_FILES[i][j].getChecksum());
@@ -1092,7 +1092,7 @@ public abstract class MetadataRepositoryTestBase {
         LVColumnFile[] files = new LVColumnFile[2];
         for (int i = 0; i < 2; ++i) {
             files[i] = repository.createNewColumnFile(DEFAULT_REPLICA_PARTITIONS[i],
-                            column, "hdfs://dummy_url_" + i + "/newcolfile" + i, 576324, 12176);
+                            column, "hdfs://dummy_url_" + i + "/newcolfile" + i, 576324, 12176, (byte) 0, 1, 2);
             assertEquals(column.getColumnId(), files[i].getColumnId());
             assertEquals(576324, files[i].getFileSize());
             assertEquals(12176, files[i].getChecksum());

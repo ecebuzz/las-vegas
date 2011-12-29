@@ -20,7 +20,7 @@ import edu.brown.lasvegas.util.ChecksumUtil;
  * Name of this abstract class doesn't end with Test so that our ant script
  * would skip this. 
  */
-public abstract class LocalBlockCompressionFixLenTestBase<T, AT> {
+public abstract class LocalBlockCompressionFixLenTestBase<T extends Comparable<T>, AT> {
     protected static VirtualFile file;
     protected FixLenValueTraits<T, AT> traits;
     protected LocalBlockCompressionFixLenReader<T, AT> reader;

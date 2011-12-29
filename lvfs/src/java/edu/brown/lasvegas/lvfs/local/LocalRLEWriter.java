@@ -10,6 +10,7 @@ import edu.brown.lasvegas.lvfs.TypedRLEWriter;
 import edu.brown.lasvegas.lvfs.ValueRun;
 import edu.brown.lasvegas.lvfs.ValueTraits;
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.util.ByteArray;
 
 /**
  * File writer for RLE compressed column.
@@ -19,7 +20,7 @@ import edu.brown.lasvegas.lvfs.VirtualFile;
  * <p>In either case, it is not trivial to seek or tell the total tuple count
  * by this file itself. So, just like LocalVarLenWriter, RLE file also outputs a position file.</p>
  */
-public final class LocalRLEWriter<T, AT> extends LocalTypedWriterBase<T, AT> implements TypedRLEWriter<T, AT> {
+public final class LocalRLEWriter<T extends Comparable<T>, AT> extends LocalTypedWriterBase<T, AT> implements TypedRLEWriter<T, AT> {
     /** Constructs an instance for 1-byte fixed length integer values. */
     public static LocalRLEWriter<Byte, byte[]> getInstanceTinyint(VirtualFile rawFile) throws IOException {
         return new LocalRLEWriter<Byte, byte[]>(rawFile, new AllValueTraits.TinyintValueTraits());
@@ -50,8 +51,8 @@ public final class LocalRLEWriter<T, AT> extends LocalTypedWriterBase<T, AT> imp
         return new LocalRLEWriter<String, String[]>(dataFile, new AllValueTraits.VarcharValueTraits());
     }
     /** Constructs an instance of varbinary column. */
-    public static LocalRLEWriter<byte[], byte[][]> getInstanceVarbin(VirtualFile dataFile) throws IOException {
-        return new LocalRLEWriter<byte[], byte[][]>(dataFile, new AllValueTraits.VarbinValueTraits());
+    public static LocalRLEWriter<ByteArray, ByteArray[]> getInstanceVarbin(VirtualFile dataFile) throws IOException {
+        return new LocalRLEWriter<ByteArray, ByteArray[]>(dataFile, new AllValueTraits.VarbinValueTraits());
     }
 
     

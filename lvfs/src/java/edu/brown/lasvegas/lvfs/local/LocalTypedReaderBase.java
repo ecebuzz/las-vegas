@@ -10,7 +10,7 @@ import edu.brown.lasvegas.lvfs.VirtualFile;
 /**
  * Base implementation of TypedReader. Doesn't do much. 
  */
-public abstract class LocalTypedReaderBase<T, AT> implements TypedReader<T, AT> {
+public abstract class LocalTypedReaderBase<T extends Comparable<T>, AT> implements TypedReader<T, AT> {
     private final LocalRawFileReader rawReader;
     //private final ValueTraits<T, AT> traits;
     protected LocalTypedReaderBase (VirtualFile file, ValueTraits<T, AT> traits, int streamBufferSize) throws IOException {

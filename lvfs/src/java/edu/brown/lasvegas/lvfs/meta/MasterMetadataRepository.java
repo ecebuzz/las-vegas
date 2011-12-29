@@ -867,7 +867,11 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     }
 
     @Override
-    public LVColumnFile createNewColumnFile(LVReplicaPartition subPartition, LVColumn column, String localFilePath, int fileSize, long checksum) throws IOException {
+    public LVColumnFile createNewColumnFile(LVReplicaPartition subPartition, LVColumn column, String localFilePath, int fileSize, long checksum,
+                    byte dictionaryBytesPerEntry,
+                    int distinctValues,
+                    int averageRunLength
+                    ) throws IOException {
         assert (column.getColumnId() > 0);
         assert (subPartition.getPartitionId() > 0);
         LVColumnFile file = new LVColumnFile();
@@ -877,6 +881,9 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         file.setLocalFilePath(localFilePath);
         file.setPartitionId(subPartition.getPartitionId());
         file.setChecksum(checksum);
+        file.setDictionaryBytesPerEntry(dictionaryBytesPerEntry);
+        file.setDistinctValues(distinctValues);
+        file.setAverageRunLength(averageRunLength);
         bdbTableAccessors.columnFileAccessor.PKX.putNoReturn(file);
         return file;
     }

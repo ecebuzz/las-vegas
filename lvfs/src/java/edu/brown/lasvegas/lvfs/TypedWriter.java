@@ -15,7 +15,7 @@ import java.io.IOException;
  * @param <T> Value type
  * @param <AT> Array type 
  */
-public interface TypedWriter<T, AT> extends Closeable {
+public interface TypedWriter<T extends Comparable<T>, AT> extends Closeable {
     /**
      * Specifies whether the writer will calculate CRC-32 value of the file.
      * To turn it on, this method has to be called before writing any contents.

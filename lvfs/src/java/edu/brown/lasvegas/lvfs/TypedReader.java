@@ -12,7 +12,7 @@ import java.io.IOException;
  * @param <T> Value type
  * @param <AT> Array type 
  */
-public interface TypedReader<T, AT> extends Closeable {
+public interface TypedReader<T extends Comparable<T>, AT> extends Closeable {
     /**
      * Reads and returns the next entry.
      * This method should not be used frequently unless

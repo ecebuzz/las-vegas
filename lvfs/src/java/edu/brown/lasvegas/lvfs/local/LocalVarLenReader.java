@@ -8,6 +8,7 @@ import edu.brown.lasvegas.lvfs.AllValueTraits;
 import edu.brown.lasvegas.lvfs.PositionIndex.Pos;
 import edu.brown.lasvegas.lvfs.VarLenValueTraits;
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.util.ByteArray;
 
 /**
  * File reader for variable-length entries.
@@ -24,7 +25,7 @@ import edu.brown.lasvegas.lvfs.VirtualFile;
  * <p>This file reader cannot jump to arbitrary tuple position by itself.
  * Give a position file ({@link LocalPosFileReader}) to the constructor to speed it up.</p>
  */
-public final class LocalVarLenReader<T> extends LocalTypedReaderBase<T, T[]> {
+public final class LocalVarLenReader<T extends Comparable<T>> extends LocalTypedReaderBase<T, T[]> {
     private static Logger LOG = Logger.getLogger(LocalVarLenReader.class);
     private final VarLenValueTraits<T> traits;
 
@@ -33,8 +34,8 @@ public final class LocalVarLenReader<T> extends LocalTypedReaderBase<T, T[]> {
         return new LocalVarLenReader<String>(dataFile, new AllValueTraits.VarcharValueTraits());
     }
     /** Constructs an instance of varbinary column. */
-    public static LocalVarLenReader<byte[]> getInstanceVarbin(VirtualFile dataFile) throws IOException {
-        return new LocalVarLenReader<byte[]>(dataFile, new AllValueTraits.VarbinValueTraits());
+    public static LocalVarLenReader<ByteArray> getInstanceVarbin(VirtualFile dataFile) throws IOException {
+        return new LocalVarLenReader<ByteArray>(dataFile, new AllValueTraits.VarbinValueTraits());
     }
 
     public LocalVarLenReader(VirtualFile dataFile, VarLenValueTraits<T> traits) throws IOException {

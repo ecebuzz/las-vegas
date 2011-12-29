@@ -11,4 +11,12 @@ public class ColumnFileReaderBundle<T extends Comparable<T>, DT extends Comparab
     private OrderedDictionary<T> dictionary;
     private PositionIndex positionFile;
     private ValueIndex<DT> valueFile;
+    
+    private final VirtualFile parentFolder;
+    private final String filenameSeed;
+    
+    public ColumnFileReaderBundle (VirtualFile parentFolder, String filenameSeed) {
+        this.parentFolder = parentFolder;
+        this.filenameSeed = filenameSeed;
+    }
 }

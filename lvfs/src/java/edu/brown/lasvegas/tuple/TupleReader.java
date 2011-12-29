@@ -7,6 +7,7 @@ import edu.brown.lasvegas.ColumnType;
 import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.lvfs.OrderedDictionary;
 import edu.brown.lasvegas.lvfs.ValueRun;
+import edu.brown.lasvegas.util.ByteArray;
 
 /**
  * Interface to write a set of column data (Tuple).
@@ -130,7 +131,7 @@ public interface TupleReader extends Closeable {
     String getVarchar (int columnIndex) throws IOException;
 
     /** Reads a VARBIN column value. Consider using batched version for better performance. */
-    byte[] getVarbin (int columnIndex) throws IOException;
+    ByteArray getVarbin (int columnIndex) throws IOException;
 
 
     /**

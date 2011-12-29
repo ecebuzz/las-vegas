@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import edu.brown.lasvegas.lvfs.AllValueTraits;
 import edu.brown.lasvegas.lvfs.VarLenValueTraits;
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.util.ByteArray;
 
 /**
  * File writer for variable-length values.
@@ -15,14 +16,14 @@ import edu.brown.lasvegas.lvfs.VirtualFile;
  * Thus, this writer also collects tuple positions
  * to produce a "position file" as a sparse index.
  */
-public final class LocalVarLenWriter<T> extends LocalTypedWriterBase<T, T[]>  {
+public final class LocalVarLenWriter<T extends Comparable<T>> extends LocalTypedWriterBase<T, T[]>  {
     /** Constructs an instance of varchar column. */
     public static LocalVarLenWriter<String> getInstanceVarchar(VirtualFile rawFile, int collectPerBytes) throws IOException {
         return new LocalVarLenWriter<String>(rawFile, new AllValueTraits.VarcharValueTraits(), collectPerBytes);
     }
     /** Constructs an instance of varbinary column. */
-    public static LocalVarLenWriter<byte[]> getInstanceVarbin(VirtualFile rawFile, int collectPerBytes) throws IOException {
-        return new LocalVarLenWriter<byte[]>(rawFile, new AllValueTraits.VarbinValueTraits(), collectPerBytes);
+    public static LocalVarLenWriter<ByteArray> getInstanceVarbin(VirtualFile rawFile, int collectPerBytes) throws IOException {
+        return new LocalVarLenWriter<ByteArray>(rawFile, new AllValueTraits.VarbinValueTraits(), collectPerBytes);
     }
 
     private final VarLenValueTraits<T> traits;

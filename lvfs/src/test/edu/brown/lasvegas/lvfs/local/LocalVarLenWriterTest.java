@@ -1,6 +1,5 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -10,6 +9,7 @@ import org.junit.Test;
 
 import edu.brown.lasvegas.lvfs.PositionIndex.Pos;
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.util.ByteArray;
 import edu.brown.lasvegas.util.ChecksumUtil;
 
 /**
@@ -106,11 +106,11 @@ public class LocalVarLenWriterTest {
     public void testBytesWriter() throws Exception {
         final int COUNT = 12345;
         {
-            LocalVarLenWriter<byte[]> writer
+            LocalVarLenWriter<ByteArray> writer
                 = LocalVarLenWriter.getInstanceVarbin(dataFile, 100); // collect often to test the position file easily
             writer.setCRC32Enabled(true);
             for (int i = 0; i < COUNT; ++i) {
-                writer.writeValue(generateValue(i).getBytes("UTF-8"));
+                writer.writeValue(new ByteArray(generateValue(i).getBytes("UTF-8")));
             }
             // collect per 100 bytes. data is about 20-30bytes per value. position per 4-5 values.
             writer.writePositionFile(posFile);
@@ -125,11 +125,11 @@ public class LocalVarLenWriterTest {
         
         // test sequential scan
         {
-            LocalVarLenReader<byte[]> reader = LocalVarLenReader.getInstanceVarbin(dataFile);
+            LocalVarLenReader<ByteArray> reader = LocalVarLenReader.getInstanceVarbin(dataFile);
             for (int i = 0; i < COUNT; ++i) {
                 if (i % 3 != 0) {
-                    byte[] value = reader.readValue();
-                    assertArrayEquals (generateValue(i).getBytes("UTF-8"), value);
+                    ByteArray value = reader.readValue();
+                    assertEquals (new ByteArray(generateValue(i).getBytes("UTF-8")), value);
                 } else {
                     reader.skipValue();
                 }
@@ -138,7 +138,7 @@ public class LocalVarLenWriterTest {
         }
         
         // test position file indexing (both directly and via LocalVarLenReader)
-        LocalVarLenReader<byte[]> readerWithPos = LocalVarLenReader.getInstanceVarbin(dataFile);
+        LocalVarLenReader<ByteArray> readerWithPos = LocalVarLenReader.getInstanceVarbin(dataFile);
         readerWithPos.loadPositionFile(posFile);
         assertEquals (COUNT, readerWithPos.getTotalTuples());
         LocalPosFile positions = new LocalPosFile(posFile);
@@ -146,18 +146,18 @@ public class LocalVarLenWriterTest {
         final int[] tuplesToSearch = new int[]{1500, 234, 555, 0, 6000, 12344};
         for (int tupleToSearch : tuplesToSearch) {
             readerWithPos.seekToTupleAbsolute(tupleToSearch);
-            assertArrayEquals (generateValue(tupleToSearch).getBytes("UTF-8"), readerWithPos.readValue());
+            assertEquals (new ByteArray(generateValue(tupleToSearch).getBytes("UTF-8")), readerWithPos.readValue());
 
             Pos pos = positions.searchPosition(tupleToSearch);
             assertTrue (pos.tuple <= tupleToSearch);
             assertTrue (pos.tuple >= tupleToSearch - 10); // as stated above, shouldn't be off more than 10 values
-            LocalVarLenReader<byte[]> reader = LocalVarLenReader.getInstanceVarbin(dataFile);
+            LocalVarLenReader<ByteArray> reader = LocalVarLenReader.getInstanceVarbin(dataFile);
             reader.getRawReader().seekToByteAbsolute(pos.bytePosition);
             if (tupleToSearch - pos.tuple > 0) {
                 reader.skipValues(tupleToSearch - pos.tuple);
             }
-            byte[] value = reader.readValue();
-            assertArrayEquals (generateValue(tupleToSearch).getBytes("UTF-8"), value);
+            ByteArray value = reader.readValue();
+            assertEquals (new ByteArray(generateValue(tupleToSearch).getBytes("UTF-8")), value);
             reader.close();
         }
         readerWithPos.close();

@@ -5,5 +5,5 @@ package edu.brown.lasvegas.lvfs;
  * This interface doesn't provide batched read/write because
  * the implementation will be anyway just a loop.
  */
-public interface VarLenValueTraits<T> extends ValueTraits<T, T[]> {
+public interface VarLenValueTraits<T extends Comparable<T>> extends ValueTraits<T, T[]> {
 }

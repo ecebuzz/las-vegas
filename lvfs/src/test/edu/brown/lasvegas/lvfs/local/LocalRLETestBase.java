@@ -20,7 +20,7 @@ import edu.brown.lasvegas.util.ChecksumUtil;
  * Name of this abstract class doesn't end with Test so that our ant script
  * would skip this. 
  */
-public abstract class LocalRLETestBase<T, AT> {
+public abstract class LocalRLETestBase<T extends Comparable<T>, AT> {
     protected static VirtualFile file, pos;
     protected ValueTraits<T, AT> traits;
     protected LocalRLEReader<T, AT> reader;

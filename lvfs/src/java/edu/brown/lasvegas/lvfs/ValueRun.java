@@ -7,7 +7,7 @@ package edu.brown.lasvegas.lvfs;
  * However, some query optimization will need in-situ execution
  * where it directly deals with this object. 
  */
-public final class ValueRun<T> {
+public final class ValueRun<T extends Comparable<T>> {
     /** the tuple (in the column file) where this run starts at. */
     public int startTuple;
     /** number of tuples this value runs for. */

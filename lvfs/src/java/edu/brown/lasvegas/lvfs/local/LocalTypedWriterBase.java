@@ -10,7 +10,7 @@ import edu.brown.lasvegas.lvfs.VirtualFile;
 /**
  * Base implementation of TypedWriter. Doesn't do much. 
  */
-public abstract class LocalTypedWriterBase<T, AT> implements TypedWriter<T, AT> {
+public abstract class LocalTypedWriterBase<T extends Comparable<T>, AT> implements TypedWriter<T, AT> {
     private final LocalRawFileWriter rawWriter;
     //private final ValueTraits<T, AT> traits;
     protected LocalTypedWriterBase (VirtualFile file, ValueTraits<T, AT> traits, int streamBufferSize) throws IOException {

@@ -14,7 +14,7 @@ import edu.brown.lasvegas.lvfs.VirtualFile;
  * @param <T> Value type (e.g., Integer)
  * @param <AT> Array type (e.g., int[]).
  */
-public final class LocalBlockCompressionFixLenReader<T, AT> extends LocalBlockCompressionReader<T, AT> {
+public final class LocalBlockCompressionFixLenReader<T extends Comparable<T>, AT> extends LocalBlockCompressionReader<T, AT> {
     private final FixLenValueTraits<T, AT> traits;
     private final short bitsPerValue;
     

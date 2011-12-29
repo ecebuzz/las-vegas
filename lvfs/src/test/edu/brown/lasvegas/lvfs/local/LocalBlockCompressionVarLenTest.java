@@ -1,6 +1,5 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -10,6 +9,7 @@ import org.junit.Test;
 
 import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.util.ByteArray;
 import edu.brown.lasvegas.util.ChecksumUtil;
 
 /**
@@ -91,11 +91,11 @@ public class LocalBlockCompressionVarLenTest {
     public void testBytesWriter() throws Exception {
         final int COUNT = 12345;
         {
-            LocalBlockCompressionVarLenWriter<byte[]> writer
+            LocalBlockCompressionVarLenWriter<ByteArray> writer
                 = LocalBlockCompressionVarLenWriter.getInstanceVarbin(file, getType(), 100);
             writer.setCRC32Enabled(true);
             for (int i = 0; i < COUNT; ++i) {
-                writer.writeValue(generateValue(i).getBytes("UTF-8"));
+                writer.writeValue(new ByteArray(generateValue(i).getBytes("UTF-8")));
             }
             long crc32 = writer.writeFileFooter();
             assertTrue (crc32 != 0);
@@ -107,11 +107,11 @@ public class LocalBlockCompressionVarLenTest {
         
         // test sequential scan
         {
-            LocalBlockCompressionVarLenReader<byte[]> reader = LocalBlockCompressionVarLenReader.getInstanceVarbin(file, getType());
+            LocalBlockCompressionVarLenReader<ByteArray> reader = LocalBlockCompressionVarLenReader.getInstanceVarbin(file, getType());
             for (int i = 0; i < COUNT; ++i) {
                 if (i % 3 != 0) {
-                    byte[] value = reader.readValue();
-                    assertArrayEquals (generateValue(i).getBytes("UTF-8"), value);
+                    ByteArray value = reader.readValue();
+                    assertEquals (new ByteArray(generateValue(i).getBytes("UTF-8")), value);
                 } else {
                     reader.skipValue();
                 }
@@ -120,15 +120,15 @@ public class LocalBlockCompressionVarLenTest {
         }
         // test seeking
         {
-            LocalBlockCompressionVarLenReader<byte[]> reader = LocalBlockCompressionVarLenReader.getInstanceVarbin(file, getType());
+            LocalBlockCompressionVarLenReader<ByteArray> reader = LocalBlockCompressionVarLenReader.getInstanceVarbin(file, getType());
             reader.seekToTupleAbsolute(3125);
-            assertArrayEquals (generateValue(3125).getBytes("UTF-8"), reader.readValue());
+            assertEquals (new ByteArray(generateValue(3125).getBytes("UTF-8")), reader.readValue());
             reader.skipValue();
-            assertArrayEquals (generateValue(3127).getBytes("UTF-8"), reader.readValue());
+            assertEquals (new ByteArray(generateValue(3127).getBytes("UTF-8")), reader.readValue());
             reader.seekToTupleAbsolute(33);
-            assertArrayEquals (generateValue(33).getBytes("UTF-8"), reader.readValue());
+            assertEquals (new ByteArray(generateValue(33).getBytes("UTF-8")), reader.readValue());
             reader.seekToTupleAbsolute(12344);
-            assertArrayEquals (generateValue(12344).getBytes("UTF-8"), reader.readValue());
+            assertEquals (new ByteArray(generateValue(12344).getBytes("UTF-8")), reader.readValue());
             reader.close();
         }
     }

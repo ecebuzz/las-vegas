@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.Iterator;
 
 import edu.brown.lasvegas.ColumnType;
+import edu.brown.lasvegas.util.ByteArray;
 
 /**
  * Defines all value traits classes.
@@ -768,25 +769,25 @@ public final class AllValueTraits {
     }
 
     /**
-     * Traits for variable-length binary data (java-byte[]).
+     * Traits for variable-length binary data (ByteArray).
      */
-    public static final class VarbinValueTraits implements VarLenValueTraits<byte[]> {
+    public static final class VarbinValueTraits implements VarLenValueTraits<ByteArray> {
         @Override
-        public byte[] readValue(RawValueReader reader) throws IOException {
-            return reader.readBytesWithLengthHeader();
+        public ByteArray readValue(RawValueReader reader) throws IOException {
+            return new ByteArray(reader.readBytesWithLengthHeader());
         }
         @Override
-        public void writeValue(RawValueWriter writer, byte[] value) throws IOException {
-            writer.writeBytesWithLengthHeader(value);
+        public void writeValue(RawValueWriter writer, ByteArray value) throws IOException {
+            writer.writeBytesWithLengthHeader(value.getBytes());
         }
         @Override
-        public void writeRunLengthes(TypedRLEWriter<byte[], byte[][]> writer, byte[][] values, int off, int len) throws IOException {
-            ValueRun<byte[]> cur = writer.getCurrentRun();
-            byte[] curValue = cur.value;
+        public void writeRunLengthes(TypedRLEWriter<ByteArray, ByteArray[]> writer, ByteArray[] values, int off, int len) throws IOException {
+            ValueRun<ByteArray> cur = writer.getCurrentRun();
+            ByteArray curValue = cur.value;
             for (int i = off; i < off + len; ++i) {
                 // notice that it's not Object#equals() but Arrays.equals()
                 // otherwise it's a pointer comparison!!
-                if (Arrays.equals(values[i], curValue)) {
+                if (values[i].equals(curValue)) {
                     ++cur.runLength;
                 } else {
                     cur = writer.startNewRun(values[i], 1);
@@ -795,39 +796,39 @@ public final class AllValueTraits {
             }
         }
         @Override
-        public byte[][] createArray(int size) {
-            return new byte[size][];
+        public ByteArray[] createArray(int size) {
+            return new ByteArray[size];
         }
         @Override
-        public int length(byte[][] array) {
+        public int length(ByteArray[] array) {
             return array.length;
         }
         @Override
-        public byte[][] toArray(Collection<byte[]> values) {
+        public ByteArray[] toArray(Collection<ByteArray> values) {
             return values.toArray(createArray(values.size()));
         }
         @Override
-        public int binarySearch(byte[][] array, byte[] value) {
-            throw new UnsupportedOperationException("sorting/searching for VARBIN is not supported");
+        public int binarySearch(ByteArray[] array, ByteArray value) {
+            return Arrays.binarySearch(array, value);
         }
         @Override
-        public void fillArray(byte[] value, byte[][] array, int off, int len) {
+        public void fillArray(ByteArray value, ByteArray[] array, int off, int len) {
             // only this object has to do clone() because byte[] is mutable.
             // all the other objects work with immutable objects or primitives, so no worry.
             for (int i = off; i < off + len; ++i) {
-                array[i] = value.clone();
+                array[i] = new ByteArray(value);
             }
         }
         @Override
-        public byte[] get(byte[][] array, int index) {
+        public ByteArray get(ByteArray[] array, int index) {
             return array[index];
         }
         @Override
-        public void set(byte[][] array, int index, byte[] value) {
+        public void set(ByteArray[] array, int index, ByteArray value) {
             array[index] = value;
         }
         @Override
-        public byte[][] deserializeArray(ByteBuffer buffer) {
+        public ByteArray[] deserializeArray(ByteBuffer buffer) {
             // see VarcharValueTraits#deserializeArray() for data format.
             // the only difference is that the data part is byte[], not char[].
             int entries = buffer.getInt();
@@ -840,18 +841,18 @@ public final class AllValueTraits {
             buffer.position(buffer.position() + entries * 4); // advance original buffer position
 
             // we use the original byte buffer below, so no need to re-position ourselves
-            byte[][] array = createArray(entries);
+            ByteArray[] array = createArray(entries);
             for (int i = 0; i < entries; ++i) {
                 assert (lengthes[i] >= -1);
                 if (lengthes[i] == -1) continue; // null
                 byte[] data = new byte[lengthes[i]];
                 buffer.get(data);
-                array[i] = data;
+                array[i] = new ByteArray(data);
             }
             return array;
         }
         @Override
-        public int serializeArray(byte[][] array, ByteBuffer buffer) {
+        public int serializeArray(ByteArray[] array, ByteBuffer buffer) {
             // see the above function comment
             if (array == null) {
                 buffer.putInt(-1);
@@ -861,7 +862,7 @@ public final class AllValueTraits {
             int[] lengthes = new int[array.length];
             lengthes[0] = array.length;
             for (int i = 0; i < array.length; ++i) {
-                lengthes[i] = (array[i] == null ? -1 : array[i].length);
+                lengthes[i] = (array[i] == null || array[i].getBytes() == null ? -1 :  array[i].getBytes().length);
             }
 
             IntBuffer lengthBuffer = buffer.asIntBuffer();
@@ -871,19 +872,19 @@ public final class AllValueTraits {
             // we use the original byte buffer below, so no need to re-position ourselves
             int writtenBytes = (array.length + 1) * 4;
             for (int i = 0; i < array.length; ++i) {
-                if (array[i] == null) continue;
-                buffer.put (array[i]);
-                writtenBytes += array[i].length;
+                if (array[i] == null || array[i].getBytes() == null) continue;
+                buffer.put (array[i].getBytes());
+                writtenBytes += array[i].getBytes().length;
             }
             return writtenBytes;
         }
         @Override
-        public int getSerializedByteSize(byte[][] array) {
+        public int getSerializedByteSize(ByteArray[] array) {
             if (array == null) return 4;
             int writtenBytes = (array.length + 1) * 4;
             for (int i = 0; i < array.length; ++i) {
-                if (array[i] != null) {
-                    writtenBytes += array[i].length;
+                if (array[i] != null &&  array[i].getBytes() != null) {
+                    writtenBytes += array[i].getBytes().length;
                 }
             }
             return writtenBytes;

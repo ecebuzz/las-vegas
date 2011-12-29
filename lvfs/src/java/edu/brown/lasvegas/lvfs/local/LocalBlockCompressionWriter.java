@@ -34,7 +34,7 @@ import edu.brown.lasvegas.util.RawByteArrayOutputStream;
  * After decompression, the block is equivalent to an independent column file (FixLen or VarLen).
  * However, each block might have a per-block footer. See the implementation class for more details.</p>
  */
-public abstract class LocalBlockCompressionWriter<T, AT> extends LocalTypedWriterBase<T, AT> {
+public abstract class LocalBlockCompressionWriter<T extends Comparable<T>, AT> extends LocalTypedWriterBase<T, AT> {
     private static Logger LOG = Logger.getLogger(LocalBlockCompressionWriter.class);
 
     /** compression type for the file. */

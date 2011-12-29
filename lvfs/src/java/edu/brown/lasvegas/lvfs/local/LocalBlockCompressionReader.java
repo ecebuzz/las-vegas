@@ -17,7 +17,7 @@ import edu.brown.lasvegas.lvfs.VirtualFile;
  * File reader for a block-compressed file such as Snappy and LZO.
  * <p>For the format of block-coompressed files, see {@link LocalBlockCompressionWriter}</p>
  */
-public abstract class LocalBlockCompressionReader<T, AT> extends LocalTypedReaderBase<T, AT> {
+public abstract class LocalBlockCompressionReader<T extends Comparable<T>, AT> extends LocalTypedReaderBase<T, AT> {
     private static Logger LOG = Logger.getLogger(LocalBlockCompressionReader.class);
 
     /** compression type for the file. */

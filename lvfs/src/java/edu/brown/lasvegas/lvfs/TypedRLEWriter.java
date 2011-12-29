@@ -5,7 +5,7 @@ import java.io.IOException;
 /**
  * The additional writer methods for RLE-compressed file.
  */
-public interface TypedRLEWriter<T, AT> extends TypedWriter<T, AT> {
+public interface TypedRLEWriter<T extends Comparable<T>, AT> extends TypedWriter<T, AT> {
     /**
      * Close the current run and start a new run with the given value
      * @param value new value to start the new run

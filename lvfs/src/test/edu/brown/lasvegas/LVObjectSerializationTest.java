@@ -87,12 +87,16 @@ public class LVObjectSerializationTest {
         obj1.setColumnId(88);
         obj1.setFileSize(6666);
         obj1.setLocalFilePath(null);
+        obj1.setAverageRunLength(333);
+        obj1.setDictionaryBytesPerEntry((byte)4);
+        obj1.setDistinctValues(35545);
         obj1.setPartitionId(5544);
         obj1.write(out);
         LVColumnFile obj2 = new LVColumnFile();
         obj2.setColumnFileId(12);
         obj2.setChecksum(1234567);
         obj2.setColumnId(885);
+        obj2.setDistinctValues(24545);
         obj2.setFileSize(66665);
         obj2.setLocalFilePath("dfgkj");
         obj2.setPartitionId(88863);
@@ -102,9 +106,12 @@ public class LVObjectSerializationTest {
         DataInputStream in = inFromOut();
         for (int i = 0; i < org.length; ++i) {
             LVColumnFile copied = LVColumnFile.read(in);
+            assertEquals(org[i].getAverageRunLength(), copied.getAverageRunLength());
             assertEquals(org[i].getChecksum(), copied.getChecksum());
             assertEquals(org[i].getColumnFileId(), copied.getColumnFileId());
             assertEquals(org[i].getColumnId(), copied.getColumnId());
+            assertEquals(org[i].getDictionaryBytesPerEntry(), copied.getDictionaryBytesPerEntry());
+            assertEquals(org[i].getDistinctValues(), copied.getDistinctValues());
             assertEquals(org[i].getFileSize(), copied.getFileSize());
             assertEquals(org[i].getLocalFilePath(), copied.getLocalFilePath());
             assertEquals(org[i].getPartitionId(), copied.getPartitionId());

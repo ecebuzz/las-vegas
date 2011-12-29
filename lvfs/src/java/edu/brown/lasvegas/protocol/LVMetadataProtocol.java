@@ -726,11 +726,18 @@ public interface LVMetadataProtocol extends VersionedProtocol {
      * @param localFilePath the file path of the column file in data node
      * @param fileSize the byte size of the file
      * @param checksum CRC32 checksum of the file
+     * @param dictionaryBytesPerEntry The size of one entry after dictionary-compression (1/2/4), Set only when the column file is dictionary-compressed (otherwise 0)
+     * @param distinctValues The number of distinct values in this file, Set only when the column file is dictionary-compressed or sorted (otherwise 0).
+     * @param averageRunLengthThe average run length in this file, Set only when the column file is RLE-compressed (otherwise 0)
      * @return new column file
      * @throws IOException
      */
     LVColumnFile createNewColumnFile(LVReplicaPartition subPartition, LVColumn column,
-                    String localFilePath, int fileSize, long checksum) throws IOException;
+                    String localFilePath, int fileSize, long checksum,
+                    byte dictionaryBytesPerEntry,
+                    int distinctValues,
+                    int averageRunLength
+                    ) throws IOException;
     
     /**
      * Deletes the column file metadata object from this repository.

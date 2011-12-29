@@ -6,12 +6,13 @@ import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.lvfs.AllValueTraits;
 import edu.brown.lasvegas.lvfs.VarLenValueTraits;
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.util.ByteArray;
 
 /**
  * Reader implementation of block-compressed files for variable-length columns.
  * @param <T> Value type (e.g., String)
  */
-public class LocalBlockCompressionVarLenReader<T> extends LocalBlockCompressionReader<T, T[]> {
+public class LocalBlockCompressionVarLenReader<T extends Comparable<T>> extends LocalBlockCompressionReader<T, T[]> {
     private final VarLenValueTraits<T> traits;
     /** Variable-length block has position indexes. See class comments of {@link LocalBlockCompressionVarLenWriter}. */
     private int[] currentBlockFooter;
@@ -22,9 +23,9 @@ public class LocalBlockCompressionVarLenReader<T> extends LocalBlockCompressionR
         return new LocalBlockCompressionVarLenReader<String>(file, new AllValueTraits.VarcharValueTraits(), compressionType);
     }
     /** Constructs an instance of varbinary column. */
-    public static LocalBlockCompressionVarLenReader<byte[]> getInstanceVarbin(
+    public static LocalBlockCompressionVarLenReader<ByteArray> getInstanceVarbin(
                     VirtualFile file, CompressionType compressionType) throws IOException {
-        return new LocalBlockCompressionVarLenReader<byte[]>(file, new AllValueTraits.VarbinValueTraits(), compressionType);
+        return new LocalBlockCompressionVarLenReader<ByteArray>(file, new AllValueTraits.VarbinValueTraits(), compressionType);
     }
 
     public LocalBlockCompressionVarLenReader(VirtualFile file, VarLenValueTraits<T> traits, CompressionType compressionType) throws IOException {

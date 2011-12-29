@@ -16,7 +16,7 @@ import edu.brown.lasvegas.LVReplicaScheme;
  * 
  * <p>Just like position index, this file is supposed to be small. So, we read/write them at once.</p>
  */
-public interface ValueIndex<T> {
+public interface ValueIndex<T extends Comparable<T>> {
     /**
      * Returns the tuple position to start reading.
      * @param value the value to find.

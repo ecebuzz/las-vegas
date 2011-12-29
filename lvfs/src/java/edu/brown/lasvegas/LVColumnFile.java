@@ -55,17 +55,31 @@ public class LVColumnFile implements LVObject {
     /** CRC32 of the file. */
     private long checksum;
     
+    /** The size of one entry after dictionary-compression (1/2/4), Set only when the column file is dictionary-compressed (otherwise 0).*/
+    private byte dictionaryBytesPerEntry;
+    
+    /** The number of distinct values in this file, Set only when the column file is dictionary-compressed or sorted (otherwise 0). */
+    private int distinctValues;
+    
+    /** The average run length in this file, Set only when the column file is RLE-compressed (otherwise 0).*/
+    private int averageRunLength;
+
     /**
      * @see java.lang.Object#toString()
      */
     public String toString() {
         return "ColumnFile-" + columnFileId + " (Column=" + columnId + ", Partition=" + partitionId + ")"
-            + " localFilePath=" + localFilePath + ", FileSize=" + fileSize + ", checksum=" + checksum;
+            + " localFilePath=" + localFilePath + ", FileSize=" + fileSize + ", checksum=" + checksum
+            + ", dictionaryBytesPerEntry=" + dictionaryBytesPerEntry + ", distinctValues=" + distinctValues
+            + ", averageRunLength=" + averageRunLength;
     }
 
     @Override
     public void write(DataOutput out) throws IOException {
         out.writeLong(checksum);
+        out.writeByte(dictionaryBytesPerEntry);
+        out.writeInt(distinctValues);
+        out.writeInt(averageRunLength);
         out.writeInt(columnFileId);
         out.writeInt(columnId);
         out.writeInt(fileSize);
@@ -78,6 +92,9 @@ public class LVColumnFile implements LVObject {
     @Override
     public void readFields(DataInput in) throws IOException {
         checksum = in.readLong();
+        dictionaryBytesPerEntry = in.readByte();
+        distinctValues = in.readInt();
+        averageRunLength = in.readInt();
         columnFileId = in.readInt();
         columnId = in.readInt();
         fileSize = in.readInt();
@@ -208,4 +225,59 @@ public class LVColumnFile implements LVObject {
     public void setChecksum(long checksum) {
         this.checksum = checksum;
     }
+
+    /**
+     * Gets the size of one entry after dictionary-compression (1/2/4), Set only when the column file is dictionary-compressed (otherwise 0).
+     *
+     * @return the size of one entry after dictionary-compression (1/2/4), Set only when the column file is dictionary-compressed (otherwise 0)
+     */
+    public byte getDictionaryBytesPerEntry() {
+        return dictionaryBytesPerEntry;
+    }
+
+    /**
+     * Sets the size of one entry after dictionary-compression (1/2/4), Set only when the column file is dictionary-compressed (otherwise 0).
+     *
+     * @param dictionaryBytesPerEntry the new size of one entry after dictionary-compression (1/2/4), Set only when the column file is dictionary-compressed (otherwise 0)
+     */
+    public void setDictionaryBytesPerEntry(byte dictionaryBytesPerEntry) {
+        this.dictionaryBytesPerEntry = dictionaryBytesPerEntry;
+    }
+
+    /**
+     * Gets the number of distinct values in this file, Set only when the column file is dictionary-compressed or sorted (otherwise 0).
+     *
+     * @return the number of distinct values in this file, Set only when the column file is dictionary-compressed or sorted (otherwise 0)
+     */
+    public int getDistinctValues() {
+        return distinctValues;
+    }
+
+    /**
+     * Sets the number of distinct values in this file, Set only when the column file is dictionary-compressed or sorted (otherwise 0).
+     *
+     * @param distinctValues the new number of distinct values in this file, Set only when the column file is dictionary-compressed or sorted (otherwise 0)
+     */
+    public void setDistinctValues(int distinctValues) {
+        this.distinctValues = distinctValues;
+    }
+
+    /**
+     * Gets the average run length in this file, Set only when the column file is RLE-compressed (otherwise 0).
+     *
+     * @return the average run length in this file, Set only when the column file is RLE-compressed (otherwise 0)
+     */
+    public int getAverageRunLength() {
+        return averageRunLength;
+    }
+
+    /**
+     * Sets the average run length in this file, Set only when the column file is RLE-compressed (otherwise 0).
+     *
+     * @param averageRunLength the new average run length in this file, Set only when the column file is RLE-compressed (otherwise 0)
+     */
+    public void setAverageRunLength(int averageRunLength) {
+        this.averageRunLength = averageRunLength;
+    }
+    
 }

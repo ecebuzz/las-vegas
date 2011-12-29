@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import edu.brown.lasvegas.ColumnType;
 import edu.brown.lasvegas.lvfs.TypedReader;
+import edu.brown.lasvegas.util.ByteArray;
 
 /**
  * A fixed-size buffer class to tentatively store a number of tuples in
@@ -61,7 +62,7 @@ public class TupleBuffer {
                 accessors[i] = new StringColumnAccessor(i);
                 break;
             case VARBINARY:
-                data[i] = new byte[bufferSize][];
+                data[i] = new ByteArray[bufferSize];
                 accessors[i] = new ByteArrayColumnAccessor(i);
                 break;
             default:
@@ -110,6 +111,9 @@ public class TupleBuffer {
     }
     public String[] getColumnBufferAsString (int col) {
         return (String[]) data[col];
+    }
+    public ByteArray[] getColumnBufferAsByteArray (int col) {
+        return (ByteArray[]) data[col];
     }
     
     /**
@@ -327,7 +331,7 @@ public class TupleBuffer {
 
     private class ByteArrayColumnAccessor implements ColumnAccessor {
         private ByteArrayColumnAccessor (int col) {
-            this.array = (byte[][]) data[col];
+            this.array = (ByteArray[]) data[col];
             this.col = col;
         }
         @Override
@@ -337,10 +341,10 @@ public class TupleBuffer {
         @Override
         public int put(int tuplesToRead, TypedReader<?, ?> reader) throws IOException {
             @SuppressWarnings("unchecked")
-            TypedReader<?, byte[][]> typedReader = (TypedReader<?, byte[][]>) reader;
+            TypedReader<?, ByteArray[]> typedReader = (TypedReader<?, ByteArray[]>) reader;
             return typedReader.readValues(array, count, tuplesToRead);
         }
-        byte[][] array;
+        ByteArray[] array;
         int col;
     }
 }

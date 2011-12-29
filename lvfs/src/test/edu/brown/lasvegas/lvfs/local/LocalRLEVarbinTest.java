@@ -1,6 +1,5 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
@@ -9,23 +8,24 @@ import org.junit.Test;
 
 import edu.brown.lasvegas.lvfs.AllValueTraits;
 import edu.brown.lasvegas.lvfs.VarLenValueTraits;
+import edu.brown.lasvegas.util.ByteArray;
 
-public class LocalRLEVarbinTest extends LocalRLETestBase<byte[], byte[][]> {
+public class LocalRLEVarbinTest extends LocalRLETestBase<ByteArray, ByteArray[]> {
     // only varbin is [] by itself. to avoid reference comparison, this overrides assertEqualsT
     @Override
-    protected void assertEqualsT (byte[] a, byte[] b) {
-        assertArrayEquals (a, b);
+    protected void assertEqualsT (ByteArray a, ByteArray b) {
+        assertEquals (a, b);
     }
     @Override
-    protected byte[] generateValue(int index) { return ("str" + (index / 8) + "sdfdf").getBytes();  }
+    protected ByteArray generateValue(int index) { return new ByteArray(("str" + (index / 8) + "sdfdf").getBytes());  }
     @Override
-    protected VarLenValueTraits<byte[]> createTraits() { return new AllValueTraits.VarbinValueTraits();}
+    protected VarLenValueTraits<ByteArray> createTraits() { return new AllValueTraits.VarbinValueTraits();}
     @Override
-    protected byte[][] createArray (int size) { return new byte[size][];}
+    protected ByteArray[] createArray (int size) { return new ByteArray[size];}
     @Override
-    protected void setToArray(byte[][] array, int index, byte[] value){ array[index] = value; }
+    protected void setToArray(ByteArray[] array, int index, ByteArray value){ array[index] = value; }
     @Override
-    protected byte[] getFromArray(byte[][] array, int index) { return array[index]; }
+    protected ByteArray getFromArray(ByteArray[] array, int index) { return array[index]; }
 
     @SuppressWarnings("unused")
     @Test
