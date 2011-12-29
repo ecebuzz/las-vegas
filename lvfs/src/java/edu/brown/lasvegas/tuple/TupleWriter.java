@@ -45,5 +45,5 @@ public interface TupleWriter extends Closeable {
      * This method makes sense only when the implementation class writes out columnar files,
      * which is always true so far.
      */
-    ColumnFileWriterBundle<?, ?, ?> getColumnWriterBundle (int col);
+    ColumnFileWriterBundle getColumnWriterBundle (int col);
 }

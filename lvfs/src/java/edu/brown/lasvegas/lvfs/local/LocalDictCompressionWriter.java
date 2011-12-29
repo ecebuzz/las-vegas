@@ -45,7 +45,6 @@ public class LocalDictCompressionWriter<T extends Comparable<T>, AT> implements 
     private final VirtualFile finalDictFile;
     private final VirtualFile tmpFile;
 
-    private final ColumnType type;
     private final ValueTraits<T, AT> traits;
     
     private OrderedDictionary<T, AT> finalDict;
@@ -54,14 +53,18 @@ public class LocalDictCompressionWriter<T extends Comparable<T>, AT> implements 
      * @param finalDataFile the final compressed data file 
      * @param finalDictFile the final dictionary file
      * @param tmpFile Used to tentatively write out data. Deleted after used.
+     * @param type value type BEFORE compression
      */
     @SuppressWarnings("unchecked")
     public LocalDictCompressionWriter(VirtualFile finalDataFile, VirtualFile finalDictFile, VirtualFile tmpFile, ColumnType type) throws IOException {
+        this (finalDataFile, finalDictFile, tmpFile, (ValueTraits<T, AT>) AllValueTraits.getInstance(type));
+    }
+
+    public LocalDictCompressionWriter(VirtualFile finalDataFile, VirtualFile finalDictFile, VirtualFile tmpFile, ValueTraits<T,AT> traits) throws IOException {
         this.finalDataFile = finalDataFile;
         this.finalDictFile = finalDictFile;
         this.tmpFile = tmpFile;
-        this.type = type;
-        this.traits = (ValueTraits<T, AT>) AllValueTraits.getInstance(this.type);
+        this.traits = traits;
         tentativeDict = new HashMap<T, Integer> (1 << 16, 0.25f); // for performance, use low load factor
         tentativeDictArray = new ArrayList<T> (1 << 16);
         tentativeIntWriter = LocalFixLenWriter.getInstanceInteger(tmpFile);
@@ -160,7 +163,7 @@ public class LocalDictCompressionWriter<T extends Comparable<T>, AT> implements 
                 LOG.info("sorted the dictionary in " + (endMillisec - startMillisec) + "ms");
             }
         }
-        finalDict = new LocalDictFile<T, AT>(dict, type);
+        finalDict = new LocalDictFile<T, AT>(dict, traits);
         finalDict.writeToFile(finalDictFile);
 
         // finally, convert the tentative integer file to the final integer file.

@@ -46,6 +46,9 @@ public final class LocalBlockCompressionVarLenWriter<T extends Comparable<T>> ex
         return new LocalBlockCompressionVarLenWriter<ByteArray>(file, new AllValueTraits.VarbinValueTraits(), compressionType, collectPerBytes);
     }
 
+    public LocalBlockCompressionVarLenWriter(VirtualFile file, VarLenValueTraits<T> traits, CompressionType compressionType) throws IOException {
+        this(file, traits, compressionType, 1 << 13);
+    }
     public LocalBlockCompressionVarLenWriter(VirtualFile file, VarLenValueTraits<T> traits, CompressionType compressionType, int collectPerBytes) throws IOException {
         super (file, traits, compressionType);
         this.traits = traits;

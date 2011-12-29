@@ -1,11 +1,14 @@
 package edu.brown.lasvegas.tuple;
 
-import java.io.File;
 import java.io.IOException;
+
+import org.apache.log4j.Logger;
 
 import edu.brown.lasvegas.ColumnType;
 import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.lvfs.ColumnFileWriterBundle;
+import edu.brown.lasvegas.lvfs.TypedWriter;
+import edu.brown.lasvegas.lvfs.VirtualFile;
 
 /**
  * Buffered implementation of TupleWriter.
@@ -13,6 +16,8 @@ import edu.brown.lasvegas.lvfs.ColumnFileWriterBundle;
  * to the local file system.
  */
 public class BufferedTupleWriter implements TupleWriter {
+    private static Logger LOG = Logger.getLogger(BufferedTupleWriter.class);
+
     /**
      * Callback interface for {@link TupleWriter#appendAllTuples()} to do something after each batch write.
      */
@@ -25,25 +30,22 @@ public class BufferedTupleWriter implements TupleWriter {
         boolean onBatchWritten (int totalTuplesWritten) throws IOException;
     }
 
-    public BufferedTupleWriter(TupleReader reader, int bufferSize, File outputFolder, CompressionType[] compressionTypes, String[] fileNameSeeds) throws IOException {
+    public BufferedTupleWriter(TupleReader reader, int bufferSize, VirtualFile outputFolder, CompressionType[] compressionTypes, String[] fileNameSeeds) throws IOException {
         this (reader, bufferSize, outputFolder, compressionTypes, fileNameSeeds, null);
     }
     public BufferedTupleWriter(
             TupleReader reader,
             int bufferSize,
-            File outputFolder,
+            VirtualFile outputFolder,
             CompressionType[] compressionTypes,
             String[] fileNameSeeds,
             BatchCallback callback) throws IOException {
         this.columnTypes = reader.getColumnTypes();
-        this.compressionTypes = compressionTypes;
         this.columnCount = columnTypes.length;
-        this.outputFolder = outputFolder;
-        this.fileNameSeeds = fileNameSeeds;
         this.buffer = new TupleBuffer(columnTypes, bufferSize);
         this.reader = reader;
         this.callback = callback;
-        this.columnWriters = new ColumnFileWriterBundle<?, ?, ?>[columnCount];
+        this.columnWriters = new ColumnFileWriterBundle[columnCount];
 
         // check parameters
         if (columnTypes.length != compressionTypes.length) {
@@ -61,43 +63,64 @@ public class BufferedTupleWriter implements TupleWriter {
             }
             // although column types must match between reader/writer, compression types are often different.
         }
-    }
-    private void initColumnWriters () throws IOException {
         for (int i = 0; i < columnCount; ++i) {
-            
+            columnWriters[i] = new ColumnFileWriterBundle(outputFolder, fileNameSeeds[i], columnTypes[i], compressionTypes[i]);
         }
     }
+    
     private final int columnCount;
     private final ColumnType[] columnTypes;
-    private final CompressionType[] compressionTypes;
-    /** folder to output all columnar files. */
-    private final File outputFolder;
-    /** filename without extension (e.g., "1_2_3" will generate "1_2_3.dat", "1_2_3.pos", and "1_2_3.dic"). */
-    private final String[] fileNameSeeds;
     private final TupleBuffer buffer;
     private final TupleReader reader;
     private final BatchCallback callback;
     
-    private ColumnFileWriterBundle<?, ?, ?>[] columnWriters;
+    private ColumnFileWriterBundle[] columnWriters;
     
     private int tuplesWritten = 0;
 
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     @Override
     public int appendAllTuples() throws IOException {
-        // TODO Auto-generated method stub
-        return 0;
+        LOG.info("receiving/writing all tuples...");
+        while (true) {
+            buffer.resetCount();
+            int read = reader.nextBatch(buffer);
+            if (read < 0) {
+                break;
+            }
+            LOG.info("read " + read + " tuples.");
+            for (int i = 0; i < columnCount; ++i) {
+                Object columnData = buffer.getColumnBuffer(i);
+                ((TypedWriter) columnWriters[i].getDataWriter()).writeValues(columnData, 0, read);
+            }
+            LOG.info("wrote " + read + " tuples to " + columnCount + " column files.");
+            tuplesWritten += read;
+            if (callback != null) {
+                boolean continued = callback.onBatchWritten(tuplesWritten);
+                if (!continued) {
+                    LOG.warn("callback function requested to terminate. exitting..");
+                    break;
+                }
+            }
+        }
+        LOG.info("done.");
+        return tuplesWritten;
     }
 
     @Override
     public void finish() throws IOException {
-        // TODO Auto-generated method stub
-        
+        for (int i = 0; i < columnCount; ++i) {
+            TypedWriter<?, ?> dataWriter = columnWriters[i].getDataWriter();
+            dataWriter.writeFileFooter();
+            dataWriter.flush();
+        }
     }
     
     @Override
     public void close() throws IOException {
-        // TODO Auto-generated method stub
-        
+        for (int i = 0; i < columnCount; ++i) {
+            columnWriters[i].getDataWriter().close();
+        }
     }
     @Override
     public int getTupleCount() throws IOException {
@@ -109,7 +132,7 @@ public class BufferedTupleWriter implements TupleWriter {
     }
     
     @Override
-    public ColumnFileWriterBundle<?, ?, ?> getColumnWriterBundle(int col) {
+    public ColumnFileWriterBundle getColumnWriterBundle(int col) {
         return columnWriters[col];
     }
 }

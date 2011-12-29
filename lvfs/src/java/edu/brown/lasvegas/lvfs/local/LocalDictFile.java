@@ -42,12 +42,15 @@ public final class LocalDictFile<T extends Comparable<T>, AT> implements Ordered
      * one needs to first write-out non-compressed file and then read it again.
      * For must faster file creation, use {@link LocalDictCompressionWriter}.
      * @param dataReader interface to read the data file
+     * @param type value type BEFORE compression
      */
     @SuppressWarnings("unchecked")
     public LocalDictFile(TypedReader<T, AT> dataReader, ColumnType type) throws IOException {
+        this (dataReader, (ValueTraits<T, AT>) AllValueTraits.getInstance(type));
+    }
+    public LocalDictFile(TypedReader<T, AT> dataReader, ValueTraits<T, AT> traits) throws IOException {
         LOG.info("Creating a dictionary...");
-        this.type = type;
-        this.traits = (ValueTraits<T, AT>) AllValueTraits.getInstance(this.type);
+        this.traits = traits;
         HashSet<T> distinctValues;
         {
             long startMillisec = System.currentTimeMillis();
@@ -89,12 +92,15 @@ public final class LocalDictFile<T extends Comparable<T>, AT> implements Ordered
 
     /**
      * Creates a dictionary with sorted data.
+     * @param type value type BEFORE compression
      */
     @SuppressWarnings("unchecked")
     public LocalDictFile(AT dict, ColumnType type) throws IOException {
+        this (dict, (ValueTraits<T, AT>) AllValueTraits.getInstance(type));
+    }
+    public LocalDictFile(AT dict, ValueTraits<T, AT> traits) throws IOException {
         this.dict = dict;
-        this.type = type;
-        this.traits = (ValueTraits<T, AT>) AllValueTraits.getInstance(this.type);
+        this.traits = traits;
         this.dictEntryCount = traits.length(dict);
         this.bytesPerEntry = calculateBytesPerEntry(dictEntryCount);
         assert(validateDict ());
@@ -102,11 +108,14 @@ public final class LocalDictFile<T extends Comparable<T>, AT> implements Ordered
 
     /**
      * Loads an existing dictionary file.
+     * @param type value type BEFORE compression
      */
     @SuppressWarnings("unchecked")
     public LocalDictFile(VirtualFile dictFile, ColumnType type) throws IOException {
-        this.type = type;
-        this.traits = (ValueTraits<T, AT>) AllValueTraits.getInstance(this.type);
+        this (dictFile, (ValueTraits<T, AT>) AllValueTraits.getInstance(type));
+    }
+    public LocalDictFile(VirtualFile dictFile, ValueTraits<T, AT> traits) throws IOException {
+        this.traits = traits;
         int fileSize = (int) dictFile.length();
         if (fileSize > 1 << 26) {
             throw new IOException ("This dictionary seems too large: " + dictFile.getAbsolutePath() + ": " + (dictFile.length() >> 20) + "MB");
@@ -302,7 +311,5 @@ public final class LocalDictFile<T extends Comparable<T>, AT> implements Ordered
     private final AT dict;
     /** dict.length. */
     private final int dictEntryCount;
-    /** value type BEFORE compression.*/
-    private final ColumnType type;
     private final ValueTraits<T, AT> traits;
 }

@@ -33,6 +33,9 @@ public final class LocalVarLenWriter<T extends Comparable<T>> extends LocalTyped
     private int curTuple = 0;
     private ArrayList<Integer> collectedTuples = new ArrayList<Integer>();
     private ArrayList<Integer> collectedPositions = new ArrayList<Integer>();
+    public LocalVarLenWriter(VirtualFile file, VarLenValueTraits<T> traits) throws IOException {
+        this (file, traits, 1 << 13);
+    }
     public LocalVarLenWriter(VirtualFile file, VarLenValueTraits<T> traits, int collectPerBytes) throws IOException {
         super(file, traits, 1 << 18);
         this.traits = traits;
