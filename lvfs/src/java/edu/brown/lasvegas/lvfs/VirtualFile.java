@@ -49,6 +49,11 @@ public interface VirtualFile {
     VirtualFile getParentFile ();
     
     /**
+     * Returns a file with the given name in the folder.
+     */
+    VirtualFile getChildFile (String filename);
+    
+    /**
      * If this file is a folder, creates all folders up to this folder.
      */
     boolean mkdirs() throws IOException;

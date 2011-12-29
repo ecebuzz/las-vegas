@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.net.URL;
 import java.net.URLConnection;
 
-import org.apache.commons.lang.NotImplementedException;
-
 import edu.brown.lasvegas.lvfs.VirtualFile;
 import edu.brown.lasvegas.lvfs.VirtualFileInputStream;
 import edu.brown.lasvegas.lvfs.VirtualFileOutputStream;
@@ -27,7 +25,7 @@ public final class URLVirtualFile implements VirtualFile {
     }
     @Override
     public VirtualFileOutputStream getOutputStream() throws IOException {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
     @Override
     public long length() throws IOException {
@@ -45,26 +43,30 @@ public final class URLVirtualFile implements VirtualFile {
     }
     @Override
     public boolean delete() throws IOException {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
     @Override
     public boolean delete(boolean recursive) throws IOException {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
     @Override
     public boolean exists() {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
     @Override
     public boolean isDirectory() throws IOException {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
     @Override
     public VirtualFile getParentFile() {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
+    }
+    @Override
+    public VirtualFile getChildFile(String filename) {
+        throw new UnsupportedOperationException();
     }
     @Override
     public boolean mkdirs() {
-        throw new NotImplementedException();
+        throw new UnsupportedOperationException();
     }
 }

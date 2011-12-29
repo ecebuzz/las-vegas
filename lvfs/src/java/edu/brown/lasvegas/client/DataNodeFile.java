@@ -72,6 +72,11 @@ public class DataNodeFile implements VirtualFile {
         String parentPath = localPath.substring(0, lastSl);
         return new DataNodeFile(dataNode, parentPath);
     }
+    @Override
+    public VirtualFile getChildFile(String filename) {
+        String childPath = localPath + "/" + filename;
+        return new DataNodeFile(dataNode, childPath);
+    }
 
     @Override
     public boolean mkdirs() throws IOException {

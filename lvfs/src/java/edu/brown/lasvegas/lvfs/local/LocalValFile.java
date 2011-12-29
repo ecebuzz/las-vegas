@@ -33,7 +33,6 @@ public class LocalValFile<T extends Comparable<T>, AT> implements ValueIndex<T> 
     @SuppressWarnings("unchecked")
     public LocalValFile (VirtualFile file, ColumnType type) throws IOException {
         this.traits = (ValueTraits<T, AT>) AllValueTraits.getInstance(type); 
-        this.valueCount = 0;
         int fileSize = (int) file.length();
         if (fileSize > 1 << 24) {
             throw new IOException ("the value index file : " + file + " seems too large. " + (fileSize >> 20) + "MB");
@@ -44,7 +43,10 @@ public class LocalValFile<T extends Comparable<T>, AT> implements ValueIndex<T> 
         in.close();
         assert (read == bytes.length);
         ByteBuffer byteBuffer  = ByteBuffer.wrap(bytes);
+        this.tuplePosArray = intTraits.deserializeArray(byteBuffer);
         this.valueArray = traits.deserializeArray(byteBuffer);
+        this.valueCount = tuplePosArray.length;
+        assert (valueCount == traits.length(valueArray));
         assert (byteBuffer.position() == bytes.length);
         assert (validateValueArray());
     }
@@ -54,8 +56,10 @@ public class LocalValFile<T extends Comparable<T>, AT> implements ValueIndex<T> 
      * Used when writing out a value index file.
      */
     @SuppressWarnings("unchecked")
-    public LocalValFile (List<T> values, ColumnType type) {
-        this.traits = (ValueTraits<T, AT>) AllValueTraits.getInstance(type); 
+    public LocalValFile (List<T> values, List<Integer> tuplePositions, ColumnType type) {
+        this.traits = (ValueTraits<T, AT>) AllValueTraits.getInstance(type);
+        assert (values.size() == tuplePositions.size());
+        this.tuplePosArray = intTraits.toArray(tuplePositions);
         this.valueCount = values.size();
         this.valueArray = traits.toArray(values);
         assert (validateValueArray());
@@ -64,19 +68,23 @@ public class LocalValFile<T extends Comparable<T>, AT> implements ValueIndex<T> 
     /** used for assertion. not supposed to be fast. */
     private boolean validateValueArray() {
         T prev = traits.get(valueArray, 0);
+        assert (tuplePosArray[0] == 0);
         for (int i = 1; i < valueCount; ++i) {
             T cur = traits.get(valueArray, i);
             if (prev.compareTo(cur) > 0) {
                 return false;
             }
             prev = cur;
+            assert (tuplePosArray[i] > tuplePosArray[i - 1]);
         }
         return true;
     }
     
+    private final int[] tuplePosArray;
     private final AT valueArray;
     private final int valueCount;
     private final ValueTraits<T, AT> traits;
+    private final AllValueTraits.IntegerValueTraits intTraits = new AllValueTraits.IntegerValueTraits();
     
     @Override
     public int searchValues(T value) {
@@ -108,19 +116,22 @@ public class LocalValFile<T extends Comparable<T>, AT> implements ValueIndex<T> 
             // if even the first tuple is larger than the key, this partition doesn't contain the key.
             return -1;
         }
-        return pos;
+        return tuplePosArray[pos];
     }
     
     @Override
     public void writeToFile(VirtualFile file) throws IOException {
         long startMillisec = System.currentTimeMillis();
-        int fileSize = traits.getSerializedByteSize(valueArray);
+        int fileSize = intTraits.getSerializedByteSize(tuplePosArray) + traits.getSerializedByteSize(valueArray);
         if (fileSize > 1 << 26) {
             throw new IOException ("This value index will be too large: " + (fileSize >> 20) + "MB");
         }
         byte[] bytes = new byte[fileSize];
         ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
-        int writtenBytes = traits.serializeArray(valueArray, byteBuffer);
+        int writtenBytes = 0;
+        writtenBytes += intTraits.serializeArray(tuplePosArray, byteBuffer);
+        assert (byteBuffer.position() == writtenBytes);
+        writtenBytes += traits.serializeArray(valueArray, byteBuffer);
         assert (bytes.length == writtenBytes);
         assert (byteBuffer.position() == writtenBytes);
         OutputStream out = file.getOutputStream();
@@ -129,7 +140,7 @@ public class LocalValFile<T extends Comparable<T>, AT> implements ValueIndex<T> 
         out.close();
         long endMillisec = System.currentTimeMillis();
         if (LOG.isInfoEnabled()) {
-            LOG.info("Wrote out a dict file (" + file.getAbsolutePath()
+            LOG.info("Wrote out a value index file (" + file.getAbsolutePath()
                             + "):" + valueCount + " entries, " + file.length()
                             + " bytes, in " + (endMillisec - startMillisec) + "ms");
         }

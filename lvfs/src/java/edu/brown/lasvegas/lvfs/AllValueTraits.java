@@ -90,6 +90,10 @@ public final class AllValueTraits {
             return new byte[size];
         }
         @Override
+        public int length(byte[] array) {
+            return array.length;
+        }
+        @Override
         public byte[] toArray(Collection<Byte> values) {
             final int length = values.size();
             byte[] array = createArray(length);
@@ -132,7 +136,7 @@ public final class AllValueTraits {
             }
             buffer.putInt(array.length);
             buffer.put(array);
-            return array.length;
+            return 4 + array.length;
         }
         @Override
         public int getSerializedByteSize(byte[] array) {
@@ -179,6 +183,10 @@ public final class AllValueTraits {
         @Override
         public short[] createArray(int size) {
             return new short[size];
+        }
+        @Override
+        public int length(short[] array) {
+            return array.length;
         }
         @Override
         public short[] toArray(Collection<Short> values) {
@@ -275,6 +283,10 @@ public final class AllValueTraits {
             return new int[size];
         }
         @Override
+        public int length(int[] array) {
+            return array.length;
+        }
+        @Override
         public int[] toArray(Collection<Integer> values) {
             final int length = values.size();
             int[] array = createArray(length);
@@ -366,6 +378,10 @@ public final class AllValueTraits {
         @Override
         public long[] createArray(int size) {
             return new long[size];
+        }
+        @Override
+        public int length(long[] array) {
+            return array.length;
         }
         @Override
         public long[] toArray(Collection<Long> values) {
@@ -461,6 +477,10 @@ public final class AllValueTraits {
             return new float[size];
         }
         @Override
+        public int length(float[] array) {
+            return array.length;
+        }
+        @Override
         public float[] toArray(Collection<Float> values) {
             final int length = values.size();
             float[] array = createArray(length);
@@ -539,6 +559,10 @@ public final class AllValueTraits {
         @Override
         public double[] createArray(int size) {
             return new double[size];
+        }
+        @Override
+        public int length(double[] array) {
+            return array.length;
         }
         @Override
         public double[] toArray(Collection<Double> values) {
@@ -639,6 +663,10 @@ public final class AllValueTraits {
         @Override
         public String[] createArray(int size) {
             return new String[size];
+        }
+        @Override
+        public int length(String[] array) {
+            return array.length;
         }
         @Override
         public String[] toArray(Collection<String> values) {
@@ -769,6 +797,10 @@ public final class AllValueTraits {
         @Override
         public byte[][] createArray(int size) {
             return new byte[size][];
+        }
+        @Override
+        public int length(byte[][] array) {
+            return array.length;
         }
         @Override
         public byte[][] toArray(Collection<byte[]> values) {

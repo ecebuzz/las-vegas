@@ -76,6 +76,11 @@ public final class HdfsVirtualFile implements VirtualFile {
         }
         return new HdfsVirtualFile(hdfs, parentPath);
     }
+    @Override
+    public VirtualFile getChildFile(String filename) {
+        String childPath = path.toString() + "/" + filename;
+        return new HdfsVirtualFile(hdfs, childPath);
+    }
 
     @Override
     public boolean mkdirs() throws IOException {

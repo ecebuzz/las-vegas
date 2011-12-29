@@ -42,6 +42,9 @@ public interface ValueTraits<T, AT> {
      */
     AT createArray (int size);
     
+    /** Returns the length of the array. */
+    int length (AT array);
+    
     /**
      * Sets the value to the array at once. Used to efficiently get values
      * from RLE-compressed file. However, even more efficient way to access
