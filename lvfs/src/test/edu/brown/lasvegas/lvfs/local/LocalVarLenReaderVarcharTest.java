@@ -9,8 +9,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import edu.brown.lasvegas.lvfs.AllValueTraits;
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.traits.VarcharValueTraits;
 
 public class LocalVarLenReaderVarcharTest {
     private VirtualFile file;
@@ -40,7 +40,7 @@ public class LocalVarLenReaderVarcharTest {
         out.flush();
         out.close();
 
-        this.reader = new LocalVarLenReader<String>(file, new AllValueTraits.VarcharValueTraits());
+        this.reader = new LocalVarLenReader<String>(file, new VarcharValueTraits());
     }
     @After
     public void tearDown() throws Exception {

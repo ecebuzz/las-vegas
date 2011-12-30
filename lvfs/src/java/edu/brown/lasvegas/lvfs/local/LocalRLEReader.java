@@ -4,12 +4,19 @@ import java.io.IOException;
 
 import org.apache.log4j.Logger;
 
-import edu.brown.lasvegas.lvfs.AllValueTraits;
 import edu.brown.lasvegas.lvfs.PositionIndex.Pos;
 import edu.brown.lasvegas.lvfs.TypedRLEReader;
 import edu.brown.lasvegas.lvfs.ValueRun;
-import edu.brown.lasvegas.lvfs.ValueTraits;
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.traits.BigintValueTraits;
+import edu.brown.lasvegas.traits.DoubleValueTraits;
+import edu.brown.lasvegas.traits.FloatValueTraits;
+import edu.brown.lasvegas.traits.IntegerValueTraits;
+import edu.brown.lasvegas.traits.SmallintValueTraits;
+import edu.brown.lasvegas.traits.TinyintValueTraits;
+import edu.brown.lasvegas.traits.ValueTraits;
+import edu.brown.lasvegas.traits.VarbinValueTraits;
+import edu.brown.lasvegas.traits.VarcharValueTraits;
 import edu.brown.lasvegas.util.ByteArray;
 
 /**
@@ -22,35 +29,35 @@ public final class LocalRLEReader<T extends Comparable<T>, AT> extends LocalType
 
     /** Constructs an instance for 1-byte fixed length integer values. */
     public static LocalRLEReader<Byte, byte[]> getInstanceTinyint(VirtualFile rawFile) throws IOException {
-        return new LocalRLEReader<Byte, byte[]>(rawFile, new AllValueTraits.TinyintValueTraits());
+        return new LocalRLEReader<Byte, byte[]>(rawFile, new TinyintValueTraits());
     }
     /** Constructs an instance for 2-byte fixed length integer values. */
     public static LocalRLEReader<Short, short[]> getInstanceSmallint(VirtualFile rawFile) throws IOException {
-        return new LocalRLEReader<Short, short[]>(rawFile, new AllValueTraits.SmallintValueTraits());
+        return new LocalRLEReader<Short, short[]>(rawFile, new SmallintValueTraits());
     }
     /** Constructs an instance for 4-byte fixed length integer values. */
     public static LocalRLEReader<Integer, int[]> getInstanceInteger(VirtualFile rawFile) throws IOException {
-        return new LocalRLEReader<Integer, int[]>(rawFile, new AllValueTraits.IntegerValueTraits());
+        return new LocalRLEReader<Integer, int[]>(rawFile, new IntegerValueTraits());
     }
     /** Constructs an instance for 8-byte fixed length integer values. */
     public static LocalRLEReader<Long, long[]> getInstanceBigint(VirtualFile rawFile) throws IOException {
-        return new LocalRLEReader<Long, long[]>(rawFile, new AllValueTraits.BigintValueTraits());
+        return new LocalRLEReader<Long, long[]>(rawFile, new BigintValueTraits());
     }
     /** Constructs an instance for 4-byte fixed length float values. */
     public static LocalRLEReader<Float, float[]> getInstanceFloat(VirtualFile rawFile) throws IOException {
-        return new LocalRLEReader<Float, float[]>(rawFile, new AllValueTraits.FloatValueTraits());
+        return new LocalRLEReader<Float, float[]>(rawFile, new FloatValueTraits());
     }
     /** Constructs an instance for 8-byte fixed length float values. */
     public static LocalRLEReader<Double, double[]> getInstanceDouble(VirtualFile rawFile) throws IOException {
-        return new LocalRLEReader<Double, double[]>(rawFile, new AllValueTraits.DoubleValueTraits());
+        return new LocalRLEReader<Double, double[]>(rawFile, new DoubleValueTraits());
     }
     /** Constructs an instance of varchar column. */
     public static LocalRLEReader<String, String[]> getInstanceVarchar(VirtualFile dataFile) throws IOException {
-        return new LocalRLEReader<String, String[]>(dataFile, new AllValueTraits.VarcharValueTraits());
+        return new LocalRLEReader<String, String[]>(dataFile, new VarcharValueTraits());
     }
     /** Constructs an instance of varbinary column. */
     public static LocalRLEReader<ByteArray, ByteArray[]> getInstanceVarbin(VirtualFile dataFile) throws IOException {
-        return new LocalRLEReader<ByteArray, ByteArray[]>(dataFile, new AllValueTraits.VarbinValueTraits());
+        return new LocalRLEReader<ByteArray, ByteArray[]>(dataFile, new VarbinValueTraits());
     }
 
     public LocalRLEReader(VirtualFile dataFile, ValueTraits<T, AT> traits) throws IOException {

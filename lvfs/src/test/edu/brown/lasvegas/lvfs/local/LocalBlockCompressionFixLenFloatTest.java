@@ -1,13 +1,13 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import edu.brown.lasvegas.lvfs.AllValueTraits;
 import edu.brown.lasvegas.lvfs.FixLenValueTraits;
+import edu.brown.lasvegas.traits.FloatValueTraits;
 
 public class LocalBlockCompressionFixLenFloatTest extends LocalBlockCompressionFixLenTestBase<Float, float[]> {
     @Override
     protected Float generateValue(int index) { return (float) ((923.8745 * index) - (Math.pow(index, 1.47d)));  }
     @Override
-    protected FixLenValueTraits<Float, float[]> createTraits() { return new AllValueTraits.FloatValueTraits();}
+    protected FixLenValueTraits<Float, float[]> createTraits() { return new FloatValueTraits();}
     @Override
     protected float[] createArray (int size) { return new float[size];}
     @Override

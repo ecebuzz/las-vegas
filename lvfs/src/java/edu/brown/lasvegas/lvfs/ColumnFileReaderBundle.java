@@ -12,6 +12,11 @@ import edu.brown.lasvegas.lvfs.local.LocalPosFile;
 import edu.brown.lasvegas.lvfs.local.LocalRLEReader;
 import edu.brown.lasvegas.lvfs.local.LocalValFile;
 import edu.brown.lasvegas.lvfs.local.LocalVarLenReader;
+import edu.brown.lasvegas.traits.ValueTraitsFactory;
+import edu.brown.lasvegas.traits.IntegerValueTraits;
+import edu.brown.lasvegas.traits.SmallintValueTraits;
+import edu.brown.lasvegas.traits.TinyintValueTraits;
+import edu.brown.lasvegas.traits.ValueTraits;
 
 /**
  * Readers to read a set of files which logically constitute a column.
@@ -28,6 +33,7 @@ public final class ColumnFileReaderBundle implements Closeable {
     private TypedReader<?, ?> dataReader;
     /** the dictionary, which is loaded lazily. */
     private OrderedDictionary<?, ?> dictionary;
+
     /** the position index, which is loaded lazily. */
     private PositionIndex positionIndex;
     /** the value index, which is loaded lazily. */
@@ -39,19 +45,19 @@ public final class ColumnFileReaderBundle implements Closeable {
      */
     public ColumnFileReaderBundle (ColumnFileBundle fileBundle) {
         this.fileBundle = fileBundle;
-        this.originalDataTraits = AllValueTraits.getInstance(fileBundle.getColumnType());
+        this.originalDataTraits = ValueTraitsFactory.getInstance(fileBundle.getColumnType());
         if (fileBundle.getCompressionType() == CompressionType.DICTIONARY) {
             // dictionary encoding changes the data type in main data file to be 1/2/4 integers
             switch (fileBundle.getDictionaryBytesPerEntry()) {
             case 1: 
-                this.compressedDataTraits = new AllValueTraits.TinyintValueTraits();
+                this.compressedDataTraits = new TinyintValueTraits();
                 break;
             case 2: 
-                this.compressedDataTraits = new AllValueTraits.SmallintValueTraits();
+                this.compressedDataTraits = new SmallintValueTraits();
                 break;
             default: 
                 assert (fileBundle.getDictionaryBytesPerEntry() == 4);
-                this.compressedDataTraits = new AllValueTraits.IntegerValueTraits();
+                this.compressedDataTraits = new IntegerValueTraits();
                 break;
             }
         } else {
@@ -146,5 +152,23 @@ public final class ColumnFileReaderBundle implements Closeable {
         if (dataReader != null) {
             dataReader.close();
         }
+    }
+
+    /**
+     * Gets the traits for data type in the main data file.
+     *
+     * @return the traits for data type in the main data file
+     */
+    public ValueTraits<?, ?> getCompressedDataTraits() {
+        return compressedDataTraits;
+    }
+
+    /**
+     * Gets the traits for original data type.
+     *
+     * @return the traits for original data type
+     */
+    public ValueTraits<?, ?> getOriginalDataTraits() {
+        return originalDataTraits;
     }
 }

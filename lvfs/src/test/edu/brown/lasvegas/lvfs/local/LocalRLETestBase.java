@@ -11,8 +11,8 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 
-import edu.brown.lasvegas.lvfs.ValueTraits;
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.traits.ValueTraits;
 import edu.brown.lasvegas.util.ChecksumUtil;
 
 /**

@@ -10,8 +10,8 @@ import org.xerial.snappy.Snappy;
 
 import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.lvfs.RawValueReader;
-import edu.brown.lasvegas.lvfs.ValueTraits;
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.traits.ValueTraits;
 
 /**
  * File reader for a block-compressed file such as Snappy and LZO.

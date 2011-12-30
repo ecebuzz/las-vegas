@@ -7,9 +7,15 @@ import java.util.List;
 import org.junit.Test;
 
 import edu.brown.lasvegas.ColumnType;
-import edu.brown.lasvegas.lvfs.AllValueTraits;
 import edu.brown.lasvegas.lvfs.ValueIndex;
-import edu.brown.lasvegas.lvfs.ValueTraits;
+import edu.brown.lasvegas.traits.BigintValueTraits;
+import edu.brown.lasvegas.traits.DoubleValueTraits;
+import edu.brown.lasvegas.traits.FloatValueTraits;
+import edu.brown.lasvegas.traits.IntegerValueTraits;
+import edu.brown.lasvegas.traits.SmallintValueTraits;
+import edu.brown.lasvegas.traits.TinyintValueTraits;
+import edu.brown.lasvegas.traits.ValueTraits;
+import edu.brown.lasvegas.traits.VarcharValueTraits;
 
 /**
  * Testcases for {@link LocalValFile}.
@@ -123,45 +129,45 @@ public class LocalValFileTest {
  
     @Test
     public void testTinyint() throws Exception {
-        runTest (ColumnType.TINYINT, new AllValueTraits.TinyintValueTraits(),
+        runTest (ColumnType.TINYINT, new TinyintValueTraits(),
             new Byte[]{(byte) -100, (byte) -80, (byte) -80, (byte) -40, (byte) -40, (byte) -10, (byte) 0, (byte) 80});
     }
 
     @Test
     public void testSmallint() throws Exception {
-        runTest (ColumnType.SMALLINT, new AllValueTraits.SmallintValueTraits(),
+        runTest (ColumnType.SMALLINT, new SmallintValueTraits(),
             new Short[]{(short) -100, (short) -80, (short) -80, (short) -40, (short) -40, (short) -10, (short) 0, (short) 80});
     }
 
     @Test
     public void testInteger() throws Exception {
-        runTest (ColumnType.INTEGER, new AllValueTraits.IntegerValueTraits(),
+        runTest (ColumnType.INTEGER, new IntegerValueTraits(),
             new Integer[]{-12312312, -12312312, -4320, (int) -100, (int) -80, (int) -80, (int) -40, (int) -40, (int) -10, (int) 0, 0, (int) 80, 304950394});
     }
 
     @Test
     public void testBigint() throws Exception {
-        runTest (ColumnType.BIGINT, new AllValueTraits.BigintValueTraits(),
+        runTest (ColumnType.BIGINT, new BigintValueTraits(),
             new Long[]{-2349283948923849234L, -9829839823L, -9829839823L, (long) -100, (long) -80, (long) -80, (long) -40, (long) -40, (long) -10, (long) 0, (long) 80, 9238409238094234L});
     }
 
 
     @Test
     public void testFloat() throws Exception {
-        runTest (ColumnType.FLOAT, new AllValueTraits.FloatValueTraits(),
+        runTest (ColumnType.FLOAT, new FloatValueTraits(),
             new Float[]{Float.NEGATIVE_INFINITY, -3.1E5f, -3.1E5f, (float) -100, (float) -80, (float) -80, (float) -40, (float) -40, (float) -10, (float) 0, (float) 80, 3.1E5f, 3.1E5f, Float.POSITIVE_INFINITY});
     }
 
     @Test
     public void testDouble() throws Exception {
-        runTest (ColumnType.DOUBLE, new AllValueTraits.DoubleValueTraits(),
+        runTest (ColumnType.DOUBLE, new DoubleValueTraits(),
             new Double[]{-3.1E10, -3.1E10, (double) -100, (double) -80, (double) -80, (double) -40, (double) -40, (double) -10, (double) 0, (double) 80, 3.1E10, 3.1E10, Double.POSITIVE_INFINITY});
     }
 
 
     @Test
     public void testVarchar() throws Exception {
-        runTest (ColumnType.VARCHAR, new AllValueTraits.VarcharValueTraits(),
+        runTest (ColumnType.VARCHAR, new VarcharValueTraits(),
             new String[]{"str0000012", "str0000012", "str0000032", "str0000032", "str0000128", "str0000222", "str0000356", "str0000389"});
     }
 }

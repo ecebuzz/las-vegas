@@ -2,11 +2,11 @@ package edu.brown.lasvegas.lvfs.local;
 
 import java.io.IOException;
 
-import edu.brown.lasvegas.lvfs.AllValueTraits;
 import edu.brown.lasvegas.lvfs.TypedReader;
 import edu.brown.lasvegas.lvfs.TypedWriter;
-import edu.brown.lasvegas.lvfs.ValueTraits;
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.traits.IntegerValueTraits;
+import edu.brown.lasvegas.traits.ValueTraits;
 
 public class LocalDictFileIntegerTest extends LocalDictFileTestBase4<Integer, int[]> {
     @Override
@@ -23,6 +23,6 @@ public class LocalDictFileIntegerTest extends LocalDictFileTestBase4<Integer, in
     }
     @Override
     protected ValueTraits<Integer, int[]> getTraits() {
-        return new AllValueTraits.IntegerValueTraits();
+        return new IntegerValueTraits();
     }
 }

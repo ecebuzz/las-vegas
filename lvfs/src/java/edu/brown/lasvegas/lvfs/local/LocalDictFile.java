@@ -9,11 +9,11 @@ import java.util.HashSet;
 import org.apache.log4j.Logger;
 
 import edu.brown.lasvegas.ColumnType;
-import edu.brown.lasvegas.lvfs.AllValueTraits;
 import edu.brown.lasvegas.lvfs.OrderedDictionary;
 import edu.brown.lasvegas.lvfs.TypedReader;
-import edu.brown.lasvegas.lvfs.ValueTraits;
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.traits.ValueTraitsFactory;
+import edu.brown.lasvegas.traits.ValueTraits;
 
 /**
  * Represents a dictionary file for dictionary compression.
@@ -46,7 +46,7 @@ public final class LocalDictFile<T extends Comparable<T>, AT> implements Ordered
      */
     @SuppressWarnings("unchecked")
     public LocalDictFile(TypedReader<T, AT> dataReader, ColumnType type) throws IOException {
-        this (dataReader, (ValueTraits<T, AT>) AllValueTraits.getInstance(type));
+        this (dataReader, (ValueTraits<T, AT>) ValueTraitsFactory.getInstance(type));
     }
     public LocalDictFile(TypedReader<T, AT> dataReader, ValueTraits<T, AT> traits) throws IOException {
         LOG.info("Creating a dictionary...");
@@ -96,7 +96,7 @@ public final class LocalDictFile<T extends Comparable<T>, AT> implements Ordered
      */
     @SuppressWarnings("unchecked")
     public LocalDictFile(AT dict, ColumnType type) throws IOException {
-        this (dict, (ValueTraits<T, AT>) AllValueTraits.getInstance(type));
+        this (dict, (ValueTraits<T, AT>) ValueTraitsFactory.getInstance(type));
     }
     public LocalDictFile(AT dict, ValueTraits<T, AT> traits) throws IOException {
         this.dict = dict;
@@ -112,7 +112,7 @@ public final class LocalDictFile<T extends Comparable<T>, AT> implements Ordered
      */
     @SuppressWarnings("unchecked")
     public LocalDictFile(VirtualFile dictFile, ColumnType type) throws IOException {
-        this (dictFile, (ValueTraits<T, AT>) AllValueTraits.getInstance(type));
+        this (dictFile, (ValueTraits<T, AT>) ValueTraitsFactory.getInstance(type));
     }
     public LocalDictFile(VirtualFile dictFile, ValueTraits<T, AT> traits) throws IOException {
         this.traits = traits;

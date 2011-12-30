@@ -1,7 +1,7 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import edu.brown.lasvegas.lvfs.AllValueTraits;
-import edu.brown.lasvegas.lvfs.ValueTraits;
+import edu.brown.lasvegas.traits.FloatValueTraits;
+import edu.brown.lasvegas.traits.ValueTraits;
 
 public class LocalDictCompressionWriterFloatTest extends LocalDictCompressionWriterTestBase4<Float, float[]> {
     @Override
@@ -10,6 +10,6 @@ public class LocalDictCompressionWriterFloatTest extends LocalDictCompressionWri
     }
     @Override
     protected ValueTraits<Float, float[]> getTraits() {
-        return new AllValueTraits.FloatValueTraits();
+        return new FloatValueTraits();
     }
 }

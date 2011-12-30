@@ -3,9 +3,14 @@ package edu.brown.lasvegas.lvfs.local;
 import java.io.IOException;
 
 import edu.brown.lasvegas.CompressionType;
-import edu.brown.lasvegas.lvfs.AllValueTraits;
 import edu.brown.lasvegas.lvfs.FixLenValueTraits;
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.traits.BigintValueTraits;
+import edu.brown.lasvegas.traits.DoubleValueTraits;
+import edu.brown.lasvegas.traits.FloatValueTraits;
+import edu.brown.lasvegas.traits.IntegerValueTraits;
+import edu.brown.lasvegas.traits.SmallintValueTraits;
+import edu.brown.lasvegas.traits.TinyintValueTraits;
 
 /**
  * Reader implementation of block-compressed files for fixed-length columns.
@@ -20,27 +25,27 @@ public final class LocalBlockCompressionFixLenReader<T extends Comparable<T>, AT
     
     /** Constructs an instance for 1-byte fixed length integer values. */
     public static LocalBlockCompressionFixLenReader<Byte, byte[]> getInstanceTinyint(VirtualFile file, CompressionType compressionType) throws IOException {
-        return new LocalBlockCompressionFixLenReader<Byte, byte[]>(file, new AllValueTraits.TinyintValueTraits(), compressionType);
+        return new LocalBlockCompressionFixLenReader<Byte, byte[]>(file, new TinyintValueTraits(), compressionType);
     }
     /** Constructs an instance for 2-byte fixed length integer values. */
     public static LocalBlockCompressionFixLenReader<Short, short[]> getInstanceSmallint(VirtualFile file, CompressionType compressionType) throws IOException {
-        return new LocalBlockCompressionFixLenReader<Short, short[]>(file, new AllValueTraits.SmallintValueTraits(), compressionType);
+        return new LocalBlockCompressionFixLenReader<Short, short[]>(file, new SmallintValueTraits(), compressionType);
     }
     /** Constructs an instance for 4-byte fixed length integer values. */
     public static LocalBlockCompressionFixLenReader<Integer, int[]> getInstanceInteger(VirtualFile file, CompressionType compressionType) throws IOException {
-        return new LocalBlockCompressionFixLenReader<Integer, int[]>(file, new AllValueTraits.IntegerValueTraits(), compressionType);
+        return new LocalBlockCompressionFixLenReader<Integer, int[]>(file, new IntegerValueTraits(), compressionType);
     }
     /** Constructs an instance for 8-byte fixed length integer values. */
     public static LocalBlockCompressionFixLenReader<Long, long[]> getInstanceBigint(VirtualFile file, CompressionType compressionType) throws IOException {
-        return new LocalBlockCompressionFixLenReader<Long, long[]>(file, new AllValueTraits.BigintValueTraits(), compressionType);
+        return new LocalBlockCompressionFixLenReader<Long, long[]>(file, new BigintValueTraits(), compressionType);
     }
     /** Constructs an instance for 4-byte fixed length float values. */
     public static LocalBlockCompressionFixLenReader<Float, float[]> getInstanceFloat(VirtualFile file, CompressionType compressionType) throws IOException {
-        return new LocalBlockCompressionFixLenReader<Float, float[]>(file, new AllValueTraits.FloatValueTraits(), compressionType);
+        return new LocalBlockCompressionFixLenReader<Float, float[]>(file, new FloatValueTraits(), compressionType);
     }
     /** Constructs an instance for 8-byte fixed length float values. */
     public static LocalBlockCompressionFixLenReader<Double, double[]> getInstanceDouble(VirtualFile file, CompressionType compressionType) throws IOException {
-        return new LocalBlockCompressionFixLenReader<Double, double[]>(file, new AllValueTraits.DoubleValueTraits(), compressionType);
+        return new LocalBlockCompressionFixLenReader<Double, double[]>(file, new DoubleValueTraits(), compressionType);
     }
 
     public LocalBlockCompressionFixLenReader(VirtualFile file, FixLenValueTraits<T, AT> traits, CompressionType compressionType) throws IOException {

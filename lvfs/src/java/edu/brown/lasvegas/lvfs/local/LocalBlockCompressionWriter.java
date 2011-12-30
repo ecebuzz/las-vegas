@@ -12,8 +12,8 @@ import org.xerial.snappy.Snappy;
 import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.lvfs.RawValueWriter;
 import edu.brown.lasvegas.lvfs.TypedBlockCmpWriter;
-import edu.brown.lasvegas.lvfs.ValueTraits;
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.traits.ValueTraits;
 import edu.brown.lasvegas.util.RawByteArrayOutputStream;
 
 /**

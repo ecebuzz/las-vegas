@@ -11,6 +11,8 @@ import edu.brown.lasvegas.lvfs.local.LocalDictCompressionWriter;
 import edu.brown.lasvegas.lvfs.local.LocalFixLenWriter;
 import edu.brown.lasvegas.lvfs.local.LocalRLEWriter;
 import edu.brown.lasvegas.lvfs.local.LocalVarLenWriter;
+import edu.brown.lasvegas.traits.ValueTraitsFactory;
+import edu.brown.lasvegas.traits.ValueTraits;
 
 /**
  * Writers to write out a set of files which logically constitute a column file.
@@ -50,7 +52,7 @@ public final class ColumnFileWriterBundle implements Closeable {
         this.fileNameSeed = fileNameSeed;
         this.columnType = columnType;
         this.compressionType = compressionType;
-        this.traits = AllValueTraits.getInstance(columnType);
+        this.traits = ValueTraitsFactory.getInstance(columnType);
         this.dataWriter = instantiateWriter();
         if (calculateChecksum) {
             dataWriter.setCRC32Enabled(true);

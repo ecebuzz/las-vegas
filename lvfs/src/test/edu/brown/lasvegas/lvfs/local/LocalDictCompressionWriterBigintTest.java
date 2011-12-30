@@ -1,7 +1,7 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import edu.brown.lasvegas.lvfs.AllValueTraits;
-import edu.brown.lasvegas.lvfs.ValueTraits;
+import edu.brown.lasvegas.traits.BigintValueTraits;
+import edu.brown.lasvegas.traits.ValueTraits;
 
 public class LocalDictCompressionWriterBigintTest extends LocalDictCompressionWriterTestBase4<Long, long[]> {
     @Override
@@ -10,6 +10,6 @@ public class LocalDictCompressionWriterBigintTest extends LocalDictCompressionWr
     }
     @Override
     protected ValueTraits<Long, long[]> getTraits() {
-        return new AllValueTraits.BigintValueTraits();
+        return new BigintValueTraits();
     }
 }

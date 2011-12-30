@@ -5,8 +5,8 @@ import java.io.IOException;
 import edu.brown.lasvegas.lvfs.PositionIndex;
 import edu.brown.lasvegas.lvfs.RawValueReader;
 import edu.brown.lasvegas.lvfs.TypedReader;
-import edu.brown.lasvegas.lvfs.ValueTraits;
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.traits.ValueTraits;
 
 /**
  * Base implementation of TypedReader. Doesn't do much. 

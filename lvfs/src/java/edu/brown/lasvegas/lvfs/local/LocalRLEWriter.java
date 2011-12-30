@@ -5,11 +5,18 @@ import java.util.ArrayList;
 
 import org.apache.log4j.Logger;
 
-import edu.brown.lasvegas.lvfs.AllValueTraits;
 import edu.brown.lasvegas.lvfs.TypedRLEWriter;
 import edu.brown.lasvegas.lvfs.ValueRun;
-import edu.brown.lasvegas.lvfs.ValueTraits;
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.traits.BigintValueTraits;
+import edu.brown.lasvegas.traits.DoubleValueTraits;
+import edu.brown.lasvegas.traits.FloatValueTraits;
+import edu.brown.lasvegas.traits.IntegerValueTraits;
+import edu.brown.lasvegas.traits.SmallintValueTraits;
+import edu.brown.lasvegas.traits.TinyintValueTraits;
+import edu.brown.lasvegas.traits.ValueTraits;
+import edu.brown.lasvegas.traits.VarbinValueTraits;
+import edu.brown.lasvegas.traits.VarcharValueTraits;
 import edu.brown.lasvegas.util.ByteArray;
 
 /**
@@ -23,36 +30,36 @@ import edu.brown.lasvegas.util.ByteArray;
 public final class LocalRLEWriter<T extends Comparable<T>, AT> extends LocalTypedWriterBase<T, AT> implements TypedRLEWriter<T, AT> {
     /** Constructs an instance for 1-byte fixed length integer values. */
     public static LocalRLEWriter<Byte, byte[]> getInstanceTinyint(VirtualFile rawFile) throws IOException {
-        return new LocalRLEWriter<Byte, byte[]>(rawFile, new AllValueTraits.TinyintValueTraits());
+        return new LocalRLEWriter<Byte, byte[]>(rawFile, new TinyintValueTraits());
     }
     /** Constructs an instance for 2-byte fixed length integer values. */
     public static LocalRLEWriter<Short, short[]> getInstanceSmallint(VirtualFile rawFile) throws IOException {
-        return new LocalRLEWriter<Short, short[]>(rawFile, new AllValueTraits.SmallintValueTraits());
+        return new LocalRLEWriter<Short, short[]>(rawFile, new SmallintValueTraits());
     }
     /** Constructs an instance for 4-byte fixed length integer values. */
     public static LocalRLEWriter<Integer, int[]> getInstanceInteger(VirtualFile rawFile) throws IOException {
-        return new LocalRLEWriter<Integer, int[]>(rawFile, new AllValueTraits.IntegerValueTraits());
+        return new LocalRLEWriter<Integer, int[]>(rawFile, new IntegerValueTraits());
     }
     /** Constructs an instance for 8-byte fixed length integer values. */
     public static LocalRLEWriter<Long, long[]> getInstanceBigint(VirtualFile rawFile) throws IOException {
-        return new LocalRLEWriter<Long, long[]>(rawFile, new AllValueTraits.BigintValueTraits());
+        return new LocalRLEWriter<Long, long[]>(rawFile, new BigintValueTraits());
     }
     /** Constructs an instance for 4-byte fixed length float values. */
     public static LocalRLEWriter<Float, float[]> getInstanceFloat(VirtualFile rawFile) throws IOException {
-        return new LocalRLEWriter<Float, float[]>(rawFile, new AllValueTraits.FloatValueTraits());
+        return new LocalRLEWriter<Float, float[]>(rawFile, new FloatValueTraits());
     }
     /** Constructs an instance for 8-byte fixed length float values. */
     public static LocalRLEWriter<Double, double[]> getInstanceDouble(VirtualFile rawFile) throws IOException {
-        return new LocalRLEWriter<Double, double[]>(rawFile, new AllValueTraits.DoubleValueTraits());
+        return new LocalRLEWriter<Double, double[]>(rawFile, new DoubleValueTraits());
     }
 
     /** Constructs an instance of varchar column. */
     public static LocalRLEWriter<String, String[]> getInstanceVarchar(VirtualFile dataFile) throws IOException {
-        return new LocalRLEWriter<String, String[]>(dataFile, new AllValueTraits.VarcharValueTraits());
+        return new LocalRLEWriter<String, String[]>(dataFile, new VarcharValueTraits());
     }
     /** Constructs an instance of varbinary column. */
     public static LocalRLEWriter<ByteArray, ByteArray[]> getInstanceVarbin(VirtualFile dataFile) throws IOException {
-        return new LocalRLEWriter<ByteArray, ByteArray[]>(dataFile, new AllValueTraits.VarbinValueTraits());
+        return new LocalRLEWriter<ByteArray, ByteArray[]>(dataFile, new VarbinValueTraits());
     }
 
     

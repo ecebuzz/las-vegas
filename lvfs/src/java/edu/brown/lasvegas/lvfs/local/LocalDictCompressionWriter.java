@@ -7,12 +7,15 @@ import java.util.HashMap;
 import org.apache.log4j.Logger;
 
 import edu.brown.lasvegas.ColumnType;
-import edu.brown.lasvegas.lvfs.AllValueTraits;
 import edu.brown.lasvegas.lvfs.FixLenValueTraits;
 import edu.brown.lasvegas.lvfs.OrderedDictionary;
 import edu.brown.lasvegas.lvfs.TypedDictWriter;
-import edu.brown.lasvegas.lvfs.ValueTraits;
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.traits.ValueTraitsFactory;
+import edu.brown.lasvegas.traits.IntegerValueTraits;
+import edu.brown.lasvegas.traits.SmallintValueTraits;
+import edu.brown.lasvegas.traits.TinyintValueTraits;
+import edu.brown.lasvegas.traits.ValueTraits;
 
 /**
  * A File writer for a dictionary-compressed column.
@@ -58,7 +61,7 @@ public class LocalDictCompressionWriter<T extends Comparable<T>, AT> implements 
      */
     @SuppressWarnings("unchecked")
     public LocalDictCompressionWriter(VirtualFile finalDataFile, VirtualFile finalDictFile, VirtualFile tmpFile, ColumnType type) throws IOException {
-        this (finalDataFile, finalDictFile, tmpFile, (ValueTraits<T, AT>) AllValueTraits.getInstance(type));
+        this (finalDataFile, finalDictFile, tmpFile, (ValueTraits<T, AT>) ValueTraitsFactory.getInstance(type));
     }
 
     public LocalDictCompressionWriter(VirtualFile finalDataFile, VirtualFile finalDictFile, VirtualFile tmpFile, ValueTraits<T,AT> traits) throws IOException {
@@ -226,7 +229,7 @@ public class LocalDictCompressionWriter<T extends Comparable<T>, AT> implements 
     }
     private class ByteDataFinalizer extends DataFinalizer<Byte, byte[]> {
         FixLenValueTraits<Byte, byte[]> getTraits() {
-            return new AllValueTraits.TinyintValueTraits();
+            return new TinyintValueTraits();
         }
         LocalFixLenWriter<Byte, byte[]> createFinalDataWriter(VirtualFile file) throws IOException {
             return LocalFixLenWriter.getInstanceTinyint(file);
@@ -237,7 +240,7 @@ public class LocalDictCompressionWriter<T extends Comparable<T>, AT> implements 
     }
     private class ShortDataFinalizer extends DataFinalizer<Short, short[]> {
         FixLenValueTraits<Short, short[]> getTraits() {
-            return new AllValueTraits.SmallintValueTraits();
+            return new SmallintValueTraits();
         }
         LocalFixLenWriter<Short, short[]> createFinalDataWriter(VirtualFile file) throws IOException {
             return LocalFixLenWriter.getInstanceSmallint(file);
@@ -248,7 +251,7 @@ public class LocalDictCompressionWriter<T extends Comparable<T>, AT> implements 
     }
     private class IntDataFinalizer extends DataFinalizer<Integer, int[]> {
         FixLenValueTraits<Integer, int[]> getTraits() {
-            return new AllValueTraits.IntegerValueTraits();
+            return new IntegerValueTraits();
         }
         LocalFixLenWriter<Integer, int[]> createFinalDataWriter(VirtualFile file) throws IOException {
             return LocalFixLenWriter.getInstanceInteger(file);

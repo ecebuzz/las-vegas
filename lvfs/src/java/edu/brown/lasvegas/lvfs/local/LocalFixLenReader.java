@@ -4,9 +4,14 @@ import java.io.IOException;
 
 import org.apache.log4j.Logger;
 
-import edu.brown.lasvegas.lvfs.AllValueTraits;
 import edu.brown.lasvegas.lvfs.FixLenValueTraits;
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.traits.BigintValueTraits;
+import edu.brown.lasvegas.traits.DoubleValueTraits;
+import edu.brown.lasvegas.traits.FloatValueTraits;
+import edu.brown.lasvegas.traits.IntegerValueTraits;
+import edu.brown.lasvegas.traits.SmallintValueTraits;
+import edu.brown.lasvegas.traits.TinyintValueTraits;
 
 /**
  * File reader that assumes fixed-length entries.
@@ -28,27 +33,27 @@ public final class LocalFixLenReader<T extends Comparable<T>, AT> extends LocalT
     
     /** Constructs an instance for 1-byte fixed length integer values. */
     public static LocalFixLenReader<Byte, byte[]> getInstanceTinyint(VirtualFile rawFile) throws IOException {
-        return new LocalFixLenReader<Byte, byte[]>(rawFile, new AllValueTraits.TinyintValueTraits());
+        return new LocalFixLenReader<Byte, byte[]>(rawFile, new TinyintValueTraits());
     }
     /** Constructs an instance for 2-byte fixed length integer values. */
     public static LocalFixLenReader<Short, short[]> getInstanceSmallint(VirtualFile rawFile) throws IOException {
-        return new LocalFixLenReader<Short, short[]>(rawFile, new AllValueTraits.SmallintValueTraits());
+        return new LocalFixLenReader<Short, short[]>(rawFile, new SmallintValueTraits());
     }
     /** Constructs an instance for 4-byte fixed length integer values. */
     public static LocalFixLenReader<Integer, int[]> getInstanceInteger(VirtualFile rawFile) throws IOException {
-        return new LocalFixLenReader<Integer, int[]>(rawFile, new AllValueTraits.IntegerValueTraits());
+        return new LocalFixLenReader<Integer, int[]>(rawFile, new IntegerValueTraits());
     }
     /** Constructs an instance for 8-byte fixed length integer values. */
     public static LocalFixLenReader<Long, long[]> getInstanceBigint(VirtualFile rawFile) throws IOException {
-        return new LocalFixLenReader<Long, long[]>(rawFile, new AllValueTraits.BigintValueTraits());
+        return new LocalFixLenReader<Long, long[]>(rawFile, new BigintValueTraits());
     }
     /** Constructs an instance for 4-byte fixed length float values. */
     public static LocalFixLenReader<Float, float[]> getInstanceFloat(VirtualFile rawFile) throws IOException {
-        return new LocalFixLenReader<Float, float[]>(rawFile, new AllValueTraits.FloatValueTraits());
+        return new LocalFixLenReader<Float, float[]>(rawFile, new FloatValueTraits());
     }
     /** Constructs an instance for 8-byte fixed length float values. */
     public static LocalFixLenReader<Double, double[]> getInstanceDouble(VirtualFile rawFile) throws IOException {
-        return new LocalFixLenReader<Double, double[]>(rawFile, new AllValueTraits.DoubleValueTraits());
+        return new LocalFixLenReader<Double, double[]>(rawFile, new DoubleValueTraits());
     }
 
     public LocalFixLenReader(VirtualFile rawFile, FixLenValueTraits<T, AT> traits, int streamBufferSize) throws IOException {

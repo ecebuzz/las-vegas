@@ -4,10 +4,11 @@ import java.io.IOException;
 
 import org.apache.log4j.Logger;
 
-import edu.brown.lasvegas.lvfs.AllValueTraits;
 import edu.brown.lasvegas.lvfs.PositionIndex.Pos;
 import edu.brown.lasvegas.lvfs.VarLenValueTraits;
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.traits.VarbinValueTraits;
+import edu.brown.lasvegas.traits.VarcharValueTraits;
 import edu.brown.lasvegas.util.ByteArray;
 
 /**
@@ -31,11 +32,11 @@ public final class LocalVarLenReader<T extends Comparable<T>> extends LocalTyped
 
     /** Constructs an instance of varchar column. */
     public static LocalVarLenReader<String> getInstanceVarchar(VirtualFile dataFile) throws IOException {
-        return new LocalVarLenReader<String>(dataFile, new AllValueTraits.VarcharValueTraits());
+        return new LocalVarLenReader<String>(dataFile, new VarcharValueTraits());
     }
     /** Constructs an instance of varbinary column. */
     public static LocalVarLenReader<ByteArray> getInstanceVarbin(VirtualFile dataFile) throws IOException {
-        return new LocalVarLenReader<ByteArray>(dataFile, new AllValueTraits.VarbinValueTraits());
+        return new LocalVarLenReader<ByteArray>(dataFile, new VarbinValueTraits());
     }
 
     public LocalVarLenReader(VirtualFile dataFile, VarLenValueTraits<T> traits) throws IOException {

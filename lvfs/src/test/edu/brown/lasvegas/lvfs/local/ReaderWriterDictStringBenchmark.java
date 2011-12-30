@@ -1,7 +1,7 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import edu.brown.lasvegas.lvfs.AllValueTraits;
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.traits.VarcharValueTraits;
 
 /**
  * Tests the performance of bulk reading and writing for variable-length string with dictionary compression.
@@ -28,7 +28,7 @@ public class ReaderWriterDictStringBenchmark {
             for (int rep = 0; rep < 3; ++rep) {
                 {
                     System.currentTimeMillis();
-                    LocalDictCompressionWriter<String, String[]> writer = new LocalDictCompressionWriter<String, String[]>(dummy, dummyDict, dummyTmp, new AllValueTraits.VarcharValueTraits());
+                    LocalDictCompressionWriter<String, String[]> writer = new LocalDictCompressionWriter<String, String[]>(dummy, dummyDict, dummyTmp, new VarcharValueTraits());
                     for (int i = 0; i < 20; ++i) {
                         writer.writeValues(buf, 0, buf.length);
                     }
@@ -37,7 +37,7 @@ public class ReaderWriterDictStringBenchmark {
                     writer.close();
                 }
                 {
-                    LocalDictFile<String, String[]> dict = new LocalDictFile<String, String[]>(dummyDict, new AllValueTraits.VarcharValueTraits());
+                    LocalDictFile<String, String[]> dict = new LocalDictFile<String, String[]>(dummyDict, new VarcharValueTraits());
                     assert (dict.getBytesPerEntry() == 2);
                     assert (dict.getDictionary().length == 65536);
                 }
@@ -52,7 +52,7 @@ public class ReaderWriterDictStringBenchmark {
         }
         if (args.length == 0 || args[0].equalsIgnoreCase("writeonly") || args[0].equalsIgnoreCase("writeonly_sync")) {
             long startTime = System.currentTimeMillis();
-            LocalDictCompressionWriter<String, String[]> writer = new LocalDictCompressionWriter<String, String[]>(file, dictFile, tmpFile, new AllValueTraits.VarcharValueTraits());
+            LocalDictCompressionWriter<String, String[]> writer = new LocalDictCompressionWriter<String, String[]>(file, dictFile, tmpFile, new VarcharValueTraits());
             for (int i = 0; i < 512; ++i) {
                 writer.writeValues(buf, 0, buf.length);
             }
@@ -65,7 +65,7 @@ public class ReaderWriterDictStringBenchmark {
 
         if (args.length == 0 || args[0].equalsIgnoreCase("readonly")) {
             long startTime = System.currentTimeMillis();
-            LocalDictFile<String, String[]> dict = new LocalDictFile<String, String[]>(dictFile, new AllValueTraits.VarcharValueTraits());
+            LocalDictFile<String, String[]> dict = new LocalDictFile<String, String[]>(dictFile, new VarcharValueTraits());
             assert (dict.getBytesPerEntry() == 2);
             assert (dict.getDictionary().length == 65536);
             LocalFixLenReader<Short, short[]> reader = LocalFixLenReader.getInstanceSmallint(file);

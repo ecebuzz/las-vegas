@@ -1,16 +1,24 @@
-package edu.brown.lasvegas.lvfs;
+package edu.brown.lasvegas.traits;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collection;
 
+import edu.brown.lasvegas.lvfs.RawValueReader;
+import edu.brown.lasvegas.lvfs.RawValueWriter;
+import edu.brown.lasvegas.lvfs.TypedRLEReader;
+import edu.brown.lasvegas.lvfs.TypedRLEWriter;
 import edu.brown.lasvegas.util.KeyValueArrays;
 
 /**
- * Functor to read/write java objects and their arrays.
+ * A bunch of functors to deal with data type (especially primitive types) and their arrays in a generic way.
+ * These functions are especially beneficial when T[]!=AT, e.g., T=Long/AT=long[]. Rather than boxing/unboxing each
+ * value, these functions are much more efficient and consume less memory.
+ * <b>To instantiate, use AllValueTraits</b>
  * @param <T> Value type
  * @param <AT> Array type. This might not be T[] but the primitive array for speed (that's why we need this class).
+ * @see ValueTraitsFactory
  */
 public interface ValueTraits<T extends Comparable<T>, AT> {
     /**
@@ -105,6 +113,21 @@ public interface ValueTraits<T extends Comparable<T>, AT> {
      * @see KeyValueArrays
      */
     void sortKeyValue (AT keys, int[] values, int fromIndex, int toIndex);
+
+    /**
+     * Creates an re-ordered array using the given mapping table.
+     * @param srcPos a mapping table to re-order data. For example, if srcPos[3]=20,
+     * the entry 3 in a new array will take the value from entry 20 in the old array.
+     */
+    AT reorder (AT src, int[] srcPos);
+    
+    /**
+     * Returns the number of distinct values in the array, <b>assuming it's sorted</b>.
+     * Also, the implementation might have some limitation such as NaN and negative/positive zeros, depending on the type. 
+     * @param array the data to probe <b>must be sorted</b>
+     * @return the number of distinct values in the array.
+     */
+    int countDistinct (AT array);
 
     /**
      * Deserializes an array from byte buffer. This method is a batched read and supposed

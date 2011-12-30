@@ -1,13 +1,13 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import edu.brown.lasvegas.lvfs.AllValueTraits;
 import edu.brown.lasvegas.lvfs.FixLenValueTraits;
+import edu.brown.lasvegas.traits.TinyintValueTraits;
 
 public class LocalBlockCompressionFixLenTinyintTest extends LocalBlockCompressionFixLenTestBase<Byte, byte[]> {
     @Override
     protected Byte generateValue(int index) { return (byte) (index - 50);  }
     @Override
-    protected FixLenValueTraits<Byte, byte[]> createTraits() { return new AllValueTraits.TinyintValueTraits();}
+    protected FixLenValueTraits<Byte, byte[]> createTraits() { return new TinyintValueTraits();}
     @Override
     protected byte[] createArray (int size) { return new byte[size];}
     @Override

@@ -6,8 +6,8 @@ import java.io.IOException;
 
 import org.junit.Test;
 
-import edu.brown.lasvegas.lvfs.AllValueTraits;
 import edu.brown.lasvegas.lvfs.VarLenValueTraits;
+import edu.brown.lasvegas.traits.VarbinValueTraits;
 import edu.brown.lasvegas.util.ByteArray;
 
 public class LocalRLEVarbinTest extends LocalRLETestBase<ByteArray, ByteArray[]> {
@@ -19,7 +19,7 @@ public class LocalRLEVarbinTest extends LocalRLETestBase<ByteArray, ByteArray[]>
     @Override
     protected ByteArray generateValue(int index) { return new ByteArray(("str" + (index / 8) + "sdfdf").getBytes());  }
     @Override
-    protected VarLenValueTraits<ByteArray> createTraits() { return new AllValueTraits.VarbinValueTraits();}
+    protected VarLenValueTraits<ByteArray> createTraits() { return new VarbinValueTraits();}
     @Override
     protected ByteArray[] createArray (int size) { return new ByteArray[size];}
     @Override

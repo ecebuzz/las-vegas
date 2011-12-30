@@ -1,13 +1,13 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import edu.brown.lasvegas.lvfs.AllValueTraits;
 import edu.brown.lasvegas.lvfs.FixLenValueTraits;
+import edu.brown.lasvegas.traits.BigintValueTraits;
 
 public class LocalFixLenReaderBigintTest extends LocalFixLenReaderTestBase<Long, long[]> {
     @Override
     protected Long generateValue(int index) { return (0xF32948D569843L * index) % (1L << 40);  }
     @Override
-    protected FixLenValueTraits<Long, long[]> createTraits() { return new AllValueTraits.BigintValueTraits();}
+    protected FixLenValueTraits<Long, long[]> createTraits() { return new BigintValueTraits();}
     @Override
     protected long[] createArray (int size) { return new long[size];}
     @Override

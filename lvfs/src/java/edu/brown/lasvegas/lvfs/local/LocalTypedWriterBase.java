@@ -4,8 +4,8 @@ import java.io.IOException;
 
 import edu.brown.lasvegas.lvfs.RawValueWriter;
 import edu.brown.lasvegas.lvfs.TypedWriter;
-import edu.brown.lasvegas.lvfs.ValueTraits;
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.traits.ValueTraits;
 
 /**
  * Base implementation of TypedWriter. Doesn't do much. 

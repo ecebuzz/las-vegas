@@ -1,7 +1,7 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import edu.brown.lasvegas.lvfs.AllValueTraits;
-import edu.brown.lasvegas.lvfs.ValueTraits;
+import edu.brown.lasvegas.traits.TinyintValueTraits;
+import edu.brown.lasvegas.traits.ValueTraits;
 
 public class LocalDictCompressionWriterTinyintTest extends LocalDictCompressionWriterTestBase1<Byte, byte[]> {
     @Override
@@ -10,6 +10,6 @@ public class LocalDictCompressionWriterTinyintTest extends LocalDictCompressionW
     }
     @Override
     protected ValueTraits<Byte, byte[]> getTraits() {
-        return new AllValueTraits.TinyintValueTraits();
+        return new TinyintValueTraits();
     }
 }

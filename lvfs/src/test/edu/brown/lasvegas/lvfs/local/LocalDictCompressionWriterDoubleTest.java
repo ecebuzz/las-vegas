@@ -1,7 +1,7 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import edu.brown.lasvegas.lvfs.AllValueTraits;
-import edu.brown.lasvegas.lvfs.ValueTraits;
+import edu.brown.lasvegas.traits.DoubleValueTraits;
+import edu.brown.lasvegas.traits.ValueTraits;
 
 public class LocalDictCompressionWriterDoubleTest extends LocalDictCompressionWriterTestBase4<Double, double[]> {
     @Override
@@ -10,6 +10,6 @@ public class LocalDictCompressionWriterDoubleTest extends LocalDictCompressionWr
     }
     @Override
     protected ValueTraits<Double, double[]> getTraits() {
-        return new AllValueTraits.DoubleValueTraits();
+        return new DoubleValueTraits();
     }
 }

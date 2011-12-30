@@ -9,10 +9,11 @@ import java.util.List;
 import org.apache.log4j.Logger;
 
 import edu.brown.lasvegas.ColumnType;
-import edu.brown.lasvegas.lvfs.AllValueTraits;
 import edu.brown.lasvegas.lvfs.ValueIndex;
-import edu.brown.lasvegas.lvfs.ValueTraits;
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.traits.ValueTraitsFactory;
+import edu.brown.lasvegas.traits.IntegerValueTraits;
+import edu.brown.lasvegas.traits.ValueTraits;
 
 /**
  * Implementation of value index file.
@@ -32,7 +33,7 @@ public class LocalValFile<T extends Comparable<T>, AT> implements ValueIndex<T> 
      */
     @SuppressWarnings("unchecked")
     public LocalValFile (VirtualFile file, ColumnType type) throws IOException {
-        this (file, (ValueTraits<T, AT>) AllValueTraits.getInstance(type));
+        this (file, (ValueTraits<T, AT>) ValueTraitsFactory.getInstance(type));
     }
     /** overload to receive traits instead of column type. */
     public LocalValFile (VirtualFile file, ValueTraits<T, AT> traits) throws IOException {
@@ -61,7 +62,11 @@ public class LocalValFile<T extends Comparable<T>, AT> implements ValueIndex<T> 
      */
     @SuppressWarnings("unchecked")
     public LocalValFile (List<T> values, List<Integer> tuplePositions, ColumnType type) {
-        this.traits = (ValueTraits<T, AT>) AllValueTraits.getInstance(type);
+        this (values, tuplePositions, (ValueTraits<T, AT>) ValueTraitsFactory.getInstance(type));
+    }
+    /** overload to receive traits. */
+    public LocalValFile (List<T> values, List<Integer> tuplePositions, ValueTraits<T, AT> traits) {
+        this.traits = traits;
         assert (values.size() == tuplePositions.size());
         this.tuplePosArray = intTraits.toArray(tuplePositions);
         this.valueCount = values.size();
@@ -90,7 +95,7 @@ public class LocalValFile<T extends Comparable<T>, AT> implements ValueIndex<T> 
     private final AT valueArray;
     private final int valueCount;
     private final ValueTraits<T, AT> traits;
-    private final AllValueTraits.IntegerValueTraits intTraits = new AllValueTraits.IntegerValueTraits();
+    private final IntegerValueTraits intTraits = new IntegerValueTraits();
     
     @Override
     public int searchValues(T value) {

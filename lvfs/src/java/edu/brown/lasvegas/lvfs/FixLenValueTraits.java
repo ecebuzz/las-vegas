@@ -2,6 +2,8 @@ package edu.brown.lasvegas.lvfs;
 
 import java.io.IOException;
 
+import edu.brown.lasvegas.traits.ValueTraits;
+
 /**
  * Functor to read/write fixed-length java objects and primitive type arrays.
  * @param <T> Value type
