@@ -68,19 +68,9 @@ public final class LocalRLEReader<T extends Comparable<T>, AT> extends LocalType
         super (dataFile, traits, streamBufferSize);
         this.traits = traits;
         if (posFile != null) {
-            posIndex = new LocalPosFile(posFile);
-        } else {
-            posIndex = null;
+            loadPositionFile(posFile);
         }
     }
-    /**
-     * Loads an optional position file to speed up seeks.
-     */
-    public void loadPositionFile (VirtualFile posFile) throws IOException {
-        posIndex = new LocalPosFile(posFile);
-    }
-    
-    private LocalPosFile posIndex;
     private int curTuple = 0;
     private ValueRun<T> curRun = new ValueRun<T>(0, 0, null);
     

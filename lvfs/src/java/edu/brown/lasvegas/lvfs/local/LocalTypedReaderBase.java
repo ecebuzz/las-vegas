@@ -2,6 +2,7 @@ package edu.brown.lasvegas.lvfs.local;
 
 import java.io.IOException;
 
+import edu.brown.lasvegas.lvfs.PositionIndex;
 import edu.brown.lasvegas.lvfs.RawValueReader;
 import edu.brown.lasvegas.lvfs.TypedReader;
 import edu.brown.lasvegas.lvfs.ValueTraits;
@@ -36,4 +37,15 @@ public abstract class LocalTypedReaderBase<T extends Comparable<T>, AT> implemen
         beforeClose();
         rawReader.close();
     }
+    
+    /** loads the specified position file to speed up seek. */
+    public final void loadPositionFile (VirtualFile posFile) throws IOException {
+        posIndex = new LocalPosFile(posFile);
+    }
+    @Override
+    public void loadPositionIndex (PositionIndex posIndex) throws IOException {
+        this.posIndex = posIndex;
+    }
+    
+    protected PositionIndex posIndex;
 }

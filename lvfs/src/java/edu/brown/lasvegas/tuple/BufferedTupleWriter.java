@@ -130,7 +130,7 @@ public class BufferedTupleWriter implements TupleWriter {
             bundle.setSorted(false);
             bundle.setTupleCount(tuplesWritten);
             bundle.setUncompressedSizeKB(writer.getUncompressedSizeKB());
-            bundle.setValueFile(writer.getValueFile());
+            // bundle.setValueFile(writer.getValueFile()); because BufferedTupleWriter sequentially writes, it never outputs a value index file
         }
         return fileBundles;
     }

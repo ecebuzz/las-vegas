@@ -106,58 +106,68 @@ public final class LoadPartitionedTextFilesTaskRunner extends DataTaskRunner<Loa
         HashMap<Integer, LVDataClient> dataClients = new HashMap<Integer, LVDataClient>(); // key= nodeID. keep this until we disconnect from data nodes
         // convert input files for this partition to VirtualFile
         ArrayList<VirtualFile> virtualFiles = new ArrayList<VirtualFile>();
-        for (TemporaryFilePath path : partitionInput.inputFilePaths) {
-            VirtualFile file;
-            if (path.nodeId == context.nodeId) {
-                // it's local! simply use java.io.File
-                file = new LocalVirtualFile(path.getFilePath());
-            } else {
-                // it's remote. Connect to the node
-                LVDataClient client = dataClients.get(path.nodeId);
-                if (client == null) {
-                    LVRackNode node = context.metaRepo.getRackNode(path.nodeId);
-                    if (node == null) {
-                        throw new IOException ("the node ID (" + path.nodeId + ") contained in the temporary file path " + path.getFilePath() + " isn't found");
+        ColumnFileBundle[] writtenFiles;
+        int writtenTupleCount;
+        try {
+            for (TemporaryFilePath path : partitionInput.inputFilePaths) {
+                VirtualFile file;
+                if (path.nodeId == context.nodeId) {
+                    // it's local! simply use java.io.File
+                    file = new LocalVirtualFile(path.getFilePath());
+                } else {
+                    // it's remote. Connect to the node
+                    LVDataClient client = dataClients.get(path.nodeId);
+                    if (client == null) {
+                        LVRackNode node = context.metaRepo.getRackNode(path.nodeId);
+                        if (node == null) {
+                            throw new IOException ("the node ID (" + path.nodeId + ") contained in the temporary file path " + path.getFilePath() + " isn't found");
+                        }
+                        client = new LVDataClient(context.conf, node.getName()); // TODO this should be node.getAddress()
+                        dataClients.put(path.nodeId, client);
                     }
-                    client = new LVDataClient(context.conf, node.getName()); // TODO this should be node.getAddress()
-                    dataClients.put(path.nodeId, client);
+                    file = new DataNodeFile(client.getChannel(), path.getFilePath());
+                    if (!file.exists()) {
+                        throw new IOException ("the temporary file " + file.getAbsolutePath() + " doesn't exist on node-" + path.nodeId);
+                    }
                 }
-                file = new DataNodeFile(client.getChannel(), path.getFilePath());
-                if (!file.exists()) {
-                    throw new IOException ("the temporary file " + file.getAbsolutePath() + " doesn't exist on node-" + path.nodeId);
-                }
+                virtualFiles.add(file);
             }
-            virtualFiles.add(file);
-        }
-        checkTaskCanceled();
-
-        VirtualFile[] inputFiles = virtualFiles.toArray(new VirtualFile[0]);
-        TextFileTupleReader reader = new TextFileTupleReader(inputFiles, parameters.getTemporaryCompression(),
-            columnTypes, parameters.getDelimiter(), 1 << 20, charset, dateFormat, timeFormat, timestampFormat);
-        CheckCanceledCallback callback = new CheckCanceledCallback();
-        // if we don't have to sort after this. the files will be the final output. So, let's calculate checksum at this point
-        boolean calculateChecksum = scheme.getSortColumnId() == null;
-        BufferedTupleWriter writer = new BufferedTupleWriter(reader, 1 << 13, tmpOutputFolder, temporaryCompressionTypes, unsortedFileTemporaryNames, calculateChecksum, callback);
-        writer.appendAllTuples();
-        reader.close();
-        if (callback.taskCanceled) {
-            // exit ASAP, but release the resources before that
-            writer.close();
+            checkTaskCanceled();
+    
+            VirtualFile[] inputFiles = virtualFiles.toArray(new VirtualFile[0]);
+            TextFileTupleReader reader = new TextFileTupleReader(inputFiles, parameters.getTemporaryCompression(),
+                columnTypes, parameters.getDelimiter(), 1 << 20, charset, dateFormat, timeFormat, timestampFormat);
+            try {
+                CheckCanceledCallback callback = new CheckCanceledCallback();
+                // if we don't have to sort after this. the files will be the final output. So, let's calculate checksum at this point
+                boolean calculateChecksum = scheme.getSortColumnId() == null;
+                BufferedTupleWriter writer = new BufferedTupleWriter(reader, 1 << 13, tmpOutputFolder, temporaryCompressionTypes, unsortedFileTemporaryNames, calculateChecksum, callback);
+                try {
+                    writer.appendAllTuples();
+                    reader.close();
+                    if (callback.taskCanceled) {
+                        // exit ASAP
+                        throw new TaskCanceledException ();
+                    }
+                    writtenFiles = writer.finish();
+                    writtenTupleCount = writer.getTupleCount();
+                } finally {
+                    writer.close();
+                }
+            } finally {
+                reader.close();
+            }
+        } finally {
+            // now we can disconnect from the data node
             for (LVDataClient client : dataClients.values()) {
                 client.release();
             }
-            throw new TaskCanceledException ();
+            dataClients.clear();
         }
-        ColumnFileBundle[] writtenFiles = writer.finish();
-        writer.close();
 
-        // now we can disconnect from the data node
-        for (LVDataClient client : dataClients.values()) {
-            client.release();
-        }
 
         checkTaskCanceled();
-        LOG.info("wrote " + writer.getTupleCount() + " tuples in total");
+        LOG.info("wrote " + writtenTupleCount + " tuples in total");
         context.metaRepo.updateTaskNoReturn(task.getTaskId(), null, new DoubleWritable(0.5d), null, null); // well, largely 50%.
         return writtenFiles;
     }

@@ -1,7 +1,6 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import java.io.File;
-
+import edu.brown.lasvegas.lvfs.AllValueTraits;
 import edu.brown.lasvegas.lvfs.VirtualFile;
 
 /**
@@ -15,7 +14,7 @@ public class ReaderWriterDictStringBenchmark {
             throw new Exception ("Couldn't create test directory " + file.getParentFile().getAbsolutePath());
         }
         VirtualFile dictFile = new LocalVirtualFile("test/local/string.dict");
-        File tmpFile = new File("test/local/string.tmp");
+        VirtualFile tmpFile = new LocalVirtualFile("test/local/string.tmp");
         String[] buf = new String[1 << 15]; // 32K * 16 = 500k bytes
         for (int j = 0; j < buf.length; ++j) {
             buf[j] = "string--" + String.format("%06d", j);
@@ -25,11 +24,11 @@ public class ReaderWriterDictStringBenchmark {
             // JVM warm-up
             VirtualFile dummy = new LocalVirtualFile("test/local/dummy");
             VirtualFile dummyDict = new LocalVirtualFile("test/local/dummy.dict");
-            File dummyTmp = new File("test/local/dummy.tmp");
+            VirtualFile dummyTmp = new LocalVirtualFile("test/local/dummy.tmp");
             for (int rep = 0; rep < 3; ++rep) {
                 {
                     System.currentTimeMillis();
-                    LocalDictCompressionStringWriter writer = new LocalDictCompressionStringWriter(dummy, dummyDict, dummyTmp);
+                    LocalDictCompressionWriter<String, String[]> writer = new LocalDictCompressionWriter<String, String[]>(dummy, dummyDict, dummyTmp, new AllValueTraits.VarcharValueTraits());
                     for (int i = 0; i < 20; ++i) {
                         writer.writeValues(buf, 0, buf.length);
                     }
@@ -38,7 +37,7 @@ public class ReaderWriterDictStringBenchmark {
                     writer.close();
                 }
                 {
-                    LocalStringDictFile dict = new LocalStringDictFile(dummyDict);
+                    LocalDictFile<String, String[]> dict = new LocalDictFile<String, String[]>(dummyDict, new AllValueTraits.VarcharValueTraits());
                     assert (dict.getBytesPerEntry() == 2);
                     assert (dict.getDictionary().length == 65536);
                 }
@@ -53,7 +52,7 @@ public class ReaderWriterDictStringBenchmark {
         }
         if (args.length == 0 || args[0].equalsIgnoreCase("writeonly") || args[0].equalsIgnoreCase("writeonly_sync")) {
             long startTime = System.currentTimeMillis();
-            LocalDictCompressionStringWriter writer = new LocalDictCompressionStringWriter(file, dictFile, tmpFile);
+            LocalDictCompressionWriter<String, String[]> writer = new LocalDictCompressionWriter<String, String[]>(file, dictFile, tmpFile, new AllValueTraits.VarcharValueTraits());
             for (int i = 0; i < 512; ++i) {
                 writer.writeValues(buf, 0, buf.length);
             }
@@ -66,7 +65,7 @@ public class ReaderWriterDictStringBenchmark {
 
         if (args.length == 0 || args[0].equalsIgnoreCase("readonly")) {
             long startTime = System.currentTimeMillis();
-            LocalStringDictFile dict = new LocalStringDictFile(dictFile);
+            LocalDictFile<String, String[]> dict = new LocalDictFile<String, String[]>(dictFile, new AllValueTraits.VarcharValueTraits());
             assert (dict.getBytesPerEntry() == 2);
             assert (dict.getDictionary().length == 65536);
             LocalFixLenReader<Short, short[]> reader = LocalFixLenReader.getInstanceSmallint(file);

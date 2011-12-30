@@ -54,18 +54,9 @@ public final class LocalVarLenReader<T extends Comparable<T>> extends LocalTyped
         assert (dataFile != null);
         this.traits = traits;
         if (posFile != null) {
-            posIndex = new LocalPosFile(posFile);
-        } else {
-            posIndex = null;
+            loadPositionFile(posFile);
         }
     }
-    /**
-     * Loads an optional position file to speed up seeks.
-     */
-    public void loadPositionFile (VirtualFile posFile) throws IOException {
-        posIndex = new LocalPosFile(posFile);
-    }
-    private LocalPosFile posIndex;
     private int curTuple = 0;
 
     @Override

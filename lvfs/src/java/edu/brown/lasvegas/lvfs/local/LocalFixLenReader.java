@@ -16,7 +16,7 @@ import edu.brown.lasvegas.lvfs.VirtualFile;
  * @param <T> Value type (e.g., Integer)
  * @param <AT> Array type (e.g., int[]). used for fast batch accesses. 
  */
-public final class LocalFixLenReader<T extends Comparable<T>, AT> extends LocalTypedReaderBase<T, AT>{
+public final class LocalFixLenReader<T extends Comparable<T>, AT> extends LocalTypedReaderBase<T, AT> {
     private static Logger LOG = Logger.getLogger(LocalFixLenReader.class);
 
     /**

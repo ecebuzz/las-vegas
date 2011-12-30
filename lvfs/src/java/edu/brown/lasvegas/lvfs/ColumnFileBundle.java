@@ -1,12 +1,64 @@
 package edu.brown.lasvegas.lvfs;
 
+import java.io.IOException;
+
 import edu.brown.lasvegas.ColumnType;
 import edu.brown.lasvegas.CompressionType;
+import edu.brown.lasvegas.LVColumnFile;
+import edu.brown.lasvegas.client.DataNodeFile;
+import edu.brown.lasvegas.lvfs.local.LocalVirtualFile;
+import edu.brown.lasvegas.protocol.LVDataProtocol;
 
 /**
  * Represents a set of files which logically constitute a column file.
  */
 public final class ColumnFileBundle {
+    /** empty constructor. */
+    public ColumnFileBundle () {
+    }
+    /**
+     * constructs from {@link LVColumnFile} <b>assuming the file is in this data node</b>.
+     */
+    public ColumnFileBundle (LVColumnFile file) throws IOException {
+        this (file, new LocalVirtualFile(file.getLocalFilePath()));
+    }
+    /**
+     * constructs from {@link LVColumnFile} <b>connecting to the remote data node</b>.
+     */
+    public ColumnFileBundle (LVColumnFile file, LVDataProtocol dataNode) throws IOException {
+        this (file, new DataNodeFile(dataNode, file.getLocalFilePath()));
+    }
+    /** this constructor should expect that the files do NOT exist yet. */
+    private ColumnFileBundle (LVColumnFile file, VirtualFile filePath) throws IOException {
+        VirtualFile parentFolder = filePath.getParentFile();
+        if (!parentFolder.exists()) {
+            parentFolder.mkdirs();
+            assert (parentFolder.exists());
+        }
+        this.columnType = file.getColumnType();
+        this.compressionType = file.getCompressionType();
+        this.dataFileChecksum = file.getChecksum();
+        this.dictionaryBytesPerEntry = file.getDictionaryBytesPerEntry();
+        this.distinctValues = file.getDistinctValues();
+        this.runCount = file.getRunCount();
+        this.sorted = file.isSorted();
+        this.tupleCount = file.getTupleCount();
+        this.uncompressedSizeKB = file.getUncompressedSizeKB();
+        
+        String filename = filePath.getName(); // note that this filename is WITHOUT file extension.
+        this.dataFile = parentFolder.getChildFile(LVFSFileType.DATA_FILE.appendExtension(filename));
+        if (compressionType == CompressionType.DICTIONARY) {
+            this.dictionaryFile = parentFolder.getChildFile(LVFSFileType.DICTIONARY_FILE.appendExtension(filename));
+        }
+        if (compressionType == CompressionType.RLE
+                || (compressionType == CompressionType.NONE && (columnType == ColumnType.VARBINARY || columnType == ColumnType.VARCHAR))) {
+            this.positionFile = parentFolder.getChildFile(LVFSFileType.POSITION_FILE.appendExtension(filename));
+        }
+        if (isSorted()) {
+            this.valueFile = parentFolder.getChildFile(LVFSFileType.VALUE_FILE.appendExtension(filename));
+        }
+    }
+    
     /** main data file. always exists. */
     private VirtualFile dataFile;
     /** CRC32 of the data file. */

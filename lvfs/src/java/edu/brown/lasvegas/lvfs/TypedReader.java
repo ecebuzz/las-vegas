@@ -62,4 +62,12 @@ public interface TypedReader<T extends Comparable<T>, AT> extends Closeable {
      * NOTE: depending on the implementation or parameter, this might not be implemented.
      */
     int getTotalTuples ();
+
+
+    /**
+     * Loads an optional position file to speed up tuple-seeks.
+     * Some file type doesn't need position index at all.
+     * For example, fixed-length column without compression can directly seek to an arbitrary tuple. 
+     */
+    void loadPositionIndex (PositionIndex posIndex) throws IOException;
 }

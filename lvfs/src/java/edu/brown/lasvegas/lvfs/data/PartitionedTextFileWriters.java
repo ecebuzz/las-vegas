@@ -1,5 +1,6 @@
 package edu.brown.lasvegas.lvfs.data;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -26,7 +27,7 @@ import edu.brown.lasvegas.util.RawByteArrayOutputStream;
  * the number (writePartitionsMax), the user should scan the input
  * files and call this class more than once.
  */
-public final class PartitionedTextFileWriters {
+public final class PartitionedTextFileWriters implements Closeable {
     private static Logger LOG = Logger.getLogger(PartitionedTextFileWriters.class);
     
     public PartitionedTextFileWriters (File outputDir,
@@ -100,11 +101,21 @@ public final class PartitionedTextFileWriters {
             if (writer == null) {
                 continue;
             }
-            writer.close();
             partitionCompleted[i] = true;
             paths.add(writer.file.getAbsolutePath());
         }
+        close ();
         return paths.toArray(new String[0]);
+    }
+    @Override
+    public void close() throws IOException {
+        for (int i = 0; i < writers.length; ++i) {
+            if (writers[i] == null) {
+                continue;
+            }
+            writers[i].close();
+            writers[i] = null;
+        }
     }
 
     /** a writer for each partition. */

@@ -32,7 +32,11 @@ public class LocalValFile<T extends Comparable<T>, AT> implements ValueIndex<T> 
      */
     @SuppressWarnings("unchecked")
     public LocalValFile (VirtualFile file, ColumnType type) throws IOException {
-        this.traits = (ValueTraits<T, AT>) AllValueTraits.getInstance(type); 
+        this (file, (ValueTraits<T, AT>) AllValueTraits.getInstance(type));
+    }
+    /** overload to receive traits instead of column type. */
+    public LocalValFile (VirtualFile file, ValueTraits<T, AT> traits) throws IOException {
+        this.traits = traits;
         int fileSize = (int) file.length();
         if (fileSize > 1 << 24) {
             throw new IOException ("the value index file : " + file + " seems too large. " + (fileSize >> 20) + "MB");

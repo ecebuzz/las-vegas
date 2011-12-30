@@ -145,35 +145,42 @@ public final class PartitionRawTextFilesTaskRunner extends DataTaskRunner<Partit
         while (true) {
             PartitionedTextFileWriters writers = new PartitionedTextFileWriters(context.localLvfsTmpDir, context.nodeId, group, fracture, partitions,
                             partitionsCompleted, parameters.getEncoding(), writeBufferSize, writePartitionsMax, compression);
-            // scan all input files
-            for (LocalVirtualFile file : inputFiles) {
-                checkTaskCanceled ();
-                TextFileTableReader reader = new TextFileTableReader(file, null,
-                    parameters.getDelimiter(), readBufferSize, Charset.forName(parameters.getEncoding()),
-                    new SimpleDateFormat(parameters.getDateFormat()),
-                    new SimpleDateFormat(parameters.getTimeFormat()),
-                    new SimpleDateFormat(parameters.getTimestampFormat()));
-                int checkCounter = 0;
-                while (reader.next()) {
-                    @SuppressWarnings("unchecked")
-                    T partitionValue = (T) reader.getObject(partitioningColumnIndex);
-                    int partition = findPartition (partitionValue, startKeys);
-                    assert (partition >= 0 && partition < partitions);
-                    writers.write(partition, reader.getCurrentLineString());
-                    if (++checkCounter % 100000 == 0) {
-                        checkTaskCanceled ();
+            try {
+                // scan all input files
+                for (LocalVirtualFile file : inputFiles) {
+                    checkTaskCanceled ();
+                    TextFileTableReader reader = new TextFileTableReader(file, null,
+                        parameters.getDelimiter(), readBufferSize, Charset.forName(parameters.getEncoding()),
+                        new SimpleDateFormat(parameters.getDateFormat()),
+                        new SimpleDateFormat(parameters.getTimeFormat()),
+                        new SimpleDateFormat(parameters.getTimestampFormat()));
+                    try {
+                        int checkCounter = 0;
+                        while (reader.next()) {
+                            @SuppressWarnings("unchecked")
+                            T partitionValue = (T) reader.getObject(partitioningColumnIndex);
+                            int partition = findPartition (partitionValue, startKeys);
+                            assert (partition >= 0 && partition < partitions);
+                            writers.write(partition, reader.getCurrentLineString());
+                            if (++checkCounter % 100000 == 0) {
+                                checkTaskCanceled ();
+                            }
+                        }
+                    } finally {
+                        reader.close();
                     }
                 }
-                reader.close();
-            }
-            String[] paths = writers.complete();
-            for (String path : paths) {
-                outputFilePaths.add(path);
-            }
-            partitionsCompleted = writers.getPartitionCompleted();
-            if (!writers.isPartitionRemaining()) {
-                // some partition was skipped to save memory. scan the file again.
-                break;
+                String[] paths = writers.complete();
+                for (String path : paths) {
+                    outputFilePaths.add(path);
+                }
+                partitionsCompleted = writers.getPartitionCompleted();
+                if (!writers.isPartitionRemaining()) {
+                    // some partition was skipped to save memory. scan the file again.
+                    break;
+                }
+            } finally {
+                writers.close();
             }
         }
     }

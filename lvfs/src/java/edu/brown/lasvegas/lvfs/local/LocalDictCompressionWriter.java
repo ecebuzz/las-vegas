@@ -8,6 +8,7 @@ import org.apache.log4j.Logger;
 
 import edu.brown.lasvegas.ColumnType;
 import edu.brown.lasvegas.lvfs.AllValueTraits;
+import edu.brown.lasvegas.lvfs.FixLenValueTraits;
 import edu.brown.lasvegas.lvfs.OrderedDictionary;
 import edu.brown.lasvegas.lvfs.TypedDictWriter;
 import edu.brown.lasvegas.lvfs.ValueTraits;
@@ -81,6 +82,10 @@ public class LocalDictCompressionWriter<T extends Comparable<T>, AT> implements 
         if (!wroteFileFooter) {
             // just warn. the user might have simply canceled writing this file 
             LOG.warn("this file format needs to finalize the compressed data, but close() was called before writeFileFooter().");
+        }
+        tentativeIntWriter.close(); // might be double-closing, but it's fine.
+        if (tmpFile.exists()) {
+            tmpFile.delete();
         }
     }
     
@@ -167,68 +172,19 @@ public class LocalDictCompressionWriter<T extends Comparable<T>, AT> implements 
         finalDict.writeToFile(finalDictFile);
 
         // finally, convert the tentative integer file to the final integer file.
-        LocalFixLenWriter<?, ?> finalDataWriter;
         long crc32Value;
         {
             long startMillisec = System.currentTimeMillis();
-            LocalFixLenReader<Integer, int[]> tentativeReader = LocalFixLenReader.getInstanceInteger(tmpFile);
+            DataFinalizer<?, ?> dataFinalizer;
             switch (bytesPerEntry) {
-            case 1:
-            {
-                LocalFixLenWriter<Byte, byte[]> finalByteWriter = LocalFixLenWriter.getInstanceTinyint(finalDataFile);
-                finalDataWriter = finalByteWriter;
-                finalByteWriter.getRawValueWriter().setCRC32Enabled(crc32Enabled);
-                byte[] buf = new byte[tentativeIntBuffer.length];
-                while (true) {
-                    int read = tentativeReader.readValues(tentativeIntBuffer, 0, tentativeIntBuffer.length);
-                    if (read <= 0) break;
-                    for (int i = 0; i < read; ++i) {
-                        buf[i] = (byte) dictConversion[tentativeIntBuffer[i]];
-                    }
-                    finalByteWriter.writeValues(buf, 0, read);
-                }
-                break;
-            }
-            case 2:
-            {
-                LocalFixLenWriter<Short, short[]> finalShortWriter = LocalFixLenWriter.getInstanceSmallint(finalDataFile);
-                finalDataWriter = finalShortWriter;
-                finalShortWriter.getRawValueWriter().setCRC32Enabled(crc32Enabled);
-                short[] buf = new short[tentativeIntBuffer.length];
-                while (true) {
-                    int read = tentativeReader.readValues(tentativeIntBuffer, 0, tentativeIntBuffer.length);
-                    if (read <= 0) break;
-                    for (int i = 0; i < read; ++i) {
-                        buf[i] = (short) dictConversion[tentativeIntBuffer[i]];
-                    }
-                    finalShortWriter.writeValues(buf, 0, read);
-                }
-                break;
-            }
+            case 1: dataFinalizer = new ByteDataFinalizer(); break;
+            case 2: dataFinalizer = new ShortDataFinalizer(); break;
             default:
-            {
-                assert(bytesPerEntry == 4);
-                LocalFixLenWriter<Integer, int[]> finalIntWriter = LocalFixLenWriter.getInstanceInteger(finalDataFile);
-                finalDataWriter = finalIntWriter;
-                finalIntWriter.getRawValueWriter().setCRC32Enabled(crc32Enabled);
-                int[] buf = new int[tentativeIntBuffer.length];
-                while (true) {
-                    int read = tentativeReader.readValues(tentativeIntBuffer, 0, tentativeIntBuffer.length);
-                    if (read <= 0) break;
-                    for (int i = 0; i < read; ++i) {
-                        buf[i] = dictConversion[tentativeIntBuffer[i]];
-                    }
-                    finalIntWriter.writeValues(buf, 0, read);
-                }
+                assert (bytesPerEntry == 4);
+                dataFinalizer = new IntDataFinalizer();
                 break;
             }
-            }
-            tentativeReader.close();
-            finalDataWriter.writeFileFooter();
-            finalDataWriter.flush();
-            finalDataWriter.close();
-            crc32Value = finalDataWriter.getRawValueWriter().getCRC32Value();
-            tmpFile.delete(); // no longer needed
+            crc32Value = dataFinalizer.convertDataFile(dictConversion);
             long endMillisec = System.currentTimeMillis();
             if (LOG.isInfoEnabled()) {
                 LOG.info("finalized the data file in " + (endMillisec - startMillisec) + "ms");
@@ -238,6 +194,70 @@ public class LocalDictCompressionWriter<T extends Comparable<T>, AT> implements 
         wroteFileFooter = true;
         return crc32Value;
     }
+    private abstract class DataFinalizer<T2 extends Comparable<T2>, AT2>  {
+        long convertDataFile(int[] dictConversion) throws IOException {
+            FixLenValueTraits<T2, AT2> finalDataTraits = getTraits();
+            AT2 buf = finalDataTraits.createArray(tentativeIntBuffer.length);
+
+            LocalFixLenReader<Integer, int[]> tentativeReader = LocalFixLenReader.getInstanceInteger(tmpFile);
+            try {
+                LocalFixLenWriter<T2, AT2> finalDataWriter = createFinalDataWriter (finalDataFile);
+                try {
+                    finalDataWriter.getRawValueWriter().setCRC32Enabled(crc32Enabled);
+                    while (true) {
+                        int read = tentativeReader.readValues(tentativeIntBuffer, 0, tentativeIntBuffer.length);
+                        if (read <= 0) break;
+                        for (int i = 0; i < read; ++i) {
+                            setBufValue (buf, i, dictConversion[tentativeIntBuffer[i]]);
+                        }
+                        finalDataWriter.writeValues(buf, 0, read);
+                    }
+                    return finalDataWriter.getRawValueWriter().getCRC32Value();
+                } finally {
+                    finalDataWriter.close();
+                }
+            } finally {
+                tentativeReader.close();
+            }
+        }
+        abstract FixLenValueTraits<T2, AT2> getTraits();
+        abstract LocalFixLenWriter<T2, AT2> createFinalDataWriter(VirtualFile file) throws IOException;
+        abstract void setBufValue(AT2 buf, int index, int value);
+    }
+    private class ByteDataFinalizer extends DataFinalizer<Byte, byte[]> {
+        FixLenValueTraits<Byte, byte[]> getTraits() {
+            return new AllValueTraits.TinyintValueTraits();
+        }
+        LocalFixLenWriter<Byte, byte[]> createFinalDataWriter(VirtualFile file) throws IOException {
+            return LocalFixLenWriter.getInstanceTinyint(file);
+        }
+        void setBufValue(byte[] buf, int index, int value) {
+            buf[index] = (byte) value;
+        }
+    }
+    private class ShortDataFinalizer extends DataFinalizer<Short, short[]> {
+        FixLenValueTraits<Short, short[]> getTraits() {
+            return new AllValueTraits.SmallintValueTraits();
+        }
+        LocalFixLenWriter<Short, short[]> createFinalDataWriter(VirtualFile file) throws IOException {
+            return LocalFixLenWriter.getInstanceSmallint(file);
+        }
+        void setBufValue(short[] buf, int index, int value) {
+            buf[index] = (short) value;
+        }
+    }
+    private class IntDataFinalizer extends DataFinalizer<Integer, int[]> {
+        FixLenValueTraits<Integer, int[]> getTraits() {
+            return new AllValueTraits.IntegerValueTraits();
+        }
+        LocalFixLenWriter<Integer, int[]> createFinalDataWriter(VirtualFile file) throws IOException {
+            return LocalFixLenWriter.getInstanceInteger(file);
+        }
+        void setBufValue(int[] buf, int index, int value) {
+            buf[index] = value;
+        }
+    }
+
     @Override
     public void writeValue(T value) throws IOException {
         Integer compressed = tentativeDict.get(value);

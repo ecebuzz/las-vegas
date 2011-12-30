@@ -1,5 +1,6 @@
 package edu.brown.lasvegas.lvfs;
 
+import java.io.Closeable;
 import java.io.IOException;
 
 import edu.brown.lasvegas.ColumnType;
@@ -14,7 +15,7 @@ import edu.brown.lasvegas.lvfs.local.LocalVarLenWriter;
 /**
  * Writers to write out a set of files which logically constitute a column file.
  */
-public class ColumnFileWriterBundle {
+public final class ColumnFileWriterBundle implements Closeable {
     private TypedWriter<?, ?> dataWriter;
     
     private final VirtualFile outputFolder;
@@ -111,6 +112,13 @@ public class ColumnFileWriterBundle {
             uncompressedSizeKB = (int) (uncompressedSize / 1024L) + (uncompressedSize % 1024 == 0 ? 0 : 1);
         }
             break;
+        }
+    }
+    
+    @Override
+    public void close() throws IOException {
+        if (dataWriter != null) {
+            dataWriter.close();
         }
     }
 
