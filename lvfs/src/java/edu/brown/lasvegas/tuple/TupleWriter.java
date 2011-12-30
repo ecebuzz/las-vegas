@@ -3,7 +3,7 @@ package edu.brown.lasvegas.tuple;
 import java.io.Closeable;
 import java.io.IOException;
 
-import edu.brown.lasvegas.lvfs.ColumnFileWriterBundle;
+import edu.brown.lasvegas.lvfs.ColumnFileBundle;
 
 /**
  * Interface to write a set of column data (Tuple) received from {@link TupleReader}.
@@ -29,8 +29,12 @@ public interface TupleWriter extends Closeable {
      * This method should be called only once at the end before close().
      * Failing to call this method results in corrupted files without footer.
      * @throws IOException
+     * @return properties of the column files written by the writer.
+     * This return value makes sense only when the implementation class writes out columnar files,
+     * which is always true so far.
+
      */
-    void finish () throws IOException;
+    ColumnFileBundle[] finish () throws IOException;
 
     /**
      * Returns the total number of tuples written to this writer.
@@ -39,11 +43,4 @@ public interface TupleWriter extends Closeable {
     
     /** Returns the number of columns. */
     int getColumnCount ();
-
-    /**
-     * Returns the column file writer instances for the specified column.
-     * This method makes sense only when the implementation class writes out columnar files,
-     * which is always true so far.
-     */
-    ColumnFileWriterBundle getColumnWriterBundle (int col);
 }

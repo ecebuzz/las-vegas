@@ -110,6 +110,10 @@ public final class LocalStringDictFile implements OrderedDictionary<String, Stri
         return dict;
     }
     @Override
+    public int getDictionarySize() {
+        return dict.length;
+    }
+    @Override
     public byte getBytesPerEntry () {
         return bytesPerEntry;
     }

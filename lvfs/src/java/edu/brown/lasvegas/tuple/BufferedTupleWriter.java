@@ -6,6 +6,7 @@ import org.apache.log4j.Logger;
 
 import edu.brown.lasvegas.ColumnType;
 import edu.brown.lasvegas.CompressionType;
+import edu.brown.lasvegas.lvfs.ColumnFileBundle;
 import edu.brown.lasvegas.lvfs.ColumnFileWriterBundle;
 import edu.brown.lasvegas.lvfs.TypedWriter;
 import edu.brown.lasvegas.lvfs.VirtualFile;
@@ -30,8 +31,8 @@ public class BufferedTupleWriter implements TupleWriter {
         boolean onBatchWritten (int totalTuplesWritten) throws IOException;
     }
 
-    public BufferedTupleWriter(TupleReader reader, int bufferSize, VirtualFile outputFolder, CompressionType[] compressionTypes, String[] fileNameSeeds) throws IOException {
-        this (reader, bufferSize, outputFolder, compressionTypes, fileNameSeeds, null);
+    public BufferedTupleWriter(TupleReader reader, int bufferSize, VirtualFile outputFolder, CompressionType[] compressionTypes, String[] fileNameSeeds, boolean calculateChecksum) throws IOException {
+        this (reader, bufferSize, outputFolder, compressionTypes, fileNameSeeds, calculateChecksum, null);
     }
     public BufferedTupleWriter(
             TupleReader reader,
@@ -39,8 +40,10 @@ public class BufferedTupleWriter implements TupleWriter {
             VirtualFile outputFolder,
             CompressionType[] compressionTypes,
             String[] fileNameSeeds,
+            boolean calculateChecksum,
             BatchCallback callback) throws IOException {
         this.columnTypes = reader.getColumnTypes();
+        this.compressionTypes = compressionTypes;
         this.columnCount = columnTypes.length;
         this.buffer = new TupleBuffer(columnTypes, bufferSize);
         this.reader = reader;
@@ -64,12 +67,13 @@ public class BufferedTupleWriter implements TupleWriter {
             // although column types must match between reader/writer, compression types are often different.
         }
         for (int i = 0; i < columnCount; ++i) {
-            columnWriters[i] = new ColumnFileWriterBundle(outputFolder, fileNameSeeds[i], columnTypes[i], compressionTypes[i]);
+            columnWriters[i] = new ColumnFileWriterBundle(outputFolder, fileNameSeeds[i], columnTypes[i], compressionTypes[i], calculateChecksum);
         }
     }
     
     private final int columnCount;
     private final ColumnType[] columnTypes;
+    private final CompressionType[] compressionTypes;
     private final TupleBuffer buffer;
     private final TupleReader reader;
     private final BatchCallback callback;
@@ -108,12 +112,27 @@ public class BufferedTupleWriter implements TupleWriter {
     }
 
     @Override
-    public void finish() throws IOException {
+    public ColumnFileBundle[] finish() throws IOException {
+        ColumnFileBundle[] fileBundles = new ColumnFileBundle[columnCount];
         for (int i = 0; i < columnCount; ++i) {
-            TypedWriter<?, ?> dataWriter = columnWriters[i].getDataWriter();
-            dataWriter.writeFileFooter();
-            dataWriter.flush();
+            ColumnFileWriterBundle writer = columnWriters[i];
+            writer.finish();
+            ColumnFileBundle bundle = new ColumnFileBundle();
+            bundle.setColumnType(columnTypes[i]);
+            bundle.setCompressionType(compressionTypes[i]);
+            bundle.setDataFile(writer.getDataFile());
+            bundle.setDataFileChecksum(writer.getDataFileChecksum());
+            bundle.setDictionaryBytesPerEntry(writer.getDictionaryBytesPerEntry());
+            bundle.setDictionaryFile(writer.getDictionaryFile());
+            bundle.setDistinctValues(writer.getDistinctValues());
+            bundle.setPositionFile(writer.getPositionFile());
+            bundle.setRunCount(writer.getRunCount());
+            bundle.setSorted(false);
+            bundle.setTupleCount(tuplesWritten);
+            bundle.setUncompressedSizeKB(writer.getUncompressedSizeKB());
+            bundle.setValueFile(writer.getValueFile());
         }
+        return fileBundles;
     }
     
     @Override
@@ -129,10 +148,5 @@ public class BufferedTupleWriter implements TupleWriter {
     @Override
     public int getColumnCount() {
         return columnCount;
-    }
-    
-    @Override
-    public ColumnFileWriterBundle getColumnWriterBundle(int col) {
-        return columnWriters[col];
     }
 }

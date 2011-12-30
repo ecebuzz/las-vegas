@@ -75,6 +75,9 @@ public class LVColumnFile implements LVObject {
      */
     private int fileSize;
     
+    /** number of tuples in this file. kind of de-normalization too. (but handy to have it here!) */
+    private int tupleCount;
+
     /** CRC32 of the file. */
     private long checksum;
 
@@ -97,8 +100,11 @@ public class LVColumnFile implements LVObject {
     /** The number of distinct values in this file, Set only when the column file is dictionary-compressed or sorted (otherwise 0). */
     private int distinctValues;
     
-    /** The average run length in this file, Set only when the column file is RLE-compressed (otherwise 0).*/
-    private int averageRunLength;
+    /** The total count of value runs in this file, Set only when the column file is RLE-compressed (otherwise 0).*/
+    private int runCount;
+    
+    /** file size without gzip/snappy compression (in KB).  Set only when the column file is GZIP/SNAPPY-compressed (otherwise 0). */
+    private int uncompressedSizeKB;
 
     /**
      * @see java.lang.Object#toString()
@@ -108,7 +114,7 @@ public class LVColumnFile implements LVObject {
             + " localFilePath=" + localFilePath + ", FileSize=" + fileSize + ", checksum=" + checksum
             + ", columnType=" + columnType + ", compressionType=" + compressionType + ", sorted=" + sorted
             + ", dictionaryBytesPerEntry=" + dictionaryBytesPerEntry + ", distinctValues=" + distinctValues
-            + ", averageRunLength=" + averageRunLength;
+            + ", runCount=" + runCount + ", uncompressedSizeKB=" + uncompressedSizeKB + ",tupleCount=" + tupleCount;
     }
 
     /**
@@ -122,10 +128,12 @@ public class LVColumnFile implements LVObject {
         out.writeBoolean(sorted);
         out.writeByte(dictionaryBytesPerEntry);
         out.writeInt(distinctValues);
-        out.writeInt(averageRunLength);
+        out.writeInt(runCount);
+        out.writeInt(uncompressedSizeKB);
         out.writeInt(columnFileId);
         out.writeInt(columnId);
         out.writeInt(fileSize);
+        out.writeInt(tupleCount);
         out.writeBoolean(localFilePath == null);
         if (localFilePath != null) {
             out.writeUTF(localFilePath);
@@ -144,10 +152,12 @@ public class LVColumnFile implements LVObject {
         sorted = in.readBoolean();
         dictionaryBytesPerEntry = in.readByte();
         distinctValues = in.readInt();
-        averageRunLength = in.readInt();
+        runCount = in.readInt();
+        uncompressedSizeKB = in.readInt();
         columnFileId = in.readInt();
         columnId = in.readInt();
         fileSize = in.readInt();
+        tupleCount = in.readInt();
         if (in.readBoolean()) {
             localFilePath = null;
         } else {
@@ -316,21 +326,21 @@ public class LVColumnFile implements LVObject {
     }
 
     /**
-     * Gets the average run length in this file, Set only when the column file is RLE-compressed (otherwise 0).
+     * Gets the total count of value runs in this file, Set only when the column file is RLE-compressed (otherwise 0).
      *
-     * @return the average run length in this file, Set only when the column file is RLE-compressed (otherwise 0)
+     * @return the total count of value runs in this file, Set only when the column file is RLE-compressed (otherwise 0)
      */
-    public int getAverageRunLength() {
-        return averageRunLength;
+    public int getRunCount() {
+        return runCount;
     }
 
     /**
-     * Sets the average run length in this file, Set only when the column file is RLE-compressed (otherwise 0).
+     * Sets the total count of value runs in this file, Set only when the column file is RLE-compressed (otherwise 0).
      *
-     * @param averageRunLength the new average run length in this file, Set only when the column file is RLE-compressed (otherwise 0)
+     * @param runCount the new total count of value runs in this file, Set only when the column file is RLE-compressed (otherwise 0)
      */
-    public void setAverageRunLength(int averageRunLength) {
-        this.averageRunLength = averageRunLength;
+    public void setRunCount(int runCount) {
+        this.runCount = runCount;
     }
 
     /**
@@ -387,5 +397,39 @@ public class LVColumnFile implements LVObject {
         this.sorted = sorted;
     }
 
-    
+    /**
+     * Gets the number of tuples in this file.
+     *
+     * @return the number of tuples in this file
+     */
+    public int getTupleCount() {
+        return tupleCount;
+    }
+
+    /**
+     * Sets the number of tuples in this file.
+     *
+     * @param tupleCount the new number of tuples in this file
+     */
+    public void setTupleCount(int tupleCount) {
+        this.tupleCount = tupleCount;
+    }
+
+    /**
+     * Gets the file size without gzip/snappy compression (in KB).
+     *
+     * @return the file size without gzip/snappy compression (in KB)
+     */
+    public int getUncompressedSizeKB() {
+        return uncompressedSizeKB;
+    }
+
+    /**
+     * Sets the file size without gzip/snappy compression (in KB).
+     *
+     * @param uncompressedSizeKB the new file size without gzip/snappy compression (in KB)
+     */
+    public void setUncompressedSizeKB(int uncompressedSizeKB) {
+        this.uncompressedSizeKB = uncompressedSizeKB;
+    }
 }

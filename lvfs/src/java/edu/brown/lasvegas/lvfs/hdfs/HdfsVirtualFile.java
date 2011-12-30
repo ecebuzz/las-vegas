@@ -15,7 +15,7 @@ import edu.brown.lasvegas.lvfs.VirtualFileOutputStream;
  */
 public final class HdfsVirtualFile implements VirtualFile {
     private final FileSystem hdfs;
-    private final Path path;
+    private Path path;
     public HdfsVirtualFile (FileSystem hdfs, Path path) {
         this.hdfs = hdfs;
         this.path = path;
@@ -86,6 +86,15 @@ public final class HdfsVirtualFile implements VirtualFile {
     public boolean mkdirs() throws IOException {
         return hdfs.mkdirs(path);
     }
+    @Override
+    public boolean renameTo(VirtualFile newPath) throws IOException {
+        Path dest = ((HdfsVirtualFile) newPath).path;
+        boolean success = hdfs.rename(path, dest);
+        if (success) {
+            path = dest;
+        }
+        return success;
+    }
 
     @Override
     public String getAbsolutePath() {
@@ -94,5 +103,11 @@ public final class HdfsVirtualFile implements VirtualFile {
     @Override
     public String getName() {
         return path.getName();
+    }
+
+    
+    @Override
+    public String toString() {
+        return "HDFSFile:" + getAbsolutePath();
     }
 }

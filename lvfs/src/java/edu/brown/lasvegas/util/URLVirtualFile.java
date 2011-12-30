@@ -69,4 +69,8 @@ public final class URLVirtualFile implements VirtualFile {
     public boolean mkdirs() {
         throw new UnsupportedOperationException();
     }
+    @Override
+    public boolean renameTo(VirtualFile newPath) throws IOException {
+        throw new UnsupportedOperationException();
+    }
 }

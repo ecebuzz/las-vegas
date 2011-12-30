@@ -869,13 +869,11 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     }
 
     @Override
-    public LVColumnFile createNewColumnFile(LVReplicaPartition subPartition, LVColumn column, String localFilePath, int fileSize, long checksum,
-                    byte dictionaryBytesPerEntry,
-                    int distinctValues,
-                    int averageRunLength
-                    ) throws IOException {
-        assert (column.getColumnId() > 0);
-        assert (subPartition.getPartitionId() > 0);
+    public LVColumnFile createNewColumnFile(int subPartitionId, int columnId,
+                    String localFilePath, int fileSize, int tupleCount,
+                    long checksum, byte dictionaryBytesPerEntry, int distinctValues, int runCount, int uncompressedSizeKB) throws IOException {
+        LVReplicaPartition subPartition = getReplicaPartition(subPartitionId);
+        LVColumn column = getColumn(columnId);
         LVReplica replica = getReplica(subPartition.getReplicaId());
         LVReplicaScheme scheme = getReplicaScheme(replica.getSchemeId());
         LVColumnFile file = new LVColumnFile();
@@ -887,13 +885,32 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         file.setChecksum(checksum);
         file.setDictionaryBytesPerEntry(dictionaryBytesPerEntry);
         file.setDistinctValues(distinctValues);
-        file.setAverageRunLength(averageRunLength);
+        file.setRunCount(runCount);
+        file.setUncompressedSizeKB(uncompressedSizeKB);
         // de-normalization attributes
         file.setColumnType(column.getType());
         file.setCompressionType(scheme.getColumnCompressionScheme(column.getColumnId()));
         file.setSorted(scheme.getSortColumnId() != null && scheme.getSortColumnId().intValue() == column.getColumnId());
+        file.setTupleCount(tupleCount);
         bdbTableAccessors.columnFileAccessor.PKX.putNoReturn(file);
         return file;
+    }
+    @Override
+    public int createNewColumnFileIdOnlyReturn(int subPartitionId, int columnId, String localFilePath, int fileSize, int tupleCount, long checksum,
+                    byte dictionaryBytesPerEntry, int distinctValues, int runCount, int uncompressedSizeKB) throws IOException {
+        return createNewColumnFile(subPartitionId, columnId, localFilePath, fileSize, tupleCount, checksum, dictionaryBytesPerEntry, distinctValues, runCount, uncompressedSizeKB).getColumnFileId();
+    }
+
+    @Override
+    public LVColumnFile updateColumnFilePath(int columnFileId, String newLocalFilePath) throws IOException {
+        LVColumnFile file = getColumnFile(columnFileId);
+        file.setLocalFilePath(newLocalFilePath);
+        bdbTableAccessors.columnFileAccessor.PKX.putNoReturn(file);
+        return file;
+    }
+    @Override
+    public void updateColumnFilePathNoReturn(int columnFileId, String newLocalFilePath) throws IOException {
+        updateColumnFilePath (columnFileId, newLocalFilePath);
     }
 
     @Override

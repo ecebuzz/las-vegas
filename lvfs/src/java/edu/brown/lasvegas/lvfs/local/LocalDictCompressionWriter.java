@@ -265,6 +265,10 @@ public class LocalDictCompressionWriter<T extends Comparable<T>, AT> implements 
         }
     }
     @Override
+    public void writePositionFile(VirtualFile posFile) throws IOException {
+        throw new UnsupportedOperationException("dictionary-compressed column doesn't need position index");
+    }
+    @Override
     public void setCRC32Enabled(boolean enabled) {
         crc32Enabled = enabled; // just keep the setting because the final writer will be constructed later
     }

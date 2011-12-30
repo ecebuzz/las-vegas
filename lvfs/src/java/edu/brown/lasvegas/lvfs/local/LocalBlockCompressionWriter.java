@@ -11,6 +11,7 @@ import org.xerial.snappy.Snappy;
 
 import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.lvfs.RawValueWriter;
+import edu.brown.lasvegas.lvfs.TypedBlockCmpWriter;
 import edu.brown.lasvegas.lvfs.ValueTraits;
 import edu.brown.lasvegas.lvfs.VirtualFile;
 import edu.brown.lasvegas.util.RawByteArrayOutputStream;
@@ -34,7 +35,7 @@ import edu.brown.lasvegas.util.RawByteArrayOutputStream;
  * After decompression, the block is equivalent to an independent column file (FixLen or VarLen).
  * However, each block might have a per-block footer. See the implementation class for more details.</p>
  */
-public abstract class LocalBlockCompressionWriter<T extends Comparable<T>, AT> extends LocalTypedWriterBase<T, AT> {
+public abstract class LocalBlockCompressionWriter<T extends Comparable<T>, AT> extends LocalTypedWriterBase<T, AT> implements TypedBlockCmpWriter<T, AT> {
     private static Logger LOG = Logger.getLogger(LocalBlockCompressionWriter.class);
 
     /** compression type for the file. */
@@ -48,6 +49,7 @@ public abstract class LocalBlockCompressionWriter<T extends Comparable<T>, AT> e
     protected int curTuple = 0;
     private byte[] compressionBuffer;
     private int currentBlockStartTuple = 0;
+    private long totalUncompressedSize = 0L;
 
     /** List of the tuples to start each block. */
     private final ArrayList<Integer> blockStartTuples = new ArrayList<Integer>();
@@ -150,6 +152,7 @@ public abstract class LocalBlockCompressionWriter<T extends Comparable<T>, AT> e
         }
         super.getRawValueWriter().writeBytes(compressionBuffer, 0, sizeAfterCompression);
         blockLengthes.add(sizeAfterCompression);
+        totalUncompressedSize += currentBlockUsed;
         currentBlockUsed = 0;
         currentBlockStartTuple = curTuple;
     }
@@ -187,6 +190,7 @@ public abstract class LocalBlockCompressionWriter<T extends Comparable<T>, AT> e
         footer[footer.length - 2] = blockCount;
         footer[footer.length - 1] = curTuple;
         getRawValueWriter().writeInts(footer, 0, footer.length);
+        totalUncompressedSize += footer.length * 4;
         footerWritten = true;
         return getRawValueWriter().getCRC32Value();
     }
@@ -200,5 +204,14 @@ public abstract class LocalBlockCompressionWriter<T extends Comparable<T>, AT> e
             // just warn too. 
             LOG.warn("this file format has a non-flushed block but close() was called before flush(). the block will be lost: " + this);
         }
+    }
+    @Override
+    public void writePositionFile(VirtualFile posFile) throws IOException {
+        throw new UnsupportedOperationException("block-compressed column doesn't need position index as the file itself contains position index");
+    }
+    
+    @Override
+    public long getTotalUncompressedSize() {
+        return totalUncompressedSize;
     }
 }

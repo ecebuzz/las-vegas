@@ -720,24 +720,47 @@ public interface LVMetadataProtocol extends VersionedProtocol {
 
     /**
      * Creates a new column file for the sub-partition and column.
-     * Column file is purely write-once read-only, so there is no updateColumnFile() method.
-     * @param subPartition the sub-partition the column file belongs to.
-     * @param column Column
+     * @param subPartitionId ID of the sub-partition ({@link LVReplicaPartition}) the column file belongs to.
+     * @param columnId ID of {@link LVColumn}
      * @param localFilePath the file path of the column file in data node
      * @param fileSize the byte size of the file
+     * @param tupleCount number of tuples in this file
      * @param checksum CRC32 checksum of the file
      * @param dictionaryBytesPerEntry The size of one entry after dictionary-compression (1/2/4), Set only when the column file is dictionary-compressed (otherwise 0)
      * @param distinctValues The number of distinct values in this file, Set only when the column file is dictionary-compressed or sorted (otherwise 0).
-     * @param averageRunLengthThe average run length in this file, Set only when the column file is RLE-compressed (otherwise 0)
+     * @param runCount total count of value runs in this file, Set only when the column file is RLE-compressed (otherwise 0)
+     * @param uncompressedSizeKB file size without gzip/snappy compression (in KB).  Set only when the column file is GZIP/SNAPPY-compressed (otherwise 0)
      * @return new column file
      * @throws IOException
      */
-    LVColumnFile createNewColumnFile(LVReplicaPartition subPartition, LVColumn column,
-                    String localFilePath, int fileSize, long checksum,
+    LVColumnFile createNewColumnFile(int subPartitionId, int columnId,
+                    String localFilePath, int fileSize, int tupleCount, long checksum,
                     byte dictionaryBytesPerEntry,
                     int distinctValues,
-                    int averageRunLength
+                    int runCount,
+                    int uncompressedSizeKB
                     ) throws IOException;
+    /** Overload to receive only ID of the created column file. */
+    int createNewColumnFileIdOnlyReturn(int subPartitionId, int columnId,
+                    String localFilePath, int fileSize, int tupleCount, long checksum,
+                    byte dictionaryBytesPerEntry,
+                    int distinctValues,
+                    int runCount,
+                    int uncompressedSizeKB
+                    ) throws IOException;
+    
+    /**
+     * Updates localPath of the given column file. This is the only update method for column file.
+     * All the other properties are write-once, read-only.
+     * @param columnFileId ID of the column file to update
+     * @param newLocalFilePath new localFilePath
+     * @return updated object
+     * @throws IOException
+     */
+    LVColumnFile updateColumnFilePath(int columnFileId, String newLocalFilePath) throws IOException;
+    
+    /** overload to avoid receiving the modified object. */
+    void updateColumnFilePathNoReturn(int columnFileId, String newLocalFilePath) throws IOException;
     
     /**
      * Deletes the column file metadata object from this repository.

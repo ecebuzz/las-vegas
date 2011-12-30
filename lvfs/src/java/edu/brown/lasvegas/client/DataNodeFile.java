@@ -35,7 +35,7 @@ public class DataNodeFile implements VirtualFile {
 
     @Override
     public VirtualFileOutputStream getOutputStream() throws IOException {
-        throw new IOException ("not supported");
+        throw new IOException ("output not supported");
     }
 
     @Override
@@ -80,7 +80,11 @@ public class DataNodeFile implements VirtualFile {
 
     @Override
     public boolean mkdirs() throws IOException {
-        throw new IOException ("not supported");
+        throw new IOException ("mkdirs not supported");
+    }
+    @Override
+    public boolean renameTo(VirtualFile newPath) throws IOException {
+        throw new IOException ("rename not supported");
     }
 
     @Override
@@ -95,5 +99,11 @@ public class DataNodeFile implements VirtualFile {
             return localPath;
         }
         return localPath.substring(lastSl + 1);
+    }
+
+    
+    @Override
+    public String toString() {
+        return "DataNodeFile:" + getAbsolutePath();
     }
 }

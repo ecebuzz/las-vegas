@@ -60,6 +60,11 @@ public interface TypedWriter<T extends Comparable<T>, AT> extends Closeable {
     long writeFileFooter () throws IOException;
 
     /**
+     * Writes out the collected positions to a position file.
+     * Position file is not needed for some file types, such as fixed-length column.
+     */
+    void writePositionFile (VirtualFile posFile) throws IOException;
+    /**
      * this version only flushes the underlying stream, does not call sync.
      */
     void flush () throws IOException;

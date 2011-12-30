@@ -25,25 +25,47 @@ public class ColumnFileWriterBundle {
     private final CompressionType compressionType;
     private final ValueTraits<?, ?> traits;
 
+    private VirtualFile dataFile;
+    private long dataFileChecksum;
+    private VirtualFile dictionaryFile;
+    private VirtualFile positionFile;
+    private VirtualFile valueFile;
+    
+    /** The size of one entry after dictionary-compression (1/2/4), Set only when the column file is dictionary-compressed (otherwise 0).*/
+    private byte dictionaryBytesPerEntry = 0;
+    
+    /** The number of distinct values in this file, Set only when the column file is dictionary-compressed or sorted (otherwise 0). */
+    private int distinctValues = 0;
+    
+    /** The average run length in this file, Set only when the column file is RLE-compressed (otherwise 0).*/
+    private int runCount = 0;
+    
+    /** file size without gzip/snappy compression in KB.  Set only when the column file is GZIP/SNAPPY-compressed (otherwise 0). */
+    private int uncompressedSizeKB;
+
     public ColumnFileWriterBundle (VirtualFile outputFolder, String fileNameSeed,
-                    ColumnType columnType, CompressionType compressionType) throws IOException {
+                    ColumnType columnType, CompressionType compressionType, boolean calculateChecksum) throws IOException {
         this.outputFolder = outputFolder;
         this.fileNameSeed = fileNameSeed;
         this.columnType = columnType;
         this.compressionType = compressionType;
         this.traits = AllValueTraits.getInstance(columnType);
         this.dataWriter = instantiateWriter();
+        if (calculateChecksum) {
+            dataWriter.setCRC32Enabled(true);
+        }
     }
     
     @SuppressWarnings({ "unchecked", "rawtypes" })
     private TypedWriter<?, ?> instantiateWriter () throws IOException {
-        VirtualFile dataFile = outputFolder.getChildFile(LVFSFileType.DATA_FILE.appendExtension(fileNameSeed));
+        dataFile = outputFolder.getChildFile(LVFSFileType.DATA_FILE.appendExtension(fileNameSeed));
         switch (compressionType) {
         case DICTIONARY:
-            return new LocalDictCompressionWriter(dataFile,
-                outputFolder.getChildFile(LVFSFileType.DICTIONARY_FILE.appendExtension(fileNameSeed)),
+            dictionaryFile = outputFolder.getChildFile(LVFSFileType.DICTIONARY_FILE.appendExtension(fileNameSeed));
+            return new LocalDictCompressionWriter(dataFile, dictionaryFile,
                 outputFolder.getChildFile(LVFSFileType.TMP_DATA_FILE.appendExtension(fileNameSeed)), traits);
         case RLE:
+            positionFile = outputFolder.getChildFile(LVFSFileType.POSITION_FILE.appendExtension(fileNameSeed));
             return new LocalRLEWriter(dataFile, traits);
         case GZIP_BEST_COMPRESSION:
         case SNAPPY:
@@ -60,6 +82,35 @@ public class ColumnFileWriterBundle {
             }
         default:
             throw new IllegalArgumentException("unexpected compression type:" + compressionType);
+        }
+    }
+    
+    public void finish() throws IOException {
+        dataFileChecksum = dataWriter.writeFileFooter();
+        dataWriter.flush();
+        if (positionFile != null) {
+            dataWriter.writePositionFile(positionFile);
+        }
+
+        // collect statistics
+        switch (compressionType) {
+        case DICTIONARY:
+        {
+            OrderedDictionary<?, ?> dict = ((TypedDictWriter<?, ?>) dataWriter).getFinalDict();
+            dictionaryBytesPerEntry = dict.getBytesPerEntry();
+            distinctValues = dict.getDictionarySize();
+            break;
+        }
+        case RLE:
+            runCount = ((TypedRLEWriter<?, ?>) dataWriter).getRunCount();
+            break;
+        case GZIP_BEST_COMPRESSION:
+        case SNAPPY:
+        {
+            long uncompressedSize = ((TypedBlockCmpWriter<?, ?>) dataWriter).getTotalUncompressedSize();
+            uncompressedSizeKB = (int) (uncompressedSize / 1024L) + (uncompressedSize % 1024 == 0 ? 0 : 1);
+        }
+            break;
         }
     }
 
@@ -85,5 +136,41 @@ public class ColumnFileWriterBundle {
 
     public ValueTraits<?, ?> getTraits() {
         return traits;
+    }
+
+    public VirtualFile getDataFile() {
+        return dataFile;
+    }
+
+    public long getDataFileChecksum() {
+        return dataFileChecksum;
+    }
+
+    public VirtualFile getDictionaryFile() {
+        return dictionaryFile;
+    }
+
+    public VirtualFile getPositionFile() {
+        return positionFile;
+    }
+
+    public VirtualFile getValueFile() {
+        return valueFile;
+    }
+
+    public byte getDictionaryBytesPerEntry() {
+        return dictionaryBytesPerEntry;
+    }
+
+    public int getDistinctValues() {
+        return distinctValues;
+    }
+
+    public int getRunCount() {
+        return runCount;
+    }
+
+    public int getUncompressedSizeKB() {
+        return uncompressedSizeKB;
     }
 }

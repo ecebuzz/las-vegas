@@ -13,7 +13,7 @@ import edu.brown.lasvegas.lvfs.VirtualFileOutputStream;
  * Implementation of VirtualFile that directly uses java.io.File.
  */
 public final class LocalVirtualFile implements VirtualFile {
-    private final File file;
+    private File file;
     public LocalVirtualFile (File file) {
         this.file = file;
     }
@@ -78,5 +78,19 @@ public final class LocalVirtualFile implements VirtualFile {
     @Override
     public boolean mkdirs() {
         return file.mkdirs();
+    }
+    @Override
+    public boolean renameTo(VirtualFile newPath) throws IOException {
+        File dest = ((LocalVirtualFile) newPath).file;
+        boolean success = file.renameTo(dest);
+        if (success) {
+            file = dest;
+        }
+        return success;
+    }
+    
+    @Override
+    public String toString() {
+        return "LocalFile:" + getAbsolutePath();
     }
 }

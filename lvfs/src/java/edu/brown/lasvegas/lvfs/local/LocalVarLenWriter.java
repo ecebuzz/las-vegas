@@ -65,9 +65,7 @@ public final class LocalVarLenWriter<T extends Comparable<T>> extends LocalTyped
         }
     }
 
-    /**
-     * Writes out the collected positions to a position file.
-     */
+    @Override
     public void writePositionFile (VirtualFile posFile) throws IOException {
         LocalPosFile.createPosFile(posFile, collectedTuples, collectedPositions, curTuple, getRawCurPosition());
     }

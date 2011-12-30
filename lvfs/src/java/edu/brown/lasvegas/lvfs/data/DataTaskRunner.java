@@ -69,13 +69,18 @@ public abstract class DataTaskRunner<ParamType extends TaskParameters> implement
      * @throws TaskCanceledException when the currently running task has been requested to terminate
      */
     protected final void checkTaskCanceled() throws TaskCanceledException {
+        if (isTaskCanceled()) {
+            throw new TaskCanceledException ();
+        }
+    }
+    /** this one checks it gracefully, just returning whether it's canceled or not. */
+    protected final boolean isTaskCanceled() {
         try {
             task = context.metaRepo.getTask(task.getTaskId());
-            if (task.getStatus() == TaskStatus.CANCEL_REQUESTED) {
-                throw new TaskCanceledException ();
-            }
+            return task.getStatus() == TaskStatus.CANCEL_REQUESTED;
         } catch (IOException ex) {
             LOG.error("failed to check task status", ex);
+            return true;
         }
     }
 

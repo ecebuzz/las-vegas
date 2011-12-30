@@ -162,6 +162,10 @@ public final class LocalDictFile<T extends Comparable<T>, AT> implements Ordered
         return dict;
     }
     @Override
+    public int getDictionarySize () {
+        return dictEntryCount;
+    }
+    @Override
     public byte getBytesPerEntry () {
         return bytesPerEntry;
     }

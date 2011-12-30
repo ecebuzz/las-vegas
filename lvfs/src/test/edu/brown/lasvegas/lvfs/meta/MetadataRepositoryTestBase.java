@@ -172,11 +172,16 @@ public abstract class MetadataRepositoryTestBase {
             assertEquals(ReplicaPartitionStatus.OK, DEFAULT_REPLICA_PARTITIONS[i].getStatus());
             DEFAULT_COLUMN_FILES[i] = new LVColumnFile[DEFAULT_COLUMNS.length];
             for (int j = 0; j < DEFAULT_COLUMNS.length; ++j) {
-                DEFAULT_COLUMN_FILES[i][j] = repository.createNewColumnFile(DEFAULT_REPLICA_PARTITIONS[i],
-                                DEFAULT_COLUMNS[j], "hdfs://dummy_url_" + i + "/colfile" + j, 123456 + j, 654321 + j, (byte)0, 0, 0);
+                DEFAULT_COLUMN_FILES[i][j] = repository.createNewColumnFile(DEFAULT_REPLICA_PARTITIONS[i].getPartitionId(),
+                                DEFAULT_COLUMNS[j].getColumnId(), "hdfs://dummy_url_" + i + "/colfile" + j, 123456 + j, 55155 + j, 654321 + j, (byte) j, 2 + j, 4 + j, 8 + j);
                 assertEquals(DEFAULT_COLUMNS[j].getColumnId(), DEFAULT_COLUMN_FILES[i][j].getColumnId());
                 assertEquals(123456L + j, DEFAULT_COLUMN_FILES[i][j].getFileSize());
                 assertEquals(654321 + j, DEFAULT_COLUMN_FILES[i][j].getChecksum());
+                assertEquals(55155 + j, DEFAULT_COLUMN_FILES[i][j].getTupleCount());
+                assertEquals((byte) j, DEFAULT_COLUMN_FILES[i][j].getDictionaryBytesPerEntry());
+                assertEquals(2 + j, DEFAULT_COLUMN_FILES[i][j].getDistinctValues());
+                assertEquals(4 + j, DEFAULT_COLUMN_FILES[i][j].getRunCount());
+                assertEquals(8 + j, DEFAULT_COLUMN_FILES[i][j].getUncompressedSizeKB());
                 assertEquals(DEFAULT_REPLICA_PARTITIONS[i].getPartitionId(), DEFAULT_COLUMN_FILES[i][j].getPartitionId());
                 assertEquals("hdfs://dummy_url_" + i + "/colfile" + j, DEFAULT_COLUMN_FILES[i][j].getLocalFilePath());
             }
@@ -1075,6 +1080,15 @@ public abstract class MetadataRepositoryTestBase {
     }
 
     @Test
+    public void testUpdateColumnFilePath() throws IOException {
+        LVColumnFile file = repository.updateColumnFilePath(DEFAULT_COLUMN_FILES[0][3].getColumnFileId(), "sdfjksdjf");
+        assertEquals ("sdfjksdjf", file.getLocalFilePath());
+        assertEquals ("sdfjksdjf", repository.getColumnFile(DEFAULT_COLUMN_FILES[0][3].getColumnFileId()).getLocalFilePath());
+        repository.updateColumnFilePathNoReturn(DEFAULT_COLUMN_FILES[0][1].getColumnFileId(), "dflgjldkjfglkfjdg");
+        assertEquals ("dflgjldkjfglkfjdg", repository.getColumnFile(DEFAULT_COLUMN_FILES[0][1].getColumnFileId()).getLocalFilePath());
+    }
+
+    @Test
     public void testGetAllColumnFilesByReplicaPartitionId() throws IOException {
         for (int partition = 0; partition < 2; ++partition) {
             LVColumnFile[] files = repository.getAllColumnFilesByReplicaPartitionId(DEFAULT_REPLICA_PARTITIONS[partition].getPartitionId());
@@ -1091,10 +1105,11 @@ public abstract class MetadataRepositoryTestBase {
         
         LVColumnFile[] files = new LVColumnFile[2];
         for (int i = 0; i < 2; ++i) {
-            files[i] = repository.createNewColumnFile(DEFAULT_REPLICA_PARTITIONS[i],
-                            column, "hdfs://dummy_url_" + i + "/newcolfile" + i, 576324, 12176, (byte) 0, 1, 2);
+            files[i] = repository.createNewColumnFile(DEFAULT_REPLICA_PARTITIONS[i].getPartitionId(),
+                            column.getColumnId(), "hdfs://dummy_url_" + i + "/newcolfile" + i, 576324, 3332, 12176, (byte) 0, 1, 2, 3);
             assertEquals(column.getColumnId(), files[i].getColumnId());
             assertEquals(576324, files[i].getFileSize());
+            assertEquals(3332, files[i].getTupleCount());
             assertEquals(12176, files[i].getChecksum());
             assertEquals(DEFAULT_REPLICA_PARTITIONS[i].getPartitionId(), files[i].getPartitionId());
         }
@@ -1116,6 +1131,23 @@ public abstract class MetadataRepositoryTestBase {
                 assertTrue (file.getColumnFileId() != files[1].getColumnFileId());
                 assertTrue (file.getColumnId() != column.getColumnId());
             }
+        }
+    }
+    @Test
+    public void testColumnFileAssortedIDOnlyReturn() throws IOException {
+        LVColumn column = repository.createNewColumn(DEFAULT_TABLE, "newcol", ColumnType.BIGINT);
+        validateNewColumn(column);
+        
+        LVColumnFile[] files = new LVColumnFile[2];
+        for (int i = 0; i < 2; ++i) {
+            int id = repository.createNewColumnFileIdOnlyReturn(DEFAULT_REPLICA_PARTITIONS[i].getPartitionId(),
+                            column.getColumnId(), "hdfs://dummy_url_" + i + "/newcolfile" + i, 576324, 3332, 12176, (byte) 0, 1, 2, 3);
+            files[i] = repository.getColumnFile(id);
+            assertEquals(column.getColumnId(), files[i].getColumnId());
+            assertEquals(576324, files[i].getFileSize());
+            assertEquals(3332, files[i].getTupleCount());
+            assertEquals(12176, files[i].getChecksum());
+            assertEquals(DEFAULT_REPLICA_PARTITIONS[i].getPartitionId(), files[i].getPartitionId());
         }
     }
 

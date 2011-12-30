@@ -26,6 +26,11 @@ public interface OrderedDictionary<T extends Comparable<T>, AT> {
      */
     AT getDictionary ();
 
+    /**
+     * Returns the number of entries in the dictionary.
+     */
+    int getDictionarySize ();
+
     /** Returns the byte size of compressed values. 1/2/4 only */
     public byte getBytesPerEntry ();
 

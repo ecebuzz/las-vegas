@@ -56,4 +56,9 @@ public final class LocalFixLenWriter<T extends Comparable<T>, AT> extends LocalT
     public void writeValue(T value) throws IOException {
         traits.writeValue(getRawValueWriter(), value);
     }
+    
+    @Override
+    public void writePositionFile(VirtualFile posFile) throws IOException {
+        throw new UnsupportedOperationException("fixed-length column doesn't need position index");
+    }
 }

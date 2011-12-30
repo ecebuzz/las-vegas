@@ -55,8 +55,15 @@ public interface VirtualFile {
     
     /**
      * If this file is a folder, creates all folders up to this folder.
+     * @return if the operation succeeded.
      */
     boolean mkdirs() throws IOException;
+    
+    /**
+     * Moves this file to the new path.
+     * @return if the operation succeeded.
+     */
+    boolean renameTo (VirtualFile newPath) throws IOException;
     
     /**
      * Returns the unique path to identify the file.
