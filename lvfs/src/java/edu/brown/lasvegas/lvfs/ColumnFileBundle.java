@@ -69,6 +69,8 @@ public final class ColumnFileBundle {
     private VirtualFile positionFile;
     /** value index file. only when the file is sorted by the column. */
     private VirtualFile valueFile;
+    /** temporary file. only while constructing a new dictionary-encoded file. */
+    private VirtualFile tmpFile;
     
     /** Original (before dictionary compression, if any) value type of the column file. */
     private CompressionType compressionType;
@@ -343,6 +345,24 @@ public final class ColumnFileBundle {
      */
     public void setUncompressedSizeKB(int uncompressedSizeKB) {
         this.uncompressedSizeKB = uncompressedSizeKB;
+    }
+    
+    /**
+     * Gets the temporary file.
+     *
+     * @return the temporary file
+     */
+    public VirtualFile getTmpFile() {
+        return tmpFile;
+    }
+    
+    /**
+     * Sets the temporary file.
+     *
+     * @param tmpFile the new temporary file
+     */
+    public void setTmpFile(VirtualFile tmpFile) {
+        this.tmpFile = tmpFile;
     }
     
 }

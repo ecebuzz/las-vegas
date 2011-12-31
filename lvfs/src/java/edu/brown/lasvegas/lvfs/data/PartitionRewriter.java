@@ -1,14 +1,23 @@
 package edu.brown.lasvegas.lvfs.data;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import edu.brown.lasvegas.ColumnType;
 import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.lvfs.ColumnFileBundle;
 import edu.brown.lasvegas.lvfs.ColumnFileReaderBundle;
 import edu.brown.lasvegas.lvfs.LVFSFileType;
+import edu.brown.lasvegas.lvfs.OrderedDictionary;
+import edu.brown.lasvegas.lvfs.TypedBlockCmpWriter;
+import edu.brown.lasvegas.lvfs.TypedDictWriter;
+import edu.brown.lasvegas.lvfs.TypedRLEWriter;
 import edu.brown.lasvegas.lvfs.TypedReader;
+import edu.brown.lasvegas.lvfs.TypedWriter;
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.lvfs.local.LocalValFile;
+import edu.brown.lasvegas.lvfs.local.LocalWriterFactory;
 import edu.brown.lasvegas.traits.ValueTraits;
 import edu.brown.lasvegas.util.VirtualFileUtil;
 
@@ -95,6 +104,9 @@ public final class PartitionRewriter {
             newFile.setDataFile(outputFolder.getChildFile(LVFSFileType.DATA_FILE.appendExtension(filename)));
             if (newCompressions[i] == CompressionType.DICTIONARY) {
                 newFile.setDictionaryFile(outputFolder.getChildFile(LVFSFileType.DICTIONARY_FILE.appendExtension(filename)));
+                if (oldCompressions[i] != CompressionType.DICTIONARY) {
+                    newFile.setTmpFile(outputFolder.getChildFile(LVFSFileType.TMP_DATA_FILE.appendExtension(filename)));
+                }
             }
             if (newCompressions[i] == CompressionType.RLE
                     || (newCompressions[i] == CompressionType.NONE && (columnTypes[i] == ColumnType.VARBINARY || columnTypes[i] == ColumnType.VARCHAR))) {
@@ -118,10 +130,7 @@ public final class PartitionRewriter {
                     inheritEverything(i);
                 } else {
                     // if not, then it's re-compression without sorting
-                    if (willInheritDictionary(i)) {
-                        inheritDictionary(i);
-                    }
-                    rewriteCompressionOnly (i);
+                    rewriteNonSortingColumn (i, null); // give null for not re-ordering
                 }
             }
         } else {
@@ -129,22 +138,9 @@ public final class PartitionRewriter {
             int[] oldPos = rewriteSortingColumn ();
             for (int i = 0; i < columnCount; ++i) {
                 if (i == newSortColumn) continue; // we already wrote it in rewriteSortingColumn()
-                if (willInheritDictionary(i)) {
-                    inheritDictionary(i);
-                }
                 rewriteNonSortingColumn (i, oldPos);
             }
         }
-    }
-    /** do we have to make additional conversion because it's dictionary to something else or the other way around?. */
-    private boolean willInternalDataTypeChange (int col) {
-        if (oldCompressions[col] == CompressionType.DICTIONARY && oldCompressions[col] != CompressionType.DICTIONARY) {
-            return true;
-        }
-        if (oldCompressions[col] != CompressionType.DICTIONARY && oldCompressions[col] == CompressionType.DICTIONARY) {
-            return true;
-        }
-        return false;
     }
     /** on the other hand, if both are dictionary encoding, we can reuse the dictionary file. */
     private boolean willInheritDictionary (int col) {
@@ -192,79 +188,146 @@ public final class PartitionRewriter {
     @SuppressWarnings({"unchecked", "rawtypes"})
     private int[] rewriteSortingColumn () throws IOException {
         assert (newSortColumn != null);
-
-        if (willInheritDictionary(newSortColumn)) {
-            inheritDictionary(newSortColumn);
-        }
+        // get data traits AFTER compression because it might be dictionary encoded
+        ValueTraits dataTraits = oldFilesReader[newSortColumn].getCompressedDataTraits();
 
         // first, read ALL data of the column to be sorted
-        TypedReader dataReader = oldFilesReader[newSortColumn].getDataReader();
+        Object keys = readOldData (newSortColumn);
+            
+        // then, sort them and create a mapping.
+        int[] oldPos = new int[tupleCount];
+        for (int i = 0; i < tupleCount; ++i) {
+            oldPos[i] = i;
+        }
+        dataTraits.sortKeyValue(keys, oldPos); // coupled-sort on keys and oldPos.
+
+        // similar comments in LocalDictCompressionWriter#writeFileFooter(). what happens there is somewhat analogous to this
+        
+        // for example, suppose the column data in old file was: D,A,C,B,E
+        // before sorting, oldPos[] was: 0,1,2,3,4. After sorting: 1,3,2,0,4
+        // thus, each column file should be re-ordered as follows
+        //       old pos=1 (key=A): new pos=0
+        //       old pos=3 (key=B): new pos=1
+        //       old pos=2 (key=C): new pos=2
+        //       old pos=0 (key=D): new pos=3
+        //       old pos=4 (key=E): new pos=4
+        // we use oldPos[] to do this in subsequent functions
+        
+        // write out this column file
+        convertAndWriteData (keys, newSortColumn);
+        
+        // because this is the sorting column, also write out value index
+        List<Object> collectedValues = new ArrayList<Object>();
+        List<Integer> collectedPositions = new ArrayList<Integer>();
+        for (int i = 0; i < tupleCount; i += 128) { // this 128 should be a runtime parameter
+            collectedValues.add(dataTraits.get(keys, i));
+            collectedPositions.add(i);
+        }
+        LocalValFile valueIndex = new LocalValFile(collectedValues, collectedPositions, dataTraits);
+        valueIndex.writeToFile(newFiles[newSortColumn].getValueFile());
+        
+        // and also get distinct values from it (if it's dictionary encoded, we anyway have the data)
+        if (newCompressions[newSortColumn] != CompressionType.DICTIONARY) {
+            // because it's sorted, we can efficiently get #distinct-values even without dictionary 
+            newFiles[newSortColumn].setDistinctValues(dataTraits.countDistinct(keys));
+        }
+        
+        return oldPos;
+    }
+
+    /** Read ALL data from the old columnar file. */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private Object readOldData (int col) throws IOException {
+        ValueTraits dataTraits = oldFilesReader[col].getCompressedDataTraits();
+        TypedReader dataReader = oldFilesReader[col].getDataReader();
         try {
-            // get data traits AFTER compression because it might be dictionary encoded
-            ValueTraits dataTraits = oldFilesReader[newSortColumn].getCompressedDataTraits();
-            Object keys = dataTraits.createArray(tupleCount);
-            // read them all! the sorting column file should be small. (can't imagine sorting by a big column)
-            int read = dataReader.readValues(keys, 0, tupleCount);
+            Object oldData = dataTraits.createArray(tupleCount);
+            // read them all! each columnar file should be small.
+            int read = dataReader.readValues(oldData, 0, tupleCount);
             assert (read == tupleCount);
-            
-            // then, sort them and create a mapping.
-            int[] oldPos = new int[tupleCount];
-            for (int i = 0; i < tupleCount; ++i) {
-                oldPos[i] = i;
-            }
-            dataTraits.sortKeyValue(keys, oldPos); // coupled-sort on keys and oldPos.
-    
-            // similar comments in LocalDictCompressionWriter#writeFileFooter(). what happens there is somewhat analogous to this
-            
-            // for example, suppose the column data in old file was: D,A,C,B,E
-            // before sorting, oldPos[] was: 0,1,2,3,4. After sorting: 1,3,2,0,4
-            // thus, each column file should be re-ordered as follows
-            //       old pos=1 (key=A): new pos=0
-            //       old pos=3 (key=B): new pos=1
-            //       old pos=2 (key=C): new pos=2
-            //       old pos=0 (key=D): new pos=3
-            //       old pos=4 (key=E): new pos=4
-            // we use oldPos[] to do this in subsequent functions
-            
-            // TODO write out sorting column file
-            if (willInternalDataTypeChange(newSortColumn)) {
-                
-            } else {
-                
-            }
-            
-            // TODO write out value index, and get distinct values if it's not dictionary encoding
-            
-            return oldPos;
+            return oldData;
         } finally {
             dataReader.close();
+        }
+    }
+    
+    /**
+     * Re-write a non-sorting column with a different sorting and/or compression.
+     * @param oldPos the mapping table to re-order. If this is not null, we
+     * re-order the data with this mapping. If null, we don't reorder.
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private void rewriteNonSortingColumn (int col, int[] oldPos) throws IOException {
+        ValueTraits dataTraits = oldFilesReader[col].getCompressedDataTraits();
+        Object oldData = readOldData (col);
+        Object newData;
+        if (oldPos != null) {
+            // reorder the data using oldPos. this is quite efficient assuming all objects fit RAM
+            newData = dataTraits.reorder(oldData, oldPos);
+        } else {
+            // keep the order of the data. just apply a different compression.
+            newData = oldData;
+        }
+        oldData = null; // we no longer need it. help GC 
+        convertAndWriteData (newData, col);
+    }
+    
+    /**
+     * Writes out the given data to a new file. If needed, this function decompresses
+     * dictionary-compressed data.
+     */
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private void convertAndWriteData (Object data, int col) throws IOException {
+        ValueTraits dataTraits = oldFilesReader[col].getCompressedDataTraits();
+        ValueTraits originalTraits = oldFilesReader[col].getOriginalDataTraits();
+
+        // do we have to make additional conversion because it was dictionary-encoded and we are now changing it?
+        if (oldCompressions[col] == CompressionType.DICTIONARY && newCompressions[col] != CompressionType.DICTIONARY) {
+            // then, we need to decompress the data before writing them to new file
+            Object converted = originalTraits.createArray(tupleCount);
+            OrderedDictionary oldDict = oldFilesReader[col].getDictionary();
+            if (data instanceof byte[]) {
+                oldDict.decompressBatch((byte[]) data, 0, converted, 0, tupleCount);
+            } else if (data instanceof short[]) {
+                oldDict.decompressBatch((short[]) data, 0, converted, 0, tupleCount);
+            } else {
+                oldDict.decompressBatch((int[]) data, 0, converted, 0, tupleCount);
+            }
+            
+            // notice we use *original* data traits here.
+            writeToNewFile (converted, col, originalTraits);
+        } else {
+            // if original compression wasn't dictionary, nothing is tricky.
+            writeToNewFile (data, col, dataTraits);
         }
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    private void rewriteNonSortingColumn (int col, int[] oldPos) throws IOException {
-        TypedReader dataReader = oldFilesReader[col].getDataReader();
-        try {
-            ValueTraits dataTraits = oldFilesReader[col].getCompressedDataTraits();
-            Object oldData = dataTraits.createArray(tupleCount);
-            int read = dataReader.readValues(oldData, 0, tupleCount);
-            assert (read == tupleCount);
-            
-            // reorder the data using oldPos. this is quite efficient assuming all objects fit RAM
-            Object newData = dataTraits.reorder(oldData, oldPos);
-            // TODO
-            if (willInternalDataTypeChange(col)) {
-                
-            } else {
-                
-            }
-            // TODO 
-        } finally {
-            dataReader.close();
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private void writeToNewFile (Object data, int col, ValueTraits traits) throws IOException {
+        if (willInheritDictionary(col)) {
+            inheritDictionary(col);
         }
-    }
-    /** keep the order of the data. just apply a different compression. */
-    private void rewriteCompressionOnly (int col) throws IOException {
-        // TODO
+
+        ColumnFileBundle newFile = newFiles[col];
+        TypedWriter dataWriter = LocalWriterFactory.getInstance(newFile, newCompressions[col], traits);
+        try {
+            dataWriter.writeValues(data, 0, tupleCount);
+            long crc32Value = dataWriter.writeFileFooter();
+            newFile.setDataFileChecksum(crc32Value);
+            dataWriter.flush();
+            // collect statistics
+            if (dataWriter instanceof TypedDictWriter) {
+                newFile.setDistinctValues(((TypedDictWriter) dataWriter).getFinalDict().getDictionarySize());
+                newFile.setDictionaryBytesPerEntry(((TypedDictWriter) dataWriter).getFinalDict().getBytesPerEntry());
+            } else if (dataWriter instanceof TypedRLEWriter) {
+                newFile.setRunCount(((TypedRLEWriter) dataWriter).getRunCount());
+            } else if (dataWriter instanceof TypedBlockCmpWriter) {
+                long uncompressedSize = ((TypedBlockCmpWriter) dataWriter).getTotalUncompressedSize();
+                int uncompressedSizeKB = (int) (uncompressedSize / 1024L + (uncompressedSize % 1024 == 0 ? 0 : 1));
+                newFile.setUncompressedSizeKB(uncompressedSizeKB);
+            }
+        } finally {
+            dataWriter.close();
+        }
     }
 }
