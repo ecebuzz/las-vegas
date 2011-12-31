@@ -22,7 +22,7 @@ public class LocalDataEngineTest extends DataEngineTestBase {
     public static void setUpBeforeClass() throws Exception {
         masterRepository = new MasterMetadataRepository(true, TEST_BDB_HOME); // nuke the folder
         LVRack rack = masterRepository.createNewRack("rack1");
-        LVRackNode node = masterRepository.createNewRackNode(rack, "node1");
+        LVRackNode node = masterRepository.createNewRackNode(rack, "node1", "node1:12345");
         Configuration conf = new Configuration();
         String rootDir = "test/node1_lvfs_" + new Random(System.nanoTime()).nextInt();
         String tmpDir = rootDir + "/tmp";

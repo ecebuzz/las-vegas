@@ -438,10 +438,13 @@ public interface LVMetadataProtocol extends VersionedProtocol {
      * Creates a new rack node in the given rack with the specified name.
      * @param rack the rack to which the new node will belong
      * @param name unique name of the new node. probably FQDN.
+     * @return address the address string (host:port) to connect to the data node, such as "localhost:12345"
      * @return new RackNode object
      * @throws IOException
      */
-    LVRackNode createNewRackNode(LVRack rack, String name) throws IOException;
+    LVRackNode createNewRackNode(LVRack rack, String name, String address) throws IOException;
+    /** overload to avoid send/receive redundant data. */
+    int createNewRackNodeIdOnlyReturn(int rackId, String name, String address) throws IOException;
 
     /**
      * Changes the status of the given node.
@@ -451,6 +454,19 @@ public interface LVMetadataProtocol extends VersionedProtocol {
      * @throws IOException
      */
     LVRackNode updateRackNodeStatus(LVRackNode node, RackNodeStatus status) throws IOException;
+    /** overload to avoid send/receive redundant data. */
+    void updateRackNodeStatusNoReturn(int nodeId, RackNodeStatus status) throws IOException;
+
+    /**
+     * Changes the data-port address of the given node.
+     * @param node Node object to be modified.
+     * @return address the new address string (host:port) to connect to the data node, such as "localhost:12345"
+     * @return Node object after modification
+     * @throws IOException
+     */
+    LVRackNode updateRackNodeAddress(LVRackNode node, String address) throws IOException;
+    /** overload to avoid send/receive redundant data. */
+    void updateRackNodeAddressNoReturn(int nodeId, String address) throws IOException;
     
     /**
      * Deletes the rack node metadata object and related objects from this repository.

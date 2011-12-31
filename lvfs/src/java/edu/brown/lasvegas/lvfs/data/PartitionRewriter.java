@@ -10,6 +10,7 @@ import edu.brown.lasvegas.lvfs.LVFSFileType;
 import edu.brown.lasvegas.lvfs.TypedReader;
 import edu.brown.lasvegas.lvfs.VirtualFile;
 import edu.brown.lasvegas.traits.ValueTraits;
+import edu.brown.lasvegas.util.VirtualFileUtil;
 
 /**
  * Re-writes all columnar files in a partition with new sorting and compression scheme.
@@ -103,10 +104,38 @@ public final class PartitionRewriter {
                 newFile.setSorted(true);
                 newFile.setValueFile(outputFolder.getChildFile(LVFSFileType.VALUE_FILE.appendExtension(filename)));
             }
+            newFile.setTupleCount(tupleCount);
             newFiles[i] = newFile;
         }
     }
-    
+
+    public void execute () throws IOException {
+        if (newSortColumn == null || newSortColumn.equals(oldSortColumn)) {
+            // no sorting, or the same sorting.
+            for (int i = 0; i < columnCount; ++i) {
+                if (oldCompressions[i] == newCompressions[i]) {
+                    // even compression scheme is same. then everything is same, so just copy it.
+                    inheritEverything(i);
+                } else {
+                    // if not, then it's re-compression without sorting
+                    if (willInheritDictionary(i)) {
+                        inheritDictionary(i);
+                    }
+                    rewriteCompressionOnly (i);
+                }
+            }
+        } else {
+            // first, read/write sorting column to get order-mapping
+            int[] oldPos = rewriteSortingColumn ();
+            for (int i = 0; i < columnCount; ++i) {
+                if (i == newSortColumn) continue; // we already wrote it in rewriteSortingColumn()
+                if (willInheritDictionary(i)) {
+                    inheritDictionary(i);
+                }
+                rewriteNonSortingColumn (i, oldPos);
+            }
+        }
+    }
     /** do we have to make additional conversion because it's dictionary to something else or the other way around?. */
     private boolean willInternalDataTypeChange (int col) {
         if (oldCompressions[col] == CompressionType.DICTIONARY && oldCompressions[col] != CompressionType.DICTIONARY) {
@@ -117,30 +146,39 @@ public final class PartitionRewriter {
         }
         return false;
     }
-
-    public void execute () throws IOException {
-        if (newSortColumn == null || newSortColumn.equals(oldSortColumn)) {
-            // no sorting, or the same sorting.
-            for (int i = 0; i < columnCount; ++i) {
-                if (oldCompressions[i] == newCompressions[i]) {
-                    // even compression scheme is same. then everything is same, so just copy it.
-                    copyIdentical(i);
-                } else {
-                    // if not, then it's re-compression without sorting
-                }
-            }
-        } else {
-            int[] oldPos = rewriteSortingColumn ();
-            for (int i = 0; i < columnCount; ++i) {
-                if (i == newSortColumn) continue; // we already wrote it in rewriteSortingColumn()
-                rewriteNonSortingColumn (i, oldPos);
-            }
-        }
+    /** on the other hand, if both are dictionary encoding, we can reuse the dictionary file. */
+    private boolean willInheritDictionary (int col) {
+        return oldCompressions[col] == CompressionType.DICTIONARY && oldCompressions[col] == CompressionType.DICTIONARY;
+    }
+    /** copy the old file's dictionary. */
+    private void inheritDictionary (int col) throws IOException {
+        ColumnFileBundle oldFile = oldFiles[col];
+        ColumnFileBundle newFile = newFiles[col];
+        VirtualFileUtil.copyFile(oldFile.getDictionaryFile(), newFile.getDictionaryFile());
+        // also, we can inherit statistics about dictionary
+        newFile.setDictionaryBytesPerEntry(oldFile.getDictionaryBytesPerEntry());
+        newFile.setDistinctValues(oldFile.getDistinctValues());
     }
     /** copy a columnar file without changing anything. */
-    private void copyIdentical (int col) throws IOException {
+    private void inheritEverything (int col) throws IOException {
         ColumnFileBundle oldFile = oldFiles[col];
-        oldFile.getDataFile();
+        ColumnFileBundle newFile = newFiles[col];
+        VirtualFileUtil.copyFile(oldFile.getDataFile(), newFile.getDataFile());
+        if (oldFile.getDictionaryFile() != null) {
+            VirtualFileUtil.copyFile(oldFile.getDictionaryFile(), newFile.getDictionaryFile());
+        }
+        if (oldFile.getPositionFile() != null) {
+            VirtualFileUtil.copyFile(oldFile.getPositionFile(), newFile.getPositionFile());
+        }
+        if (oldFile.getValueFile() != null) {
+            VirtualFileUtil.copyFile(oldFile.getValueFile(), newFile.getValueFile());
+        }
+        // also copy all statistics
+        newFile.setDataFileChecksum(oldFile.getDataFileChecksum());
+        newFile.setDictionaryBytesPerEntry(oldFile.getDictionaryBytesPerEntry());
+        newFile.setDistinctValues(oldFile.getDistinctValues());
+        newFile.setRunCount(oldFile.getRunCount());
+        newFile.setUncompressedSizeKB(oldFile.getUncompressedSizeKB());
     }
     
     /**
@@ -154,6 +192,10 @@ public final class PartitionRewriter {
     @SuppressWarnings({"unchecked", "rawtypes"})
     private int[] rewriteSortingColumn () throws IOException {
         assert (newSortColumn != null);
+
+        if (willInheritDictionary(newSortColumn)) {
+            inheritDictionary(newSortColumn);
+        }
 
         // first, read ALL data of the column to be sorted
         TypedReader dataReader = oldFilesReader[newSortColumn].getDataReader();
@@ -191,6 +233,7 @@ public final class PartitionRewriter {
                 
             }
             
+            // TODO write out value index, and get distinct values if it's not dictionary encoding
             
             return oldPos;
         } finally {
@@ -207,14 +250,21 @@ public final class PartitionRewriter {
             int read = dataReader.readValues(oldData, 0, tupleCount);
             assert (read == tupleCount);
             
+            // reorder the data using oldPos. this is quite efficient assuming all objects fit RAM
             Object newData = dataTraits.reorder(oldData, oldPos);
+            // TODO
             if (willInternalDataTypeChange(col)) {
                 
             } else {
                 
             }
+            // TODO 
         } finally {
             dataReader.close();
         }
+    }
+    /** keep the order of the data. just apply a different compression. */
+    private void rewriteCompressionOnly (int col) throws IOException {
+        // TODO
     }
 }

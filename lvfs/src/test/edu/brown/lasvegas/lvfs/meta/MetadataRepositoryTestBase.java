@@ -82,6 +82,7 @@ public abstract class MetadataRepositoryTestBase {
     private final static String DEFAULT_TABLE_NAME = "deftable";
     private final static String DEFAULT_RACK_NAME = "default_rack";
     private final static String DEFAULT_RACK_NODE_NAME = "default_node.default_rack.dummy.org";
+    private final static String DEFAULT_RACK_NODE_ADDRESS= "default_node.default_rack.dummy.org:12345";
     private LVDatabase DEFAULT_DATABASE;
     private LVTable DEFAULT_TABLE;
     /** 0=epoch, 1=intcol, 2=strcol, 3=floatcol, 4=tscol. */
@@ -128,7 +129,7 @@ public abstract class MetadataRepositoryTestBase {
         DEFAULT_RACK = repository.createNewRack(DEFAULT_RACK_NAME);
         assertTrue (DEFAULT_RACK.getRackId() != 0);
         
-        DEFAULT_RACK_NODE = repository.createNewRackNode(DEFAULT_RACK, DEFAULT_RACK_NODE_NAME);
+        DEFAULT_RACK_NODE = repository.createNewRackNode(DEFAULT_RACK, DEFAULT_RACK_NODE_NAME, DEFAULT_RACK_NODE_ADDRESS);
         assertTrue (DEFAULT_RACK_NODE.getNodeId() != 0);
         assertEquals(DEFAULT_RACK.getRackId(), DEFAULT_RACK_NODE.getRackId());
         
@@ -616,68 +617,69 @@ public abstract class MetadataRepositoryTestBase {
     public void testRackNodeAssorted() throws IOException {
         int nodeId1, nodeId2;
         {
-            LVRackNode node = repository.createNewRackNode(DEFAULT_RACK, "node1");
+            LVRackNode node = repository.createNewRackNode(DEFAULT_RACK, "node1", "node1:4311");
             assertTrue (node.getNodeId() > 0);
             assertEquals(DEFAULT_RACK.getRackId(), node.getRackId());
             nodeId1 = node.getNodeId();
         }
-        validateRackNode (repository.getRackNode(nodeId1), nodeId1, "node1", RackNodeStatus.OK);
-        validateRackNode (repository.getRackNode("node1"), nodeId1, "node1", RackNodeStatus.OK);
+        validateRackNode (repository.getRackNode(nodeId1), nodeId1, "node1", "node1:4311", RackNodeStatus.OK);
+        validateRackNode (repository.getRackNode("node1"), nodeId1, "node1", "node1:4311", RackNodeStatus.OK);
         {
-            LVRackNode node = repository.createNewRackNode(DEFAULT_RACK, "node2");
+            LVRackNode node = repository.createNewRackNode(DEFAULT_RACK, "node2", "node2:5454");
             assertTrue (node.getNodeId() > 0);
             assertEquals(DEFAULT_RACK.getRackId(), node.getRackId());
             nodeId2 = node.getNodeId();
         }
-        validateRackNode (repository.getRackNode(nodeId2), nodeId2, "node2", RackNodeStatus.OK);
-        validateRackNode (repository.getRackNode("node2"), nodeId2, "node2", RackNodeStatus.OK);
+        validateRackNode (repository.getRackNode(nodeId2), nodeId2, "node2", "node2:5454", RackNodeStatus.OK);
+        validateRackNode (repository.getRackNode("node2"), nodeId2, "node2", "node2:5454", RackNodeStatus.OK);
         assertTrue(nodeId1 != nodeId2);
      
         LVRackNode[] nodes = repository.getAllRackNodes(DEFAULT_RACK.getRackId());
         assertEquals (3, nodes.length);
-        validateRackNode (nodes[0], DEFAULT_RACK_NODE.getNodeId(), DEFAULT_RACK_NODE_NAME, RackNodeStatus.OK);
-        validateRackNode (nodes[1], nodeId1, "node1", RackNodeStatus.OK);
-        validateRackNode (nodes[2], nodeId2, "node2", RackNodeStatus.OK);
+        validateRackNode (nodes[0], DEFAULT_RACK_NODE.getNodeId(), DEFAULT_RACK_NODE_NAME, DEFAULT_RACK_NODE_ADDRESS, RackNodeStatus.OK);
+        validateRackNode (nodes[1], nodeId1, "node1", "node1:4311", RackNodeStatus.OK);
+        validateRackNode (nodes[2], nodeId2, "node2", "node2:5454", RackNodeStatus.OK);
 
         reloadRepository();
 
-        validateRackNode (repository.getRackNode(nodeId1), nodeId1, "node1", RackNodeStatus.OK);
-        validateRackNode (repository.getRackNode("node1"), nodeId1, "node1", RackNodeStatus.OK);
-        validateRackNode (repository.getRackNode(nodeId2), nodeId2, "node2", RackNodeStatus.OK);
-        validateRackNode (repository.getRackNode("node2"), nodeId2, "node2", RackNodeStatus.OK);
+        validateRackNode (repository.getRackNode(nodeId1), nodeId1, "node1", "node1:4311", RackNodeStatus.OK);
+        validateRackNode (repository.getRackNode("node1"), nodeId1, "node1", "node1:4311", RackNodeStatus.OK);
+        validateRackNode (repository.getRackNode(nodeId2), nodeId2, "node2", "node2:5454", RackNodeStatus.OK);
+        validateRackNode (repository.getRackNode("node2"), nodeId2, "node2", "node2:5454", RackNodeStatus.OK);
         nodes = repository.getAllRackNodes(DEFAULT_RACK.getRackId());
         assertEquals (3, nodes.length);
-        validateRackNode (nodes[0], DEFAULT_RACK_NODE.getNodeId(), DEFAULT_RACK_NODE_NAME, RackNodeStatus.OK);
-        validateRackNode (nodes[1], nodeId1, "node1", RackNodeStatus.OK);
-        validateRackNode (nodes[2], nodeId2, "node2", RackNodeStatus.OK);
+        validateRackNode (nodes[0], DEFAULT_RACK_NODE.getNodeId(), DEFAULT_RACK_NODE_NAME, DEFAULT_RACK_NODE_ADDRESS, RackNodeStatus.OK);
+        validateRackNode (nodes[1], nodeId1, "node1", "node1:4311", RackNodeStatus.OK);
+        validateRackNode (nodes[2], nodeId2, "node2", "node2:5454", RackNodeStatus.OK);
         
         repository.dropRackNode(nodes[1]);
 
         assertNull (repository.getRackNode(nodeId1));
         assertNull (repository.getRackNode("node1"));
-        validateRackNode (repository.getRackNode(nodeId2), nodeId2, "node2", RackNodeStatus.OK);
-        validateRackNode (repository.getRackNode("node2"), nodeId2, "node2", RackNodeStatus.OK);
+        validateRackNode (repository.getRackNode(nodeId2), nodeId2, "node2", "node2:5454", RackNodeStatus.OK);
+        validateRackNode (repository.getRackNode("node2"), nodeId2, "node2", "node2:5454", RackNodeStatus.OK);
         nodes = repository.getAllRackNodes(DEFAULT_RACK.getRackId());
         assertEquals (2, nodes.length);
-        validateRackNode (nodes[0], DEFAULT_RACK_NODE.getNodeId(), DEFAULT_RACK_NODE_NAME, RackNodeStatus.OK);
-        validateRackNode (nodes[1], nodeId2, "node2", RackNodeStatus.OK);
+        validateRackNode (nodes[0], DEFAULT_RACK_NODE.getNodeId(), DEFAULT_RACK_NODE_NAME, DEFAULT_RACK_NODE_ADDRESS, RackNodeStatus.OK);
+        validateRackNode (nodes[1], nodeId2, "node2", "node2:5454", RackNodeStatus.OK);
         
         repository.updateRackNodeStatus(nodes[1], RackNodeStatus.LOST);
 
         reloadRepository();
 
         assertNull (repository.getRackNode(nodeId1));
-        validateRackNode (repository.getRackNode(nodeId2), nodeId2, "node2", RackNodeStatus.LOST);
-        validateRackNode (repository.getRackNode("node2"), nodeId2, "node2", RackNodeStatus.LOST);
+        validateRackNode (repository.getRackNode(nodeId2), nodeId2, "node2", "node2:5454", RackNodeStatus.LOST);
+        validateRackNode (repository.getRackNode("node2"), nodeId2, "node2", "node2:5454", RackNodeStatus.LOST);
         nodes = repository.getAllRackNodes(DEFAULT_RACK.getRackId());
         assertEquals (2, nodes.length);
-        validateRackNode (nodes[0], DEFAULT_RACK_NODE.getNodeId(), DEFAULT_RACK_NODE_NAME, RackNodeStatus.OK);
-        validateRackNode (nodes[1], nodeId2, "node2", RackNodeStatus.LOST);
+        validateRackNode (nodes[0], DEFAULT_RACK_NODE.getNodeId(), DEFAULT_RACK_NODE_NAME, DEFAULT_RACK_NODE_ADDRESS, RackNodeStatus.OK);
+        validateRackNode (nodes[1], nodeId2, "node2", "node2:5454", RackNodeStatus.LOST);
     }
-    private void validateRackNode (LVRackNode node, int nodeId, String name, RackNodeStatus status) {
+    private void validateRackNode (LVRackNode node, int nodeId, String name, String address, RackNodeStatus status) {
         assertEquals (nodeId, node.getNodeId());
         assertEquals (DEFAULT_RACK.getRackId(), node.getRackId());
         assertEquals (name, node.getName());
+        assertEquals (address, node.getAddress());
         assertEquals (status, node.getStatus());
     }
     
@@ -1218,7 +1220,7 @@ public abstract class MetadataRepositoryTestBase {
     public void testTaskAssorted() throws IOException {
         int taskId1, taskId2;
         int nodeId1 = DEFAULT_RACK_NODE.getNodeId();
-        int nodeId2 = repository.createNewRackNode(DEFAULT_RACK, "node2").getNodeId();
+        int nodeId2 = repository.createNewRackNode(DEFAULT_RACK, "node2", "node2:12344").getNodeId();
         int jobId1 = DEFAULT_JOB.getJobId();
         int jobId2 = repository.createNewJobIdOnlyReturn("job2", JobType.IMPORT_FRACTURE, null);
         {

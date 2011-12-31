@@ -37,6 +37,11 @@ public class LVRackNode implements LVObject {
         return nodeId;
     }
     
+    /**
+     * address string (host:port) to connect to the data node, such as "localhost:12345".
+     */
+    private String address;
+    
     /** The Constant IX_RACK_ID. */
     public static final String IX_RACK_ID = "IX_RACK_ID";
     /** The rack at which this node is physically located. */
@@ -51,7 +56,7 @@ public class LVRackNode implements LVObject {
     @Override
     public String toString() {
         return "RackNode-" + nodeId + " (Name=" + name
-        + ", Status=" + status + ", RackId=" + rackId + ")";
+        + ", Address=" + address + ",Status=" + status + ", RackId=" + rackId + ")";
     }
 
     @Override
@@ -60,17 +65,25 @@ public class LVRackNode implements LVObject {
         if (name != null) {
             out.writeUTF(name);
         }
+        out.writeBoolean(address == null);
+        if (address != null) {
+            out.writeUTF(address);
+        }
         out.writeInt(nodeId);
         out.writeInt(rackId);
         out.writeInt(status == null ? RackNodeStatus.INVALID.ordinal() : status.ordinal());
     }
     @Override
     public void readFields(DataInput in) throws IOException {
-        boolean isNameNull = in.readBoolean();
-        if (isNameNull) {
+        if (in.readBoolean()) {
             name = null;
         } else {
             name = in.readUTF();
+        }
+        if (in.readBoolean()) {
+            address = null;
+        } else {
+            address = in.readUTF();
         }
         nodeId = in.readInt();
         rackId = in.readInt();
@@ -160,5 +173,23 @@ public class LVRackNode implements LVObject {
      */
     public void setStatus(RackNodeStatus status) {
         this.status = status;
+    }
+
+    /**
+     * Gets the address string (host:port) to connect to the data node, such as "localhost:12345".
+     *
+     * @return the address string (host:port) to connect to the data node, such as "localhost:12345"
+     */
+    public String getAddress() {
+        return address;
+    }
+
+    /**
+     * Sets the address string (host:port) to connect to the data node, such as "localhost:12345".
+     *
+     * @param address the new address string (host:port) to connect to the data node, such as "localhost:12345"
+     */
+    public void setAddress(String address) {
+        this.address = address;
     }
 }

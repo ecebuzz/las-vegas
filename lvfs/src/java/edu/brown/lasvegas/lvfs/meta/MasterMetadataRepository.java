@@ -1013,10 +1013,13 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     }
 
     @Override
-    public LVRackNode createNewRackNode(LVRack rack, String name) throws IOException {
+    public LVRackNode createNewRackNode(LVRack rack, String name, String address) throws IOException {
         assert (rack.getRackId() > 0);
         if (name == null || name.length() == 0) {
             throw new IOException ("empty node name");
+        }
+        if (address == null || address.length() == 0) {
+            throw new IOException ("empty address");
         }
         if (bdbTableAccessors.rackNodeAccessor.IX_NAME.contains(name)) {
             throw new IOException ("this node name already exists:" + name);
@@ -1024,10 +1027,16 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         LVRackNode node = new LVRackNode();
         node.setNodeId(bdbTableAccessors.rackNodeAccessor.issueNewId());
         node.setName(name);
+        node.setAddress(address);
         node.setStatus(RackNodeStatus.OK);
         node.setRackId(rack.getRackId());
         bdbTableAccessors.rackNodeAccessor.PKX.putNoReturn(node);
         return node;
+    }
+    @Override
+    public int createNewRackNodeIdOnlyReturn(int rackId, String name, String address) throws IOException {
+        LVRack rack = getRack(rackId);
+        return createNewRackNode(rack, name, address).getPrimaryKey();
     }
 
     @Override
@@ -1037,6 +1046,24 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         node.setStatus(status);
         bdbTableAccessors.rackNodeAccessor.PKX.putNoReturn(node);
         return node;
+    }
+    @Override
+    public void updateRackNodeStatusNoReturn(int nodeId, RackNodeStatus status) throws IOException {
+        LVRackNode node = getRackNode (nodeId);
+        updateRackNodeStatus(node, status);
+    }
+    @Override
+    public LVRackNode updateRackNodeAddress(LVRackNode node, String address) throws IOException {
+        assert (node.getNodeId() > 0);
+        assert (address != null && address.length() > 0);
+        node.setAddress(address);
+        bdbTableAccessors.rackNodeAccessor.PKX.putNoReturn(node);
+        return node;
+    }
+    @Override
+    public void updateRackNodeAddressNoReturn(int nodeId, String address) throws IOException {
+        LVRackNode node = getRackNode (nodeId);
+        updateRackNodeAddress(node, address);
     }
 
     @Override

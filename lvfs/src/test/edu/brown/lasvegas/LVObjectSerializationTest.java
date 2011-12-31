@@ -238,12 +238,14 @@ public class LVObjectSerializationTest {
         LVRackNode obj1 = new LVRackNode();
         obj1.setNodeId(32);
         obj1.setName("node1");
+        obj1.setAddress("node1:1333");
         obj1.setStatus(RackNodeStatus.LOST);
         obj1.setRackId(4477788);
         obj1.write(out);
         LVRackNode obj2 = new LVRackNode();
         obj2.setNodeId(3311);
         obj2.setName("node2");
+        obj2.setAddress("localhost:4321");
         obj2.setStatus(RackNodeStatus.OK);
         obj2.setRackId(5);
         obj2.write(out);
@@ -252,6 +254,7 @@ public class LVObjectSerializationTest {
         DataInputStream in = inFromOut();
         for (int i = 0; i < org.length; ++i) {
             LVRackNode copied = LVRackNode.read(in);
+            assertEquals(org[i].getAddress(), copied.getAddress());
             assertEquals(org[i].getNodeId(), copied.getNodeId());
             assertEquals(org[i].getName(), copied.getName());
             assertEquals(org[i].getStatus(), copied.getStatus());

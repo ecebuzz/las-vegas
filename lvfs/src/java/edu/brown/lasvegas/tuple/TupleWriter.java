@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.io.IOException;
 
 import edu.brown.lasvegas.lvfs.ColumnFileBundle;
+import edu.brown.lasvegas.lvfs.data.PartitionRewriter;
 
 /**
  * Interface to write a set of column data (Tuple) received from {@link TupleReader}.
@@ -13,7 +14,7 @@ import edu.brown.lasvegas.lvfs.ColumnFileBundle;
  * </p>
  * <p>
  * This writer sequentially appends tuples in the order received from the reader.
- * It does NOT sort the column files. Sorting is efficiently done later by TODO XXX.
+ * It does NOT sort the column files. Sorting is efficiently done later by {@link PartitionRewriter}.
  * </p>
  */
 public interface TupleWriter extends Closeable {

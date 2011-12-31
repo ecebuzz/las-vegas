@@ -68,7 +68,7 @@ public class RemoteDataEngineTest extends DataEngineTestBase {
         metaClient = new LVMetadataClient(conf);
 
         LVRack rack = metaClient.getChannel().createNewRack(RACK_NAME);
-        LVRackNode node = metaClient.getChannel().createNewRackNode(rack, NODE_NAME);
+        LVRackNode node = metaClient.getChannel().createNewRackNode(rack, NODE_NAME, DATA_ADDRESS);
         assertTrue (node != null);
         dataNode = new LVDataNode(conf);
         dataNode.start(dfsCluster.getDataNodes().get(0));

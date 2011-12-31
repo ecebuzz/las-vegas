@@ -122,7 +122,7 @@ public final class LoadPartitionedTextFilesTaskRunner extends DataTaskRunner<Loa
                         if (node == null) {
                             throw new IOException ("the node ID (" + path.nodeId + ") contained in the temporary file path " + path.getFilePath() + " isn't found");
                         }
-                        client = new LVDataClient(context.conf, node.getName()); // TODO this should be node.getAddress()
+                        client = new LVDataClient(context.conf, node.getAddress());
                         dataClients.put(path.nodeId, client);
                     }
                     file = new DataNodeFile(client.getChannel(), path.getFilePath());
