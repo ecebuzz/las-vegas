@@ -15,7 +15,6 @@ import edu.brown.lasvegas.util.KeyValueArrays;
  * A bunch of functors to deal with data type (especially primitive types) and their arrays in a generic way.
  * These functions are especially beneficial when T[]!=AT, e.g., T=Long/AT=long[]. Rather than boxing/unboxing each
  * value, these functions are much more efficient and consume less memory.
- * <b>To instantiate, use AllValueTraits</b>
  * @param <T> Value type
  * @param <AT> Array type. This might not be T[] but the primitive array for speed (that's why we need this class).
  * @see ValueTraitsFactory

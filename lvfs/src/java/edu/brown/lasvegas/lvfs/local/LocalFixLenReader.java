@@ -4,10 +4,10 @@ import java.io.IOException;
 
 import org.apache.log4j.Logger;
 
-import edu.brown.lasvegas.lvfs.FixLenValueTraits;
 import edu.brown.lasvegas.lvfs.VirtualFile;
 import edu.brown.lasvegas.traits.BigintValueTraits;
 import edu.brown.lasvegas.traits.DoubleValueTraits;
+import edu.brown.lasvegas.traits.FixLenValueTraits;
 import edu.brown.lasvegas.traits.FloatValueTraits;
 import edu.brown.lasvegas.traits.IntegerValueTraits;
 import edu.brown.lasvegas.traits.SmallintValueTraits;

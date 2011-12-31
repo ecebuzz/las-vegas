@@ -12,11 +12,13 @@ import edu.brown.lasvegas.lvfs.local.LocalPosFile;
 import edu.brown.lasvegas.lvfs.local.LocalRLEReader;
 import edu.brown.lasvegas.lvfs.local.LocalValFile;
 import edu.brown.lasvegas.lvfs.local.LocalVarLenReader;
+import edu.brown.lasvegas.traits.FixLenValueTraits;
 import edu.brown.lasvegas.traits.ValueTraitsFactory;
 import edu.brown.lasvegas.traits.IntegerValueTraits;
 import edu.brown.lasvegas.traits.SmallintValueTraits;
 import edu.brown.lasvegas.traits.TinyintValueTraits;
 import edu.brown.lasvegas.traits.ValueTraits;
+import edu.brown.lasvegas.traits.VarLenValueTraits;
 
 /**
  * Readers to read a set of files which logically constitute a column.

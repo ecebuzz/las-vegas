@@ -1,6 +1,5 @@
-package edu.brown.lasvegas.lvfs;
+package edu.brown.lasvegas.traits;
 
-import edu.brown.lasvegas.traits.ValueTraits;
 
 /**
  * Functor to read/write variable-length java objects.

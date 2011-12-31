@@ -10,7 +10,6 @@ import edu.brown.lasvegas.lvfs.RawValueReader;
 import edu.brown.lasvegas.lvfs.RawValueWriter;
 import edu.brown.lasvegas.lvfs.TypedRLEWriter;
 import edu.brown.lasvegas.lvfs.ValueRun;
-import edu.brown.lasvegas.lvfs.VarLenValueTraits;
 import edu.brown.lasvegas.util.ByteArray;
 import edu.brown.lasvegas.util.KeyValueArrays;
 

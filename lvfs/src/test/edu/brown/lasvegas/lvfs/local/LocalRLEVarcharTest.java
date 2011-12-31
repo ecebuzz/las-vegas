@@ -1,6 +1,6 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import edu.brown.lasvegas.lvfs.VarLenValueTraits;
+import edu.brown.lasvegas.traits.VarLenValueTraits;
 import edu.brown.lasvegas.traits.VarcharValueTraits;
 
 public class LocalRLEVarcharTest extends LocalRLETestBase<String, String[]> {

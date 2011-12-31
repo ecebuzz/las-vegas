@@ -7,10 +7,10 @@ import java.util.HashMap;
 import org.apache.log4j.Logger;
 
 import edu.brown.lasvegas.ColumnType;
-import edu.brown.lasvegas.lvfs.FixLenValueTraits;
 import edu.brown.lasvegas.lvfs.OrderedDictionary;
 import edu.brown.lasvegas.lvfs.TypedDictWriter;
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.traits.FixLenValueTraits;
 import edu.brown.lasvegas.traits.ValueTraitsFactory;
 import edu.brown.lasvegas.traits.IntegerValueTraits;
 import edu.brown.lasvegas.traits.SmallintValueTraits;

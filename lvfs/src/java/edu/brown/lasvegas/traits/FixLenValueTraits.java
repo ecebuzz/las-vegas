@@ -1,8 +1,9 @@
-package edu.brown.lasvegas.lvfs;
+package edu.brown.lasvegas.traits;
 
 import java.io.IOException;
 
-import edu.brown.lasvegas.traits.ValueTraits;
+import edu.brown.lasvegas.lvfs.RawValueReader;
+import edu.brown.lasvegas.lvfs.RawValueWriter;
 
 /**
  * Functor to read/write fixed-length java objects and primitive type arrays.

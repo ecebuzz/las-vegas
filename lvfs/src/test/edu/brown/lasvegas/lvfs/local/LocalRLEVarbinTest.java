@@ -6,7 +6,7 @@ import java.io.IOException;
 
 import org.junit.Test;
 
-import edu.brown.lasvegas.lvfs.VarLenValueTraits;
+import edu.brown.lasvegas.traits.VarLenValueTraits;
 import edu.brown.lasvegas.traits.VarbinValueTraits;
 import edu.brown.lasvegas.util.ByteArray;
 

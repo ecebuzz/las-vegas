@@ -1,6 +1,6 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import edu.brown.lasvegas.lvfs.FixLenValueTraits;
+import edu.brown.lasvegas.traits.FixLenValueTraits;
 import edu.brown.lasvegas.traits.IntegerValueTraits;
 
 public class LocalBlockCompressionFixLenIntegerTest extends LocalBlockCompressionFixLenTestBase<Integer, int[]> {

@@ -3,8 +3,8 @@ package edu.brown.lasvegas.lvfs.local;
 import java.io.IOException;
 
 import edu.brown.lasvegas.CompressionType;
-import edu.brown.lasvegas.lvfs.VarLenValueTraits;
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.traits.VarLenValueTraits;
 import edu.brown.lasvegas.traits.VarbinValueTraits;
 import edu.brown.lasvegas.traits.VarcharValueTraits;
 import edu.brown.lasvegas.util.ByteArray;

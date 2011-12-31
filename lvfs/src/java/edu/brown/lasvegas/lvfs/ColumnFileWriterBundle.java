@@ -11,8 +11,10 @@ import edu.brown.lasvegas.lvfs.local.LocalDictCompressionWriter;
 import edu.brown.lasvegas.lvfs.local.LocalFixLenWriter;
 import edu.brown.lasvegas.lvfs.local.LocalRLEWriter;
 import edu.brown.lasvegas.lvfs.local.LocalVarLenWriter;
+import edu.brown.lasvegas.traits.FixLenValueTraits;
 import edu.brown.lasvegas.traits.ValueTraitsFactory;
 import edu.brown.lasvegas.traits.ValueTraits;
+import edu.brown.lasvegas.traits.VarLenValueTraits;
 
 /**
  * Writers to write out a set of files which logically constitute a column file.

@@ -22,16 +22,7 @@ public interface TypedWriter<T extends Comparable<T>, AT> extends Closeable {
      * Initial value is false.
      */
     void setCRC32Enabled(boolean enabled);
-    
-    /**
-     * Specifies whether the writer will collect a small number of written values
-     * to construct a sparse value index later.
-     * To turn it on, this method has to be called before writing any contents.
-     * Initial value is false.
-     * @see ValueIndex
-     */
-    //TODO void setValueIndexEnabled (boolean enabled);
-    
+
     /**
      * Writes a single value. Avoid using this,
      * and instead use {@link #writeValues(Object, int, int)} whenever possible.

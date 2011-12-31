@@ -9,6 +9,8 @@ import edu.brown.lasvegas.ColumnType;
 public final class ValueTraitsFactory {
     /**
      * Creates an instance of value traits for the given data type.
+     * This is useful when you can't specify the data type in your code.
+     * Otherwise, directly instantiate your desired traits class, which improves type safety.
      */
     public static ValueTraits<?, ?> getInstance (ColumnType type) {
         switch (type) {

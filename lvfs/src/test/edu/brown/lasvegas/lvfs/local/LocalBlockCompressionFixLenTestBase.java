@@ -11,8 +11,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import edu.brown.lasvegas.CompressionType;
-import edu.brown.lasvegas.lvfs.FixLenValueTraits;
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.traits.FixLenValueTraits;
 import edu.brown.lasvegas.util.ChecksumUtil;
 
 /**

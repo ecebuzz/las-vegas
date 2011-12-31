@@ -1,7 +1,7 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import edu.brown.lasvegas.lvfs.FixLenValueTraits;
 import edu.brown.lasvegas.traits.BigintValueTraits;
+import edu.brown.lasvegas.traits.FixLenValueTraits;
 
 public class LocalRLEBigintTest extends LocalRLETestBase<Long, long[]> {
     @Override

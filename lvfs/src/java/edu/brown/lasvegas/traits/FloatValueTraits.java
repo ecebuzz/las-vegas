@@ -6,7 +6,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 
-import edu.brown.lasvegas.lvfs.FixLenValueTraits;
 import edu.brown.lasvegas.lvfs.RawValueReader;
 import edu.brown.lasvegas.lvfs.RawValueWriter;
 import edu.brown.lasvegas.lvfs.TypedRLEWriter;
