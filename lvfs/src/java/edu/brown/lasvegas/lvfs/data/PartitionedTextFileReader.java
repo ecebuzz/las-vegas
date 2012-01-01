@@ -110,7 +110,7 @@ public class PartitionedTextFileReader implements Closeable {
      * @throws IOException
      */
     public String readLine () throws IOException {
-        if (compressed) {
+        if (plainTextReader != null) {
             return plainTextReader.readLine();
         } else {
             while (currentBlockConsumed == currentBlock.length) {

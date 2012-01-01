@@ -12,10 +12,15 @@ import edu.brown.lasvegas.traits.ValueTraits;
  */
 public abstract class LocalTypedWriterBase<T extends Comparable<T>, AT> implements TypedWriter<T, AT> {
     private final LocalRawFileWriter rawWriter;
-    //private final ValueTraits<T, AT> traits;
+    private final ValueTraits<T, AT> traits;
     protected LocalTypedWriterBase (VirtualFile file, ValueTraits<T, AT> traits, int streamBufferSize) throws IOException {
         this.rawWriter = new LocalRawFileWriter(file, streamBufferSize);
-        //this.traits = traits;
+        this.traits = traits;
+    }
+    
+    @Override
+    public ValueTraits<T, AT> getValueTraits() {
+        return traits;
     }
 
     @Override

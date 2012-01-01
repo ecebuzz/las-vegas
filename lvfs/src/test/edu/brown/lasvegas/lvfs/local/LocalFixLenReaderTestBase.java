@@ -18,7 +18,7 @@ import edu.brown.lasvegas.traits.FixLenValueTraits;
  * Name of this abstract class doesn't end with Test so that our ant script
  * would skip this. 
  */
-public abstract class LocalFixLenReaderTestBase<T extends Comparable<T>, AT> {
+public abstract class LocalFixLenReaderTestBase<T extends Number & Comparable<T>, AT> {
     protected static VirtualFile file;
     protected FixLenValueTraits<T, AT> traits;
     protected LocalFixLenReader<T, AT> reader;

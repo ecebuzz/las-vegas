@@ -3,6 +3,8 @@ package edu.brown.lasvegas.lvfs;
 import java.io.Closeable;
 import java.io.IOException;
 
+import edu.brown.lasvegas.traits.ValueTraits;
+
 /**
  * A reader that provides methods to read typed values.
  * This object allows per-tuple and tuple-aware operations unlike {@link RawValueReader}.
@@ -13,6 +15,11 @@ import java.io.IOException;
  * @param <AT> Array type 
  */
 public interface TypedReader<T extends Comparable<T>, AT> extends Closeable {
+    /**
+     * Returns the traits instance for the data type.
+     */
+    ValueTraits<T, AT> getValueTraits ();
+    
     /**
      * Reads and returns the next entry.
      * This method should not be used frequently unless

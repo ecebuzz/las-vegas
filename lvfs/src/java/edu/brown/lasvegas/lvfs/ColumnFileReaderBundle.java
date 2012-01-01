@@ -6,7 +6,7 @@ import java.io.IOException;
 import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.lvfs.local.LocalBlockCompressionFixLenReader;
 import edu.brown.lasvegas.lvfs.local.LocalBlockCompressionVarLenReader;
-import edu.brown.lasvegas.lvfs.local.LocalDictFile;
+import edu.brown.lasvegas.lvfs.local.LocalDictCompressionReader;
 import edu.brown.lasvegas.lvfs.local.LocalFixLenReader;
 import edu.brown.lasvegas.lvfs.local.LocalPosFile;
 import edu.brown.lasvegas.lvfs.local.LocalRLEReader;
@@ -33,8 +33,6 @@ public final class ColumnFileReaderBundle implements Closeable {
 
     /** reader for main data file. */
     private TypedReader<?, ?> dataReader;
-    /** the dictionary, which is loaded lazily. */
-    private OrderedDictionary<?, ?> dictionary;
 
     /** the position index, which is loaded lazily. */
     private PositionIndex positionIndex;
@@ -81,12 +79,26 @@ public final class ColumnFileReaderBundle implements Closeable {
         }
         return dataReader;
     }
+    
+    /**
+     * Gets the reader for main data file WITHOUT decompression if it's dictionary-encoded.
+     * If it's not dictionary-encoded, same as getDataReader() because internal data type is unchanged (even in RLE).
+     * @return the reader for main data file WITHOUT decompression if it's dictionary-encoded
+     */
+    @SuppressWarnings("rawtypes")
+    public TypedReader<?, ?> getCompressedDataReader() throws IOException {
+        TypedReader<?, ?> reader = getDataReader();
+        if (reader instanceof TypedDictReader) {
+            return ((TypedDictReader) reader).getCompressedReader(); 
+        }
+        return reader;
+    }
+
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private TypedReader<?, ?> instantiateDataReader () throws IOException {
         switch (fileBundle.getCompressionType()) {
         case DICTIONARY:
-            // notice we use compressedDataTraits because dictionary compression changes the internal data type
-            return new LocalFixLenReader(fileBundle.getDataFile(), (FixLenValueTraits<?, ?>) compressedDataTraits);
+            return new LocalDictCompressionReader(fileBundle.getDataFile(), (FixLenValueTraits<?, ?>) compressedDataTraits, fileBundle.getDictionaryFile(), originalDataTraits);
         case RLE:
             return new LocalRLEReader(fileBundle.getDataFile(), originalDataTraits);
         case GZIP_BEST_COMPRESSION:
@@ -127,12 +139,9 @@ public final class ColumnFileReaderBundle implements Closeable {
      *
      * @return the dictionary, which is loaded lazily
      */
-    @SuppressWarnings({ "unchecked", "rawtypes" })
+    @SuppressWarnings({ "rawtypes" })
     public OrderedDictionary<?, ?> getDictionary () throws IOException {
-        if (dictionary == null && fileBundle.getDictionaryFile() != null) {
-            dictionary = new LocalDictFile(fileBundle.getDictionaryFile(), originalDataTraits);
-        }
-        return dictionary;
+        return ((TypedDictReader) getDataReader()).getDict();
     }
     
     /**

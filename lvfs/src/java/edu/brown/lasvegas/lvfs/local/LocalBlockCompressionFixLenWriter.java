@@ -19,7 +19,7 @@ import edu.brown.lasvegas.traits.TinyintValueTraits;
  * @param <T> Value type (e.g., Integer)
  * @param <AT> Array type (e.g., int[]).
  */
-public final class LocalBlockCompressionFixLenWriter<T extends Comparable<T>, AT> extends LocalBlockCompressionWriter<T, AT> {
+public final class LocalBlockCompressionFixLenWriter<T extends Number & Comparable<T>, AT> extends LocalBlockCompressionWriter<T, AT> {
     private final FixLenValueTraits<T, AT> traits;
     
     /** Constructs an instance for 1-byte fixed length integer values. */

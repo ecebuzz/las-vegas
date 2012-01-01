@@ -3,6 +3,8 @@ package edu.brown.lasvegas.lvfs;
 import java.io.Closeable;
 import java.io.IOException;
 
+import edu.brown.lasvegas.traits.ValueTraits;
+
 /**
  * A writer that provides methods to write typed values.
  * <p>This object allows per-tuple and tuple-aware operations unlike {@link RawValueWriter}.
@@ -16,6 +18,11 @@ import java.io.IOException;
  * @param <AT> Array type 
  */
 public interface TypedWriter<T extends Comparable<T>, AT> extends Closeable {
+    /**
+     * Returns the traits instance for the data type.
+     */
+    ValueTraits<T, AT> getValueTraits ();
+
     /**
      * Specifies whether the writer will calculate CRC-32 value of the file.
      * To turn it on, this method has to be called before writing any contents.

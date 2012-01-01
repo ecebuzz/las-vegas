@@ -3,27 +3,30 @@ package edu.brown.lasvegas.tuple;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Random;
+import java.util.StringTokenizer;
+
+import org.apache.commons.codec.binary.Base64;
 
 import edu.brown.lasvegas.ColumnType;
 import edu.brown.lasvegas.CompressionType;
-import edu.brown.lasvegas.lvfs.OrderedDictionary;
-import edu.brown.lasvegas.lvfs.ValueRun;
 import edu.brown.lasvegas.lvfs.VirtualFile;
 import edu.brown.lasvegas.lvfs.data.PartitionedTextFileReader;
 import edu.brown.lasvegas.util.ByteArray;
 
 /**
  * A tuple reader implementation which reads one or more text files.
- * As this reader is not backed by a columnar file, some methods are not implemented or slow.
- * It simply reads and returns line by line although that's the best bet on text file import..
+ * Each line must be separated by CR or LF. Each column must be separated by some delimiter (can be specified).
+ * VARBINARY column must be BASE64 encoded.
+ * 
+ * This class also implements {@link #sample(TupleBuffer)} method, but in a very inefficient way.
  */
-public class TextFileTupleReader extends DefaultTupleReader {
+public class TextFileTupleReader extends DefaultTupleReader implements SampleableTupleReader {
     private final VirtualFile[] textFiles;
     private final CompressionType textFileCompression;
 
-    private final int columnCount;
-    private final ColumnType[] columnTypes;
     private final int buffersize;
     private final Charset charset;
     private final String delimiter;
@@ -32,30 +35,36 @@ public class TextFileTupleReader extends DefaultTupleReader {
     private final DateFormat timestampFormat;
 
     private PartitionedTextFileReader reader;
-    private final Object[] currentData;
 
     /** index in #textFiles. */
     private int nextTextFile = 0;
-    /** grand total from the first file. */
-    private int currentTuple = 0;
+    private String currentLine;
 
+    public TextFileTupleReader (VirtualFile[] textFiles, ColumnType[] columnTypes, String delimiter) throws IOException {
+        this (textFiles, CompressionType.NONE, columnTypes, delimiter, 1 << 10,
+            Charset.forName("UTF-8"), new SimpleDateFormat("yyyy-MM-dd"),
+            new SimpleDateFormat("HH:mm:ss"),
+            new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS"));
+    }
     public TextFileTupleReader (
         VirtualFile[] textFiles, CompressionType textFileCompression,
         ColumnType[] columnTypes, String delimiter, int buffersize, Charset charset,
         DateFormat dateFormat, DateFormat timeFormat, DateFormat timestampFormat)
     throws IOException {
+        super (columnTypes);
         this.textFiles = textFiles;
         this.textFileCompression = textFileCompression;
-        this.columnTypes = columnTypes;
-        this.columnCount = columnTypes.length;
         this.delimiter = delimiter;
         this.buffersize = buffersize;
         this.charset = charset;
         this.dateFormat = dateFormat;
         this.timeFormat = timeFormat;
         this.timestampFormat = timestampFormat;
-        this.currentData = new Object[columnCount];
     }
+    @Override
+    public String getCurrentTupleAsString() {
+        return currentLine;
+    }    
 
     private void closeCurrentFile () throws IOException {
         if (reader != null) {
@@ -69,6 +78,7 @@ public class TextFileTupleReader extends DefaultTupleReader {
             return false; // no more files
         }
         reader = new PartitionedTextFileReader(textFiles[nextTextFile], charset, textFileCompression, buffersize);
+        ++nextTextFile;
         return true;
     }
 
@@ -78,24 +88,23 @@ public class TextFileTupleReader extends DefaultTupleReader {
     }
 
     @Override
-    public void seekToTupleAbsolute(int tuple) throws IOException {
-        if (tuple == 0) {
-            // only supports going back to the first tuple.
-            closeCurrentFile();
-            nextTextFile = 0;
-            currentTuple = 0;
-            openNextFile();
-        } else {
-            throw new UnsupportedOperationException();
-        }
-    }
-
-    @Override
     public boolean next() throws IOException {
         String line;
         while (true) {
+            if (reader == null) {
+                boolean opened = openNextFile ();
+                if (opened) {
+                    continue;
+                } else {
+                    return false;
+                }
+            }
             line = reader.readLine();
             if (line == null) {
+                boolean opened = openNextFile ();
+                if (opened) {
+                    continue;
+                }
                 Arrays.fill(currentData, null);
                 return false;
             }
@@ -104,143 +113,59 @@ public class TextFileTupleReader extends DefaultTupleReader {
             }
             break;
         }
-        String[] stringData = line.split(delimiter);
-        if (stringData.length < columnCount) {
-            throw new IOException ("invalid line " + currentTuple + ". column count doesn't match:" + line);
-        }
+        parseLine (line, currentData);
+        currentLine = line;
+        return true;
+    }
+    private void parseLine(String line, Object[] dest) throws IOException {
         try {
+            StringTokenizer tokenizer = new StringTokenizer(line, delimiter);
             for (int i = 0; i < columnCount; ++i) {
+                String token = tokenizer.nextToken();
+                if (columnTypes[i] == null) {
+                    continue;
+                }
                 switch (columnTypes[i]) {
-                case BIGINT: currentData[i] = Long.valueOf(stringData[i]); break;
-                case BOOLEAN: currentData[i] = Boolean.valueOf(stringData[i]); break;
-                case DOUBLE: currentData[i] = Double.valueOf(stringData[i]); break;
-                case FLOAT: currentData[i] = Float.valueOf(stringData[i]); break;
-                case INTEGER: currentData[i] = Integer.valueOf(stringData[i]); break;
-                case SMALLINT: currentData[i] = Short.valueOf(stringData[i]); break;
-                case TINYINT: currentData[i] = Byte.valueOf(stringData[i]); break;
+                case BIGINT: dest[i] = Long.valueOf(token); break;
+                case DOUBLE: dest[i] = Double.valueOf(token); break;
+                case FLOAT: dest[i] = Float.valueOf(token); break;
+                case INTEGER: dest[i] = Integer.valueOf(token); break;
+                case SMALLINT: dest[i] = Short.valueOf(token); break;
+                case TINYINT: dest[i] = Byte.valueOf(token); break;
+                case VARCHAR: dest[i] = token; break;
+                case VARBINARY: dest[i] = new ByteArray(Base64.decodeBase64(token)); break;
 
-                case DATE: currentData[i] = dateFormat.parse(stringData[i]).getTime(); break;
-                case TIME: currentData[i] = timeFormat.parse(stringData[i]).getTime(); break;
-                case TIMESTAMP: currentData[i] = timestampFormat.parse(stringData[i]).getTime(); break;
+                case BOOLEAN: dest[i] = Boolean.valueOf(token) ? (byte) 1 : (byte) 0; break;
+                case DATE: dest[i] = dateFormat.parse(token).getTime(); break;
+                case TIME: dest[i] = timeFormat.parse(token).getTime(); break;
+                case TIMESTAMP: dest[i] = timestampFormat.parse(token).getTime(); break;
                 }
             }
         } catch (Exception ex) {
-            throw new IOException ("invalid line " + currentTuple + ". failed to parse:" + line, ex);
+            throw new IOException ("invalid line. failed to parse:" + line, ex);
         }
-        ++currentTuple;
-        return true;
     }
 
     @Override
-    public int getCurrentTuple() throws IOException {
-        return currentTuple;
-    }
-
-    @Override
-    public int getTupleCount() throws IOException {
-        // text file reader can't give 
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int getColumnCount() {
-        return columnCount;
-    }
-
-    @Override
-    public ColumnType getColumnType(int columnIndex) {
-        return columnTypes[columnIndex];
-    }
-
-    @Override
-    public ColumnType[] getColumnTypes() {
-        return columnTypes;
-    }
-
-    @Override
-    public CompressionType getCompressionType(int columnIndex) {
-        return CompressionType.NONE;
-    }
-
-    @Override
-    public CompressionType[] getCompressionTypes() {
-        CompressionType[] dummy = new CompressionType[columnCount];
-        Arrays.fill(dummy, CompressionType.NONE);
-        return dummy;
-    }
-
-    @Override
-    public OrderedDictionary<?, ?> getDictionary(int columnIndex) {
-        return null;
-    }
-
-    @Override
-    public int getDictionaryCompressedValuesByte(int columnIndex, byte[] buffer, int off, int len) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int getDictionaryCompressedValuesShort(int columnIndex, short[] buffer, int off, int len) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int getDictionaryCompressedValuesInt(int columnIndex, int[] buffer, int off, int len) throws IOException {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public ValueRun<?> getCurrentRun(int columnIndex) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Object getObject(int columnIndex) throws IOException {
-        return currentData[columnIndex];
-    }
-
-    @Override
-    public boolean getBoolean(int columnIndex) throws IOException {
-        return (Boolean) currentData[columnIndex];
-    }
-
-    @Override
-    public byte getTinyint(int columnIndex) throws IOException {
-        return (Byte) currentData[columnIndex];
-    }
-
-    @Override
-    public short getSmallint(int columnIndex) throws IOException {
-        return (Short) currentData[columnIndex];
-    }
-
-    @Override
-    public int getInteger(int columnIndex) throws IOException {
-        return (Integer) currentData[columnIndex];
-    }
-
-    @Override
-    public long getBigint(int columnIndex) throws IOException {
-        return (Long) currentData[columnIndex];
-    }
-
-    @Override
-    public float getFloat(int columnIndex) throws IOException {
-        return (Float) currentData[columnIndex];
-    }
-
-    @Override
-    public double getDouble(int columnIndex) throws IOException {
-        return (Double) currentData[columnIndex];
-    }
-
-    @Override
-    public String getVarchar(int columnIndex) throws IOException {
-        return (String) currentData[columnIndex];
-    }
-
-    @Override
-    public ByteArray getVarbin(int columnIndex) throws IOException {
-        return (ByteArray) currentData[columnIndex];
+    public int sample(TupleBuffer buffer) throws IOException {
+        nextTextFile = 0;
+        closeCurrentFile();
+        int sampleSize = buffer.getBufferSize();
+        Object[][] samples = new Object[sampleSize][];
+        int currentSamples = 0;
+        Random random = new Random(12345L); // fixed seed for repeat-ability. should be able to specify by user 
+        while (next()) {
+            if (currentSamples < sampleSize) {
+                samples[currentSamples] = currentData.clone();
+                ++currentSamples;
+            } else {
+                // replace randomly
+                int victim = random.nextInt(currentSamples);
+                System.arraycopy(currentData, 0, samples[victim], 0, columnCount);
+            }
+        }
+        DummyTupleReader dummyReader = new DummyTupleReader(columnTypes, samples, currentSamples);
+        while (buffer.appendTuple(dummyReader));
+        return currentSamples;
     }
 }

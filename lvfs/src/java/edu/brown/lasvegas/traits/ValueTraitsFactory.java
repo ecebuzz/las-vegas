@@ -39,5 +39,37 @@ public final class ValueTraitsFactory {
         }
     }
 
+    /**
+     * Creates an instance of integer value traits for the given data size.
+     * This is useful when you can't specify the data type in your code.
+     * Otherwise, directly instantiate your desired traits class, which improves type safety.
+     */
+    public static FixLenValueTraits<?, ?> getIntegerTraits (byte size) {
+        if (size == 1) {
+            return new TinyintValueTraits();
+        } else if (size == 2) {
+            return new SmallintValueTraits();
+        } else if (size == 4) {
+            return new IntegerValueTraits();
+        } else {
+            assert (size == 8);
+            return new BigintValueTraits();
+        }
+    }
+
+    /**
+     * Creates an instance of floating point value traits for the given data size.
+     * This is useful when you can't specify the data type in your code.
+     * Otherwise, directly instantiate your desired traits class, which improves type safety.
+     */
+    public static FixLenValueTraits<?, ?> getFloatTraits (byte size) {
+        if (size == 4) {
+            return new FloatValueTraits();
+        } else {
+            assert (size == 8);
+            return new DoubleValueTraits();
+        }
+    }
+
     private ValueTraitsFactory() {}
 }

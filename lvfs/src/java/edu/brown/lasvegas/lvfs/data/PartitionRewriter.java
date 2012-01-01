@@ -4,6 +4,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.log4j.Logger;
+
 import edu.brown.lasvegas.ColumnType;
 import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.lvfs.ColumnFileBundle;
@@ -39,6 +41,8 @@ import edu.brown.lasvegas.util.VirtualFileUtil;
  * </p>
  */
 public final class PartitionRewriter {
+    private static Logger LOG = Logger.getLogger(PartitionRewriter.class);
+
     /** number of columns to deal with (maybe not all columns in the partition, but must contain the new sorting column). */
     private final int columnCount;
     /** number of tuples in the files. we know this value because we already have the buddy files in the same partition. */
@@ -121,12 +125,20 @@ public final class PartitionRewriter {
         }
     }
 
-    public void execute () throws IOException {
+    /**
+     * Creates a new set of columnar files based on the existing 'buddy' files.
+     * @return created new files.
+     * @throws IOException
+     */
+    public ColumnFileBundle[] execute () throws IOException {
+        LOG.info("started");
         if (newSortColumn == null || newSortColumn.equals(oldSortColumn)) {
+            LOG.info("no need to re-sort");
             // no sorting, or the same sorting.
             for (int i = 0; i < columnCount; ++i) {
                 if (oldCompressions[i] == newCompressions[i]) {
                     // even compression scheme is same. then everything is same, so just copy it.
+                    LOG.debug("cool, column file[" + i + "] will be copied as is");
                     inheritEverything(i);
                 } else {
                     // if not, then it's re-compression without sorting
@@ -141,6 +153,8 @@ public final class PartitionRewriter {
                 rewriteNonSortingColumn (i, oldPos);
             }
         }
+        LOG.info("done!");
+        return newFiles;
     }
     /** on the other hand, if both are dictionary encoding, we can reuse the dictionary file. */
     private boolean willInheritDictionary (int col) {
@@ -188,6 +202,7 @@ public final class PartitionRewriter {
     @SuppressWarnings({"unchecked", "rawtypes"})
     private int[] rewriteSortingColumn () throws IOException {
         assert (newSortColumn != null);
+        LOG.info("re-sorting..");
         // get data traits AFTER compression because it might be dictionary encoded
         ValueTraits dataTraits = oldFilesReader[newSortColumn].getCompressedDataTraits();
 
@@ -200,6 +215,8 @@ public final class PartitionRewriter {
             oldPos[i] = i;
         }
         dataTraits.sortKeyValue(keys, oldPos); // coupled-sort on keys and oldPos.
+
+        LOG.debug("reading old file and sorting done!");
 
         // similar comments in LocalDictCompressionWriter#writeFileFooter(). what happens there is somewhat analogous to this
         
@@ -215,6 +232,7 @@ public final class PartitionRewriter {
         
         // write out this column file
         convertAndWriteData (keys, newSortColumn);
+        LOG.debug("wrote new data file for the sorting column");
         
         // because this is the sorting column, also write out value index
         List<Object> collectedValues = new ArrayList<Object>();
@@ -226,12 +244,15 @@ public final class PartitionRewriter {
         LocalValFile valueIndex = new LocalValFile(collectedValues, collectedPositions, dataTraits);
         valueIndex.writeToFile(newFiles[newSortColumn].getValueFile());
         
+        LOG.debug("value index written");
+
         // and also get distinct values from it (if it's dictionary encoded, we anyway have the data)
         if (newCompressions[newSortColumn] != CompressionType.DICTIONARY) {
             // because it's sorted, we can efficiently get #distinct-values even without dictionary 
             newFiles[newSortColumn].setDistinctValues(dataTraits.countDistinct(keys));
         }
         
+        LOG.info("finished to write the sorting column");
         return oldPos;
     }
 
@@ -239,12 +260,17 @@ public final class PartitionRewriter {
     @SuppressWarnings({"unchecked", "rawtypes"})
     private Object readOldData (int col) throws IOException {
         ValueTraits dataTraits = oldFilesReader[col].getCompressedDataTraits();
-        TypedReader dataReader = oldFilesReader[col].getDataReader();
+        long start = System.currentTimeMillis();
+        TypedReader dataReader = oldFilesReader[col].getCompressedDataReader(); // use the reader without dictionary-decompression
         try {
             Object oldData = dataTraits.createArray(tupleCount);
             // read them all! each columnar file should be small.
             int read = dataReader.readValues(oldData, 0, tupleCount);
             assert (read == tupleCount);
+            long end = System.currentTimeMillis();
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("read old data file (" + oldFiles[col].getDataFile().length() + " bytes) in " + (end - start) + "ms");
+            }
             return oldData;
         } finally {
             dataReader.close();
@@ -258,6 +284,7 @@ public final class PartitionRewriter {
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
     private void rewriteNonSortingColumn (int col, int[] oldPos) throws IOException {
+        LOG.info("rewriting non-sorting column[" + col + "]..");
         ValueTraits dataTraits = oldFilesReader[col].getCompressedDataTraits();
         Object oldData = readOldData (col);
         Object newData;
@@ -269,7 +296,9 @@ public final class PartitionRewriter {
             newData = oldData;
         }
         oldData = null; // we no longer need it. help GC 
+        LOG.info("read and re-ordered old data.");
         convertAndWriteData (newData, col);
+        LOG.info("written new data file.");
     }
     
     /**
@@ -308,6 +337,7 @@ public final class PartitionRewriter {
             inheritDictionary(col);
         }
 
+        long start = System.currentTimeMillis();
         ColumnFileBundle newFile = newFiles[col];
         TypedWriter dataWriter = LocalWriterFactory.getInstance(newFile, newCompressions[col], traits);
         try {
@@ -325,6 +355,10 @@ public final class PartitionRewriter {
                 long uncompressedSize = ((TypedBlockCmpWriter) dataWriter).getTotalUncompressedSize();
                 int uncompressedSizeKB = (int) (uncompressedSize / 1024L + (uncompressedSize % 1024 == 0 ? 0 : 1));
                 newFile.setUncompressedSizeKB(uncompressedSizeKB);
+            }
+            long end = System.currentTimeMillis();
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("wrote new data file (" + newFiles[col].getDataFile().length() + " bytes) in " + (end - start) + "ms");
             }
         } finally {
             dataWriter.close();

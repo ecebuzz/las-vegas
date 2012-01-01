@@ -10,7 +10,7 @@ import edu.brown.lasvegas.lvfs.RawValueWriter;
  * @param <T> Value type
  * @param <AT> Array type 
  */
-public interface FixLenValueTraits<T extends Comparable<T>, AT> extends ValueTraits<T, AT> {
+public interface FixLenValueTraits<T extends Number & Comparable<T>, AT> extends ValueTraits<T, AT> {
     
     /**
      * Reads arbitrary number of values at once.

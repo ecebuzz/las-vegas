@@ -4,27 +4,18 @@ import java.io.Closeable;
 import java.io.IOException;
 
 import edu.brown.lasvegas.ColumnType;
-import edu.brown.lasvegas.CompressionType;
-import edu.brown.lasvegas.lvfs.OrderedDictionary;
-import edu.brown.lasvegas.lvfs.ValueRun;
 import edu.brown.lasvegas.util.ByteArray;
 
 /**
- * Interface to write a set of column data (Tuple).
+ * Interface to read a set of column data (Tuple).
  * A tuple might be a complete set of columns in a table,
  * or might be its subset (projection).
  */
 public interface TupleReader extends Closeable {
     /**
-     * Jump to the specified absolute tuple position.
-     * @param tuple the tuple to locate.
-     */
-    void seekToTupleAbsolute(int tuple) throws IOException;
-    
-    /**
      * This method is called to read a tuple, including the first tuple.
      * @return whether there is a tuple to return.
-     * @see #nextBatch(int, TupleBuffer)
+     * @see #nextBatch(TupleBuffer)
      */
     boolean next() throws IOException;
     
@@ -40,13 +31,12 @@ public interface TupleReader extends Closeable {
      */
     int nextBatch (TupleBuffer buffer) throws IOException;
     
-    /** Returns the current tuple position. */
-    int getCurrentTuple () throws IOException;
     /**
-     * Returns the total number of tuples this reader can return.
-     * Depending on the underlying implementation, this might be slow, or not supported.
+     * Returns a string representation of current tuple.
+     * If this reader is reading a text file, this method should respect the original format,
+     * ie returning the actual line it read.
      */
-    int getTupleCount () throws IOException;
+    String getCurrentTupleAsString ();
     
     /** Returns the number of columns. */
     int getColumnCount();
@@ -55,47 +45,6 @@ public interface TupleReader extends Closeable {
     ColumnType getColumnType(int columnIndex);
     /** Returns the data type of all columns. */
     ColumnType[] getColumnTypes();
-    
-    /**
-     * Returns the compression type of specified column.
-     * Users don't have to be aware of the underlying compression type,
-     * but this interface also allows to exploit the compression type
-     * to speed-up (or even completely bypass) compression/decompression.
-     * @see #getDictionary(int)
-     * @see #getCurrentRun(int)
-     */
-    CompressionType getCompressionType (int columnIndex);
-    /** Returns the compression type of all columns. */
-    CompressionType[] getCompressionTypes ();
-    
-    /**
-     * Returns the dictionary <b>assuming the underlying column data is dictionary compressed</b>.
-     * This method is used to exploit the underlying compression.
-     */
-    OrderedDictionary<?, ?> getDictionary (int columnIndex);
-    /**
-     * Returns the values before de-compression <b>assuming the underlying column data is dictionary compressed with 1-byte integers (0-256 distinct values)</b>.
-     * @see #getDictionary(int)
-     */
-    int getDictionaryCompressedValuesByte (int columnIndex, byte[] buffer, int off, int len) throws IOException;
-    /**
-     * Returns the values before de-compression <b>assuming the underlying column data is dictionary compressed with 2-byte integers (257-65536 distinct values)</b>.
-     * @see #getDictionary(int)
-     */
-    int getDictionaryCompressedValuesShort (int columnIndex, short[] buffer, int off, int len) throws IOException;
-    /**
-     * Returns the values before de-compression <b>assuming the underlying column data is dictionary compressed with 4-byte integers (65537- distinct values)</b>.
-     * @see #getDictionary(int)
-     */
-    int getDictionaryCompressedValuesInt (int columnIndex, int[] buffer, int off, int len) throws IOException;
-    
-    
-    /**
-     * Returns the current run of the compressed values <b>assuming the underlying column data is RLE-compressed</b>.
-     * The run might not start from the (conceptual) current tuple. 
-     * @return the run of values which contain the current tuple
-     */
-    ValueRun<?> getCurrentRun (int columnIndex);
 
     /** for general reads. */
     Object getObject (int columnIndex) throws IOException;

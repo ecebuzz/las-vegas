@@ -81,6 +81,11 @@ public class LocalDictCompressionWriter<T extends Comparable<T>, AT> implements 
     }
     
     @Override
+    public ValueTraits<T, AT> getValueTraits() {
+        return traits;
+    }
+    
+    @Override
     public void close() throws IOException {
         if (!wroteFileFooter) {
             // just warn. the user might have simply canceled writing this file 
@@ -197,7 +202,7 @@ public class LocalDictCompressionWriter<T extends Comparable<T>, AT> implements 
         wroteFileFooter = true;
         return crc32Value;
     }
-    private abstract class DataFinalizer<T2 extends Comparable<T2>, AT2>  {
+    private abstract class DataFinalizer<T2 extends Number & Comparable<T2>, AT2>  {
         long convertDataFile(int[] dictConversion) throws IOException {
             FixLenValueTraits<T2, AT2> finalDataTraits = getTraits();
             AT2 buf = finalDataTraits.createArray(tentativeIntBuffer.length);

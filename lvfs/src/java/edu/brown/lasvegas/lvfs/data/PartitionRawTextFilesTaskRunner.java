@@ -10,14 +10,16 @@ import java.util.List;
 
 import org.apache.log4j.Logger;
 
+import edu.brown.lasvegas.ColumnType;
 import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.JobType;
 import edu.brown.lasvegas.LVColumn;
 import edu.brown.lasvegas.LVFracture;
 import edu.brown.lasvegas.LVReplicaGroup;
 import edu.brown.lasvegas.TaskType;
-import edu.brown.lasvegas.lvfs.imp.TextFileTableReader;
+import edu.brown.lasvegas.lvfs.VirtualFile;
 import edu.brown.lasvegas.lvfs.local.LocalVirtualFile;
+import edu.brown.lasvegas.tuple.TextFileTupleReader;
 import edu.brown.lasvegas.util.ValueRange;
 
 /**
@@ -57,18 +59,20 @@ public final class PartitionRawTextFilesTaskRunner extends DataTaskRunner<Partit
     protected String[] runDataTask() throws Exception {
         readConf ();
         outputFilePaths = new ArrayList<String>();
-        List<LocalVirtualFile> inputFiles = new ArrayList<LocalVirtualFile>();
-        for (String path : parameters.getFilePaths()) {
+        VirtualFile[] inputFiles = new VirtualFile[parameters.getFilePaths().length];
+        for (int i = 0; i < parameters.getFilePaths().length; ++i) {
+            String path = parameters.getFilePaths()[i];
             File file = new File (path);
             if (!file.exists()) {
                 throw new IOException ("this input file doesn't exist:" + file.getAbsolutePath());
             }
-            inputFiles.add(new LocalVirtualFile(file));
+            inputFiles[i] = new LocalVirtualFile(file);
         }
         LVFracture fracture = context.metaRepo.getFracture(parameters.getFractureId());
         if (fracture == null) {
             throw new IOException ("this fracture ID doesn't exist:" + parameters.getFractureId());
         }
+        LVColumn[] allColumns = context.metaRepo.getAllColumns(fracture.getTableId());
         LVReplicaGroup[] groups = context.metaRepo.getAllReplicaGroups(fracture.getTableId());
 
         // partition the files for each replica group
@@ -83,31 +87,31 @@ public final class PartitionRawTextFilesTaskRunner extends DataTaskRunner<Partit
             case TIME:
             case TIMESTAMP:
                 partitionFiles (extractStartKeys(Long.MIN_VALUE, ranges, new Long[partitions]),
-                            inputFiles, fracture, group, partitioningColumn);
+                            inputFiles, fracture, group, allColumns, partitioningColumn);
                 break;
             case INTEGER:
                 partitionFiles (extractStartKeys(Integer.MIN_VALUE, ranges, new Integer[partitions]),
-                                inputFiles, fracture, group, partitioningColumn);
+                                inputFiles, fracture, group, allColumns, partitioningColumn);
                 break;
             case SMALLINT:
                 partitionFiles (extractStartKeys(Short.MIN_VALUE, ranges, new Short[partitions]),
-                                inputFiles, fracture, group, partitioningColumn);
+                                inputFiles, fracture, group, allColumns, partitioningColumn);
                 break;
             case TINYINT:
                 partitionFiles (extractStartKeys(Byte.MIN_VALUE, ranges, new Byte[partitions]),
-                                inputFiles, fracture, group, partitioningColumn);
+                                inputFiles, fracture, group, allColumns, partitioningColumn);
                 break;
             case FLOAT:
                 partitionFiles (extractStartKeys(Float.MIN_VALUE, ranges, new Float[partitions]),
-                                inputFiles, fracture, group, partitioningColumn);
+                                inputFiles, fracture, group, allColumns, partitioningColumn);
                 break;
             case DOUBLE:
                 partitionFiles (extractStartKeys(Double.MIN_VALUE, ranges, new Double[partitions]),
-                                inputFiles, fracture, group, partitioningColumn);
+                                inputFiles, fracture, group, allColumns, partitioningColumn);
                 break;
             case VARCHAR:
                 partitionFiles (extractStartKeys("", ranges, new String[partitions]),
-                                inputFiles, fracture, group, partitioningColumn);
+                                inputFiles, fracture, group, allColumns, partitioningColumn);
                 break;
             default:
                 throw new IOException ("unexpected partition column type:" + partitioningColumn);
@@ -133,42 +137,51 @@ public final class PartitionRawTextFilesTaskRunner extends DataTaskRunner<Partit
     }
 
     private <T extends Comparable<T>> void partitionFiles (T[] startKeys,
-                    List<LocalVirtualFile> inputFiles,
+                    VirtualFile[] inputFiles,
                     LVFracture fracture, LVReplicaGroup group,
-                    LVColumn partitioningColumn) throws Exception {
+                    LVColumn[] allColumns, LVColumn partitioningColumn) throws Exception {
         checkTaskCanceled ();
         int partitions = startKeys.length;
         
         boolean[] partitionsCompleted = new boolean[partitions];
         Arrays.fill(partitionsCompleted, false);
-        int partitioningColumnIndex = partitioningColumn.getOrder();
+        int partitioningColumnIndex = -1;
+        ColumnType[] columnTypes = new ColumnType[allColumns.length - 1]; // -1 to ignore epoch column
+        assert (allColumns[0].getName().equals(LVColumn.EPOCH_COLUMN_NAME));
+        for (int i = 0; i < columnTypes.length; ++i) {
+            LVColumn column = allColumns[i + 1]; // ignore epoch column
+            if (column.getColumnId() == partitioningColumn.getColumnId()) {
+                partitioningColumnIndex = i;
+                // set columnType only to the partitioning column to bypass parsing other columns.
+                // we only need partitioning in this task
+                columnTypes[i] = column.getType();
+            }
+        }
+        assert (partitioningColumnIndex >= 0);
         while (true) {
             PartitionedTextFileWriters writers = new PartitionedTextFileWriters(context.localLvfsTmpDir, context.nodeId, group, fracture, partitions,
                             partitionsCompleted, parameters.getEncoding(), writeBufferSize, writePartitionsMax, compression);
             try {
                 // scan all input files
-                for (LocalVirtualFile file : inputFiles) {
-                    checkTaskCanceled ();
-                    TextFileTableReader reader = new TextFileTableReader(file, null,
-                        parameters.getDelimiter(), readBufferSize, Charset.forName(parameters.getEncoding()),
-                        new SimpleDateFormat(parameters.getDateFormat()),
-                        new SimpleDateFormat(parameters.getTimeFormat()),
-                        new SimpleDateFormat(parameters.getTimestampFormat()));
-                    try {
-                        int checkCounter = 0;
-                        while (reader.next()) {
-                            @SuppressWarnings("unchecked")
-                            T partitionValue = (T) reader.getObject(partitioningColumnIndex);
-                            int partition = findPartition (partitionValue, startKeys);
-                            assert (partition >= 0 && partition < partitions);
-                            writers.write(partition, reader.getCurrentLineString());
-                            if (++checkCounter % 100000 == 0) {
-                                checkTaskCanceled ();
-                            }
+                TextFileTupleReader reader = new TextFileTupleReader(inputFiles, CompressionType.NONE, columnTypes, 
+                                parameters.getDelimiter(), readBufferSize, Charset.forName(parameters.getEncoding()),
+                                new SimpleDateFormat(parameters.getDateFormat()),
+                                new SimpleDateFormat(parameters.getTimeFormat()),
+                                new SimpleDateFormat(parameters.getTimestampFormat()));
+                try {
+                    int checkCounter = 0;
+                    while (reader.next()) {
+                        @SuppressWarnings("unchecked")
+                        T partitionValue = (T) reader.getObject(partitioningColumnIndex);
+                        int partition = findPartition (partitionValue, startKeys);
+                        assert (partition >= 0 && partition < partitions);
+                        writers.write(partition, reader.getCurrentTupleAsString());
+                        if (++checkCounter % 100000 == 0) {
+                            checkTaskCanceled ();
                         }
-                    } finally {
-                        reader.close();
                     }
+                } finally {
+                    reader.close();
                 }
                 String[] paths = writers.complete();
                 for (String path : paths) {

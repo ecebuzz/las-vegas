@@ -7,74 +7,72 @@ import java.util.List;
 import org.apache.log4j.Logger;
 
 import edu.brown.lasvegas.ColumnType;
-import edu.brown.lasvegas.tuple.InputTableReader;
+import edu.brown.lasvegas.traits.ValueTraits;
+import edu.brown.lasvegas.traits.ValueTraitsFactory;
+import edu.brown.lasvegas.tuple.SampleableTupleReader;
+import edu.brown.lasvegas.tuple.TupleBuffer;
 import edu.brown.lasvegas.util.ValueRange;
 
 /**
  * A VERY simple, fast, and inaccurate implementation of equi-width partitioning.
  * 
- * <p>This class looks at the first 10MB of the first file
- * and last 10MB of the last file, retrieving the smallest
+ * <p>This class takes random samples of tuples from the input file and retrieves the smallest
  * and the largest partitioning attributes.</p>
  * 
  * <p>Then, it uniformly divides the ranges between the minimum and maximum
  * values of them. Of course, this is VERY inaccurate in the existence of
- * skewness and/or non-sorted input. The goal of this class is not to give the definitive mean for
+ * skewness. The goal of this class is not to give the definitive mean for
  * partitioning designs but to provide a very simple and fast alternative.
  * Remember, partitioning logic is plug-able, this is just a default.</p>
  * 
  * <p>Also, this implementation can't detect the exact minimal and maximal values,
- * so the global beginning and global ending values will be NULL. The data import code
- * should modify the beginning value of the first partition, and the ending value of the
- * last partition while importing.</p>
+ * so the global beginning and global ending values will be NULL.</p>
  */
-public class EquiWidthPartitioner<T extends Comparable<T>> {
+public class EquiWidthPartitioner<T extends Comparable<T>, AT> {
     private static Logger LOG = Logger.getLogger(EquiWidthPartitioner.class);
     /**
      * Designs partition ranges by sampling the given files. See the class comment for more details.
-     * @param firstSplit The first file to import. If the partitioning column is not correlated with
-     * tuple position, any file would work fine.
-     * @param lastSplit The last file to import. If the partitioning column is not correlated with
-     * tuple position, any file would work fine. Could be same as firstSplit if there is only one file to import.
+     * @param tupleReader data files that can provide random samples.
      * @param partitioningColumnIndex the column used for partitioning
      * @param numPartitions the expected number of partitions. The actual count might be different.
-     * @param sampleByteSize
+     * @param sampleSize the approximate number of tuples to sample
      * @return designed partitions.
      * @throws IOException
      */
-    public static ValueRange[] designPartitions (InputTableReader firstSplit, InputTableReader lastSplit, int partitioningColumnIndex, int numPartitions, int sampleByteSize) throws IOException {
-        ColumnType type = firstSplit.getColumnType(partitioningColumnIndex);
-        EquiWidthPartitioner<?> partitioner;
+    public static ValueRange[] designPartitions (SampleableTupleReader tupleReader, int partitioningColumnIndex, int numPartitions, int sampleSize) throws IOException {
+        ColumnType type = tupleReader.getColumnType(partitioningColumnIndex);
+        EquiWidthPartitioner<?, ?> partitioner;
         switch(type) {
         case DATE:
         case TIME:
         case TIMESTAMP:
-        case BIGINT: partitioner = new EquiWidthPartitioner<Long>(type); break;
-        case DOUBLE: partitioner = new EquiWidthPartitioner<Double>(type); break;
-        case FLOAT: partitioner = new EquiWidthPartitioner<Float>(type); break;
-        case INTEGER: partitioner = new EquiWidthPartitioner<Integer>(type); break;
-        case SMALLINT: partitioner = new EquiWidthPartitioner<Short>(type); break;
+        case BIGINT: partitioner = new EquiWidthPartitioner<Long, long[]>(type); break;
+        case DOUBLE: partitioner = new EquiWidthPartitioner<Double, double[]>(type); break;
+        case FLOAT: partitioner = new EquiWidthPartitioner<Float, float[]>(type); break;
+        case INTEGER: partitioner = new EquiWidthPartitioner<Integer, int[]>(type); break;
+        case SMALLINT: partitioner = new EquiWidthPartitioner<Short, short[]>(type); break;
         case BOOLEAN:
-        case TINYINT: partitioner = new EquiWidthPartitioner<Byte>(type); break;
+        case TINYINT: partitioner = new EquiWidthPartitioner<Byte, byte[]>(type); break;
         case VARBINARY: throw new IllegalArgumentException("partitioning by VARBINARY column is not supported");
-        case VARCHAR: partitioner = new EquiWidthPartitioner<String>(type); break;
+        case VARCHAR: partitioner = new EquiWidthPartitioner<String, String[]>(type); break;
 
         default:
             throw new IOException ("Unexpected column type:" + type);
         }
         
-        return partitioner.design(firstSplit, lastSplit, partitioningColumnIndex, numPartitions, sampleByteSize);
+        return partitioner.design(tupleReader, partitioningColumnIndex, numPartitions, sampleSize);
     }
     /**
      * overload that uses default sample size.
-     * @see #designPartitions(InputTableReader, InputTableReader, int, int, int)
      */
-    public static ValueRange[] designPartitions (InputTableReader firstSplit, InputTableReader lastSplit, int partitioningColumnIndex, int numPartitions) throws IOException {
-        return designPartitions(firstSplit, lastSplit, partitioningColumnIndex, numPartitions, DEFAULT_SAMPLE_BYTE_SIZE);
+    public static ValueRange[] designPartitions (SampleableTupleReader tupleReader, int partitioningColumnIndex, int numPartitions) throws IOException {
+        return designPartitions(tupleReader, partitioningColumnIndex, numPartitions, DEFAULT_SAMPLE_SIZE);
     }
-    private final static int DEFAULT_SAMPLE_BYTE_SIZE = 1 << 20;
+    private final static int DEFAULT_SAMPLE_SIZE = 1 << 16;
     private final ValueSplitter splitter;
     private final ColumnType type;
+    private final ValueTraits<T, AT> traits;
+    @SuppressWarnings("unchecked")
     private EquiWidthPartitioner(ColumnType type) {
         this.type = type;
         switch(type) {
@@ -94,24 +92,15 @@ public class EquiWidthPartitioner<T extends Comparable<T>> {
         default:
             throw new IllegalArgumentException ("Unexpected column type:" + type);
         }
+        this.traits = (ValueTraits<T, AT>) ValueTraitsFactory.getInstance(type);
     }
     
     
-    @SuppressWarnings("unchecked")
-    private ValueRange[] design (InputTableReader firstSplit, InputTableReader lastSplit, int partitioningColumnIndex, int numPartitions, int sampleByteSize) throws IOException {
-        LOG.info("Designing " + numPartitions + " partitions from first-file:" + firstSplit + " and last-file:" + lastSplit);
-        //first SAMPLE_BYTE_SIZE from first-file
-        firstSplit.reset();
-        ValueRange minmax1 = getMinMax(firstSplit, partitioningColumnIndex, sampleByteSize);
-        //last SAMPLE_BYTE_SIZE from last-file
-        long lastSplitLen = lastSplit.length();
-        long seekpos = lastSplitLen - sampleByteSize;
-        if (seekpos < 0) seekpos = 0;
-        lastSplit.seekApproximate(seekpos);
-        ValueRange minmax2 = getMinMax(lastSplit, partitioningColumnIndex, sampleByteSize);
-        ValueRange minmax = new ValueRange(type,
-            ((T) minmax1.getStartKey()).compareTo((T) minmax2.getStartKey()) < 0 ? minmax1.getStartKey() : minmax2.getStartKey(),
-            ((T) minmax1.getEndKey()).compareTo((T) minmax2.getEndKey()) > 0 ? minmax1.getEndKey() : minmax2.getEndKey());
+    private ValueRange[] design (SampleableTupleReader tupleReader, int partitioningColumnIndex, int numPartitions, int sampleSize) throws IOException {
+        LOG.info("Designing " + numPartitions + " partitions");
+        TupleBuffer samples = new TupleBuffer(tupleReader.getColumnTypes(), sampleSize);
+        tupleReader.sample(samples);
+        ValueRange minmax = getMinMax(samples, partitioningColumnIndex);
         // uniformly divide the range
         ValueRange[] ret = splitter.split(type, minmax.getStartKey(), minmax.getEndKey(), numPartitions).toArray(new ValueRange[0]);
         if (LOG.isInfoEnabled()) {
@@ -123,21 +112,18 @@ public class EquiWidthPartitioner<T extends Comparable<T>> {
         }
         return ret;
     }
-    private ValueRange getMinMax (InputTableReader file, int partitioningColumnIndex, int sampleByteSize) throws IOException {
+    private ValueRange getMinMax (TupleBuffer samples, int partitioningColumnIndex) throws IOException {
         T min = null, max = null;
-        for (int totalRead = 0; totalRead < sampleByteSize;) {
-            if (!file.next()) {
-                break;
-            }
-            @SuppressWarnings("unchecked")
-            T val = (T) file.getObject(partitioningColumnIndex);
+        @SuppressWarnings("unchecked")
+        AT buffer = (AT) samples.getColumnBuffer(partitioningColumnIndex);
+        for (int i = 0; i < samples.getCount(); ++i) {
+            T val = traits.get(buffer, i);
             if (min == null || val.compareTo(min) < 0) {
                 min = val;
             }
             if (max == null || val.compareTo(max) > 0) {
                 max = val;
             }
-            totalRead += file.getCurrentTupleByteSize();
         }
         return new ValueRange(type, min, max);
     }
