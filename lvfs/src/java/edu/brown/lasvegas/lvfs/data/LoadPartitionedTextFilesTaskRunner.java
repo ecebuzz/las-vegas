@@ -28,7 +28,6 @@ import edu.brown.lasvegas.TaskType;
 import edu.brown.lasvegas.client.DataNodeFile;
 import edu.brown.lasvegas.client.LVDataClient;
 import edu.brown.lasvegas.lvfs.ColumnFileBundle;
-import edu.brown.lasvegas.lvfs.LVFSFilePath;
 import edu.brown.lasvegas.lvfs.VirtualFile;
 import edu.brown.lasvegas.lvfs.local.LocalVirtualFile;
 import edu.brown.lasvegas.tuple.BufferedTupleWriter;
@@ -110,7 +109,7 @@ public final class LoadPartitionedTextFilesTaskRunner extends DataTaskRunner<Loa
             }
         }
         // move files to non-temporary place
-        moveFiles (finalFiles);
+        DataTaskUtil.registerTemporaryFilesAsColumnFiles(context, partitionInput.partition, columns, finalFiles);
     }
     /**
      * sequentially copy all input files into unsorted column files.
@@ -185,14 +184,6 @@ public final class LoadPartitionedTextFilesTaskRunner extends DataTaskRunner<Loa
         context.metaRepo.updateTaskNoReturn(task.getTaskId(), null, new DoubleWritable(completedProgress), null, null);
         return writtenFiles;
     }
-    /**
-     * Moves the columnar files to non-temporary folder.
-     * Also renames the files according to the rule defined in {@link LVFSFilePath}.
-     */
-    private void moveFiles (ColumnFileBundle[] files) throws IOException {
-        // TODO implement
-    }
-    
     
     /** callback object to periodically check if this task is canceled. */
     private class CheckCanceledCallback implements BufferedTupleWriter.BatchCallback {

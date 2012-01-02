@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Random;
 
+import org.apache.hadoop.io.DoubleWritable;
 import org.apache.log4j.Logger;
 
 import edu.brown.lasvegas.ColumnType;
@@ -64,22 +65,21 @@ public final class RecoverPartitionFromBuddyTaskRunner extends DataTaskRunner<Re
         for (int i = 0; i < partitions.length; ++i) {
             checkTaskCanceled();
             // apply sorting/compression to recover the files
-            ColumnFileBundle[] files = recoverPatition (partitions[i], buddyPartitions[i]);
+            ColumnFileBundle[] files = recoverPatition (partitions[i], buddyPartitions[i], ((double) i / partitions.length), ((i + 1.0d) / partitions.length));
             // move files to non-temporary place
-            moveFiles (files);
+            DataTaskUtil.registerTemporaryFilesAsColumnFiles(context, partitions[i], columns, files);
         }
-        //TODO implement
         checkTaskCanceled();
-        LOG.info("done!");
         return new String[0];
     }
     
-    private ColumnFileBundle[] recoverPatition (LVReplicaPartition partition, LVReplicaPartition buddyPartition) throws IOException {
+    private ColumnFileBundle[] recoverPatition (LVReplicaPartition partition, LVReplicaPartition buddyPartition, double baseProgress, double completedProgress) throws IOException {
         LOG.info("recovering partition " + partition + " from the buddy:" + buddyPartition);
         LVColumnFile[] buddyColumnFiles = context.metaRepo.getAllColumnFilesByReplicaPartitionId(buddyPartition.getPartitionId());
         ColumnFileBundle[] buddies = new ColumnFileBundle[buddyColumnFiles.length];
         int buddyNodeId = buddyPartition.getNodeId();
         HashMap<Integer, LVDataClient> dataClients = new HashMap<Integer, LVDataClient>(); // key= nodeID. keep this until we disconnect from data nodes
+        ColumnFileBundle[] newFiles;
         try {
             if (buddyNodeId == context.nodeId) {
                 // it's in same node!
@@ -102,13 +102,16 @@ public final class RecoverPartitionFromBuddyTaskRunner extends DataTaskRunner<Re
                 }
             }
             PartitionRewriter rewriter = new PartitionRewriter(tmpOutputFolder, buddies, fileTemporaryNames, compressionTypes, scheme.getSortColumnId());
-            return rewriter.execute();
+            newFiles = rewriter.execute();
         } finally {
             for (LVDataClient client : dataClients.values()) {
                 client.release();
             }
             dataClients.clear();
         }
+        LOG.info("recovered");
+        context.metaRepo.updateTaskNoReturn(task.getTaskId(), null, new DoubleWritable(completedProgress), null, null);
+        return newFiles;
     }
     
     private void prepareInputs () throws Exception {
@@ -187,8 +190,5 @@ public final class RecoverPartitionFromBuddyTaskRunner extends DataTaskRunner<Re
         for (int i = 0; i < columns.length; ++i) {
             fileTemporaryNames[i] = "recovered_" + i;
         }
-    }
-    private void moveFiles (ColumnFileBundle[] files) throws IOException {
-        // TODO implement : share the code in Load task
     }
 }

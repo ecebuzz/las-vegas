@@ -1,4 +1,4 @@
-package edu.brown.lasvegas.lvfs.imp;
+package edu.brown.lasvegas.lvfs.data;
 
 import static org.junit.Assert.*;
 import java.io.IOException;
@@ -7,6 +7,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import edu.brown.lasvegas.lvfs.data.EquiWidthPartitioner;
 import edu.brown.lasvegas.tuple.TextFileTupleReader;
 import edu.brown.lasvegas.util.ValueRange;
 

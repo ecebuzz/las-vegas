@@ -471,7 +471,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         }
         // delete column files
         for (LVColumnFile file : bdbTableAccessors.columnFileAccessor.IX_COLUMN_ID.subIndex(column.getColumnId()).map().values()) {
-            dropColumnFile(file);
+            dropColumnFile(file.getColumnFileId());
         }
         
         // then delete the column
@@ -831,7 +831,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         assert (subPartition.getPartitionId() > 0);
         LVColumnFile[] columnFiles = getAllColumnFilesByReplicaPartitionId (subPartition.getPartitionId());
         for (LVColumnFile columnFile : columnFiles) {
-            dropColumnFile(columnFile);
+            dropColumnFile(columnFile.getColumnFileId());
         }
         boolean deleted = bdbTableAccessors.replicaPartitionAccessor.PKX.delete(subPartition.getPartitionId());
         if (!deleted) {
@@ -914,11 +914,11 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     }
 
     @Override
-    public void dropColumnFile(LVColumnFile columnFile) throws IOException {
-        assert (columnFile.getColumnFileId() > 0);
-        boolean deleted = bdbTableAccessors.columnFileAccessor.PKX.delete(columnFile.getColumnFileId());
+    public void dropColumnFile(int columnFileId) throws IOException {
+        assert (columnFileId > 0);
+        boolean deleted = bdbTableAccessors.columnFileAccessor.PKX.delete(columnFileId);
         if (!deleted) {
-            LOG.warn("this column file has been already deleted?? :" + columnFile);
+            LOG.warn("this column file has been already deleted?? :" + columnFileId);
         }
     }
 

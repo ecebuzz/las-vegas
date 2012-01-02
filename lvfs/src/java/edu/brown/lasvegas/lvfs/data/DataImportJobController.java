@@ -1,4 +1,4 @@
-package edu.brown.lasvegas.lvfs.imp;
+package edu.brown.lasvegas.lvfs.data;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -22,14 +22,10 @@ import edu.brown.lasvegas.LVReplicaScheme;
 import edu.brown.lasvegas.LVTask;
 import edu.brown.lasvegas.TaskStatus;
 import edu.brown.lasvegas.TaskType;
-import edu.brown.lasvegas.lvfs.data.LoadPartitionedTextFilesTaskParameters;
-import edu.brown.lasvegas.lvfs.data.PartitionRawTextFilesTaskParameters;
-import edu.brown.lasvegas.lvfs.data.RecoverPartitionFromBuddyTaskParameters;
-import edu.brown.lasvegas.lvfs.data.TemporaryFilePath;
 import edu.brown.lasvegas.protocol.LVMetadataProtocol;
 
 /**
- * The class to control data import to LVFS.
+ * The class to control a data import job.
  * <p>This class merely registers a job and a bunch of sub-tasks
  * to the metadata repository and waits for data nodes to
  * complete the actual work.</p>
@@ -39,29 +35,30 @@ import edu.brown.lasvegas.protocol.LVMetadataProtocol;
  * <pre>
  * LVMetadataClient metaClient = new LVMetadataClient(new Configuration());
  * LVMetadataProtocol metaRepo = metaClient.getChannel ();
- * DataImportParameters param = new DataImportParameters(123);
+ * DataImportJobParameters param = new DataImportJobParameters(123);
  * param.getNodeFilePathMap().put(11, new String[]{"/home/user/test1.txt"});
  * param.getNodeFilePathMap().put(12, new String[]{"/home/user/test2.txt"});
- * new DataImportController(metaRepo, param).execute();
+ * new DataImportJobController(metaRepo, param).execute();
  * </pre>
  * </p>
+ * TODO inherit JobController
  */
-public class DataImportController {
-    private static Logger LOG = Logger.getLogger(DataImportController.class);
+public class DataImportJobController {
+    private static Logger LOG = Logger.getLogger(DataImportJobController.class);
 
     /**
      * Metadata repository.
      */
     private final LVMetadataProtocol metaRepo;
     
-    private final DataImportParameters param;
+    private final DataImportJobParameters param;
     private final int jobId;
     private final LVFracture fracture;
     private final LVReplicaGroup[] groups;
     private final Map<Integer, LVReplicaScheme> defaultReplicaSchemes;
     private final Map<Integer, LVReplicaScheme[]> otherReplicaSchemes;
 
-    public DataImportController (LVMetadataProtocol metaRepo, DataImportParameters param) throws IOException {
+    public DataImportJobController (LVMetadataProtocol metaRepo, DataImportJobParameters param) throws IOException {
         this.metaRepo = metaRepo;
         this.param = param;
         this.jobId = metaRepo.createNewJobIdOnlyReturn("data import Fracture-" + param.getFractureId(), JobType.IMPORT_FRACTURE, null);
@@ -129,7 +126,7 @@ public class DataImportController {
      * Start a data import.
      * @return ID of the Job ({@link LVJob}) object created for this data import.
      */
-    public int execute (DataImportParameters param) throws IOException {
+    public int execute (DataImportJobParameters param) throws IOException {
         // First, create a job object for the import.
         LOG.info("importing Fracture-" + param.getFractureId());
         metaRepo.updateJobNoReturn(jobId, JobStatus.RUNNING, null, null);

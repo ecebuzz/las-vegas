@@ -1,4 +1,4 @@
-package edu.brown.lasvegas.lvfs.imp;
+package edu.brown.lasvegas.lvfs.data;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

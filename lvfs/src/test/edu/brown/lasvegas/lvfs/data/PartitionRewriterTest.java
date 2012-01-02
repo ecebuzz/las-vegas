@@ -12,7 +12,6 @@ import edu.brown.lasvegas.lvfs.ColumnFileReaderBundle;
 import edu.brown.lasvegas.lvfs.TypedDictReader;
 import edu.brown.lasvegas.lvfs.TypedReader;
 import edu.brown.lasvegas.lvfs.VirtualFile;
-import edu.brown.lasvegas.lvfs.imp.MiniLineorder;
 import edu.brown.lasvegas.lvfs.local.LocalVirtualFile;
 import edu.brown.lasvegas.tuple.BufferedTupleWriter;
 import edu.brown.lasvegas.tuple.TextFileTupleReader;

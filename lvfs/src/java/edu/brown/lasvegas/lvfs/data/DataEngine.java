@@ -6,7 +6,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 
-import org.apache.hadoop.conf.Configurable;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.ipc.ProtocolSignature;
 import org.apache.log4j.Logger;
@@ -17,7 +16,7 @@ import edu.brown.lasvegas.protocol.LVMetadataProtocol;
 /**
  * Implementation of {@link LVDataProtocol}.
  */
-public final class DataEngine implements LVDataProtocol, Closeable, Configurable {
+public final class DataEngine implements LVDataProtocol, Closeable {
     private static Logger LOG = Logger.getLogger(DataEngine.class);
 
     public static final String LOCA_LVFS_ROOTDIR_KEY = "lasvegas.server.data.local.rootdir";
@@ -36,12 +35,9 @@ public final class DataEngine implements LVDataProtocol, Closeable, Configurable
     public DataEngine (LVMetadataProtocol metaRepo, int nodeId, Configuration conf) throws IOException {
         assert (metaRepo != null);
         assert (conf != null);
-        context = new DataEngineContext();
-        context.metaRepo = metaRepo;
-        context.conf = conf;
-        context.nodeId = nodeId;
-        context.localLvfsRootDir = getLvfsDir (conf.get(LOCA_LVFS_ROOTDIR_KEY, LOCA_LVFS_ROOTDIR_DEFAULT));
-        context.localLvfsTmpDir = getLvfsDir (conf.get(LOCA_LVFS_TMPDIR_KEY, LOCA_LVFS_TMPDIR_DEFAULT));
+        context = new DataEngineContext(nodeId, conf, metaRepo,
+                getLvfsDir (conf.get(LOCA_LVFS_ROOTDIR_KEY, LOCA_LVFS_ROOTDIR_DEFAULT)),
+                getLvfsDir (conf.get(LOCA_LVFS_TMPDIR_KEY, LOCA_LVFS_TMPDIR_DEFAULT)));
         this.pollingThread = new DataTaskPollingThread(context);
     }
     private File getLvfsDir (String path) throws IOException {
@@ -176,12 +172,7 @@ public final class DataEngine implements LVDataProtocol, Closeable, Configurable
         return dir.delete();
     }
     
-    @Override
     public Configuration getConf() {
         return context.conf;
-    }
-    @Override
-    public void setConf(Configuration conf) {
-        context.conf = conf;
     }
 }

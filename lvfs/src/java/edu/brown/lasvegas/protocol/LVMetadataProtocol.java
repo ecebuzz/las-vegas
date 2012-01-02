@@ -780,10 +780,10 @@ public interface LVMetadataProtocol extends VersionedProtocol {
     
     /**
      * Deletes the column file metadata object from this repository.
-     * @param columnFile the column file object to delete
+     * @param columnFileId ID of the column file object to delete
      * @throws IOException
      */
-    void dropColumnFile (LVColumnFile columnFile) throws IOException;
+    void dropColumnFile (int columnFileId) throws IOException;
     
     /**
      * Returns the name of the node to place the specified column file.

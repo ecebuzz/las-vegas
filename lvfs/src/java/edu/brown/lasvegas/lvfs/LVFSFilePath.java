@@ -60,7 +60,7 @@ public final class LVFSFilePath {
      * @param replicaPartitionId ID of {@link LVReplicaPartition}
      * @param columnId ID of {@link LVColumn}
      * @param columnFileId ID of {@link LVColumnFile}
-     * @param type type of the file
+     * @param type type of the file. null to construct a file path without extension
      */
     public LVFSFilePath(String lvfsRootDir, int databaseId, int tableId, int fractureId, int replicaSchemeId, int range, int replicaPartitionId, int columnId, int columnFileId, LVFSFileType type) {
         assert (lvfsRootDir.indexOf("://") < 0); // protocol part should have been removed beforehand
@@ -79,7 +79,7 @@ public final class LVFSFilePath {
         this.absolutePath = lvfsRootDir + databaseId + "/" + tableId + "/"
             + fractureId + "_" + replicaSchemeId + "/"
             + range + "_" + replicaPartitionId + "/"
-            + columnId + "_" + columnFileId + "." + type.getExtension();
+            + columnId + "_" + columnFileId + (type == null ? "" : "." + type.getExtension());
     }
 
     /**

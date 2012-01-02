@@ -1,4 +1,4 @@
-package edu.brown.lasvegas.lvfs.imp;
+package edu.brown.lasvegas.lvfs.data;
 
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
@@ -10,8 +10,9 @@ import edu.brown.lasvegas.CompressionType;
 /**
  * Set of parameters for one data import.
  * This specifies what files to import, what fracture to construct, etc.
+ * TODO inherit JobParameters
  */
-public final class DataImportParameters {
+public final class DataImportJobParameters {
     /**
      * The fracture to be constructed after this import.
      */
@@ -53,13 +54,13 @@ public final class DataImportParameters {
     /**
      * Instantiates a new data import parameters.
      */
-    public DataImportParameters () {}
+    public DataImportJobParameters () {}
     
     /**
      * Instantiates a new data import parameters.
      * @param fractureId The fracture to be constructed after this import.
      */
-    public DataImportParameters (int fractureId) {
+    public DataImportJobParameters (int fractureId) {
         this (fractureId, "UTF-8", "|", "yyyy-MM-dd", "HH:mm:ss", "yyyy-MM-dd HH:mm:ss.SSS", CompressionType.SNAPPY);
     }
     /**
@@ -71,7 +72,7 @@ public final class DataImportParameters {
      * @param timeFormat the format string to parse a time column in the files, eg, "HH:mm:ss"
      * @param timestampFormat the format string to parse a timestamp column in the files, eg, "yyyy-MM-dd HH:mm:ss.SSS"
      */
-    public DataImportParameters (int fractureId, String encoding, String delimiter,
+    public DataImportJobParameters (int fractureId, String encoding, String delimiter,
                     String dateFormat, String timeFormat, String timestampFormat, CompressionType temporaryFileCompression) {
         this.fractureId = fractureId;
         this.encoding = encoding;

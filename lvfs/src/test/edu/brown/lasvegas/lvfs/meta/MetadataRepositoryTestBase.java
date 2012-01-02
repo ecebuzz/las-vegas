@@ -1116,7 +1116,7 @@ public abstract class MetadataRepositoryTestBase {
             assertEquals(DEFAULT_REPLICA_PARTITIONS[i].getPartitionId(), files[i].getPartitionId());
         }
         
-        repository.dropColumnFile(files[1]);
+        repository.dropColumnFile(files[1].getColumnFileId());
         reloadRepository();
         
         {
