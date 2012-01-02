@@ -2,9 +2,18 @@ package edu.brown.lasvegas.lvfs;
 
 import java.io.IOException;
 
+import edu.brown.lasvegas.client.DataNodeFile;
+import edu.brown.lasvegas.lvfs.hdfs.HdfsVirtualFile;
+import edu.brown.lasvegas.lvfs.local.LocalVirtualFile;
+import edu.brown.lasvegas.util.URLVirtualFile;
+
 /**
- * Represents a file in LVFS which might be a local file or a input/output
- * stream over HDFS.
+ * Represents a file in LVFS which might be a local file or an RPC
+ * connection to a remote data node.
+ * @see LocalVirtualFile
+ * @see DataNodeFile
+ * @see HdfsVirtualFile
+ * @see URLVirtualFile
  */
 public interface VirtualFile {
     /**

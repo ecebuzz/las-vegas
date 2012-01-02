@@ -10,7 +10,7 @@ import edu.brown.lasvegas.lvfs.VirtualFileOutputStream;
 
 /**
  * Dummy implementation of VirtualFile that proxies java.net.URL.
- * Obviously, this version supports only InputStream and lacks many features.
+ * Inherently, this version supports only InputStream and lacks many features.
  * Use this only for some testcases! (e.g., to load resources from classloader)
  */
 public final class URLVirtualFile implements VirtualFile {

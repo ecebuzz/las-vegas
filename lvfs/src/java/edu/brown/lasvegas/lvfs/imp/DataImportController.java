@@ -307,6 +307,7 @@ public class DataImportController {
             }
             for (LVReplicaScheme scheme : otherSchemes) {
                 LVReplica replica = metaRepo.getReplicaFromSchemeAndFracture(scheme.getSchemeId(), fracture.getFractureId());
+                LVReplica buddyReplica = metaRepo.getReplicaFromSchemeAndFracture(defaultScheme.getSchemeId(), fracture.getFractureId());
                 LVReplicaPartition[] partitions = metaRepo.getAllReplicaPartitionsByReplicaId(replica.getReplicaId());
                 // key = node id
                 Map<Integer, NodeFileLoadAssignment> assignmentsPerNode = new HashMap<Integer, NodeFileLoadAssignment>();
@@ -331,8 +332,8 @@ public class DataImportController {
                     NodeFileLoadAssignment assignments = assignmentsPerNode.get(nodeId);
                     RecoverPartitionFromBuddyTaskParameters taskParam = new RecoverPartitionFromBuddyTaskParameters();
                     taskParam.setPartitionIds(assignments.getReplicaPartitionIds());
-                    taskParam.setReplicaSchemeId(scheme.getSchemeId());
-                    taskParam.setBuddyReplicaSchemeId(defaultScheme.getSchemeId());
+                    taskParam.setReplicaId(replica.getReplicaId());
+                    taskParam.setBuddyReplicaId(buddyReplica.getReplicaId());
                     
                     int taskId = metaRepo.createNewTaskIdOnlyReturn(jobId, nodeId, TaskType.RECOVER_PARTITION_FROM_BUDDY, taskParam.writeToBytes());
                     LVTask task = metaRepo.updateTask(taskId, TaskStatus.START_REQUESTED, null, null, null);

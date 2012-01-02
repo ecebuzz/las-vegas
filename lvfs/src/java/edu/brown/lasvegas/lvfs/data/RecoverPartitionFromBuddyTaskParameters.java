@@ -4,8 +4,8 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
+import edu.brown.lasvegas.LVReplica;
 import edu.brown.lasvegas.LVReplicaPartition;
-import edu.brown.lasvegas.LVReplicaScheme;
 import edu.brown.lasvegas.LVTask;
 
 /**
@@ -23,14 +23,14 @@ public final class RecoverPartitionFromBuddyTaskParameters extends DataTaskParam
     }
 
     /**
-     * ID of the replica scheme ({@link LVReplicaScheme}) to be recovered at this data node.
+     * ID of the replica ({@link LVReplica}) to be recovered at this data node.
      */
-    private int replicaSchemeId;
+    private int replicaId;
     
     /**
-     * ID of the replica scheme ({@link LVReplicaScheme}) to provide the buddy files for this recovery.
+     * ID of the replica ({@link LVReplica}) to provide the buddy files for this recovery.
      */
-    private int buddyReplicaSchemeId;
+    private int buddyReplicaId;
     
     /**
      * ID of the partitions ({@link LVReplicaPartition}) to be recovered at this data node.
@@ -42,8 +42,8 @@ public final class RecoverPartitionFromBuddyTaskParameters extends DataTaskParam
      */
     @Override
     public void write(DataOutput out) throws IOException {
-        out.writeInt(replicaSchemeId);
-        out.writeInt(buddyReplicaSchemeId);
+        out.writeInt(replicaId);
+        out.writeInt(buddyReplicaId);
         out.writeInt(partitionIds == null ? -1 : partitionIds.length);
         if (partitionIds != null)
         for (int partitionId : partitionIds) {
@@ -56,8 +56,8 @@ public final class RecoverPartitionFromBuddyTaskParameters extends DataTaskParam
      */
     @Override
     public void readFields(DataInput in) throws IOException {
-        replicaSchemeId = in.readInt();
-        buddyReplicaSchemeId = in.readInt();
+        replicaId = in.readInt();
+        buddyReplicaId = in.readInt();
         int len = in.readInt();
         assert (len >= -1);
         if (len == -1) {
@@ -72,39 +72,21 @@ public final class RecoverPartitionFromBuddyTaskParameters extends DataTaskParam
     
 // auto-generated getters/setters (comments by JAutodoc)    
     /**
-     * Gets the iD of the replica scheme ({@link LVReplicaScheme}) to be recovered at this data node.
+     * Gets the iD of the replica scheme ({@link LVReplica}) to provide the buddy files for this recovery.
      *
-     * @return the iD of the replica scheme ({@link LVReplicaScheme}) to be recovered at this data node
+     * @return the iD of the replica scheme ({@link LVReplica}) to provide the buddy files for this recovery
      */
-    public int getReplicaSchemeId() {
-        return replicaSchemeId;
+    public int getBuddyReplicaId() {
+        return buddyReplicaId;
     }
     
     /**
-     * Sets the iD of the replica scheme ({@link LVReplicaScheme}) to be recovered at this data node.
+     * Sets the iD of the replica scheme ({@link LVReplica}) to provide the buddy files for this recovery.
      *
-     * @param replicaSchemeId the new iD of the replica scheme ({@link LVReplicaScheme}) to be recovered at this data node
+     * @param buddyReplicaId the new iD of the replica scheme ({@link LVReplica}) to provide the buddy files for this recovery
      */
-    public void setReplicaSchemeId(int replicaSchemeId) {
-        this.replicaSchemeId = replicaSchemeId;
-    }
-    
-    /**
-     * Gets the iD of the replica scheme ({@link LVReplicaScheme}) to provide the buddy files for this recovery.
-     *
-     * @return the iD of the replica scheme ({@link LVReplicaScheme}) to provide the buddy files for this recovery
-     */
-    public int getBuddyReplicaSchemeId() {
-        return buddyReplicaSchemeId;
-    }
-    
-    /**
-     * Sets the iD of the replica scheme ({@link LVReplicaScheme}) to provide the buddy files for this recovery.
-     *
-     * @param buddyReplicaSchemeId the new iD of the replica scheme ({@link LVReplicaScheme}) to provide the buddy files for this recovery
-     */
-    public void setBuddyReplicaSchemeId(int buddyReplicaSchemeId) {
-        this.buddyReplicaSchemeId = buddyReplicaSchemeId;
+    public void setBuddyReplicaId(int buddyReplicaId) {
+        this.buddyReplicaId = buddyReplicaId;
     }
     
     /**
@@ -124,4 +106,23 @@ public final class RecoverPartitionFromBuddyTaskParameters extends DataTaskParam
     public void setPartitionIds(int[] partitionIds) {
         this.partitionIds = partitionIds;
     }
+    
+    /**
+     * Gets the iD of the replica ({@link LVReplica}) to be recovered at this data node.
+     *
+     * @return the iD of the replica ({@link LVReplica}) to be recovered at this data node
+     */
+    public int getReplicaId() {
+        return replicaId;
+    }
+    
+    /**
+     * Sets the iD of the replica ({@link LVReplica}) to be recovered at this data node.
+     *
+     * @param replicaId the new iD of the replica ({@link LVReplica}) to be recovered at this data node
+     */
+    public void setReplicaId(int replicaId) {
+        this.replicaId = replicaId;
+    }
+    
 }
