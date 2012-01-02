@@ -16,8 +16,6 @@ import org.apache.log4j.Logger;
 import org.xerial.snappy.Snappy;
 
 import edu.brown.lasvegas.CompressionType;
-import edu.brown.lasvegas.LVFracture;
-import edu.brown.lasvegas.LVReplicaGroup;
 import edu.brown.lasvegas.util.RawByteArrayOutputStream;
 
 /**
@@ -31,17 +29,17 @@ public final class PartitionedTextFileWriters implements Closeable {
     private static Logger LOG = Logger.getLogger(PartitionedTextFileWriters.class);
     
     public PartitionedTextFileWriters (File outputDir,
-                    int nodeId, LVReplicaGroup group, LVFracture fracture,
+                    int nodeId, int groupId, int fractureId,
                     int partitions, boolean[] partitionCompleted, String encoding,
                     int writeBufferSize, int writePartitionsMax, CompressionType compression) {
         this.outputDir = outputDir;
         this.nodeId = nodeId;
-        this.group = group;
-        this.fracture = fracture;
-        writers = new PartitionWriter[partitions];
+        this.groupId = groupId;
+        this.fractureId = fractureId;
+        this.writers = new PartitionWriter[partitions];
         this.partitionCompleted = partitionCompleted.clone();
         assert (partitions == partitionCompleted.length);
-        charset = Charset.forName(encoding);
+        this.charset = Charset.forName(encoding);
         this.writeBufferSize = writeBufferSize;
         this.writePartitionsMax = writePartitionsMax;
         this.compression = compression;
@@ -53,9 +51,9 @@ public final class PartitionedTextFileWriters implements Closeable {
     /** only used to determine the output file name. */
     private final int nodeId;
     /** only used to determine the output file name. */
-    private final LVReplicaGroup group;
+    private final int groupId;
     /** only used to determined the output file name. */
-    private final LVFracture fracture;
+    private final int fractureId;
     /** index=partition (from zero). */
     private final PartitionWriter[] writers;
     /** count of partitions being written out now. */
@@ -122,7 +120,7 @@ public final class PartitionedTextFileWriters implements Closeable {
     public class PartitionWriter {
         public PartitionWriter(int partition) throws IOException {
             buffer = new byte[writeBufferSize];
-            TemporaryFilePath fileName = new TemporaryFilePath(outputDir.getAbsolutePath(), nodeId, group.getGroupId(), fracture.getFractureId(), partition, new Random (System.nanoTime()).nextInt(), compression);
+            TemporaryFilePath fileName = new TemporaryFilePath(outputDir.getAbsolutePath(), nodeId, groupId, fractureId, partition, new Random (System.nanoTime()).nextInt(), compression);
             file = new File(fileName.getFilePath());
             out = new FileOutputStream(file, false);
         }

@@ -76,6 +76,7 @@ public final class PartitionRawTextFilesTaskRunner extends DataTaskRunner<Partit
         LVReplicaGroup[] groups = context.metaRepo.getAllReplicaGroups(fracture.getTableId());
 
         // partition the files for each replica group
+        // TODO partition for all replica groups altogether to speed-up. a bit tricky though.
         for (LVReplicaGroup group : groups) {
             ValueRange[] ranges = group.getRanges();
             int partitions = ranges.length;
@@ -159,7 +160,7 @@ public final class PartitionRawTextFilesTaskRunner extends DataTaskRunner<Partit
         }
         assert (partitioningColumnIndex >= 0);
         while (true) {
-            PartitionedTextFileWriters writers = new PartitionedTextFileWriters(context.localLvfsTmpDir, context.nodeId, group, fracture, partitions,
+            PartitionedTextFileWriters writers = new PartitionedTextFileWriters(context.localLvfsTmpDir, context.nodeId, group.getGroupId(), fracture.getFractureId(), partitions,
                             partitionsCompleted, parameters.getEncoding(), writeBufferSize, writePartitionsMax, compression);
             try {
                 // scan all input files

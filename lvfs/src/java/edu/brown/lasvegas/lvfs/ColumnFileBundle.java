@@ -110,6 +110,22 @@ public final class ColumnFileBundle {
         + ", distinctValues=" + distinctValues + ", runCount=" + runCount
         + ", tupleCount=" + tupleCount + ", uncompressedSizeKB=" + uncompressedSizeKB +"]";
     }
+    
+    /** delete all files in this bundle. */
+    public void deleteFiles () throws IOException {
+        tryDeleteFile(dataFile);
+        tryDeleteFile(dictionaryFile);
+        tryDeleteFile(positionFile);
+        tryDeleteFile(valueFile);
+        tryDeleteFile(tmpFile);
+    }
+    private static void tryDeleteFile (VirtualFile file) throws IOException {
+        if (file == null) return;
+        if (!file.exists()) return;
+        if (!file.delete()) {
+            throw new IOException ("failed to delete this file:" + file);
+        }
+    }
 
 // auto-generated getters/setters (comments by JAutodoc)
 

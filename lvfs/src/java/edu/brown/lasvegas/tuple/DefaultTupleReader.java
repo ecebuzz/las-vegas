@@ -32,8 +32,13 @@ public abstract class DefaultTupleReader implements TupleReader {
         while (!buffer.isFull()) {
             boolean appended = buffer.appendTuple(this);
             if (!appended) {
-                break;
+                if (count > 0) {
+                    return count;
+                } else {
+                    return -1; // end of file
+                }
             }
+            ++count;
         }
         return count;
     }

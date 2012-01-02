@@ -28,6 +28,7 @@ import edu.brown.lasvegas.TaskType;
 import edu.brown.lasvegas.client.DataNodeFile;
 import edu.brown.lasvegas.client.LVDataClient;
 import edu.brown.lasvegas.lvfs.ColumnFileBundle;
+import edu.brown.lasvegas.lvfs.LVFSFilePath;
 import edu.brown.lasvegas.lvfs.VirtualFile;
 import edu.brown.lasvegas.lvfs.local.LocalVirtualFile;
 import edu.brown.lasvegas.tuple.BufferedTupleWriter;
@@ -55,6 +56,7 @@ public final class LoadPartitionedTextFilesTaskRunner extends DataTaskRunner<Loa
     private Map<Integer, PartitionInput> partitionInputs;
     
     private CompressionType[] temporaryCompressionTypes;
+    private CompressionType[] finalCompressionTypes;
 
     private Charset charset;
     private DateFormat dateFormat;
@@ -65,44 +67,56 @@ public final class LoadPartitionedTextFilesTaskRunner extends DataTaskRunner<Loa
     private VirtualFile tmpOutputFolder;
     private String[] unsortedFileTemporaryNames;
     private String[] sortedFileTemporaryNames;
-
-    /** temporary output files (not including the final output files registered as LVColumnFile). */
-    private List<String> outputFiles;
     
     @Override
     protected String[] runDataTask() throws Exception {
+        if (parameters.getReplicaPartitionIds().length == 0) {
+            LOG.warn("no inputs for this node??");
+            return new String[0];
+        }
         LOG.info("loading partitioned text files...");
         prepareInputs ();
         checkTaskCanceled();
+        double progress = 0;
         for (PartitionInput partitionInput : partitionInputs.values()) {
-            loadPartition (partitionInput);
+            double completedProgress = progress + (1.0d / partitionInputs.size());
+            loadPartition (partitionInput, progress, completedProgress);
+            progress = completedProgress;
             checkTaskCanceled();
         }
         LOG.info("done!");
-        return outputFiles.toArray(new String[0]);
+        return new String[0];
     }
     /** load one partition. */
-    private void loadPartition(PartitionInput partitionInput) throws Exception {
+    private void loadPartition(PartitionInput partitionInput, double baseProgress, double completedProgress) throws Exception {
         if (LOG.isInfoEnabled()) {
             LOG.info ("importing replica partition:" + partitionInput.partition);
         }
 
         // first, create column files without sorting
-        ColumnFileBundle[] unsortedFiles = writeUnsortedFiles (partitionInput);
+        ColumnFileBundle[] unsortedFiles = writeUnsortedFiles (partitionInput, baseProgress + (completedProgress - baseProgress) / 2.0d); // about 50% of this
         
+        ColumnFileBundle[] finalFiles;
         if (scheme.getSortColumnId() == null) {
             // if no sorting is needed, it's done.
-            // TODO move files
+            finalFiles = unsortedFiles;
         } else {
             // otherwise, we need to rewrite the files to sort and compress them
+            PartitionRewriter rewriter = new PartitionRewriter(tmpOutputFolder, unsortedFiles, sortedFileTemporaryNames, finalCompressionTypes, scheme.getSortColumnId());
+            finalFiles = rewriter.execute();
+            // delete old (unsorted) files
+            for (ColumnFileBundle oldFile : unsortedFiles) {
+                oldFile.deleteFiles();
+            }
         }
-        
+        // move files to non-temporary place
+        moveFiles (finalFiles);
     }
     /**
      * sequentially copy all input files into unsorted column files.
      * Returns the written column files.
      */
-    private ColumnFileBundle[] writeUnsortedFiles (PartitionInput partitionInput) throws Exception {
+    private ColumnFileBundle[] writeUnsortedFiles (PartitionInput partitionInput, double completedProgress) throws Exception {
         HashMap<Integer, LVDataClient> dataClients = new HashMap<Integer, LVDataClient>(); // key= nodeID. keep this until we disconnect from data nodes
         // convert input files for this partition to VirtualFile
         ArrayList<VirtualFile> virtualFiles = new ArrayList<VirtualFile>();
@@ -168,8 +182,15 @@ public final class LoadPartitionedTextFilesTaskRunner extends DataTaskRunner<Loa
 
         checkTaskCanceled();
         LOG.info("wrote " + writtenTupleCount + " tuples in total");
-        context.metaRepo.updateTaskNoReturn(task.getTaskId(), null, new DoubleWritable(0.5d), null, null); // well, largely 50%.
+        context.metaRepo.updateTaskNoReturn(task.getTaskId(), null, new DoubleWritable(completedProgress), null, null);
         return writtenFiles;
+    }
+    /**
+     * Moves the columnar files to non-temporary folder.
+     * Also renames the files according to the rule defined in {@link LVFSFilePath}.
+     */
+    private void moveFiles (ColumnFileBundle[] files) throws IOException {
+        // TODO implement
     }
     
     
@@ -259,7 +280,6 @@ public final class LoadPartitionedTextFilesTaskRunner extends DataTaskRunner<Loa
             }
             input.inputFilePaths.add(pathParsed);
         }
-        outputFiles = new ArrayList<String>();
 
         charset = Charset.forName(parameters.getEncoding());
         dateFormat = new SimpleDateFormat(parameters.getDateFormat());
@@ -276,8 +296,10 @@ public final class LoadPartitionedTextFilesTaskRunner extends DataTaskRunner<Loa
         // no compression except dictionary encoding at this point
         // because we will soon re-read/write the files to sort them. (well, unless the Replica Scheme has no sorting) 
         temporaryCompressionTypes = new CompressionType[columns.length];
+        finalCompressionTypes = new CompressionType[columns.length];
         for (int i = 0; i < columns.length; ++i) {
-            temporaryCompressionTypes[i] = scheme.getColumnCompressionScheme(columns[i].getColumnId());
+            finalCompressionTypes[i] = scheme.getColumnCompressionScheme(columns[i].getColumnId());
+            temporaryCompressionTypes[i] = finalCompressionTypes[i];
             if (scheme.getSortColumnId() != null && temporaryCompressionTypes[i] != CompressionType.DICTIONARY) {
                 temporaryCompressionTypes[i] = CompressionType.NONE;
             }

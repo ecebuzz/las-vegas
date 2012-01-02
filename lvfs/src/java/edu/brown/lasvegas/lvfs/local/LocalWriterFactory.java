@@ -23,8 +23,11 @@ public final class LocalWriterFactory {
      */
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public static TypedWriter<?, ?> getInstance(ColumnFileBundle fileBundle, CompressionType compression, ValueTraits<?,?> traits) throws IOException {
+        assert (fileBundle.getDataFile() != null);
         switch (compression) {
         case DICTIONARY:
+            assert (fileBundle.getDictionaryFile() != null);
+            assert (fileBundle.getTmpFile() != null);
             return new LocalDictCompressionWriter(fileBundle.getDataFile(), fileBundle.getDictionaryFile(), fileBundle.getTmpFile(), traits);
         case RLE:
             return new LocalRLEWriter(fileBundle.getDataFile(), traits);

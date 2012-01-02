@@ -11,7 +11,7 @@ import edu.brown.lasvegas.tuple.TextFileTupleReader;
 /**
  * Another test using lineorder.tbl.
  */
-public class TextFileTableReaderLineorderTest {
+public class TextFileTupleReaderLineorderTest {
     @Test
     public void testAll() throws Exception {
         ColumnType[] scheme = MiniLineorder.getScheme();

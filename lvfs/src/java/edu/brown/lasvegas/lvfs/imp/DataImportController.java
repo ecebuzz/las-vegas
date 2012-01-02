@@ -1,6 +1,10 @@
 package edu.brown.lasvegas.lvfs.imp;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -9,11 +13,19 @@ import org.apache.log4j.Logger;
 
 import edu.brown.lasvegas.JobStatus;
 import edu.brown.lasvegas.JobType;
+import edu.brown.lasvegas.LVFracture;
 import edu.brown.lasvegas.LVJob;
+import edu.brown.lasvegas.LVReplica;
+import edu.brown.lasvegas.LVReplicaGroup;
+import edu.brown.lasvegas.LVReplicaPartition;
+import edu.brown.lasvegas.LVReplicaScheme;
 import edu.brown.lasvegas.LVTask;
 import edu.brown.lasvegas.TaskStatus;
 import edu.brown.lasvegas.TaskType;
+import edu.brown.lasvegas.lvfs.data.LoadPartitionedTextFilesTaskParameters;
 import edu.brown.lasvegas.lvfs.data.PartitionRawTextFilesTaskParameters;
+import edu.brown.lasvegas.lvfs.data.RecoverPartitionFromBuddyTaskParameters;
+import edu.brown.lasvegas.lvfs.data.TemporaryFilePath;
 import edu.brown.lasvegas.protocol.LVMetadataProtocol;
 
 /**
@@ -44,11 +56,42 @@ public class DataImportController {
     
     private final DataImportParameters param;
     private final int jobId;
+    private final LVFracture fracture;
+    private final LVReplicaGroup[] groups;
+    private final Map<Integer, LVReplicaScheme> defaultReplicaSchemes;
+    private final Map<Integer, LVReplicaScheme[]> otherReplicaSchemes;
 
     public DataImportController (LVMetadataProtocol metaRepo, DataImportParameters param) throws IOException {
         this.metaRepo = metaRepo;
         this.param = param;
         this.jobId = metaRepo.createNewJobIdOnlyReturn("data import Fracture-" + param.getFractureId(), JobType.IMPORT_FRACTURE, null);
+        this.fracture = metaRepo.getFracture(param.getFractureId());
+        assert (fracture != null);
+
+        this.groups = metaRepo.getAllReplicaGroups(fracture.getTableId());
+        this.defaultReplicaSchemes = new HashMap<Integer, LVReplicaScheme>();
+        this.otherReplicaSchemes = new HashMap<Integer, LVReplicaScheme[]>();
+        for (LVReplicaGroup group : groups) {
+            LVReplicaScheme[] replicaSchemes = metaRepo.getAllReplicaSchemes(group.getGroupId());
+            assert (replicaSchemes.length > 0);
+            // pick the one that will be loaded first. ideally a replica scheme without sorting.
+            LVReplicaScheme defaultScheme = null;
+            for (LVReplicaScheme scheme : replicaSchemes) {
+                if (defaultScheme == null || scheme.getSortColumnId() == null) {
+                    defaultScheme = scheme;
+                }
+            }
+            assert (defaultScheme != null);
+            defaultReplicaSchemes.put(group.getGroupId(), defaultScheme);
+            
+            List<LVReplicaScheme> others = new ArrayList<LVReplicaScheme>();
+            for (LVReplicaScheme scheme : replicaSchemes) {
+                if (scheme != defaultScheme) {
+                    others.add(scheme);
+                }
+            }
+            otherReplicaSchemes.put(group.getGroupId(), others.toArray(new LVReplicaScheme[0]));
+        }
     }
     
     // differences between stopRequested and errorEncountered
@@ -92,14 +135,27 @@ public class DataImportController {
         metaRepo.updateJobNoReturn(jobId, JobStatus.RUNNING, null, null);
 
         // partition raw files at each node
+        TemporaryFilePath[] allPartitionedFiles = null;
         if (!stopRequested && !errorEncountered) {
-            partitionRawFiles ();
+            allPartitionedFiles = partitionRawFiles (0.0d, 1.0d / 3.0d); // 0%-33% progress
         }
+
         // collect and load the partitioned files into LVFS
+        // here, we only load them to *one* replica scheme in each replica group.
+        // other replica schemes are loaded after this task, using the buddy files.
         if (!stopRequested && !errorEncountered) {
-            loadPartitionedFiles ();
+            assert (allPartitionedFiles != null);
+            loadPartitionedFiles (allPartitionedFiles, 1.0d / 3.0d, 2.0d / 3.0d); // 33%-66% progress
         }
         
+        // loads other replica schemes in each replica group
+        // this is supposed to be efficient because of the buddy files which are loaded in the previous tasks.
+        if (!stopRequested && !errorEncountered) {
+            copyFromBuddyFiles (2.0d / 3.0d, 1.0d); // 66%-100% progress
+        }
+
+        // okay, done!
+        // TODO should we delete temporary files now that they are no longer needed?
         stopped = true;
         if (errorEncountered) {
             metaRepo.updateJobNoReturn(jobId, JobStatus.ERROR, null, errorMessages);
@@ -112,7 +168,7 @@ public class DataImportController {
         return jobId;
     }
     
-    private void partitionRawFiles () throws IOException {
+    private TemporaryFilePath[] partitionRawFiles (double baseProgress, double completedProgress) throws IOException {
         // let's create a local task for partitioning at each node
         SortedMap<Integer, LVTask> taskMap = new TreeMap<Integer, LVTask>();
         for (Integer nodeId : param.getNodeFilePathMap().keySet()) {
@@ -126,6 +182,7 @@ public class DataImportController {
             taskParam.setFractureId(param.getFractureId());
             taskParam.setTimeFormat(param.getTimeFormat());
             taskParam.setTimestampFormat(param.getTimestampFormat());
+            taskParam.setTemporaryCompression(param.getTemporaryFileCompression());
             
             int taskId = metaRepo.createNewTaskIdOnlyReturn(jobId, nodeId, TaskType.PARTITION_RAW_TEXT_FILES, taskParam.writeToBytes());
             LVTask task = metaRepo.updateTask(taskId, TaskStatus.START_REQUESTED, null, null, null);
@@ -134,9 +191,177 @@ public class DataImportController {
             taskMap.put(taskId, task);
         }
         
-        // then, let's wait until all tasks are done.
-        // if any task threw an error, we stop the entire job (as this is a raw local drive, there is no back-up node to recover from a crash)
+        joinTasks(taskMap, baseProgress, completedProgress);
         
+        // extract resulting files
+        List<TemporaryFilePath> allPartitionedFiles = new ArrayList<TemporaryFilePath> ();
+        for (LVTask task : taskMap.values()) {
+            assert (task.getStatus() == TaskStatus.DONE);
+            for (String outputPath : task.getOutputFilePaths()) {
+                allPartitionedFiles.add(new TemporaryFilePath(outputPath));
+            }
+        }
+        return allPartitionedFiles.toArray(new TemporaryFilePath[0]);
+    }
+
+    private void loadPartitionedFiles (TemporaryFilePath[] allPartitionedFiles, double baseProgress, double completedProgress) throws IOException {
+        // only loads default replica scheme in each replica group
+        SortedMap<Integer, LVTask> taskMap = new TreeMap<Integer, LVTask>();
+        for (LVReplicaGroup group : groups) {
+            LVReplicaScheme defaultScheme = defaultReplicaSchemes.get(group.getGroupId());
+            assert (defaultScheme != null);
+            
+            LVReplica replica = metaRepo.getReplicaFromSchemeAndFracture(defaultScheme.getSchemeId(), fracture.getFractureId());
+            LVReplicaPartition[] partitions = metaRepo.getAllReplicaPartitionsByReplicaId(replica.getReplicaId());
+
+            // key=partition (range)
+            Map<Integer, List<TemporaryFilePath>> filesPerPartition = new HashMap<Integer, List<TemporaryFilePath>>();
+            for (TemporaryFilePath partitionedFile : allPartitionedFiles) {
+                if (partitionedFile.replicaGroupId == group.getGroupId()) {
+                    List<TemporaryFilePath> list = filesPerPartition.get(partitionedFile.partition);
+                    if (list == null) {
+                        list = new ArrayList<TemporaryFilePath>();
+                        filesPerPartition.put(partitionedFile.partition, list);
+                    }
+                    list.add (partitionedFile);
+                }
+            }
+
+            // to which node are these assigned?
+            // key=assigned node ID (NOT the ID of the node the file currently resides)
+            Map<Integer, NodeFileLoadAssignment> assignmentsPerNode = new HashMap<Integer, NodeFileLoadAssignment>();
+            for (LVReplicaPartition partition : partitions) {
+                Integer nodeId = partition.getNodeId();
+                if (nodeId == null) {
+                    // TODO where we should do it?
+                    throw new IOException ("this partition has not been assigned to data node. " + partition);
+                }
+                if (!filesPerPartition.containsKey(nodeId)) {
+                    // this means there was no tuple to import for the partition. 
+                    continue;
+                }
+                NodeFileLoadAssignment assignments = assignmentsPerNode.get(nodeId);
+                // List<LVReplicaPartition> assignments = partitionsPerAssignedNode.get(nodeId);
+                if (assignments == null) {
+                    assignments = new NodeFileLoadAssignment();
+                    assignmentsPerNode.put(nodeId, assignments);
+                }
+                assignments.files.addAll(filesPerPartition.get(partition.getRange()));
+                assignments.partitions.add(partition);
+            }
+            
+            // for each node, start a new task
+            for (Integer nodeId : assignmentsPerNode.keySet()) {
+                NodeFileLoadAssignment assignments = assignmentsPerNode.get(nodeId);
+                LoadPartitionedTextFilesTaskParameters taskParam = new LoadPartitionedTextFilesTaskParameters();
+                taskParam.setDateFormat(param.getDateFormat());
+                taskParam.setDelimiter(param.getDelimiter());
+                taskParam.setEncoding(param.getEncoding());
+                taskParam.setFractureId(param.getFractureId());
+                taskParam.setTimeFormat(param.getTimeFormat());
+                taskParam.setTimestampFormat(param.getTimestampFormat());
+                taskParam.setReplicaId(replica.getReplicaId());
+                taskParam.setReplicaPartitionIds(assignments.getReplicaPartitionIds());
+                taskParam.setTemporaryPartitionedFiles(assignments.getFilePaths());
+                taskParam.setTemporaryCompression(param.getTemporaryFileCompression());
+                
+                int taskId = metaRepo.createNewTaskIdOnlyReturn(jobId, nodeId, TaskType.LOAD_PARTITIONED_TEXT_FILES, taskParam.writeToBytes());
+                LVTask task = metaRepo.updateTask(taskId, TaskStatus.START_REQUESTED, null, null, null);
+                LOG.info("launched new local loading task: " + task);
+                assert (!taskMap.containsKey(taskId));
+                taskMap.put(taskId, task);
+            }
+        }
+
+        joinTasks(taskMap, baseProgress, completedProgress);
+    }
+    private static class NodeFileLoadAssignment {
+        List<TemporaryFilePath> files = new ArrayList<TemporaryFilePath>();
+        List<LVReplicaPartition> partitions = new ArrayList<LVReplicaPartition>();
+        int[] getReplicaPartitionIds () {
+            int[] ids = new int[partitions.size()];
+            for (int i = 0; i < ids.length; ++i) {
+                ids [i] = partitions.get(i).getPartitionId();
+            }
+            return ids;
+        }
+        String[] getFilePaths () {
+            String[] paths = new String[files.size()];
+            for (int i = 0; i < files.size(); ++i) {
+                paths [i] = files.get(i).getFilePath();
+            }
+            return paths;
+        }
+    }
+
+    private void copyFromBuddyFiles (double baseProgress, double completedProgress) throws IOException {
+        // loads other replica schemes from the buddy-files in default scheme.
+        SortedMap<Integer, LVTask> taskMap = new TreeMap<Integer, LVTask>();
+        for (LVReplicaGroup group : groups) {
+            LVReplicaScheme defaultScheme = defaultReplicaSchemes.get(group.getGroupId());
+            assert (defaultScheme != null);
+            
+            LVReplicaScheme[] otherSchemes = otherReplicaSchemes.get(group.getGroupId());
+            if (otherSchemes.length == 0) {
+                continue;
+            }
+            for (LVReplicaScheme scheme : otherSchemes) {
+                LVReplica replica = metaRepo.getReplicaFromSchemeAndFracture(scheme.getSchemeId(), fracture.getFractureId());
+                LVReplicaPartition[] partitions = metaRepo.getAllReplicaPartitionsByReplicaId(replica.getReplicaId());
+                // key = node id
+                Map<Integer, NodeFileLoadAssignment> assignmentsPerNode = new HashMap<Integer, NodeFileLoadAssignment>();
+
+                for (LVReplicaPartition partition : partitions) {
+                    Integer nodeId = partition.getNodeId();
+                    if (nodeId == null) {
+                        // TODO where we should do it? (other schemes)
+                        throw new IOException ("this partition has not been assigned to data node. " + partition);
+                    }
+                    NodeFileLoadAssignment assignments = assignmentsPerNode.get(nodeId);
+                    // List<LVReplicaPartition> assignments = partitionsPerAssignedNode.get(nodeId);
+                    if (assignments == null) {
+                        assignments = new NodeFileLoadAssignment();
+                        assignmentsPerNode.put(nodeId, assignments);
+                    }
+                    assignments.partitions.add(partition);
+                }
+
+                // for each node, start a new task
+                for (Integer nodeId : assignmentsPerNode.keySet()) {
+                    NodeFileLoadAssignment assignments = assignmentsPerNode.get(nodeId);
+                    RecoverPartitionFromBuddyTaskParameters taskParam = new RecoverPartitionFromBuddyTaskParameters();
+                    taskParam.setPartitionIds(assignments.getReplicaPartitionIds());
+                    taskParam.setReplicaSchemeId(scheme.getSchemeId());
+                    taskParam.setBuddyReplicaSchemeId(defaultScheme.getSchemeId());
+                    
+                    int taskId = metaRepo.createNewTaskIdOnlyReturn(jobId, nodeId, TaskType.RECOVER_PARTITION_FROM_BUDDY, taskParam.writeToBytes());
+                    LVTask task = metaRepo.updateTask(taskId, TaskStatus.START_REQUESTED, null, null, null);
+                    LOG.info("launched new task to construct replica from buddy files: " + task);
+                    assert (!taskMap.containsKey(taskId));
+                    taskMap.put(taskId, task);
+                }
+            }
+        }
+        joinTasks(taskMap, baseProgress, completedProgress);
+    }
+
+    /** request all nodes to cancel ongoing task. */
+    private void cancelAllTasks (SortedMap<Integer, LVTask> taskMap) throws IOException {
+        LOG.info("cancelling tasks...");
+        for (LVTask task : taskMap.values()) {
+            if (TaskStatus.isFinished(task.getStatus()) || task.getStatus() == TaskStatus.CANCEL_REQUESTED) {
+                continue;
+            }
+            metaRepo.updateTaskNoReturn(task.getTaskId(), TaskStatus.CANCEL_REQUESTED, null, null, null);
+            task.setStatus(TaskStatus.CANCEL_REQUESTED);
+        }
+    }
+
+    /**
+     * wait until all tasks are completed.
+     * if any task threw an error, we stop the entire job (as this is a raw local drive, there is no back-up node to recover from a crash)
+     */
+    private void joinTasks (SortedMap<Integer, LVTask> taskMap, double baseProgress, double completedProgress) throws IOException {
         int finishedCount = 0;
         while (!stopRequested && finishedCount != taskMap.size()) {
             try {
@@ -155,7 +380,7 @@ public class DataImportController {
                 taskMap.put(updated.getTaskId(), updated);
                 if (TaskStatus.isFinished(updated.getStatus())) {
                     ++finishedCount;
-                    double jobProgress = 0.5d * finishedCount / taskMap.size();
+                    double jobProgress = baseProgress + (completedProgress - baseProgress) * finishedCount / taskMap.size();
                     metaRepo.updateJobNoReturn(jobId, null, new DoubleWritable(jobProgress), null);
                 }
                 if (updated.getStatus() == TaskStatus.ERROR) {
@@ -171,22 +396,6 @@ public class DataImportController {
         }
         if (stopRequested) {
             cancelAllTasks (taskMap);
-        }
-    }
-    
-    private void loadPartitionedFiles () throws IOException {
-        // TODO implement
-    }
-
-    /** request all nodes to cancel ongoing task. */
-    private void cancelAllTasks (SortedMap<Integer, LVTask> taskMap) throws IOException {
-        LOG.info("cancelling tasks...");
-        for (LVTask task : taskMap.values()) {
-            if (TaskStatus.isFinished(task.getStatus()) || task.getStatus() == TaskStatus.CANCEL_REQUESTED) {
-                continue;
-            }
-            metaRepo.updateTaskNoReturn(task.getTaskId(), TaskStatus.CANCEL_REQUESTED, null, null, null);
-            task.setStatus(TaskStatus.CANCEL_REQUESTED);
         }
     }
 }

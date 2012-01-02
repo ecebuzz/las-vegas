@@ -1,5 +1,7 @@
 package edu.brown.lasvegas.lvfs.data;
 
+import org.apache.log4j.Logger;
+
 import edu.brown.lasvegas.JobType;
 import edu.brown.lasvegas.TaskType;
 
@@ -12,9 +14,17 @@ import edu.brown.lasvegas.TaskType;
  * @see TaskType#RECOVER_PARTITION_FROM_BUDDY
  */
 public final class RecoverPartitionFromBuddyTaskRunner extends DataTaskRunner<RecoverPartitionFromBuddyTaskParameters>{
+    private static Logger LOG = Logger.getLogger(RecoverPartitionFromBuddyTaskRunner.class);
     @Override
     protected String[] runDataTask() throws Exception {
-        // TODO Auto-generated method stub
-        return null;
+        if (parameters.getPartitionIds().length == 0) {
+            LOG.warn("no inputs for this node??");
+            return new String[0];
+        }
+        LOG.info("recovering partitions from a buddy replica...");
+        //TODO implement
+        checkTaskCanceled();
+        LOG.info("done!");
+        return new String[0];
     }
 }

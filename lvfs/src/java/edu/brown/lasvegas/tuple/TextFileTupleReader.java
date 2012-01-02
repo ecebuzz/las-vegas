@@ -40,6 +40,9 @@ public class TextFileTupleReader extends DefaultTupleReader implements Sampleabl
     private int nextTextFile = 0;
     private String currentLine;
 
+    public TextFileTupleReader (VirtualFile textFile, ColumnType[] columnTypes, String delimiter) throws IOException {
+        this (new VirtualFile[]{textFile}, columnTypes, delimiter);
+    }
     public TextFileTupleReader (VirtualFile[] textFiles, ColumnType[] columnTypes, String delimiter) throws IOException {
         this (textFiles, CompressionType.NONE, columnTypes, delimiter, 1 << 10,
             Charset.forName("UTF-8"), new SimpleDateFormat("yyyy-MM-dd"),

@@ -5,6 +5,8 @@ import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.Map;
 
+import edu.brown.lasvegas.CompressionType;
+
 /**
  * Set of parameters for one data import.
  * This specifies what files to import, what fracture to construct, etc.
@@ -38,6 +40,12 @@ public final class DataImportParameters {
      * @see SimpleDateFormat
      */
     private String timestampFormat;
+    
+    /**
+     * Whether (and which) to use compression for temporary files while data import.
+     * only none/snappy/gzip. default is snappy.
+     */
+    private CompressionType temporaryFileCompression = CompressionType.SNAPPY;
 
     /** the files to import in each data node. key = ID of node (LVNode), value = local paths. */
     private Map<Integer, String[]> nodeFilePathMap = new HashMap<Integer, String[]>();
@@ -52,7 +60,7 @@ public final class DataImportParameters {
      * @param fractureId The fracture to be constructed after this import.
      */
     public DataImportParameters (int fractureId) {
-        this (fractureId, "UTF-8", "|", "yyyy-MM-dd", "HH:mm:ss", "yyyy-MM-dd HH:mm:ss.SSS");
+        this (fractureId, "UTF-8", "|", "yyyy-MM-dd", "HH:mm:ss", "yyyy-MM-dd HH:mm:ss.SSS", CompressionType.SNAPPY);
     }
     /**
      * Instantiates a new data import parameters.
@@ -64,7 +72,7 @@ public final class DataImportParameters {
      * @param timestampFormat the format string to parse a timestamp column in the files, eg, "yyyy-MM-dd HH:mm:ss.SSS"
      */
     public DataImportParameters (int fractureId, String encoding, String delimiter,
-                    String dateFormat, String timeFormat, String timestampFormat) {
+                    String dateFormat, String timeFormat, String timestampFormat, CompressionType temporaryFileCompression) {
         this.fractureId = fractureId;
         this.encoding = encoding;
         Charset.forName(encoding); // test if the encoding exists (at least in this JavaVM)
@@ -72,6 +80,10 @@ public final class DataImportParameters {
         this.dateFormat = dateFormat;
         this.timeFormat = timeFormat;
         this.timestampFormat = timestampFormat;
+        this.temporaryFileCompression = temporaryFileCompression;
+        assert (temporaryFileCompression == CompressionType.GZIP_BEST_COMPRESSION
+                || temporaryFileCompression == CompressionType.NONE
+                || temporaryFileCompression == CompressionType.SNAPPY);
     }
     
 
@@ -201,5 +213,21 @@ public final class DataImportParameters {
         this.nodeFilePathMap = nodeFilePathMap;
     }
 
-    
+    /**
+     * Gets the whether (and which) to use compression for temporary files while data import.
+     *
+     * @return the whether (and which) to use compression for temporary files while data import
+     */
+    public CompressionType getTemporaryFileCompression() {
+        return temporaryFileCompression;
+    }
+
+    /**
+     * Sets the whether (and which) to use compression for temporary files while data import.
+     *
+     * @param temporaryFileCompression the new whether (and which) to use compression for temporary files while data import
+     */
+    public void setTemporaryFileCompression(CompressionType temporaryFileCompression) {
+        this.temporaryFileCompression = temporaryFileCompression;
+    }
 }

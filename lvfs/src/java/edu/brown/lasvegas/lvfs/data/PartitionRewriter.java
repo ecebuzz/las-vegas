@@ -18,8 +18,10 @@ import edu.brown.lasvegas.lvfs.TypedRLEWriter;
 import edu.brown.lasvegas.lvfs.TypedReader;
 import edu.brown.lasvegas.lvfs.TypedWriter;
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.lvfs.local.LocalFixLenWriter;
 import edu.brown.lasvegas.lvfs.local.LocalValFile;
 import edu.brown.lasvegas.lvfs.local.LocalWriterFactory;
+import edu.brown.lasvegas.traits.FixLenValueTraits;
 import edu.brown.lasvegas.traits.ValueTraits;
 import edu.brown.lasvegas.util.VirtualFileUtil;
 
@@ -339,7 +341,12 @@ public final class PartitionRewriter {
 
         long start = System.currentTimeMillis();
         ColumnFileBundle newFile = newFiles[col];
-        TypedWriter dataWriter = LocalWriterFactory.getInstance(newFile, newCompressions[col], traits);
+        TypedWriter dataWriter;
+        if (willInheritDictionary(col)) {
+            dataWriter = new LocalFixLenWriter(newFile.getDataFile(), (FixLenValueTraits<?, ?>) traits);
+        } else {
+            dataWriter = LocalWriterFactory.getInstance(newFile, newCompressions[col], traits);
+        }
         try {
             dataWriter.writeValues(data, 0, tupleCount);
             long crc32Value = dataWriter.writeFileFooter();

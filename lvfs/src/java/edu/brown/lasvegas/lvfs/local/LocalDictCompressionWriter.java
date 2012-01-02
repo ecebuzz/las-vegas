@@ -65,6 +65,9 @@ public class LocalDictCompressionWriter<T extends Comparable<T>, AT> implements 
     }
 
     public LocalDictCompressionWriter(VirtualFile finalDataFile, VirtualFile finalDictFile, VirtualFile tmpFile, ValueTraits<T,AT> traits) throws IOException {
+        assert (finalDataFile != null);
+        assert (finalDictFile != null);
+        assert (tmpFile != null);
         this.finalDataFile = finalDataFile;
         this.finalDictFile = finalDictFile;
         this.tmpFile = tmpFile;

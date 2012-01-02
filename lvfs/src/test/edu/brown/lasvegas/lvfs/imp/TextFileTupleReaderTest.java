@@ -19,7 +19,7 @@ import edu.brown.lasvegas.util.URLVirtualFile;
  * Testcase for {@link TextFileTupleReader}.
  * This one tests all functions with alltypes.csv. 
  */
-public class TextFileTableReaderTest {
+public class TextFileTupleReaderTest {
     private TextFileTupleReader reader;
     
     @Before
