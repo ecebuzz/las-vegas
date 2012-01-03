@@ -41,4 +41,20 @@ public abstract class JobParameters implements Writable {
         write(out);
         return bytes.toByteArray();
     }
+    
+    protected String readNillableString (DataInput in) throws IOException {
+        boolean isNull = in.readBoolean();
+        if (isNull) {
+            return null;
+        } else {
+            return in.readUTF();
+        }
+    }
+
+    protected void writeNillableString (DataOutput out, String string) throws IOException {
+        out.writeBoolean (string == null);
+        if (string != null) {
+            out.writeUTF(string);
+        }
+    }
 }

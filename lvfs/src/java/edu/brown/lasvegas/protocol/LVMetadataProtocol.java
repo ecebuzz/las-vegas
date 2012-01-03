@@ -4,8 +4,10 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.apache.hadoop.io.DoubleWritable;
+import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.ipc.VersionedProtocol;
 
+import edu.brown.lasvegas.FractureStatus;
 import edu.brown.lasvegas.JobStatus;
 import edu.brown.lasvegas.JobType;
 import edu.brown.lasvegas.LVColumnFile;
@@ -280,28 +282,37 @@ public interface LVMetadataProtocol extends VersionedProtocol {
      * the caller doesn't have to know the exact key range or tuple count.
      * So, this method merely acquires a unique ID for the new fracture.
      * As soon as the key range and tuple counts are finalized, call
-     * {@link #finalizeFracture(LVFracture)}.
+     * #updateFracture(LVFracture). Until that, the status of the fracture
+     * is INACTIVE and queries will ignore the new fracture.
      * @param table the table to create a new fracture
      * @return new Fracture object
      * @throws IOException
      */
     LVFracture createNewFracture(LVTable table) throws IOException;
+    /** To reduce network overhead. */
+    int createNewFractureIdOnlyReturn(int tableId) throws IOException;
 
     /**
-     * Saves and finalizes the fracture definition.
+     * Updates a fracture.
      * A newly created fracture is inactive until this method call.
-     * @param fracture the fracture object with full details (eg key range).
+     * @param fractureId ID of the fracture to update.
+     * @param status new status of the fracture. null to not update.
+     * @param tupleCount new value for tupleCount of the fracture. null to not update.
+     * @param range new value for range of the fracture. null to not update.
+     * @return modified fracture object
      * @throws IOException
      */
-    void finalizeFracture(LVFracture fracture) throws IOException;
+    LVFracture updateFracture(int fractureId, FractureStatus status, LongWritable tupleCount, ValueRange range) throws IOException;
+    /** To reduce network overhead. */
+    void updateFractureNoReturn(int fractureId, FractureStatus status, LongWritable tupleCount, ValueRange range) throws IOException;
     
     /**
      * Deletes the fracture metadata object and related objects from this repository.
-     * This is called only when some fractures are merged.
-     * @param fracture the fracture object to delete
+     * This is called only when some fractures are merged or split.
+     * @param fractureId ID of the fracture to delete
      * @throws IOException
      */
-    void dropFracture (LVFracture fracture) throws IOException;
+    void dropFracture (int fractureId) throws IOException;
 
     //////////////////////// Replica Group Methods : begin ////////////////////////////////
     /**

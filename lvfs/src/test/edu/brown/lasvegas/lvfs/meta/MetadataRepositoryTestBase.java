@@ -11,12 +11,14 @@ import java.io.IOException;
 import java.util.HashMap;
 
 import org.apache.hadoop.io.DoubleWritable;
+import org.apache.hadoop.io.LongWritable;
 import org.junit.Test;
 
 import edu.brown.lasvegas.ColumnStatus;
 import edu.brown.lasvegas.ColumnType;
 import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.DatabaseStatus;
+import edu.brown.lasvegas.FractureStatus;
 import edu.brown.lasvegas.JobStatus;
 import edu.brown.lasvegas.JobType;
 import edu.brown.lasvegas.LVColumn;
@@ -140,9 +142,7 @@ public abstract class MetadataRepositoryTestBase {
         assertTrue (DEFAULT_FRACTURE.getFractureId() > 0);
         assertEquals(DEFAULT_TABLE.getTableId(), DEFAULT_FRACTURE.getTableId());
         
-        DEFAULT_FRACTURE.setTupleCount(1000000L);
-        DEFAULT_FRACTURE.setRange(new ValueRange(ColumnType.INTEGER, 0, 100));
-        repository.finalizeFracture(DEFAULT_FRACTURE);
+        DEFAULT_FRACTURE = repository.updateFracture(DEFAULT_FRACTURE.getFractureId(), FractureStatus.OK, new LongWritable(1000000L), new ValueRange(ColumnType.INTEGER, 0, 100));
 
         DEFAULT_GROUP = repository.createNewReplicaGroup(DEFAULT_TABLE, DEFAULT_COLUMNS[1], new ValueRange[]{new ValueRange(ColumnType.INTEGER, null, 140), new ValueRange(ColumnType.INTEGER, 140, null)});
         assertTrue (DEFAULT_GROUP.getGroupId() > 0);
@@ -488,10 +488,8 @@ public abstract class MetadataRepositoryTestBase {
             assertTrue (fracture.getFractureId() > 0);
             assertEquals(DEFAULT_TABLE.getTableId(), fracture.getTableId());
             
-            fracture.setTupleCount(123456789L);
-            fracture.setRange(new ValueRange(ColumnType.INTEGER, 100, 300));
-            repository.finalizeFracture(fracture);
             fractureId1 = fracture.getFractureId();
+            repository.updateFractureNoReturn(fracture.getFractureId(), FractureStatus.OK, new LongWritable(123456789L), new ValueRange(ColumnType.INTEGER, 100, 300));
         }
         validateFracture (repository.getFracture(fractureId1), fractureId1, 123456789L, 100, 300);
         {
@@ -499,10 +497,8 @@ public abstract class MetadataRepositoryTestBase {
             assertTrue (fracture.getFractureId() > 0);
             assertEquals(DEFAULT_TABLE.getTableId(), fracture.getTableId());
             
-            fracture.setTupleCount(23456789L);
-            fracture.setRange(new ValueRange(ColumnType.INTEGER, 300, 600));
-            repository.finalizeFracture(fracture);
             fractureId2 = fracture.getFractureId();
+            repository.updateFractureNoReturn(fracture.getFractureId(), FractureStatus.OK, new LongWritable(23456789L), new ValueRange(ColumnType.INTEGER, 300, 600));
         }
         validateFracture (repository.getFracture(fractureId2), fractureId2, 23456789L, 300, 600);
         assertTrue(fractureId1 != fractureId2);
@@ -521,7 +517,7 @@ public abstract class MetadataRepositoryTestBase {
         validateFracture (fractures[1], fractureId1, 123456789L, 100, 300);
         validateFracture (fractures[2], fractureId2, 23456789L, 300, 600);
         
-        repository.dropFracture(fractures[1]);
+        repository.dropFracture(fractures[1].getFractureId());
 
         assertNull (repository.getFracture(fractureId1));
         validateFracture (repository.getFracture(fractureId2), fractureId2, 23456789L, 300, 600);

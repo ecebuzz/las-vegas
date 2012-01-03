@@ -12,19 +12,20 @@ import java.io.IOException;
  */
 public interface JobController<Param extends JobParameters> {
     /**
-     * Start the job on a new thread. This method returns as soon as the job has started.
+     * Start the job on a new thread. This method is <b>asynchronous</b> and returns as soon as the job has started.
      * @param param parameters for the job.
-     * @return ID of the Job ({@link LVJob}) object created for this job.
+     * @return {@link LVJob} object created for this job. <b>It's the value as of the method return.</b>
      * @see #stop()
      */
-    int startThread (Param param) throws IOException;
+    LVJob startAsync (Param param) throws IOException;
 
     /**
-     * Start the job on the current thread. This method blocks until the completion of the job.
+     * Start the job on the current thread. This method is <b>synchronous</b> and blocks until the completion of the job.
      * @param param parameters for the job.
-     * @return ID of the Job ({@link LVJob}) object created for this job.
+     * @return {@link LVJob} object created for this job. As this method is synchronous,
+     * the returned object is final.
      */
-    int start (Param param) throws IOException;
+    LVJob startSync (Param param) throws IOException;
 
     /** forcibly cancel the job and its sub-tasks, immediately stopping this object. */
     void stop ();
@@ -32,7 +33,4 @@ public interface JobController<Param extends JobParameters> {
     void requestStop ();
     /** answers if the controller stopped all internal threads and released resources. */
     boolean isStopped ();
-    
-    /** Returns the type of the job. */
-    JobType getType ();
 }

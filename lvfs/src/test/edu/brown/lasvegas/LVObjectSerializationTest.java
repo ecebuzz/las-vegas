@@ -162,12 +162,14 @@ public class LVObjectSerializationTest {
         obj1.setRange(new ValueRange(ColumnType.BIGINT, -902834L, 34342L));
         obj1.setTableId(6666);
         obj1.setTupleCount(243643545L);
+        obj1.setStatus (FractureStatus.INACTIVE);
         obj1.write(out);
         LVFracture obj2 = new LVFracture();
         obj2.setFractureId(543);
         obj2.setRange(new ValueRange(ColumnType.FLOAT, null, 9823.348f));
         obj2.setTableId(454);
         obj2.setTupleCount(0L);
+        obj2.setStatus (FractureStatus.OK);
         obj2.write(out);
 
         LVFracture[] org = new LVFracture[]{obj1, obj2};
@@ -178,6 +180,7 @@ public class LVObjectSerializationTest {
             assertEquals(org[i].getRange(), copied.getRange());
             assertEquals(org[i].getTableId(), copied.getTableId());
             assertEquals(org[i].getTupleCount(), copied.getTupleCount());
+            assertEquals(org[i].getStatus(), copied.getStatus());
             assertEquals(org[i].getPrimaryKey(), copied.getPrimaryKey());
         }
     }

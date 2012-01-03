@@ -62,13 +62,16 @@ public class LVFracture implements LVObject {
      */
     private long tupleCount;
     
+    /** Current status of the fracture. */
+    private FractureStatus status;
+    
     /**
      * @see java.lang.Object#toString()
      */
     @Override
     public String toString() {
         return "Fracture-" + fractureId + " in Table-" + tableId
-        + ": range=" + range
+        + ": status=" + status + ", range=" + range
         + ". tupleCount=" + tupleCount;
     }
 
@@ -76,6 +79,7 @@ public class LVFracture implements LVObject {
     public void write(DataOutput out) throws IOException {
         out.writeInt(fractureId);
         out.writeInt(tableId);
+        out.writeInt(status == null ? FractureStatus.INVALID.ordinal() : status.ordinal());
         out.writeLong(tupleCount);
         out.writeBoolean(range == null);
         if (range != null) {
@@ -86,6 +90,7 @@ public class LVFracture implements LVObject {
     public void readFields(DataInput in) throws IOException {
         fractureId = in.readInt();
         tableId = in.readInt();
+        status = FractureStatus.values()[in.readInt()];
         tupleCount = in.readLong();
         if (!in.readBoolean()) {
             range = ValueRange.read(in);
@@ -174,5 +179,23 @@ public class LVFracture implements LVObject {
      */
     public void setRange(ValueRange range) {
         this.range = range;
+    }
+
+    /**
+     * Gets the current status of the fracture.
+     *
+     * @return the current status of the fracture
+     */
+    public FractureStatus getStatus() {
+        return status;
+    }
+
+    /**
+     * Sets the current status of the fracture.
+     *
+     * @param status the new current status of the fracture
+     */
+    public void setStatus(FractureStatus status) {
+        this.status = status;
     }
 }

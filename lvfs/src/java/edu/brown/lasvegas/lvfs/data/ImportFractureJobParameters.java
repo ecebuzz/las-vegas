@@ -1,18 +1,21 @@
 package edu.brown.lasvegas.lvfs.data;
 
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.Map;
 
 import edu.brown.lasvegas.CompressionType;
+import edu.brown.lasvegas.JobParameters;
 
 /**
  * Set of parameters for one data import.
  * This specifies what files to import, what fracture to construct, etc.
- * TODO inherit JobParameters
  */
-public final class DataImportJobParameters {
+public final class ImportFractureJobParameters extends JobParameters {
     /**
      * The fracture to be constructed after this import.
      */
@@ -54,13 +57,13 @@ public final class DataImportJobParameters {
     /**
      * Instantiates a new data import parameters.
      */
-    public DataImportJobParameters () {}
+    public ImportFractureJobParameters () {}
     
     /**
      * Instantiates a new data import parameters.
      * @param fractureId The fracture to be constructed after this import.
      */
-    public DataImportJobParameters (int fractureId) {
+    public ImportFractureJobParameters (int fractureId) {
         this (fractureId, "UTF-8", "|", "yyyy-MM-dd", "HH:mm:ss", "yyyy-MM-dd HH:mm:ss.SSS", CompressionType.SNAPPY);
     }
     /**
@@ -72,7 +75,7 @@ public final class DataImportJobParameters {
      * @param timeFormat the format string to parse a time column in the files, eg, "HH:mm:ss"
      * @param timestampFormat the format string to parse a timestamp column in the files, eg, "yyyy-MM-dd HH:mm:ss.SSS"
      */
-    public DataImportJobParameters (int fractureId, String encoding, String delimiter,
+    public ImportFractureJobParameters (int fractureId, String encoding, String delimiter,
                     String dateFormat, String timeFormat, String timestampFormat, CompressionType temporaryFileCompression) {
         this.fractureId = fractureId;
         this.encoding = encoding;
@@ -85,6 +88,50 @@ public final class DataImportJobParameters {
         assert (temporaryFileCompression == CompressionType.GZIP_BEST_COMPRESSION
                 || temporaryFileCompression == CompressionType.NONE
                 || temporaryFileCompression == CompressionType.SNAPPY);
+    }
+    
+    @Override
+    public void readFields(DataInput in) throws IOException {
+        fractureId = in.readInt();
+        encoding = readNillableString(in);
+        delimiter = readNillableString(in);
+        dateFormat = readNillableString(in);
+        timeFormat = readNillableString(in);
+        timestampFormat = readNillableString(in);
+        temporaryFileCompression = CompressionType.values()[in.readInt()];
+
+        nodeFilePathMap.clear();
+        int entries = in.readInt();
+        for (int i = 0; i < entries; ++i) {
+            int nodeId = in.readInt();
+            int stringCount = in.readInt();
+            String[] array = new String[stringCount];
+            for (int j = 0; j < array.length; ++j) {
+                array[j] = readNillableString(in);
+            }
+            assert (!nodeFilePathMap.containsKey(nodeId));
+            nodeFilePathMap.put(nodeId, array);
+        }
+    }
+    @Override
+    public void write(DataOutput out) throws IOException {
+        out.writeInt(fractureId);
+        writeNillableString(out, encoding);
+        writeNillableString(out, delimiter);
+        writeNillableString(out, dateFormat);
+        writeNillableString(out, timeFormat);
+        writeNillableString(out, timestampFormat);
+        out.writeInt(temporaryFileCompression == null ? CompressionType.INVALID.ordinal() : temporaryFileCompression.ordinal());
+
+        out.writeInt(nodeFilePathMap.size());
+        for (Map.Entry<Integer, String[]> entry : nodeFilePathMap.entrySet()) {
+            out.writeInt(entry.getKey());
+            String[] array = entry.getValue();
+            out.writeInt(array.length);
+            for (int i = 0; i < array.length; ++i) {
+                writeNillableString(out, array[i]);
+            }
+        }
     }
     
 

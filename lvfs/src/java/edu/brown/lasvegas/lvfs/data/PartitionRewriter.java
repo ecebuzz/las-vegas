@@ -40,6 +40,9 @@ import edu.brown.lasvegas.util.VirtualFileUtil;
  * This class also assumes that each columnar file is enough small to (though for short time) fully load onto RAM.
  * Because we have several levels of partitioning (fracture, partition, columns) and compression,
  * this should be a reasonable assumption. Each columnar file should be at most 10MB or so.
+ * TODO: this assumption should be eliminated in future. Even if there happens a severe skew or a table
+ * the user forgets to partition, the performance should gracefully deteriorate, rather than
+ * throwing OutOfMemory. The code will become longer, but not that much.
  * </p>
  */
 public final class PartitionRewriter {

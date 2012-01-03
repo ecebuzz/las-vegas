@@ -14,6 +14,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.apache.hadoop.io.DoubleWritable;
+import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.ipc.ProtocolSignature;
 import org.apache.log4j.Logger;
 
@@ -25,6 +26,7 @@ import com.sleepycat.persist.EntityIndex;
 
 import edu.brown.lasvegas.ColumnStatus;
 import edu.brown.lasvegas.DatabaseStatus;
+import edu.brown.lasvegas.FractureStatus;
 import edu.brown.lasvegas.JobStatus;
 import edu.brown.lasvegas.JobType;
 import edu.brown.lasvegas.LVColumnFile;
@@ -380,7 +382,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         // drop child fractures
         LVFracture[] fractures = getAllFractures(table.getTableId());
         for (LVFracture fracture : fractures) {
-            dropFracture(fracture);
+            dropFracture(fracture.getFractureId());
         }
         // drop child replica group
         LVReplicaGroup[] groups = getAllReplicaGroups(table.getTableId());
@@ -495,36 +497,59 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
 
     @Override
     public LVFracture createNewFracture(LVTable table) throws IOException {
-        assert (table.getTableId() > 0);
+        assert (table != null);
         LVFracture fracture = new LVFracture();
         fracture.setTableId(table.getTableId());
         fracture.setFractureId(bdbTableAccessors.fractureAccessor.issueNewId());
+        fracture.setStatus(FractureStatus.INACTIVE);
+        fracture.setTupleCount(0);
+        LVColumn fracturingColumn = getColumn(table.getFracturingColumnId());
+        fracture.setRange(new ValueRange(fracturingColumn.getType(), null, null));
         bdbTableAccessors.fractureAccessor.PKX.putNoReturn(fracture);
         return fracture;
     }
-
     @Override
-    public void finalizeFracture(LVFracture fracture) throws IOException {
-        assert (fracture.getFractureId() > 0);
-        bdbTableAccessors.fractureAccessor.PKX.putNoReturn(fracture);
+    public int createNewFractureIdOnlyReturn(int tableId) throws IOException {
+        return createNewFracture (getTable(tableId)).getFractureId();
     }
 
     @Override
-    public void dropFracture(LVFracture fracture) throws IOException {
-        LOG.info("Dropping fracture : " + fracture);
-        assert (fracture.getFractureId() > 0);
+    public LVFracture updateFracture(int fractureId, FractureStatus status, LongWritable tupleCount, ValueRange range) throws IOException {
+        LVFracture fracture = getFracture(fractureId);
+        assert (fracture != null);
+        if (status != null && status != FractureStatus.INVALID) {
+            fracture.setStatus(status);
+        }
+        if (tupleCount != null) {
+            fracture.setTupleCount(tupleCount.get());
+        }
+        if (range != null) {
+            fracture.setRange(range);
+        }
+        bdbTableAccessors.fractureAccessor.PKX.putNoReturn(fracture);
+        return fracture;
+    }
+    @Override
+    public void updateFractureNoReturn(int fractureId, FractureStatus status, LongWritable tupleCount, ValueRange range) throws IOException {
+        updateFracture(fractureId, status, tupleCount, range);
+    }
+
+    @Override
+    public void dropFracture(int fractureId) throws IOException {
+        LOG.info("Dropping fracture : " + fractureId);
+        assert (fractureId > 0);
         // drop child replicas
-        LVReplica[] replicas = getAllReplicasByFractureId(fracture.getFractureId());
+        LVReplica[] replicas = getAllReplicasByFractureId(fractureId);
         for (LVReplica replica : replicas) {
             dropReplica(replica);
         }
         // drop rack assignments
-        for (LVRackAssignment assignment : getAllRackAssignmentsByFractureId(fracture.getFractureId())) {
+        for (LVRackAssignment assignment : getAllRackAssignmentsByFractureId(fractureId)) {
             dropRackAssignment(assignment);
         }
-        boolean deleted = bdbTableAccessors.fractureAccessor.PKX.delete(fracture.getFractureId());
+        boolean deleted = bdbTableAccessors.fractureAccessor.PKX.delete(fractureId);
         if (!deleted) {
-            LOG.warn("this fracture has been already deleted?? :" + fracture);
+            LOG.warn("this fracture has been already deleted?? :" + fractureId);
         }
         LOG.info("Dropped");
     }

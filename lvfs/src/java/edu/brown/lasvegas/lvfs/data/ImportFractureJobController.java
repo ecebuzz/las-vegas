@@ -11,6 +11,7 @@ import java.util.TreeMap;
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.log4j.Logger;
 
+import edu.brown.lasvegas.JobController;
 import edu.brown.lasvegas.JobStatus;
 import edu.brown.lasvegas.JobType;
 import edu.brown.lasvegas.LVFracture;
@@ -25,7 +26,7 @@ import edu.brown.lasvegas.TaskType;
 import edu.brown.lasvegas.protocol.LVMetadataProtocol;
 
 /**
- * The class to control a data import job.
+ * The job to import a new fracture.
  * <p>This class merely registers a job and a bunch of sub-tasks
  * to the metadata repository and waits for data nodes to
  * complete the actual work.</p>
@@ -35,32 +36,94 @@ import edu.brown.lasvegas.protocol.LVMetadataProtocol;
  * <pre>
  * LVMetadataClient metaClient = new LVMetadataClient(new Configuration());
  * LVMetadataProtocol metaRepo = metaClient.getChannel ();
- * DataImportJobParameters param = new DataImportJobParameters(123);
+ * ImportFractureJobParameters param = new ImportFractureJobParameters(123);
  * param.getNodeFilePathMap().put(11, new String[]{"/home/user/test1.txt"});
  * param.getNodeFilePathMap().put(12, new String[]{"/home/user/test2.txt"});
- * new DataImportJobController(metaRepo, param).execute();
+ * new ImportFractureJobController(metaRepo).startSync(param);
  * </pre>
  * </p>
- * TODO inherit JobController
+ * @see JobType#IMPORT_FRACTURE
  */
-public class DataImportJobController {
-    private static Logger LOG = Logger.getLogger(DataImportJobController.class);
+public class ImportFractureJobController implements JobController<ImportFractureJobParameters> {
+    private static Logger LOG = Logger.getLogger(ImportFractureJobController.class);
 
     /**
      * Metadata repository.
      */
     private final LVMetadataProtocol metaRepo;
     
-    private final DataImportJobParameters param;
-    private final int jobId;
-    private final LVFracture fracture;
-    private final LVReplicaGroup[] groups;
-    private final Map<Integer, LVReplicaScheme> defaultReplicaSchemes;
-    private final Map<Integer, LVReplicaScheme[]> otherReplicaSchemes;
+    private ImportFractureJobParameters param;
+    private int jobId;
+    private LVFracture fracture;
+    private LVReplicaGroup[] groups;
+    private Map<Integer, LVReplicaScheme> defaultReplicaSchemes;
+    private Map<Integer, LVReplicaScheme[]> otherReplicaSchemes;
 
-    public DataImportJobController (LVMetadataProtocol metaRepo, DataImportJobParameters param) throws IOException {
+    public ImportFractureJobController (LVMetadataProtocol metaRepo) throws IOException {
         this.metaRepo = metaRepo;
+    }
+    
+    // differences between stopRequested and errorEncountered
+    // errorEncountered: will cancel all the tasks, but will also wait to see all tasks are actually stopped.
+    // stopRequested: will cancel all the tasks, but exit before checking they are actually stopped.
+    private boolean stopRequested = false;
+    private boolean errorEncountered = false;
+    private String errorMessages = "";
+
+    private boolean stopped = false;
+    @Override
+    public boolean isStopped() {
+        return stopped;
+    }
+    @Override
+    public void requestStop() {
+        stopRequested = true;
+    }
+
+    private final static long STOP_MAX_WAIT_MILLISECONDS = 3000L;
+
+    @Override
+    public void stop () {
+        stopRequested = true;
+        try {
+            metaRepo.updateJobNoReturn(jobId, JobStatus.CANCEL_REQUESTED, null, null);
+        } catch (IOException ex) {
+            LOG.error("failed to update job status", ex);
+        }
+        long initTime = System.currentTimeMillis();
+        while (!stopped && System.currentTimeMillis() - initTime < STOP_MAX_WAIT_MILLISECONDS) {
+            try {
+                Thread.sleep(30);
+            } catch (InterruptedException ex) {
+                // don't continue.. someone else might REALLY want to stop everything
+                LOG.warn("gave up stopping", ex);
+                break;
+            }
+            
+        }
+    }
+    @Override
+    public LVJob startAsync(ImportFractureJobParameters param) throws IOException {
+        init (param);
+        Thread thread = new Thread() {
+            @Override
+            public void run() {
+                runInternal();
+            }
+        };
+        thread.start();
+        return metaRepo.getJob(jobId);
+    }
+    @Override
+    public LVJob startSync(ImportFractureJobParameters param) throws IOException {
+        init (param);
+        runInternal();
+        return metaRepo.getJob(jobId);
+    }
+    
+    private void init (ImportFractureJobParameters param) throws IOException {
         this.param = param;
+        // TODO we should create a fracture object here, rather than assuming an existing fracture
         this.jobId = metaRepo.createNewJobIdOnlyReturn("data import Fracture-" + param.getFractureId(), JobType.IMPORT_FRACTURE, null);
         this.fracture = metaRepo.getFracture(param.getFractureId());
         assert (fracture != null);
@@ -90,79 +153,54 @@ public class DataImportJobController {
             otherReplicaSchemes.put(group.getGroupId(), others.toArray(new LVReplicaScheme[0]));
         }
     }
-    
-    // differences between stopRequested and errorEncountered
-    // errorEncountered: will cancel all the tasks, but will also wait to see all tasks are actually stopped.
-    // stopRequested: will cancel all the tasks, but exit before checking they are actually stopped.
-    private boolean stopRequested = false;
-    private boolean errorEncountered = false;
-    private String errorMessages = "";
 
-    private boolean stopped = false;
-
-    private final static long STOP_MAX_WAIT_MILLISECONDS = 3000L;
-
-    /** forcibly cancel the data import and immediately stop this object. */
-    public void stop () {
-        stopRequested = true;
+    private void runInternal() {
         try {
-            metaRepo.updateJobNoReturn(jobId, JobStatus.CANCEL_REQUESTED, null, null);
-        } catch (IOException ex) {
-            LOG.error("failed to update job status", ex);
-        }
-        long initTime = System.currentTimeMillis();
-        while (!stopped && System.currentTimeMillis() - initTime < STOP_MAX_WAIT_MILLISECONDS) {
-            try {
-                Thread.sleep(30);
-            } catch (InterruptedException ex) {
-                // don't continue.. someone else might REALLY want to stop everything
-                LOG.warn("gave up stopping", ex);
-                break;
+            // First, create a job object for the import.
+            LOG.info("importing Fracture-" + param.getFractureId());
+            metaRepo.updateJobNoReturn(jobId, JobStatus.RUNNING, null, null);
+    
+            // partition raw files at each node
+            TemporaryFilePath[] allPartitionedFiles = null;
+            if (!stopRequested && !errorEncountered) {
+                allPartitionedFiles = partitionRawFiles (0.0d, 1.0d / 3.0d); // 0%-33% progress
+            }
+    
+            // collect and load the partitioned files into LVFS
+            // here, we only load them to *one* replica scheme in each replica group.
+            // other replica schemes are loaded after this task, using the buddy files.
+            if (!stopRequested && !errorEncountered) {
+                assert (allPartitionedFiles != null);
+                loadPartitionedFiles (allPartitionedFiles, 1.0d / 3.0d, 2.0d / 3.0d); // 33%-66% progress
             }
             
+            // loads other replica schemes in each replica group
+            // this is supposed to be efficient because of the buddy files which are loaded in the previous tasks.
+            if (!stopRequested && !errorEncountered) {
+                copyFromBuddyFiles (2.0d / 3.0d, 1.0d); // 66%-100% progress
+            }
+    
+            // okay, done!
+            // TODO should we delete temporary files now that they are no longer needed?
+            if (errorEncountered) {
+                metaRepo.updateJobNoReturn(jobId, JobStatus.ERROR, null, errorMessages);
+            } else if (stopRequested) {
+                metaRepo.updateJobNoReturn(jobId, JobStatus.CANCELED, null, null);
+            } else {
+                metaRepo.updateJobNoReturn(jobId, JobStatus.DONE, new DoubleWritable(1.0d), null);
+            }
+        } catch (Exception ex) {
+            LOG.error("unexpected error:" + ex.getMessage(), ex);
+            errorEncountered = true;
+            errorMessages = ex.getMessage();
+            try {
+                metaRepo.updateJobNoReturn(jobId, JobStatus.ERROR, null, errorMessages);
+            } catch (Exception ex2) {
+                LOG.error("failed again to report an unexpected error:" + ex.getMessage(), ex);
+            }
         }
-    }
-    /**
-     * Start a data import.
-     * @return ID of the Job ({@link LVJob}) object created for this data import.
-     */
-    public int execute (DataImportJobParameters param) throws IOException {
-        // First, create a job object for the import.
-        LOG.info("importing Fracture-" + param.getFractureId());
-        metaRepo.updateJobNoReturn(jobId, JobStatus.RUNNING, null, null);
-
-        // partition raw files at each node
-        TemporaryFilePath[] allPartitionedFiles = null;
-        if (!stopRequested && !errorEncountered) {
-            allPartitionedFiles = partitionRawFiles (0.0d, 1.0d / 3.0d); // 0%-33% progress
-        }
-
-        // collect and load the partitioned files into LVFS
-        // here, we only load them to *one* replica scheme in each replica group.
-        // other replica schemes are loaded after this task, using the buddy files.
-        if (!stopRequested && !errorEncountered) {
-            assert (allPartitionedFiles != null);
-            loadPartitionedFiles (allPartitionedFiles, 1.0d / 3.0d, 2.0d / 3.0d); // 33%-66% progress
-        }
-        
-        // loads other replica schemes in each replica group
-        // this is supposed to be efficient because of the buddy files which are loaded in the previous tasks.
-        if (!stopRequested && !errorEncountered) {
-            copyFromBuddyFiles (2.0d / 3.0d, 1.0d); // 66%-100% progress
-        }
-
-        // okay, done!
-        // TODO should we delete temporary files now that they are no longer needed?
         stopped = true;
-        if (errorEncountered) {
-            metaRepo.updateJobNoReturn(jobId, JobStatus.ERROR, null, errorMessages);
-        } else if (stopRequested) {
-            metaRepo.updateJobNoReturn(jobId, JobStatus.CANCELED, null, null);
-        } else {
-            metaRepo.updateJobNoReturn(jobId, JobStatus.DONE, new DoubleWritable(1.0d), null);
-        }
         LOG.info("exit the job.");
-        return jobId;
     }
     
     private TemporaryFilePath[] partitionRawFiles (double baseProgress, double completedProgress) throws IOException {
