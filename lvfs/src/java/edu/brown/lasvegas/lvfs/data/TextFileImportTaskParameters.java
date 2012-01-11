@@ -21,7 +21,7 @@ public abstract class TextFileImportTaskParameters extends DataTaskParameters {
     public TextFileImportTaskParameters(LVTask task) throws IOException {
         super(task);
     }
-
+    
     /**
      * The fracture to be constructed after this import.
      */
