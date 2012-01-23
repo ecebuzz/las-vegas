@@ -134,6 +134,7 @@ public final class PartitionedTextFileWriters implements Closeable {
                 flushBlock ();
             }
             System.arraycopy(bytes, 0, buffer, bufferUsed, bytes.length);
+            bufferUsed += bytes.length;
         }
         private void flushBlock () throws IOException {
             // flush current buffer as a new block (if compressed, also put size before/after compression as a header)
@@ -143,7 +144,9 @@ public final class PartitionedTextFileWriters implements Closeable {
                     // this might happen, but not sure how Snappy-java handles exceptional cases..
                     throw new IOException ("compression buffer too small???");
                 }
-                LOG.info("compressed a block in snappy:" + bufferUsed + " -> " + sizeAfterCompression);
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("compressed a block in snappy:" + bufferUsed + " -> " + sizeAfterCompression);
+                }
                 ByteBuffer.wrap(compressionBuffer).asIntBuffer().put(new int[]{bufferUsed, sizeAfterCompression});
                 out.write(compressionBuffer, 0, 8 + sizeAfterCompression);
             } else if (compression == CompressionType.GZIP_BEST_COMPRESSION) {
@@ -157,7 +160,9 @@ public final class PartitionedTextFileWriters implements Closeable {
                 gzip.close();
                 compressionBuffer = rawBuffer.getRawBuffer(); // in case ByteArrayOutputStream expanded it
                 int sizeAfterCompression = rawBuffer.size() - 8;
-                LOG.info("compressed a block in gzip:" + bufferUsed + " -> " + sizeAfterCompression);
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("compressed a block in gzip:" + bufferUsed + " -> " + sizeAfterCompression);
+                }
                 ByteBuffer.wrap(compressionBuffer).asIntBuffer().put(new int[]{bufferUsed, sizeAfterCompression});
                 out.write(compressionBuffer, 0, 8 + sizeAfterCompression);
             } else {

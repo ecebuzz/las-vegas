@@ -416,6 +416,15 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     public LVColumn getColumn(int columnId) throws IOException {
         return bdbTableAccessors.columnAccessor.PKX.get(columnId);
     }
+    @Override
+    public LVColumn getColumnByName(int tableId, String name) throws IOException {
+        for (LVColumn column : bdbTableAccessors.columnAccessor.IX_TABLE_ID.subIndex(tableId).map().values()) {
+            if (name.equals(column.getName())) {
+                return column;
+            }
+        }
+        return null;
+    }
 
     @Override
     public LVColumn createNewColumn(LVTable table, String name, ColumnType type) throws IOException {
@@ -850,6 +859,22 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         bdbTableAccessors.replicaPartitionAccessor.PKX.putNoReturn(subPartition);
         return subPartition;
     }
+    @Override
+    public void updateReplicaPartitionNoReturn(int subPartitionId, ReplicaPartitionStatus status, Integer nodeId) throws IOException {
+        LVReplicaPartition subPartition = bdbTableAccessors.replicaPartitionAccessor.PKX.get(subPartitionId);
+        if (subPartition == null) {
+            throw new IOException ("this replica partition ID doesn't exist: " + subPartitionId);
+        }
+        
+        LVRackNode node = null;
+        if (nodeId != null) {
+            node = getRackNode(nodeId.intValue());
+            if (node == null) {
+                throw new IOException ("this node ID doesn't exist: " + nodeId);
+            }
+        }
+        updateReplicaPartition (subPartition, status, node);
+    }    
 
     @Override
     public void dropReplicaPartition(LVReplicaPartition subPartition) throws IOException {
@@ -1304,6 +1329,9 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         }
         if (progress != null) {
             task.setProgress(progress.get());
+        }
+        if (outputFilePaths != null) {
+            task.setOutputFilePaths(outputFilePaths);
         }
         if (errorMessages != null) {
             task.setErrorMessages(errorMessages);

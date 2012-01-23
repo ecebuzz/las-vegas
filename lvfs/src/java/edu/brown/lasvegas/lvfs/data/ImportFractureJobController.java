@@ -20,9 +20,11 @@ import edu.brown.lasvegas.LVReplica;
 import edu.brown.lasvegas.LVReplicaGroup;
 import edu.brown.lasvegas.LVReplicaPartition;
 import edu.brown.lasvegas.LVReplicaScheme;
+import edu.brown.lasvegas.LVTable;
 import edu.brown.lasvegas.LVTask;
 import edu.brown.lasvegas.TaskStatus;
 import edu.brown.lasvegas.TaskType;
+import edu.brown.lasvegas.lvfs.placement.PlacementEventHandlerImpl;
 import edu.brown.lasvegas.protocol.LVMetadataProtocol;
 
 /**
@@ -54,13 +56,24 @@ public class ImportFractureJobController implements JobController<ImportFracture
     
     private ImportFractureJobParameters param;
     private int jobId;
+    private LVTable table;
     private LVFracture fracture;
     private LVReplicaGroup[] groups;
     private Map<Integer, LVReplicaScheme> defaultReplicaSchemes;
     private Map<Integer, LVReplicaScheme[]> otherReplicaSchemes;
+    
+    private final long stopMaxWaitMilliseconds;
+    private final long taskJoinIntervalMilliseconds;
+    private final long taskJoinIntervalOnErrorMilliseconds;
 
     public ImportFractureJobController (LVMetadataProtocol metaRepo) throws IOException {
+        this (metaRepo, 3000L, 5000L, 500L);
+    }
+    public ImportFractureJobController (LVMetadataProtocol metaRepo, long stopMaxWaitMilliseconds, long taskJoinIntervalMilliseconds, long taskJoinIntervalOnErrorMilliseconds) throws IOException {
         this.metaRepo = metaRepo;
+        this.stopMaxWaitMilliseconds = stopMaxWaitMilliseconds;
+        this.taskJoinIntervalMilliseconds = taskJoinIntervalMilliseconds;
+        this.taskJoinIntervalOnErrorMilliseconds = taskJoinIntervalOnErrorMilliseconds;
     }
     
     // differences between stopRequested and errorEncountered
@@ -80,8 +93,6 @@ public class ImportFractureJobController implements JobController<ImportFracture
         stopRequested = true;
     }
 
-    private final static long STOP_MAX_WAIT_MILLISECONDS = 3000L;
-
     @Override
     public void stop () {
         stopRequested = true;
@@ -91,7 +102,7 @@ public class ImportFractureJobController implements JobController<ImportFracture
             LOG.error("failed to update job status", ex);
         }
         long initTime = System.currentTimeMillis();
-        while (!stopped && System.currentTimeMillis() - initTime < STOP_MAX_WAIT_MILLISECONDS) {
+        while (!stopped && System.currentTimeMillis() - initTime < stopMaxWaitMilliseconds) {
             try {
                 Thread.sleep(30);
             } catch (InterruptedException ex) {
@@ -123,10 +134,13 @@ public class ImportFractureJobController implements JobController<ImportFracture
     
     private void init (ImportFractureJobParameters param) throws IOException {
         this.param = param;
-        // TODO we should create a fracture object here, rather than assuming an existing fracture
-        this.jobId = metaRepo.createNewJobIdOnlyReturn("data import Fracture-" + param.getFractureId(), JobType.IMPORT_FRACTURE, null);
-        this.fracture = metaRepo.getFracture(param.getFractureId());
+        // create a new fracture.
+        this.table = metaRepo.getTable(param.getTableId());
+        assert (table != null);
+        this.fracture = metaRepo.createNewFracture(table);
         assert (fracture != null);
+        
+        this.jobId = metaRepo.createNewJobIdOnlyReturn("data import Fracture-" + fracture.getFractureId(), JobType.IMPORT_FRACTURE, null);
 
         this.groups = metaRepo.getAllReplicaGroups(fracture.getTableId());
         this.defaultReplicaSchemes = new HashMap<Integer, LVReplicaScheme>();
@@ -140,6 +154,7 @@ public class ImportFractureJobController implements JobController<ImportFracture
                 if (defaultScheme == null || scheme.getSortColumnId() == null) {
                     defaultScheme = scheme;
                 }
+                metaRepo.createNewReplica(scheme, fracture);
             }
             assert (defaultScheme != null);
             defaultReplicaSchemes.put(group.getGroupId(), defaultScheme);
@@ -152,12 +167,14 @@ public class ImportFractureJobController implements JobController<ImportFracture
             }
             otherReplicaSchemes.put(group.getGroupId(), others.toArray(new LVReplicaScheme[0]));
         }
+        // assigns data nodes to each replica partition.
+        new PlacementEventHandlerImpl(metaRepo).onNewFracture(fracture);
     }
 
     private void runInternal() {
         try {
             // First, create a job object for the import.
-            LOG.info("importing Fracture-" + param.getFractureId());
+            LOG.info("importing Fracture-" + fracture.getFractureId());
             metaRepo.updateJobNoReturn(jobId, JobStatus.RUNNING, null, null);
     
             // partition raw files at each node
@@ -214,7 +231,7 @@ public class ImportFractureJobController implements JobController<ImportFracture
             taskParam.setDelimiter(param.getDelimiter());
             taskParam.setEncoding(param.getEncoding());
             taskParam.setFilePaths(param.getNodeFilePathMap().get(nodeId));
-            taskParam.setFractureId(param.getFractureId());
+            taskParam.setFractureId(fracture.getFractureId());
             taskParam.setTimeFormat(param.getTimeFormat());
             taskParam.setTimestampFormat(param.getTimestampFormat());
             taskParam.setTemporaryCompression(param.getTemporaryFileCompression());
@@ -229,14 +246,18 @@ public class ImportFractureJobController implements JobController<ImportFracture
         joinTasks(taskMap, baseProgress, completedProgress);
         
         // extract resulting files
-        List<TemporaryFilePath> allPartitionedFiles = new ArrayList<TemporaryFilePath> ();
-        for (LVTask task : taskMap.values()) {
-            assert (task.getStatus() == TaskStatus.DONE);
-            for (String outputPath : task.getOutputFilePaths()) {
-                allPartitionedFiles.add(new TemporaryFilePath(outputPath));
+        if (!stopRequested && !errorEncountered) {
+            List<TemporaryFilePath> allPartitionedFiles = new ArrayList<TemporaryFilePath> ();
+            for (LVTask task : taskMap.values()) {
+                assert (task.getStatus() == TaskStatus.DONE);
+                for (String outputPath : task.getOutputFilePaths()) {
+                    allPartitionedFiles.add(new TemporaryFilePath(outputPath));
+                }
             }
+            return allPartitionedFiles.toArray(new TemporaryFilePath[0]);
+        } else {
+            return null;
         }
-        return allPartitionedFiles.toArray(new TemporaryFilePath[0]);
     }
 
     private void loadPartitionedFiles (TemporaryFilePath[] allPartitionedFiles, double baseProgress, double completedProgress) throws IOException {
@@ -268,7 +289,6 @@ public class ImportFractureJobController implements JobController<ImportFracture
             for (LVReplicaPartition partition : partitions) {
                 Integer nodeId = partition.getNodeId();
                 if (nodeId == null) {
-                    // TODO where we should do it?
                     throw new IOException ("this partition has not been assigned to data node. " + partition);
                 }
                 if (!filesPerPartition.containsKey(nodeId)) {
@@ -292,7 +312,7 @@ public class ImportFractureJobController implements JobController<ImportFracture
                 taskParam.setDateFormat(param.getDateFormat());
                 taskParam.setDelimiter(param.getDelimiter());
                 taskParam.setEncoding(param.getEncoding());
-                taskParam.setFractureId(param.getFractureId());
+                taskParam.setFractureId(fracture.getFractureId());
                 taskParam.setTimeFormat(param.getTimeFormat());
                 taskParam.setTimestampFormat(param.getTimestampFormat());
                 taskParam.setReplicaId(replica.getReplicaId());
@@ -350,7 +370,6 @@ public class ImportFractureJobController implements JobController<ImportFracture
                 for (LVReplicaPartition partition : partitions) {
                     Integer nodeId = partition.getNodeId();
                     if (nodeId == null) {
-                        // TODO where we should do it? (other schemes)
                         throw new IOException ("this partition has not been assigned to data node. " + partition);
                     }
                     NodeFileLoadAssignment assignments = assignmentsPerNode.get(nodeId);
@@ -401,10 +420,10 @@ public class ImportFractureJobController implements JobController<ImportFracture
         int finishedCount = 0;
         while (!stopRequested && finishedCount != taskMap.size()) {
             try {
-                Thread.sleep(errorEncountered ? 500 : 5000);
+                Thread.sleep(errorEncountered ? taskJoinIntervalOnErrorMilliseconds : taskJoinIntervalMilliseconds);
             } catch (InterruptedException ex) {
             }
-            LOG.info("polling the progress of tasks...");
+            LOG.debug("polling the progress of tasks...");
             for (LVTask task : taskMap.values()) {
                 if (TaskStatus.isFinished(task.getStatus())) {
                     continue;

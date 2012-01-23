@@ -1,6 +1,7 @@
 package edu.brown.lasvegas.lvfs.data;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 
 import edu.brown.lasvegas.ColumnType;
@@ -38,6 +39,15 @@ public final class MiniLineorder {
         TextFileTupleReader reader = new TextFileTupleReader(new VirtualFile[]{new URLVirtualFile(testFile)}, scheme, "|");
         return reader;
     }
+    public static byte[] getFileBody() throws IOException {
+        URL testFile = MiniLineorder.class.getResource("mini_lineorder.tbl");
+        InputStream in = testFile.openStream();
+        byte[] bytes = new byte[in.available()];
+        int read = in.read(bytes);
+        assert (bytes.length == read);
+        in.close();
+        return bytes;
+    }
     
     public static CompressionType[] getDefaultCompressions() {
         return new CompressionType[]{
@@ -60,5 +70,25 @@ public final class MiniLineorder {
             /*"lo_shipmode",*/ CompressionType.DICTIONARY,
         };
     }
-
+    public static String[] getColumnNames () {
+        return new String[]{
+            "lo_orderkey", 
+            "lo_linenumber", 
+            "lo_custkey", 
+            "lo_partkey", 
+            "lo_suppkey",
+            "lo_orderdate",
+            "lo_orderpriority",
+            "lo_shippriority",
+            "lo_quantity",
+            "lo_extendedprice",
+            "lo_ordertotalprice",
+            "lo_discount",
+            "lo_revenue",
+            "lo_supplycost",
+            "lo_tax",
+            "lo_commitdate",
+            "lo_shipmode",
+        };
+    }
 }

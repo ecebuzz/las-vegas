@@ -68,6 +68,7 @@ public abstract class TextFileImportTaskParameters extends DataTaskParameters {
         out.writeUTF(timeFormat);
         out.writeUTF(timestampFormat);
         out.writeInt(temporaryCompression == null ? CompressionType.INVALID.ordinal() : temporaryCompression.ordinal());
+        writeDerived (out);
     }
 
     /** override this to serialize more attributes. */
@@ -82,6 +83,7 @@ public abstract class TextFileImportTaskParameters extends DataTaskParameters {
         timeFormat = in.readUTF();
         timestampFormat = in.readUTF();
         temporaryCompression = CompressionType.values()[in.readInt()];
+        readFieldsDerived (in);
     }
     /** override this to de-serialize more attributes. */
     protected abstract void readFieldsDerived(DataInput in) throws IOException;

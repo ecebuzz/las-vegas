@@ -231,6 +231,15 @@ public interface LVMetadataProtocol extends VersionedProtocol {
     LVColumn getColumn(int columnId) throws IOException;
 
     /**
+     * Returns the column object with the given name in the table. 
+     * @param tableId Table ID
+     * @param name name of the column
+     * @return column object. null if the column with the name is not found in the table.
+     * @throws IOException
+     */
+    LVColumn getColumnByName(int tableId, String name) throws IOException;
+
+    /**
      * Add a new column to the last of an existing table.
      * The new column has NULL as the value of all tuples.
      * Only subsequently added tuples can have non-NULL values for the column.
@@ -712,6 +721,17 @@ public interface LVMetadataProtocol extends VersionedProtocol {
         ReplicaPartitionStatus status,
         LVRackNode node) throws IOException;
     
+    /**
+     * Updates the sub-partition object without sending/receiving redundant data.
+     * @param subPartitionId ID of the sub-partition object to update
+     * @param status new status of the sub-partition
+     * @param nodeId ID of the node that physically stores the sub-partition. could be NULL, if the new status is LOST or BEING_RECOVERED. 
+     * @throws IOException
+     */
+    void updateReplicaPartitionNoReturn(int subPartitionId,
+        ReplicaPartitionStatus status,
+        Integer nodeId) throws IOException;
+
     /**
      * Deletes the sub-partition metadata object and related objects from this repository.
      * @param subPartition the sub-partition object to delete

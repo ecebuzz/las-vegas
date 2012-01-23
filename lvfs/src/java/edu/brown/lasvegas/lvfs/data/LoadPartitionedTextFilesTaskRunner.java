@@ -24,6 +24,7 @@ import edu.brown.lasvegas.LVReplica;
 import edu.brown.lasvegas.LVReplicaPartition;
 import edu.brown.lasvegas.LVReplicaScheme;
 import edu.brown.lasvegas.LVTable;
+import edu.brown.lasvegas.ReplicaPartitionStatus;
 import edu.brown.lasvegas.TaskType;
 import edu.brown.lasvegas.client.DataNodeFile;
 import edu.brown.lasvegas.client.LVDataClient;
@@ -110,6 +111,7 @@ public final class LoadPartitionedTextFilesTaskRunner extends DataTaskRunner<Loa
         }
         // move files to non-temporary place
         DataTaskUtil.registerTemporaryFilesAsColumnFiles(context, partitionInput.partition, columns, finalFiles);
+        context.metaRepo.updateReplicaPartitionNoReturn(partitionInput.partition.getPartitionId(), ReplicaPartitionStatus.OK, partitionInput.partition.getNodeId());
     }
     /**
      * sequentially copy all input files into unsorted column files.

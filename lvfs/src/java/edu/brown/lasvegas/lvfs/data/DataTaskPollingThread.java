@@ -76,9 +76,10 @@ public final class DataTaskPollingThread extends Thread {
     @Override
     public void run() {
         try {
-            while (stopRequested) {
+            while (!stopRequested) {
+                LOG.trace("polling my task...");
                 LVTask[] newTasks = context.metaRepo.getAllTasksByNodeAndStatus(context.nodeId, TaskStatus.START_REQUESTED);
-                if (LOG.isDebugEnabled()) {
+                if (LOG.isDebugEnabled() && newTasks.length > 0) {
                     LOG.debug("going to run " + newTasks.length + " tasks..");
                 }
                 for (LVTask task : newTasks) {
@@ -98,8 +99,8 @@ public final class DataTaskPollingThread extends Thread {
                 
                 
                 long interval = context.conf.getLong(POLLING_INTERVAL_KEY, POLLING_INTERVAL_DEFAULT);
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("going to sleep for " + interval + " milliseconds");
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace("going to sleep for " + interval + " milliseconds");
                 }
                 try {
                     Thread.sleep(interval);

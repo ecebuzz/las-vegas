@@ -95,7 +95,7 @@ class BdbTableAccessors {
             // load everything in main memory. metadata should be enough compact.
             // note: database.preload() is not enough as it only preloads index node.
             if (LOG.isInfoEnabled()) {
-                LOG.info("preloading " + store.getStoreName());
+                LOG.info("preloading " + entClass.getName());
             }
             EntityCursor<Ent> cursor = PKX.entities();
             int count = 0;

@@ -13,7 +13,7 @@ import edu.brown.lasvegas.CompressionType;
 public class TemporaryFilePath {
     private static final Pattern pattern;
     static {
-        pattern = Pattern.compile("(.*/)([0-9]+)_([0-9]+)_([0-9]+)_([0-9]+)_([0-9]+)\\.([a-z]+)");
+        pattern = Pattern.compile("(.*/)([0-9]+)_([0-9]+)_([0-9]+)_([0-9]+)_[-]?([0-9]+)\\.([a-z]+)");
     }
     public TemporaryFilePath(String folderPath, int nodeId, int replicaGroupId, int fractureId, int partition, int uniquefier, CompressionType compression) {
         this.folderPath = folderPath;
@@ -24,6 +24,13 @@ public class TemporaryFilePath {
         this.uniquefier = uniquefier;
         this.compression = compression;
     }
+    private static String trimSl (String path) {
+        if (path.endsWith("/")) {
+            return path.substring(0, path.length() - 1);
+        } else {
+            return path;
+        }
+    }
     public TemporaryFilePath(String filePath) throws IOException {
         Matcher matcher = pattern.matcher(filePath);
         if (!matcher.matches()) {
@@ -32,7 +39,7 @@ public class TemporaryFilePath {
         String extension;
         try {
             int i = 0;
-            this.folderPath = matcher.group(++i);
+            this.folderPath = trimSl(matcher.group(++i));
             this.nodeId = Integer.parseInt(matcher.group(++i));
             this.replicaGroupId = Integer.parseInt(matcher.group(++i));
             this.fractureId = Integer.parseInt(matcher.group(++i));

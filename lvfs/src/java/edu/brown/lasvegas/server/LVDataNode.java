@@ -15,6 +15,7 @@ import edu.brown.lasvegas.LVRackNode;
 import edu.brown.lasvegas.client.LVMetadataClient;
 import edu.brown.lasvegas.lvfs.data.DataEngine;
 import edu.brown.lasvegas.protocol.LVDataProtocol;
+import edu.brown.lasvegas.protocol.LVMetadataProtocol;
 
 /**
  * Las-Vegas Data Node to receive load/replication/recovery requests
@@ -64,6 +65,11 @@ public final class LVDataNode implements ServicePlugin {
     public LVDataNode (Configuration conf) {
         this.conf = conf;
     }
+    /** Constructor to directly specify the metadata repository instance. usually for testing. */
+    public LVDataNode (Configuration conf, LVMetadataProtocol metaRepo) {
+        this.conf = conf;
+        this.metaRepo = metaRepo;
+    }
     
     /** hadoop configuration */
     private Configuration conf;
@@ -77,8 +83,10 @@ public final class LVDataNode implements ServicePlugin {
         return hdfsDataNode;
     }
     
-    /** connect to remote metadata repository. */
+    /** only if connecting to remote metadata repository. */
     private LVMetadataClient metaClient;
+    /** metadata repository. */
+    private LVMetadataProtocol metaRepo;
 
     public static final String DATA_ADDRESS_KEY = "lasvegas.server.data.address";
     public static final String DATA_ADDRESS_DEFAULT = "localhost:28712";
@@ -113,16 +121,21 @@ public final class LVDataNode implements ServicePlugin {
     private void initialize() throws IOException {
         String address = conf.get(DATA_ADDRESS_KEY, DATA_ADDRESS_DEFAULT);
         LOG.info("initializing LVFS Data Server. address=" + address);
-        metaClient = new LVMetadataClient(conf);
+        if (metaRepo == null) {
+            metaClient = new LVMetadataClient(conf);
+            metaRepo = metaClient.getChannel();
+        } else {
+            LOG.debug ("using metadata repository instance given to the constructor");
+        }
         // String nodeName = hdfsDataNode.getMachineName();
         String nodeName = conf.get(DATA_NODE_NAME_KEY, DATA_NODE_NAME_DEFAULT);
-        LVRackNode node = metaClient.getChannel().getRackNode(nodeName);
+        LVRackNode node = metaRepo.getRackNode(nodeName);
         if (node == null) {
             throw new IOException ("This node name doesn't exist: " + nodeName);
         }
         // TODO register node/rack if needed
         InetSocketAddress sockAddress = NetUtils.createSocketAddr(address);
-        dataEngine = new DataEngine(metaClient.getChannel(), node.getNodeId(), conf);
+        dataEngine = new DataEngine(metaRepo, node.getNodeId(), conf);
         dataEngine.start();
         dataServer = RPC.getServer(LVDataProtocol.class, dataEngine, sockAddress.getHostName(), sockAddress.getPort(), conf);
         LOG.info("initialized LVFS Data Server.");
@@ -155,6 +168,10 @@ public final class LVDataNode implements ServicePlugin {
             } catch (IOException ex) {
                 LOG.error("error on closing data engine", ex);
             }
+        }
+        if (metaClient != null) {
+            metaClient.release();
+            metaClient = null;
         }
         LOG.info("Stopped data node.");
     }

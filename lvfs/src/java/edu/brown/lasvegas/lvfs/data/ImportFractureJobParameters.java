@@ -13,13 +13,13 @@ import edu.brown.lasvegas.JobParameters;
 
 /**
  * Set of parameters for one data import.
- * This specifies what files to import, what fracture to construct, etc.
+ * This specifies what files to import, to which table, etc.
  */
 public final class ImportFractureJobParameters extends JobParameters {
     /**
-     * The fracture to be constructed after this import.
+     * The table to which a new fracture is constructed during this import.
      */
-    private int fractureId;
+    private int tableId;
     
     /** Encoding name of the imported files. */
     private String encoding;
@@ -61,23 +61,23 @@ public final class ImportFractureJobParameters extends JobParameters {
     
     /**
      * Instantiates a new data import parameters.
-     * @param fractureId The fracture to be constructed after this import.
+     * @param tableId The table to which a new fracture is constructed during this import.
      */
-    public ImportFractureJobParameters (int fractureId) {
-        this (fractureId, "UTF-8", "|", "yyyy-MM-dd", "HH:mm:ss", "yyyy-MM-dd HH:mm:ss.SSS", CompressionType.SNAPPY);
+    public ImportFractureJobParameters (int tableId) {
+        this (tableId, "UTF-8", "|", "yyyy-MM-dd", "HH:mm:ss", "yyyy-MM-dd HH:mm:ss.SSS", CompressionType.SNAPPY);
     }
     /**
      * Instantiates a new data import parameters.
-     * @param fractureId The fracture to be constructed after this import.
+     * @param tableId The table to which a new fracture is constructed during this import.
      * @param encoding Encoding name of the imported files, eg, "UTF-8"
      * @param delimiter Column delimiter, eg, "|"
      * @param dateFormat the format string to parse a date column in the files, eg, "yyyy-MM-dd"
      * @param timeFormat the format string to parse a time column in the files, eg, "HH:mm:ss"
      * @param timestampFormat the format string to parse a timestamp column in the files, eg, "yyyy-MM-dd HH:mm:ss.SSS"
      */
-    public ImportFractureJobParameters (int fractureId, String encoding, String delimiter,
+    public ImportFractureJobParameters (int tableId, String encoding, String delimiter,
                     String dateFormat, String timeFormat, String timestampFormat, CompressionType temporaryFileCompression) {
-        this.fractureId = fractureId;
+        this.tableId = tableId;
         this.encoding = encoding;
         Charset.forName(encoding); // test if the encoding exists (at least in this JavaVM)
         this.delimiter = delimiter;
@@ -92,7 +92,7 @@ public final class ImportFractureJobParameters extends JobParameters {
     
     @Override
     public void readFields(DataInput in) throws IOException {
-        fractureId = in.readInt();
+        tableId = in.readInt();
         encoding = readNillableString(in);
         delimiter = readNillableString(in);
         dateFormat = readNillableString(in);
@@ -115,7 +115,7 @@ public final class ImportFractureJobParameters extends JobParameters {
     }
     @Override
     public void write(DataOutput out) throws IOException {
-        out.writeInt(fractureId);
+        out.writeInt(tableId);
         writeNillableString(out, encoding);
         writeNillableString(out, delimiter);
         writeNillableString(out, dateFormat);
@@ -136,21 +136,21 @@ public final class ImportFractureJobParameters extends JobParameters {
     
 
     /**
-     * Gets the fracture to be constructed after this import.
+     * Gets the ID of the table to which a new fracture is constructed during this import.
      *
-     * @return the fracture to be constructed after this import
+     * @param ID of the table to which a new fracture is constructed during this import.
      */
-    public int getFractureId() {
-        return fractureId;
+    public int getTableId() {
+        return tableId;
     }
 
     /**
-     * Sets the fracture to be constructed after this import.
+     * Sets the ID of the table to which a new fracture is constructed during this import.
      *
-     * @param fractureId the new fracture to be constructed after this import
+     * @param tableId the table to which a new fracture is constructed during this import.
      */
-    public void setFractureId(int fractureId) {
-        this.fractureId = fractureId;
+    public void setTableId(int tableId) {
+        this.tableId = tableId;
     }
 
     /**

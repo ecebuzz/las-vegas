@@ -424,6 +424,12 @@ public abstract class MetadataRepositoryTestBase {
     }
 
     @Test
+    public void testGetColumnByName() throws IOException {
+        assertEquals(DEFAULT_COLUMNS[0].getColumnId(), repository.getColumnByName(DEFAULT_TABLE.getTableId(), DEFAULT_COLUMNS[0].getName()).getColumnId());
+        assertEquals(DEFAULT_COLUMNS[1].getColumnId(), repository.getColumnByName(DEFAULT_TABLE.getTableId(), DEFAULT_COLUMNS[1].getName()).getColumnId());
+        assertEquals(DEFAULT_COLUMNS[2].getColumnId(), repository.getColumnByName(DEFAULT_TABLE.getTableId(), DEFAULT_COLUMNS[2].getName()).getColumnId());
+    }
+    @Test
     public void testColumnsAssorted() throws IOException {
         int colid;
         {
@@ -1294,19 +1300,21 @@ public abstract class MetadataRepositoryTestBase {
         validateTask (tasks[0], taskId2, jobId2, nodeId1, TaskType.PROJECT, TaskStatus.CREATED);
         
         
-        repository.updateTaskNoReturn(taskId2, TaskStatus.RUNNING, new DoubleWritable(0.5d), null, "");
+        repository.updateTaskNoReturn(taskId2, TaskStatus.RUNNING, new DoubleWritable(0.5d), new String[]{"aaa", "bbb"}, "");
 
         reloadRepository();
 
         assertNull (repository.getTask(taskId1));
         LVTask task2 = repository.getTask(taskId2);
         validateTask (task2, taskId2, jobId2, nodeId1, TaskType.PROJECT, TaskStatus.RUNNING);
+        assertArrayEquals (new String[]{"aaa", "bbb"}, task2.getOutputFilePaths());
         assertEquals (0.5d, task2.getProgress(), 0.00000001d);
         
         
         tasks = repository.getAllTasksByNodeAndStatus(nodeId1, TaskStatus.RUNNING);
         assertEquals (1, tasks.length);
         validateTask (tasks[0], taskId2, jobId2, nodeId1, TaskType.PROJECT, TaskStatus.RUNNING);
+        assertArrayEquals (new String[]{"aaa", "bbb"}, tasks[0].getOutputFilePaths());
     }
     private void validateTask (LVTask task, int taskId, int jobId, int nodeId, TaskType type, TaskStatus status) {
         assertEquals (taskId, task.getTaskId());
