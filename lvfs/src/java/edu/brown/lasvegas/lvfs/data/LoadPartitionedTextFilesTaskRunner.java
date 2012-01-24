@@ -95,6 +95,7 @@ public final class LoadPartitionedTextFilesTaskRunner extends DataTaskRunner<Loa
 
         // first, create column files without sorting
         ColumnFileBundle[] unsortedFiles = writeUnsortedFiles (partitionInput, baseProgress + (completedProgress - baseProgress) / 2.0d); // about 50% of this
+        assert (unsortedFiles.length == columns.length);
         
         ColumnFileBundle[] finalFiles;
         if (scheme.getSortColumnId() == null) {
@@ -173,6 +174,7 @@ public final class LoadPartitionedTextFilesTaskRunner extends DataTaskRunner<Loa
                         throw new TaskCanceledException ();
                     }
                     writtenFiles = writer.finish();
+                    assert (writtenFiles.length == columns.length);
                     writtenTupleCount = writer.getTupleCount();
                 } finally {
                     writer.close();

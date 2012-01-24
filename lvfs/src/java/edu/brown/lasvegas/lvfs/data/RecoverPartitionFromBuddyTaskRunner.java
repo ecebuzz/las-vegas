@@ -76,6 +76,7 @@ public final class RecoverPartitionFromBuddyTaskRunner extends DataTaskRunner<Re
     private ColumnFileBundle[] recoverPatition (LVReplicaPartition partition, LVReplicaPartition buddyPartition, double baseProgress, double completedProgress) throws IOException {
         LOG.info("recovering partition " + partition + " from the buddy:" + buddyPartition);
         LVColumnFile[] buddyColumnFiles = context.metaRepo.getAllColumnFilesByReplicaPartitionId(buddyPartition.getPartitionId());
+        assert (columns.length == buddyColumnFiles.length);
         ColumnFileBundle[] buddies = new ColumnFileBundle[buddyColumnFiles.length];
         int buddyNodeId = buddyPartition.getNodeId();
         HashMap<Integer, LVDataClient> dataClients = new HashMap<Integer, LVDataClient>(); // key= nodeID. keep this until we disconnect from data nodes

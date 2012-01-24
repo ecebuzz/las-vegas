@@ -28,7 +28,7 @@ public class MasterTableAccessor {
     public int issueNewIdBlock (int objectTypeOrdinal, int blockSize) {
         return issueNewIdBlock ("SEQ-" + objectTypeOrdinal, blockSize);
     }
-    public int issueNewIdBlock (String idSequence, int blockSize) {
+    public synchronized int issueNewIdBlock (String idSequence, int blockSize) {
         assert (blockSize > 0);
         Integer previousId = (Integer) get(idSequence, Integer.valueOf(0));
         put(idSequence, previousId + blockSize);

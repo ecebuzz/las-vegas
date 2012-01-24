@@ -76,6 +76,11 @@ public class ImportFractureJobController implements JobController<ImportFracture
         this.taskJoinIntervalOnErrorMilliseconds = taskJoinIntervalOnErrorMilliseconds;
     }
     
+    /** returns the newly created fracture. */
+    public LVFracture getFracture () {
+        return fracture;
+    }
+    
     // differences between stopRequested and errorEncountered
     // errorEncountered: will cancel all the tasks, but will also wait to see all tasks are actually stopped.
     // stopRequested: will cancel all the tasks, but exit before checking they are actually stopped.

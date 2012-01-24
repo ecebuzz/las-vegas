@@ -22,6 +22,7 @@ import com.sleepycat.je.CheckpointConfig;
 import com.sleepycat.je.Durability;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.EnvironmentConfig;
+import com.sleepycat.je.Transaction;
 import com.sleepycat.persist.EntityIndex;
 
 import edu.brown.lasvegas.ColumnStatus;
@@ -111,9 +112,10 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         bdbEnvConf.setCacheSize(BDB_CACHE_SIZE);
         bdbEnvConf.setAllowCreate(true);
 
-        // prefers performance over full ACID
-        bdbEnvConf.setLocking(false);
-        bdbEnvConf.setTransactional(false);
+        // metedata repository is accessed from multi-threads. so, it has to be transactional
+        bdbEnvConf.setLocking(true);
+        bdbEnvConf.setTransactional(true);
+        // however, we don't need 100% durability.(arguably..)
         bdbEnvConf.setDurability(Durability.COMMIT_NO_SYNC);
 
         bdbEnv = new Environment(bdbEnvHome, bdbEnvConf);
@@ -952,7 +954,18 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         file.setCompressionType(scheme.getColumnCompressionScheme(column.getColumnId()));
         file.setSorted(scheme.getSortColumnId() != null && scheme.getSortColumnId().intValue() == column.getColumnId());
         file.setTupleCount(tupleCount);
-        bdbTableAccessors.columnFileAccessor.PKX.putNoReturn(file);
+
+        Transaction txn = bdbEnv.beginTransaction(null, null);
+        boolean committed = false;
+        try {
+            bdbTableAccessors.columnFileAccessor.PKX.putNoReturn(txn, file);
+            txn.commit();
+            committed = true;
+        } finally {
+            if (!committed) {
+                txn.abort();
+            }
+        }
         return file;
     }
     @Override
@@ -965,7 +978,17 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     public LVColumnFile updateColumnFilePath(int columnFileId, String newLocalFilePath) throws IOException {
         LVColumnFile file = getColumnFile(columnFileId);
         file.setLocalFilePath(newLocalFilePath);
-        bdbTableAccessors.columnFileAccessor.PKX.putNoReturn(file);
+        Transaction txn = bdbEnv.beginTransaction(null, null);
+        boolean committed = false;
+        try {
+            bdbTableAccessors.columnFileAccessor.PKX.putNoReturn(file);
+            txn.commit();
+            committed = true;
+        } finally {
+            if (!committed) {
+                txn.abort();
+            }
+        }
         return file;
     }
     @Override
@@ -976,7 +999,18 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     @Override
     public void dropColumnFile(int columnFileId) throws IOException {
         assert (columnFileId > 0);
-        boolean deleted = bdbTableAccessors.columnFileAccessor.PKX.delete(columnFileId);
+        boolean deleted;
+        Transaction txn = bdbEnv.beginTransaction(null, null);
+        boolean committed = false;
+        try {
+            deleted = bdbTableAccessors.columnFileAccessor.PKX.delete(columnFileId);
+            txn.commit();
+            committed = true;
+        } finally {
+            if (!committed) {
+                txn.abort();
+            }
+        }
         if (!deleted) {
             LOG.warn("this column file has been already deleted?? :" + columnFileId);
         }

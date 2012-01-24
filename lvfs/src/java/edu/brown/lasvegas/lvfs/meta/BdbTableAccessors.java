@@ -62,7 +62,7 @@ class BdbTableAccessors {
         }
         storeConfig = new StoreConfig();
         storeConfig.setAllowCreate(true);
-        storeConfig.setTransactional(false);
+        storeConfig.setTransactional(true);
         store = new EntityStore(bdbEnv, MasterTable.DBNAME, storeConfig);
         masterTableAccessor = new MasterTableAccessor(store);
         jobAccessor = new JobAccessor();
@@ -115,8 +115,8 @@ class BdbTableAccessors {
         abstract LVObjectType getType();
         final int issueNewId () {
             int newId = masterTableAccessor.issueNewId(getType().ordinal());
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("new id=" + newId);
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("new id=" + newId);
                 Ent existing = PKX.get(newId);
                 if (existing != null) {
                     LOG.error("the newly issued id already exists??? : " + existing);

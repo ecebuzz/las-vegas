@@ -5,6 +5,7 @@ import static org.junit.Assert.*;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Random;
 
 import org.apache.hadoop.conf.Configuration;
@@ -15,14 +16,23 @@ import org.junit.Test;
 import edu.brown.lasvegas.ColumnType;
 import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.JobStatus;
+import edu.brown.lasvegas.LVColumn;
+import edu.brown.lasvegas.LVColumnFile;
 import edu.brown.lasvegas.LVDatabase;
+import edu.brown.lasvegas.LVFracture;
 import edu.brown.lasvegas.LVJob;
 import edu.brown.lasvegas.LVRack;
 import edu.brown.lasvegas.LVRackNode;
+import edu.brown.lasvegas.LVReplica;
 import edu.brown.lasvegas.LVReplicaGroup;
+import edu.brown.lasvegas.LVReplicaPartition;
 import edu.brown.lasvegas.LVReplicaScheme;
 import edu.brown.lasvegas.LVTable;
+import edu.brown.lasvegas.lvfs.ColumnFileBundle;
+import edu.brown.lasvegas.lvfs.ColumnFileReaderBundle;
 import edu.brown.lasvegas.lvfs.LVFSFilePath;
+import edu.brown.lasvegas.lvfs.LVFSFileType;
+import edu.brown.lasvegas.lvfs.TypedReader;
 import edu.brown.lasvegas.lvfs.meta.MasterMetadataRepository;
 import edu.brown.lasvegas.server.LVDataNode;
 import edu.brown.lasvegas.util.ValueRange;
@@ -115,6 +125,11 @@ public class ImportFractureJobControllerTest {
         // table and its scheme for test
         final String[] columnNames = MiniLineorder.getColumnNames();
         LVTable table = masterRepository.createNewTable(database.getDatabaseId(), "tablenopart", columnNames, MiniLineorder.getScheme());
+        HashMap<String, LVColumn> columns = new HashMap<String, LVColumn>();
+        for (LVColumn column : masterRepository.getAllColumnsExceptEpochColumn(table.getTableId())) {
+            columns.put(column.getName(), column);
+        }
+
         LVReplicaGroup group1 = masterRepository.createNewReplicaGroup(table, masterRepository.getColumnByName(table.getTableId(), "lo_orderkey"), new ValueRange[]{new ValueRange(ColumnType.INTEGER, null, null)});
         LVReplicaGroup group2 = masterRepository.createNewReplicaGroup(table, masterRepository.getColumnByName(table.getTableId(), "lo_suppkey"), new ValueRange[]{new ValueRange(ColumnType.INTEGER, null, null)});
         int[] columnIds = new int[columnNames.length];
@@ -135,7 +150,25 @@ public class ImportFractureJobControllerTest {
         ImportFractureJobController controller = new ImportFractureJobController(masterRepository, 100, 100, 100);
         LVJob job = controller.startSync(params);
         assertEquals (JobStatus.DONE, job.getStatus());
-        // TODO check the contents of imported files
+
+        // check the contents of imported files
+        LVFracture fracture = controller.getFracture();
+        LVReplica replica = masterRepository.getReplicaFromSchemeAndFracture(scheme11.getSchemeId(), fracture.getFractureId());
+        LVReplicaPartition partition = masterRepository.getReplicaPartitionByReplicaAndRange(replica.getReplicaId(), 0);
+        LVColumnFile columnFile = masterRepository.getColumnFileByReplicaPartitionAndColumn(replica.getReplicaId(), columns.get("lo_orderkey").getColumnId());
+        LVFSFilePath path = new LVFSFilePath(conf1, database.getDatabaseId(), table.getTableId(), fracture.getFractureId(), scheme11.getSchemeId(), 0, partition.getPartitionId(), columnFile.getColumnId(), columnFile.getColumnFileId(), LVFSFileType.DATA_FILE);
+        ColumnFileBundle bundle = new ColumnFileBundle(columnFile);
+        ColumnFileReaderBundle readers = new ColumnFileReaderBundle(bundle);
+        @SuppressWarnings("unchecked")
+        TypedReader<Integer, int[]> dataReader = (TypedReader<Integer, int[]>) readers.getDataReader();
+        assertEquals(45, dataReader.getTotalTuples());
+        int[] values = new int[dataReader.getTotalTuples()];
+        assertEquals(values.length, dataReader.readValues(values, 0, values.length));
+        assertEquals(1, values[0]);
+        for (int i = 1; i < values.length; ++i) {
+            assertTrue(values[i] >= values[i - 1]);
+        }
+        readers.close();
     }
 
     @Test
