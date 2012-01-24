@@ -101,7 +101,19 @@ public final class RecoverPartitionFromBuddyTaskRunner extends DataTaskRunner<Re
                     buddies[i] = new ColumnFileBundle(buddyColumnFiles[i], client.getChannel());
                 }
             }
-            PartitionRewriter rewriter = new PartitionRewriter(tmpOutputFolder, buddies, fileTemporaryNames, compressionTypes, scheme.getSortColumnId());
+
+            Integer sortColumn = null;
+            if (scheme.getSortColumnId() != null) {
+                for (int i = 0; i < columns.length; ++i) {
+                    if (columns[i].getColumnId() == scheme.getSortColumnId().intValue()) {
+                        sortColumn = i;
+                        break;
+                    }
+                }
+                assert (sortColumn != null);
+            }
+
+            PartitionRewriter rewriter = new PartitionRewriter(tmpOutputFolder, buddies, fileTemporaryNames, compressionTypes, sortColumn);
             newFiles = rewriter.execute();
         } finally {
             for (LVDataClient client : dataClients.values()) {
@@ -180,7 +192,7 @@ public final class RecoverPartitionFromBuddyTaskRunner extends DataTaskRunner<Re
         }
 
         tmpFolder = new LocalVirtualFile (context.localLvfsTmpDir);
-        tmpOutputFolder = tmpFolder.getChildFile("recover_tmp_" + new Random(System.nanoTime()).nextInt());
+        tmpOutputFolder = tmpFolder.getChildFile("recover_tmp_" + Math.abs(new Random(System.nanoTime()).nextInt()));
         tmpOutputFolder.mkdirs();
         if (!tmpOutputFolder.exists()) {
             throw new IOException ("failed to create a temporary output folder: " + tmpOutputFolder.getAbsolutePath());

@@ -8,9 +8,7 @@ import java.util.Arrays;
 import java.util.Random;
 
 import org.apache.hadoop.conf.Configuration;
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -35,33 +33,24 @@ import edu.brown.lasvegas.util.ValueRange;
  */
 public class ImportFractureJobControllerTest {
     private static final String TEST_BDB_HOME = "test/bdb_data";
-    private MasterMetadataRepository masterRepository;
-    private LVRack rack1, rack2;
-    private LVRackNode node1, node2; // on rack1, rack2 respectively
-    private LVDatabase database;
-    private LVTable table;
-    private LVReplicaGroup group1, group2;
-    private LVReplicaScheme scheme11, scheme12, scheme21, scheme22;
-    private String rootDir1, rootDir2;
-    private String tmpDir1, tmpDir2;
-    private LVDataNode dataNode1, dataNode2; // on node1, node2 respectively
-    private File inputFile; // on node1
-    private Configuration conf1, conf2;
-
-    @BeforeClass
-    public static void setUpBeforeClass() throws Exception {
-    }
-
-    @AfterClass
-    public static void tearDownAfterClass() throws Exception {
-    }
-    
     private static final String DATANODE1_ADDRESS = "localhost:12345";
     private static final String DATANODE2_ADDRESS = "localhost:12346";
     private static final String DATANODE1_NAME = "node1";
     private static final String DATANODE2_NAME = "node2";
-    @Before
-    public void setUp() throws Exception {
+
+    // these are set in setUpBeforeClass
+    private static MasterMetadataRepository masterRepository;
+    private static LVRack rack1, rack2;
+    private static LVRackNode node1, node2; // on rack1, rack2 respectively
+    private static LVDatabase database;
+    private static String rootDir1, rootDir2;
+    private static String tmpDir1, tmpDir2;
+    private static LVDataNode dataNode1, dataNode2; // on node1, node2 respectively
+    private static File inputFile; // on node1
+    private static Configuration conf1, conf2;
+
+    @BeforeClass
+    public static void setUpBeforeClass() throws Exception {
         masterRepository = new MasterMetadataRepository(true, TEST_BDB_HOME); // nuke the folder
 
         rack1 = masterRepository.createNewRack("rack1");
@@ -70,25 +59,8 @@ public class ImportFractureJobControllerTest {
         node2 = masterRepository.createNewRackNode(rack2, DATANODE2_NAME, DATANODE2_ADDRESS);
         database = masterRepository.createNewDatabase("db1");
 
-        // table and its scheme for test
-        final String[] columnNames = MiniLineorder.getColumnNames();
-        table = masterRepository.createNewTable(database.getDatabaseId(), "table1", columnNames, MiniLineorder.getScheme());
-        group1 = masterRepository.createNewReplicaGroup(table, masterRepository.getColumnByName(table.getTableId(), "lo_orderkey"), new ValueRange[]{new ValueRange(ColumnType.INTEGER, null, null)});
-        group2 = masterRepository.createNewReplicaGroup(table, masterRepository.getColumnByName(table.getTableId(), "lo_suppkey"), new ValueRange[]{new ValueRange(ColumnType.INTEGER, null, null)});
-        int[] columnIds = new int[columnNames.length];
-        for (int i = 0; i < columnIds.length; ++i) {
-            columnIds[i] = masterRepository.getColumnByName(table.getTableId(), columnNames[i]).getColumnId();
-        }
-        CompressionType[] compressionScheme1 = MiniLineorder.getDefaultCompressions();
-        CompressionType[] compressionScheme2 = new CompressionType[columnIds.length];
-        Arrays.fill(compressionScheme2, CompressionType.NONE);
-        scheme11 = masterRepository.createNewReplicaScheme(group1, masterRepository.getColumnByName(table.getTableId(), "lo_orderkey"), columnIds, compressionScheme1);
-        scheme12 = masterRepository.createNewReplicaScheme(group1, masterRepository.getColumnByName(table.getTableId(), "lo_orderdate"), columnIds, compressionScheme2);
-        scheme21 = masterRepository.createNewReplicaScheme(group2, masterRepository.getColumnByName(table.getTableId(), "lo_orderkey"), columnIds, compressionScheme1);
-        scheme22 = masterRepository.createNewReplicaScheme(group2, masterRepository.getColumnByName(table.getTableId(), "lo_orderdate"), columnIds, compressionScheme2);
-
         conf1 = new Configuration();
-        rootDir1 = "test/node1_lvfs_" + new Random(System.nanoTime()).nextInt();
+        rootDir1 = "test/node1_lvfs_" + Math.abs(new Random(System.nanoTime()).nextInt());
         tmpDir1 = rootDir1 + "/tmp";
         conf1.set(DataEngine.LOCA_LVFS_ROOTDIR_KEY, rootDir1);
         conf1.set(DataEngine.LOCA_LVFS_TMPDIR_KEY, tmpDir1);
@@ -99,7 +71,7 @@ public class ImportFractureJobControllerTest {
         dataNode1 = new LVDataNode(conf1, masterRepository);
 
         conf2 = new Configuration();
-        rootDir2 = "test/node2_lvfs_" + new Random(System.nanoTime()).nextInt();
+        rootDir2 = "test/node2_lvfs_" + Math.abs(new Random(System.nanoTime()).nextInt());
         tmpDir2 = rootDir2 + "/tmp";
         conf2.set(DataEngine.LOCA_LVFS_ROOTDIR_KEY, rootDir2);
         conf2.set(DataEngine.LOCA_LVFS_TMPDIR_KEY, tmpDir2);
@@ -128,8 +100,8 @@ public class ImportFractureJobControllerTest {
         dataNode2.start(null);
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterClass
+    public static void tearDownAfterClass() throws Exception {
         dataNode1.close();
         dataNode2.close();
         masterRepository.shutdown();
@@ -137,15 +109,27 @@ public class ImportFractureJobControllerTest {
             inputFile.delete();
         }
     }
-/*
-    @Test
-    public void testStartAsync() {
-        fail("Not yet implemented"); // TODO
-    }
-*/
 
     @Test
-    public void testStartSync() throws Exception {
+    public void testNoPartition() throws Exception {
+        // table and its scheme for test
+        final String[] columnNames = MiniLineorder.getColumnNames();
+        LVTable table = masterRepository.createNewTable(database.getDatabaseId(), "tablenopart", columnNames, MiniLineorder.getScheme());
+        LVReplicaGroup group1 = masterRepository.createNewReplicaGroup(table, masterRepository.getColumnByName(table.getTableId(), "lo_orderkey"), new ValueRange[]{new ValueRange(ColumnType.INTEGER, null, null)});
+        LVReplicaGroup group2 = masterRepository.createNewReplicaGroup(table, masterRepository.getColumnByName(table.getTableId(), "lo_suppkey"), new ValueRange[]{new ValueRange(ColumnType.INTEGER, null, null)});
+        int[] columnIds = new int[columnNames.length];
+        for (int i = 0; i < columnIds.length; ++i) {
+            columnIds[i] = masterRepository.getColumnByName(table.getTableId(), columnNames[i]).getColumnId();
+        }
+        CompressionType[] compressionScheme1 = MiniLineorder.getDefaultCompressions();
+        CompressionType[] compressionScheme2 = new CompressionType[columnIds.length];
+        Arrays.fill(compressionScheme2, CompressionType.NONE);
+        LVReplicaScheme scheme11 = masterRepository.createNewReplicaScheme(group1, masterRepository.getColumnByName(table.getTableId(), "lo_orderkey"), columnIds, compressionScheme1);
+        LVReplicaScheme scheme12 = masterRepository.createNewReplicaScheme(group1, masterRepository.getColumnByName(table.getTableId(), "lo_orderdate"), columnIds, compressionScheme2);
+        LVReplicaScheme scheme21 = masterRepository.createNewReplicaScheme(group2, masterRepository.getColumnByName(table.getTableId(), "lo_orderkey"), columnIds, compressionScheme1);
+        LVReplicaScheme scheme22 = masterRepository.createNewReplicaScheme(group2, masterRepository.getColumnByName(table.getTableId(), "lo_orderdate"), columnIds, compressionScheme2);
+
+        // let's start!
         ImportFractureJobParameters params = new ImportFractureJobParameters(table.getTableId());
         params.getNodeFilePathMap().put(node1.getNodeId(), new String[]{tmpDir1 + "/mini_lineorder.tbl"});
         ImportFractureJobController controller = new ImportFractureJobController(masterRepository, 100, 100, 100);
@@ -154,4 +138,28 @@ public class ImportFractureJobControllerTest {
         // TODO check the contents of imported files
     }
 
+    @Test
+    public void testPartition() throws Exception {
+        // table and its scheme for test
+        final String[] columnNames = MiniLineorder.getColumnNames();
+        LVTable table = masterRepository.createNewTable(database.getDatabaseId(), "tablepart", columnNames, MiniLineorder.getScheme());
+        LVReplicaGroup group1 = masterRepository.createNewReplicaGroup(table, masterRepository.getColumnByName(table.getTableId(), "lo_orderkey"), new ValueRange[]{new ValueRange(ColumnType.INTEGER, null, 10), new ValueRange(ColumnType.INTEGER, 10, null)});
+        int[] columnIds = new int[columnNames.length];
+        for (int i = 0; i < columnIds.length; ++i) {
+            columnIds[i] = masterRepository.getColumnByName(table.getTableId(), columnNames[i]).getColumnId();
+        }
+        CompressionType[] compressionScheme1 = MiniLineorder.getDefaultCompressions();
+        CompressionType[] compressionScheme2 = new CompressionType[columnIds.length];
+        Arrays.fill(compressionScheme2, CompressionType.NONE);
+        LVReplicaScheme scheme11 = masterRepository.createNewReplicaScheme(group1, masterRepository.getColumnByName(table.getTableId(), "lo_orderkey"), columnIds, compressionScheme1);
+        LVReplicaScheme scheme12 = masterRepository.createNewReplicaScheme(group1, masterRepository.getColumnByName(table.getTableId(), "lo_orderdate"), columnIds, compressionScheme2);
+
+        // let's start!
+        ImportFractureJobParameters params = new ImportFractureJobParameters(table.getTableId());
+        params.getNodeFilePathMap().put(node1.getNodeId(), new String[]{tmpDir1 + "/mini_lineorder.tbl"});
+        ImportFractureJobController controller = new ImportFractureJobController(masterRepository, 100, 100, 100);
+        LVJob job = controller.startSync(params);
+        assertEquals (JobStatus.DONE, job.getStatus());
+        // TODO check the contents of imported files
+    }
 }

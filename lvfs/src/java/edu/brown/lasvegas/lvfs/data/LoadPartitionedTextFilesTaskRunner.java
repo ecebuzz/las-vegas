@@ -102,7 +102,15 @@ public final class LoadPartitionedTextFilesTaskRunner extends DataTaskRunner<Loa
             finalFiles = unsortedFiles;
         } else {
             // otherwise, we need to rewrite the files to sort and compress them
-            PartitionRewriter rewriter = new PartitionRewriter(tmpOutputFolder, unsortedFiles, sortedFileTemporaryNames, finalCompressionTypes, scheme.getSortColumnId());
+            int sortColumn = -1;
+            for (int i = 0; i < columns.length; ++i) {
+                if (columns[i].getColumnId() == scheme.getSortColumnId().intValue()) {
+                    sortColumn = i;
+                    break;
+                }
+            }
+            assert (sortColumn >= 0);
+            PartitionRewriter rewriter = new PartitionRewriter(tmpOutputFolder, unsortedFiles, sortedFileTemporaryNames, finalCompressionTypes, sortColumn);
             finalFiles = rewriter.execute();
             // delete old (unsorted) files
             for (ColumnFileBundle oldFile : unsortedFiles) {
@@ -280,7 +288,7 @@ public final class LoadPartitionedTextFilesTaskRunner extends DataTaskRunner<Loa
         timestampFormat = new SimpleDateFormat(parameters.getTimestampFormat());
 
         tmpFolder = new LocalVirtualFile (context.localLvfsTmpDir);
-        tmpOutputFolder = tmpFolder.getChildFile("load_tmp_" + new Random(System.nanoTime()).nextInt());
+        tmpOutputFolder = tmpFolder.getChildFile("load_tmp_" + Math.abs(new Random(System.nanoTime()).nextInt()));
         tmpOutputFolder.mkdirs();
         if (!tmpOutputFolder.exists()) {
             throw new IOException ("failed to create a temporary output folder: " + tmpOutputFolder.getAbsolutePath());

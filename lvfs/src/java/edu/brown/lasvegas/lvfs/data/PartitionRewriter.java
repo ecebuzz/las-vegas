@@ -102,7 +102,7 @@ public final class PartitionRewriter {
         }
         this.oldSortColumn = (oldSortColumnInt == -1 ? null : oldSortColumnInt);
         this.newSortColumn = newSortColumn;
-        assert (newSortColumn == null || (newSortColumn >= 0 && newSortColumn < columnCount));
+        assert (newSortColumn == null || (newSortColumn >= 0 && newSortColumn < columnCount)); // if you fail here, didn't you pass column "ID", not the index in the array??
 
         this.newFiles = new ColumnFileBundle[columnCount];
         for (int i = 0; i < columnCount; ++i) {

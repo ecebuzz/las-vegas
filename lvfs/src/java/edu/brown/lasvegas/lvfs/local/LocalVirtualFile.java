@@ -53,6 +53,7 @@ public final class LocalVirtualFile implements VirtualFile {
     }
     @Override
     public boolean delete(boolean recursive) throws IOException {
+        // TODO implement recursive delete. but, I'd be very hesitant to implement it. let's do this last.
         return file.delete();
     }
     @Override
