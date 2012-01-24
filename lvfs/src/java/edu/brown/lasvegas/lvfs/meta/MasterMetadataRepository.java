@@ -411,6 +411,16 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         }
         return orderedMap.values().toArray(new LVColumn[orderedMap.size()]);
     }
+    @Override
+    public LVColumn[] getAllColumnsExceptEpochColumn(int tableId) throws IOException {
+        LVColumn[] allColumns = getAllColumns(tableId);
+        assert (allColumns[0].getName().equals(LVColumn.EPOCH_COLUMN_NAME));
+        LVColumn[] ret = new LVColumn[allColumns.length - 1];
+        for (int i = 0; i < ret.length; ++i) {
+            ret[i] = allColumns[i + 1];
+        }
+        return ret;
+    }
 
     @Override
     public LVColumn getColumn(int columnId) throws IOException {

@@ -72,7 +72,7 @@ public final class PartitionRawTextFilesTaskRunner extends DataTaskRunner<Partit
         if (fracture == null) {
             throw new IOException ("this fracture ID doesn't exist:" + parameters.getFractureId());
         }
-        LVColumn[] allColumns = context.metaRepo.getAllColumns(fracture.getTableId());
+        LVColumn[] allColumns = context.metaRepo.getAllColumnsExceptEpochColumn(fracture.getTableId());
         LVReplicaGroup[] groups = context.metaRepo.getAllReplicaGroups(fracture.getTableId());
 
         // partition the files for each replica group
@@ -147,10 +147,10 @@ public final class PartitionRawTextFilesTaskRunner extends DataTaskRunner<Partit
         boolean[] partitionsCompleted = new boolean[partitions];
         Arrays.fill(partitionsCompleted, false);
         int partitioningColumnIndex = -1;
-        ColumnType[] columnTypes = new ColumnType[allColumns.length - 1]; // -1 to ignore epoch column
-        assert (allColumns[0].getName().equals(LVColumn.EPOCH_COLUMN_NAME));
+        assert (!allColumns[0].getName().equals(LVColumn.EPOCH_COLUMN_NAME)); // epoch column should be already ignored
+        ColumnType[] columnTypes = new ColumnType[allColumns.length];
         for (int i = 0; i < columnTypes.length; ++i) {
-            LVColumn column = allColumns[i + 1]; // ignore epoch column
+            LVColumn column = allColumns[i];
             if (column.getColumnId() == partitioningColumn.getColumnId()) {
                 partitioningColumnIndex = i;
                 // set columnType only to the partitioning column to bypass parsing other columns.

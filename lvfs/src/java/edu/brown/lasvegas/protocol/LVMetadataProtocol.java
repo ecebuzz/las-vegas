@@ -223,6 +223,14 @@ public interface LVMetadataProtocol extends VersionedProtocol {
     LVColumn[] getAllColumns(int tableId) throws IOException;
 
     /**
+     * Returns all columns except the automatically created epoch column. 
+     * @param tableId Table ID
+     * @return column objects, in the order of {@link LVColumn#getOrder()}.
+     * @throws IOException
+     */
+    LVColumn[] getAllColumnsExceptEpochColumn(int tableId) throws IOException;
+
+    /**
      * Returns the column object with the given ID. 
      * @param columnId Column ID
      * @return column object. null if the ID is not found.

@@ -120,7 +120,7 @@ public final class PartitionedTextFileWriters implements Closeable {
     public class PartitionWriter {
         public PartitionWriter(int partition) throws IOException {
             buffer = new byte[writeBufferSize];
-            TemporaryFilePath fileName = new TemporaryFilePath(outputDir.getAbsolutePath(), nodeId, groupId, fractureId, partition, new Random (System.nanoTime()).nextInt(), compression);
+            TemporaryFilePath fileName = new TemporaryFilePath(outputDir.getAbsolutePath(), nodeId, groupId, fractureId, partition, Math.abs( new Random (System.nanoTime()).nextInt()), compression);
             file = new File(fileName.getFilePath());
             out = new FileOutputStream(file, false);
         }

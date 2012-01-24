@@ -23,12 +23,16 @@ public final class VirtualFileUtil {
      * for efficient copying.</p>
      */
     public static void copyFile (VirtualFile src, VirtualFile dest) throws IOException {
+        assert (src != null);
+        assert (dest != null);
         copyFile (src, dest, 1 << 20);
     }
     /** overload with the given read/write buffer size. */
     public static void copyFile (VirtualFile src, VirtualFile dest, int bufferSize) throws IOException {
         // having said that, the optimizations are future work..
         // simply copy.
+        assert (src != null);
+        assert (dest != null);
         VirtualFile parentFolder = dest.getParentFile();
         if (!parentFolder.exists()) {
             parentFolder.mkdirs();

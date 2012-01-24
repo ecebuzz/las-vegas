@@ -142,7 +142,7 @@ public final class RecoverPartitionFromBuddyTaskRunner extends DataTaskRunner<Re
             throw new IOException ("this table ID doesn't exist:" + group.getTableId());
         }
 
-        columns = context.metaRepo.getAllColumns(group.getTableId());
+        columns = context.metaRepo.getAllColumnsExceptEpochColumn(group.getTableId());
         columnTypes = new ColumnType[columns.length];
         for (int i = 0; i < columns.length; ++i) {
             columnTypes[i] = columns[i].getType();

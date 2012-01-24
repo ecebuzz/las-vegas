@@ -73,6 +73,7 @@ public class DataTaskUtil {
             return;
         }
         assert (tmpFile instanceof LocalVirtualFile);
+        assert (tmpFile.exists()); // if it's non-null but not-exists, we failed to create some file
         LocalVirtualFile newPath = new LocalVirtualFile(type.appendExtension(pathWithoutExtension));
         if (!tmpFile.renameTo(newPath)) {
             throw new IOException ("failed to move temporary file " + tmpFile + " file to new place " + newPath);

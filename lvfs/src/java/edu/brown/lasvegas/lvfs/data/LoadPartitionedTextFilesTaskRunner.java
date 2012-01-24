@@ -226,7 +226,7 @@ public final class LoadPartitionedTextFilesTaskRunner extends DataTaskRunner<Loa
             throw new IOException ("this table ID doesn't exist:" + fracture.getTableId());
         }
 
-        columns = context.metaRepo.getAllColumns(fracture.getTableId());
+        columns = context.metaRepo.getAllColumnsExceptEpochColumn(fracture.getTableId());
         columnTypes = new ColumnType[columns.length];
         for (int i = 0; i < columns.length; ++i) {
             columnTypes[i] = columns[i].getType();

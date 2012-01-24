@@ -113,6 +113,7 @@ public final class PartitionRewriter {
             newFile.setDataFile(outputFolder.getChildFile(LVFSFileType.DATA_FILE.appendExtension(filename)));
             if (newCompressions[i] == CompressionType.DICTIONARY) {
                 newFile.setDictionaryFile(outputFolder.getChildFile(LVFSFileType.DICTIONARY_FILE.appendExtension(filename)));
+                assert (newFile.getDictionaryFile() != null);
                 if (oldCompressions[i] != CompressionType.DICTIONARY) {
                     newFile.setTmpFile(outputFolder.getChildFile(LVFSFileType.TMP_DATA_FILE.appendExtension(filename)));
                 }
@@ -163,12 +164,14 @@ public final class PartitionRewriter {
     }
     /** on the other hand, if both are dictionary encoding, we can reuse the dictionary file. */
     private boolean willInheritDictionary (int col) {
-        return oldCompressions[col] == CompressionType.DICTIONARY && oldCompressions[col] == CompressionType.DICTIONARY;
+        return oldCompressions[col] == CompressionType.DICTIONARY && newCompressions[col] == CompressionType.DICTIONARY;
     }
     /** copy the old file's dictionary. */
     private void inheritDictionary (int col) throws IOException {
         ColumnFileBundle oldFile = oldFiles[col];
         ColumnFileBundle newFile = newFiles[col];
+        assert (oldFile.getDictionaryFile() != null);
+        assert (newFile.getDictionaryFile() != null);
         VirtualFileUtil.copyFile(oldFile.getDictionaryFile(), newFile.getDictionaryFile());
         // also, we can inherit statistics about dictionary
         newFile.setDictionaryBytesPerEntry(oldFile.getDictionaryBytesPerEntry());
@@ -354,6 +357,9 @@ public final class PartitionRewriter {
             dataWriter.writeValues(data, 0, tupleCount);
             long crc32Value = dataWriter.writeFileFooter();
             newFile.setDataFileChecksum(crc32Value);
+            if (newFile.getPositionFile() != null) {
+                dataWriter.writePositionFile(newFile.getPositionFile());
+            }
             dataWriter.flush();
             // collect statistics
             if (dataWriter instanceof TypedDictWriter) {

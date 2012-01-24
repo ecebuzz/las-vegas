@@ -13,7 +13,7 @@ import edu.brown.lasvegas.CompressionType;
 public class TemporaryFilePath {
     private static final Pattern pattern;
     static {
-        pattern = Pattern.compile("(.*/)([0-9]+)_([0-9]+)_([0-9]+)_([0-9]+)_[-]?([0-9]+)\\.([a-z]+)");
+        pattern = Pattern.compile("(.*/)([0-9]+)_([0-9]+)_([0-9]+)_([0-9]+)_([0-9]+)\\.([a-z]+)");
     }
     public TemporaryFilePath(String folderPath, int nodeId, int replicaGroupId, int fractureId, int partition, int uniquefier, CompressionType compression) {
         this.folderPath = folderPath;
@@ -23,6 +23,7 @@ public class TemporaryFilePath {
         this.partition = partition;
         this.uniquefier = uniquefier;
         this.compression = compression;
+        assert (uniquefier >= 0);
     }
     private static String trimSl (String path) {
         if (path.endsWith("/")) {
@@ -45,6 +46,7 @@ public class TemporaryFilePath {
             this.fractureId = Integer.parseInt(matcher.group(++i));
             this.partition = Integer.parseInt(matcher.group(++i));
             this.uniquefier = Integer.parseInt(matcher.group(++i));
+            assert (uniquefier >= 0);
             extension = matcher.group(++i);
         } catch (Exception ex) {
             throw new IOException("Failed to parse a file path:" + filePath, ex);

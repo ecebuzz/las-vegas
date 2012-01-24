@@ -269,6 +269,7 @@ public class ImportFractureJobController implements JobController<ImportFracture
             
             LVReplica replica = metaRepo.getReplicaFromSchemeAndFracture(defaultScheme.getSchemeId(), fracture.getFractureId());
             LVReplicaPartition[] partitions = metaRepo.getAllReplicaPartitionsByReplicaId(replica.getReplicaId());
+            assert (partitions.length > 0);
 
             // key=partition (range)
             Map<Integer, List<TemporaryFilePath>> filesPerPartition = new HashMap<Integer, List<TemporaryFilePath>>();
@@ -291,12 +292,11 @@ public class ImportFractureJobController implements JobController<ImportFracture
                 if (nodeId == null) {
                     throw new IOException ("this partition has not been assigned to data node. " + partition);
                 }
-                if (!filesPerPartition.containsKey(nodeId)) {
+                if (!filesPerPartition.containsKey(partition.getRange())) {
                     // this means there was no tuple to import for the partition. 
                     continue;
                 }
                 NodeFileLoadAssignment assignments = assignmentsPerNode.get(nodeId);
-                // List<LVReplicaPartition> assignments = partitionsPerAssignedNode.get(nodeId);
                 if (assignments == null) {
                     assignments = new NodeFileLoadAssignment();
                     assignmentsPerNode.put(nodeId, assignments);
@@ -306,6 +306,7 @@ public class ImportFractureJobController implements JobController<ImportFracture
             }
             
             // for each node, start a new task
+            assert (!assignmentsPerNode.isEmpty());
             for (Integer nodeId : assignmentsPerNode.keySet()) {
                 NodeFileLoadAssignment assignments = assignmentsPerNode.get(nodeId);
                 LoadPartitionedTextFilesTaskParameters taskParam = new LoadPartitionedTextFilesTaskParameters();

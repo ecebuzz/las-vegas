@@ -81,12 +81,18 @@ public final class LocalVirtualFile implements VirtualFile {
     }
     @Override
     public boolean renameTo(VirtualFile newPath) throws IOException {
+        assert (exists());
         File dest = ((LocalVirtualFile) newPath).file;
         if (dest.exists()) {
             boolean deleted = dest.delete();
             if (!deleted) {
                 return false;
             }
+        }
+        File destParent = dest.getParentFile();
+        if (!destParent.exists()) {
+            boolean dirCreated = destParent.mkdirs();
+            assert (dirCreated);
         }
         boolean success = file.renameTo(dest);
         if (success) {
