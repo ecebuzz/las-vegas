@@ -8,7 +8,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Random;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -19,11 +18,15 @@ import org.apache.hadoop.ipc.ProtocolSignature;
 import org.apache.log4j.Logger;
 
 import com.sleepycat.je.CheckpointConfig;
+import com.sleepycat.je.CursorConfig;
 import com.sleepycat.je.Durability;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.EnvironmentConfig;
 import com.sleepycat.je.Transaction;
+import com.sleepycat.persist.EntityCursor;
 import com.sleepycat.persist.EntityIndex;
+import com.sleepycat.persist.PrimaryIndex;
+import com.sleepycat.persist.SecondaryIndex;
 
 import edu.brown.lasvegas.ColumnStatus;
 import edu.brown.lasvegas.DatabaseStatus;
@@ -35,6 +38,7 @@ import edu.brown.lasvegas.ColumnType;
 import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.LVDatabase;
 import edu.brown.lasvegas.LVJob;
+import edu.brown.lasvegas.LVObject;
 import edu.brown.lasvegas.LVRack;
 import edu.brown.lasvegas.LVRackAssignment;
 import edu.brown.lasvegas.LVRackNode;
@@ -210,16 +214,16 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         if (bdbTableAccessors.databaseAccessor.IX_NAME.contains(name)) {
             throw new IOException ("this database name already exists:" + name);
         }
-        LVDatabase database = new LVDatabase();
+        final LVDatabase database = new LVDatabase();
         database.setDatabaseId(bdbTableAccessors.databaseAccessor.issueNewId());
         database.setName(name);
         database.setStatus(DatabaseStatus.OK);
-        bdbTableAccessors.databaseAccessor.PKX.putNoReturn(database);
+        putNoReturnTransactional (bdbTableAccessors.databaseAccessor.PKX, database);
         return database;
     }
     @Override
     public void requestDropDatabase(int databaseId) throws IOException {
-        LVDatabase database = getDatabase(databaseId);
+        final LVDatabase database = getDatabase(databaseId);
         if (database == null) {
             throw new IOException("this databaseId does not exist. already dropped? : " + databaseId);
         }
@@ -227,11 +231,11 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
             LOG.info("drop database requested : " + database);
         }
         database.setStatus(DatabaseStatus.BEING_DROPPED);
-        bdbTableAccessors.databaseAccessor.PKX.putNoReturn(database);
+        putNoReturnTransactional (bdbTableAccessors.databaseAccessor.PKX, database);
     }
     @Override
-    public void dropDatabase(int databaseId) throws IOException {
-        LVDatabase database = getDatabase(databaseId);
+    public void dropDatabase(final int databaseId) throws IOException {
+        final LVDatabase database = getDatabase(databaseId);
         if (database == null) {
             throw new IOException("this databaseId does not exist. already dropped? : " + databaseId);
         }
@@ -241,7 +245,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         for (LVTable table : tables) {
             dropTable(table);
         }
-        boolean deleted = bdbTableAccessors.databaseAccessor.PKX.delete(databaseId);
+        boolean deleted = deleteTransactional (bdbTableAccessors.databaseAccessor.PKX, databaseId);
         if (!deleted) {
             LOG.warn("this database has been already deleted?? :" + database);
         }
@@ -254,7 +258,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     }
     @Override
     public LVTable getTable(int databaseId, String name) throws IOException {
-        for (LVTable table : bdbTableAccessors.tableAccessor.IX_NAME.subIndex(name).map().values()) {
+        for (LVTable table : fetchAll(bdbTableAccessors.tableAccessor.IX_NAME, name)) {
             if (table.getDatabaseId() == databaseId) {
                 assert (table.getName().equalsIgnoreCase(name));
                 return table;
@@ -265,7 +269,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     @Override
     public LVTable[] getAllTables(int databaseId) throws IOException {
         // ID order
-        return bdbTableAccessors.tableAccessor.IX_DATABASE_ID.subIndex(databaseId).sortedMap().values().toArray(new LVTable[0]);
+        return fetchAll(bdbTableAccessors.tableAccessor.IX_DATABASE_ID, databaseId).toArray(new LVTable[0]);
     }
 
     @Override
@@ -311,19 +315,19 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         }
 
         // first, create table record
-        LVTable table = new LVTable();
+        final LVTable table = new LVTable();
         table.setDatabaseId(databaseId);
         table.setName(name);
         table.setStatus(TableStatus.BEING_CREATED);
         int tableId = bdbTableAccessors.tableAccessor.issueNewId();
         table.setTableId(tableId);
         table.setFracturingColumnId(-1); // we don't know this at this point
-        bdbTableAccessors.tableAccessor.PKX.putNoReturn(table);
+        putNoReturnTransactional (bdbTableAccessors.tableAccessor.PKX, table);
         
         // then, create columns. first column is the implicit epoch column
         int fracturingColumnId = -1;
         {
-            LVColumn column = new LVColumn();
+            final LVColumn column = new LVColumn();
             column.setName(LVColumn.EPOCH_COLUMN_NAME);
             column.setOrder(0);
             column.setStatus(ColumnStatus.OK);
@@ -332,14 +336,14 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
             int columnId = bdbTableAccessors.columnAccessor.issueNewId();
             column.setColumnId(columnId);
             column.setFracturingColumn(fracturingColumn == -1);
-            bdbTableAccessors.columnAccessor.PKX.putNoReturn(column);
+            putNoReturnTransactional (bdbTableAccessors.columnAccessor.PKX, column);
             if (column.isFracturingColumn()) {
                 fracturingColumnId = columnId;
             }
         }
         for (int i = 0; i < columnNames.length; ++i) {
             int order = i + 1;
-            LVColumn column = new LVColumn();
+            final LVColumn column = new LVColumn();
             column.setName(columnNames[i]);
             column.setOrder(order);
             column.setStatus(ColumnStatus.OK);
@@ -348,7 +352,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
             int columnId = bdbTableAccessors.columnAccessor.issueNewId();
             column.setColumnId(columnId);
             column.setFracturingColumn(fracturingColumn == i);
-            bdbTableAccessors.columnAccessor.PKX.putNoReturn(column);
+            putNoReturnTransactional (bdbTableAccessors.columnAccessor.PKX, column);
             if (column.isFracturingColumn()) {
                 fracturingColumnId = columnId;
             }
@@ -358,14 +362,14 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         // finally,  update the table
         table.setFracturingColumnId(fracturingColumnId);
         table.setStatus(TableStatus.OK);
-        bdbTableAccessors.tableAccessor.PKX.putNoReturn(table);
+        putNoReturnTransactional (bdbTableAccessors.tableAccessor.PKX, table);
         
         LOG.info("created new table");
         return table;
     }
 
     @Override
-    public void requestDropTable(LVTable table) throws IOException {
+    public void requestDropTable(final LVTable table) throws IOException {
         assert (table.getTableId() > 0);
         if (LOG.isInfoEnabled()) {
             LOG.info("drop table requested : " + table);
@@ -374,11 +378,11 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
             throw new IOException("this table does not exist. already dropped? : " + table);
         }
         table.setStatus(TableStatus.BEING_DROPPED);
-        bdbTableAccessors.tableAccessor.PKX.putNoReturn(table);
+        putNoReturnTransactional (bdbTableAccessors.tableAccessor.PKX, table);
     }
 
     @Override
-    public void dropTable(LVTable table) throws IOException {
+    public void dropTable(final LVTable table) throws IOException {
         LOG.info("Dropping table : " + table);
         assert (table.getTableId() > 0);
         // drop child fractures
@@ -396,7 +400,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         for (LVColumn column : columns) {
             dropColumn(column);
         }
-        boolean deleted = bdbTableAccessors.tableAccessor.PKX.delete(table.getTableId());
+        boolean deleted = deleteTransactional (bdbTableAccessors.tableAccessor.PKX, table.getTableId());
         if (!deleted) {
             LOG.warn("this table has been already deleted?? :" + table);
         }
@@ -405,9 +409,9 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
 
     @Override
     public LVColumn[] getAllColumns(int tableId) throws IOException {
-        EntityIndex<Integer, LVColumn> entities = bdbTableAccessors.columnAccessor.IX_TABLE_ID.subIndex(tableId);
+        Collection<LVColumn> entities = fetchAll(bdbTableAccessors.columnAccessor.IX_TABLE_ID, tableId);
         SortedMap<Integer, LVColumn> orderedMap = new TreeMap<Integer, LVColumn>(); // sorted by Order
-        for (LVColumn column : entities.map().values()) {
+        for (LVColumn column : entities) {
             assert (!orderedMap.containsKey(column.getOrder()));
             orderedMap.put(column.getOrder(), column);
         }
@@ -430,7 +434,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     }
     @Override
     public LVColumn getColumnByName(int tableId, String name) throws IOException {
-        for (LVColumn column : bdbTableAccessors.columnAccessor.IX_TABLE_ID.subIndex(tableId).map().values()) {
+        for (LVColumn column : fetchAll(bdbTableAccessors.columnAccessor.IX_TABLE_ID, tableId)) {
             if (name.equals(column.getName())) {
                 return column;
             }
@@ -445,7 +449,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
             throw new IOException ("empty column name");
         }
         int maxOrder = -1;
-        for (LVColumn column : bdbTableAccessors.columnAccessor.IX_TABLE_ID.subIndex(table.getTableId()).map().values()) {
+        for (LVColumn column : fetchAll(bdbTableAccessors.columnAccessor.IX_TABLE_ID, table.getTableId())) {
             if (column.getName().equalsIgnoreCase(name)) {
                 throw new IOException ("this column name already exists: " + name);
             }
@@ -453,7 +457,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         }
         assert (maxOrder > 0);
 
-        LVColumn column = new LVColumn();
+        final LVColumn column = new LVColumn();
         column.setName(name);
         column.setOrder(maxOrder + 1);
         column.setStatus(ColumnStatus.BEING_CREATED);
@@ -461,7 +465,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         column.setTableId(table.getTableId());
         column.setFracturingColumn(false);
         column.setColumnId(bdbTableAccessors.columnAccessor.issueNewId());
-        bdbTableAccessors.columnAccessor.PKX.putNoReturn(column);
+        putNoReturnTransactional(bdbTableAccessors.columnAccessor.PKX, column);
         return column;
     }
 
@@ -475,7 +479,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
             throw new IOException("this column does not exist. already dropped? : " + column);
         }
         column.setStatus(ColumnStatus.BEING_DROPPED);
-        bdbTableAccessors.columnAccessor.PKX.putNoReturn(column);
+        putNoReturnTransactional(bdbTableAccessors.columnAccessor.PKX, column);
     }
 
     @Override
@@ -493,12 +497,12 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
             }
         }
         // delete column files
-        for (LVColumnFile file : bdbTableAccessors.columnFileAccessor.IX_COLUMN_ID.subIndex(column.getColumnId()).map().values()) {
+        for (LVColumnFile file : fetchAll(bdbTableAccessors.columnFileAccessor.IX_COLUMN_ID, column.getColumnId())) {
             dropColumnFile(file.getColumnFileId());
         }
         
         // then delete the column
-        boolean deleted = bdbTableAccessors.columnAccessor.PKX.delete(column.getColumnId());
+        boolean deleted = deleteTransactional(bdbTableAccessors.columnAccessor.PKX, column.getColumnId());
         if (!deleted) {
             LOG.warn("this column has been already deleted?? :" + column);
         }
@@ -512,7 +516,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     @Override
     public LVFracture[] getAllFractures(int tableId) throws IOException {
         // ID order
-        Collection<LVFracture> values = bdbTableAccessors.fractureAccessor.IX_TABLE_ID.subIndex(tableId).sortedMap().values();
+        Collection<LVFracture> values = fetchAll(bdbTableAccessors.fractureAccessor.IX_TABLE_ID, tableId);
         return values.toArray(new LVFracture[values.size()]);
     }
 
@@ -526,7 +530,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         fracture.setTupleCount(0);
         LVColumn fracturingColumn = getColumn(table.getFracturingColumnId());
         fracture.setRange(new ValueRange(fracturingColumn.getType(), null, null));
-        bdbTableAccessors.fractureAccessor.PKX.putNoReturn(fracture);
+        putNoReturnTransactional(bdbTableAccessors.fractureAccessor.PKX, fracture);
         return fracture;
     }
     @Override
@@ -547,7 +551,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         if (range != null) {
             fracture.setRange(range);
         }
-        bdbTableAccessors.fractureAccessor.PKX.putNoReturn(fracture);
+        putNoReturnTransactional(bdbTableAccessors.fractureAccessor.PKX, fracture);
         return fracture;
     }
     @Override
@@ -568,7 +572,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         for (LVRackAssignment assignment : getAllRackAssignmentsByFractureId(fractureId)) {
             dropRackAssignment(assignment);
         }
-        boolean deleted = bdbTableAccessors.fractureAccessor.PKX.delete(fractureId);
+        boolean deleted = deleteTransactional(bdbTableAccessors.fractureAccessor.PKX, fractureId);
         if (!deleted) {
             LOG.warn("this fracture has been already deleted?? :" + fractureId);
         }
@@ -583,7 +587,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     @Override
     public LVReplicaGroup[] getAllReplicaGroups(int tableId) throws IOException {
         // ID order
-        Collection<LVReplicaGroup> values = bdbTableAccessors.replicaGroupAccessor.IX_TABLE_ID.subIndex(tableId).sortedMap().values();
+        Collection<LVReplicaGroup> values = fetchAll(bdbTableAccessors.replicaGroupAccessor.IX_TABLE_ID, tableId);
         return values.toArray(new LVReplicaGroup[values.size()]);
     }
 
@@ -607,7 +611,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         assert (partitioningColumn == null || linkedGroup != null || ranges != null);
         // check other group
         if (partitioningColumn != null) {
-            for (LVReplicaGroup existing : bdbTableAccessors.replicaGroupAccessor.IX_TABLE_ID.subIndex(table.getTableId()).map().values()) {
+            for (LVReplicaGroup existing : fetchAll(bdbTableAccessors.replicaGroupAccessor.IX_TABLE_ID, table.getTableId())) {
                 assert (table.getTableId() == existing.getTableId());
                 if (existing.getPartitioningColumnId() != null && existing.getPartitioningColumnId() == partitioningColumn.getColumnId()) {
                     throw new IOException ("another replica group with the same partitioning column already exists : " + existing);
@@ -661,7 +665,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         group.setTableId(table.getTableId());
         group.setGroupId(bdbTableAccessors.replicaGroupAccessor.issueNewId());
         group.setLinkedGroupId(linkedGroup == null ? null : linkedGroup.getGroupId());
-        bdbTableAccessors.replicaGroupAccessor.PKX.putNoReturn(group);
+        putNoReturnTransactional(bdbTableAccessors.replicaGroupAccessor.PKX, group);
         
         return group;
     }
@@ -675,7 +679,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         for (LVReplicaScheme scheme : schemes) {
             dropReplicaScheme(scheme);
         }
-        boolean deleted = bdbTableAccessors.replicaGroupAccessor.PKX.delete(group.getGroupId());
+        boolean deleted = deleteTransactional(bdbTableAccessors.replicaGroupAccessor.PKX, group.getGroupId());
         if (!deleted) {
             LOG.warn("this replica group has been already deleted?? :" + group);
         }
@@ -690,7 +694,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     @Override
     public LVReplicaScheme[] getAllReplicaSchemes(int groupId) throws IOException {
         // ID order
-        Collection<LVReplicaScheme> values = bdbTableAccessors.replicaSchemeAccessor.IX_GROUP_ID.subIndex(groupId).sortedMap().values();
+        Collection<LVReplicaScheme> values = fetchAll(bdbTableAccessors.replicaSchemeAccessor.IX_GROUP_ID, groupId);
         return values.toArray(new LVReplicaScheme[values.size()]);
     }
 
@@ -728,7 +732,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         scheme.setGroupId(group.getGroupId());
         scheme.setSchemeId(bdbTableAccessors.replicaSchemeAccessor.issueNewId());
         scheme.setSortColumnId(sortingColumn == null ? null : sortingColumn.getColumnId());
-        bdbTableAccessors.replicaSchemeAccessor.PKX.putNoReturn(scheme);
+        putNoReturnTransactional(bdbTableAccessors.replicaSchemeAccessor.PKX, scheme);
         return scheme;
     }
 
@@ -736,7 +740,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     public LVReplicaScheme changeColumnCompressionScheme(LVReplicaScheme scheme, LVColumn column, CompressionType compressionType) throws IOException {
         assert (scheme.getSchemeId() > 0);
         scheme.getColumnCompressionSchemes().put(column.getColumnId(), compressionType);
-        bdbTableAccessors.replicaSchemeAccessor.PKX.putNoReturn(scheme);
+        putNoReturnTransactional(bdbTableAccessors.replicaSchemeAccessor.PKX, scheme);
         return scheme;
     }
 
@@ -747,7 +751,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         for (LVReplica replica : replicas) {
             dropReplica(replica);
         }
-        boolean deleted = bdbTableAccessors.replicaSchemeAccessor.PKX.delete(scheme.getSchemeId());
+        boolean deleted = deleteTransactional(bdbTableAccessors.replicaSchemeAccessor.PKX, scheme.getSchemeId());
         if (!deleted) {
             LOG.warn("this replica scheme has been already deleted?? :" + scheme);
         }
@@ -761,21 +765,21 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     @Override
     public LVReplica[] getAllReplicasBySchemeId(int schemeId) throws IOException {
         // ID order
-        Collection<LVReplica> values = bdbTableAccessors.replicaAccessor.IX_SCHEME_ID.subIndex(schemeId).sortedMap().values();
+        Collection<LVReplica> values = fetchAll(bdbTableAccessors.replicaAccessor.IX_SCHEME_ID, schemeId);
         return values.toArray(new LVReplica[values.size()]);
     }
 
     @Override
     public LVReplica[] getAllReplicasByFractureId(int fractureId) throws IOException {
         // ID order
-        Collection<LVReplica> values = bdbTableAccessors.replicaAccessor.IX_FRACTURE_ID.subIndex(fractureId).sortedMap().values();
+        Collection<LVReplica> values = fetchAll(bdbTableAccessors.replicaAccessor.IX_FRACTURE_ID, fractureId);
         return values.toArray(new LVReplica[values.size()]);
     }
 
     @Override
     public LVReplica getReplicaFromSchemeAndFracture(int schemeId, int fractureId) throws IOException {
         // fracture ID should be enough selective
-        for (LVReplica replica : bdbTableAccessors.replicaAccessor.IX_FRACTURE_ID.subIndex(fractureId).map().values()) {
+        for (LVReplica replica : fetchAll(bdbTableAccessors.replicaAccessor.IX_FRACTURE_ID, fractureId)) {
             if (replica.getSchemeId() == schemeId) {
                 return replica;
             }
@@ -792,14 +796,14 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         replica.setSchemeId(scheme.getSchemeId());
         replica.setStatus(ReplicaStatus.NOT_READY);
         replica.setReplicaId(bdbTableAccessors.replicaAccessor.issueNewId());
-        bdbTableAccessors.replicaAccessor.PKX.putNoReturn(replica);
+        putNoReturnTransactional(bdbTableAccessors.replicaAccessor.PKX, replica);
         return replica;
     }
 
     @Override
     public LVReplica updateReplicaStatus(LVReplica replica, ReplicaStatus status) throws IOException {
         replica.setStatus(status);
-        bdbTableAccessors.replicaAccessor.PKX.putNoReturn(replica);
+        putNoReturnTransactional(bdbTableAccessors.replicaAccessor.PKX, replica);
         return replica;
     }
 
@@ -810,7 +814,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         for (LVReplicaPartition subPartition : subPartitions) {
             dropReplicaPartition(subPartition);
         }
-        boolean deleted = bdbTableAccessors.replicaAccessor.PKX.delete(replica.getReplicaId());
+        boolean deleted = deleteTransactional(bdbTableAccessors.replicaAccessor.PKX, replica.getReplicaId());
         if (!deleted) {
             LOG.warn("this replica has been already deleted?? :" + replica);
         }
@@ -822,7 +826,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
 
     @Override
     public LVReplicaPartition[] getAllReplicaPartitionsByReplicaId(int replicaId) throws IOException {
-        Collection<LVReplicaPartition> values = bdbTableAccessors.replicaPartitionAccessor.IX_REPLICA_ID.subIndex(replicaId).map().values();
+        Collection<LVReplicaPartition> values = fetchAll(bdbTableAccessors.replicaPartitionAccessor.IX_REPLICA_ID, replicaId);
         // range order
         SortedMap<Integer, LVReplicaPartition> map = new TreeMap<Integer, LVReplicaPartition>();
         for (LVReplicaPartition value : values) {
@@ -851,7 +855,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         LVReplicaScheme scheme = getReplicaScheme(replica.getSchemeId());
         subPartition.setReplicaGroupId(scheme.getGroupId());
 
-        bdbTableAccessors.replicaPartitionAccessor.PKX.putNoReturn(subPartition);
+        putNoReturnTransactional(bdbTableAccessors.replicaPartitionAccessor.PKX, subPartition);
         return subPartition;
     }
 
@@ -868,7 +872,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         } else {
             subPartition.setNodeId(node.getNodeId());
         }
-        bdbTableAccessors.replicaPartitionAccessor.PKX.putNoReturn(subPartition);
+        putNoReturnTransactional(bdbTableAccessors.replicaPartitionAccessor.PKX, subPartition);
         return subPartition;
     }
     @Override
@@ -895,7 +899,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         for (LVColumnFile columnFile : columnFiles) {
             dropColumnFile(columnFile.getColumnFileId());
         }
-        boolean deleted = bdbTableAccessors.replicaPartitionAccessor.PKX.delete(subPartition.getPartitionId());
+        boolean deleted = deleteTransactional(bdbTableAccessors.replicaPartitionAccessor.PKX, subPartition.getPartitionId());
         if (!deleted) {
             LOG.warn("this sub-partition has been already deleted?? :" + subPartition);
         }
@@ -908,7 +912,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
 
     @Override
     public LVColumnFile[] getAllColumnFilesByReplicaPartitionId(int subPartitionId) throws IOException {
-        Collection<LVColumnFile> values = bdbTableAccessors.columnFileAccessor.IX_PARTITION_ID.subIndex(subPartitionId).map().values();
+        Collection<LVColumnFile> values = fetchAll(bdbTableAccessors.columnFileAccessor.IX_PARTITION_ID, subPartitionId);
         SortedMap<Integer, LVColumnFile> orderedMap = new TreeMap<Integer, LVColumnFile>(); // sorted by column order
         for (LVColumnFile file : values) {
             LVColumn column = getColumn(file.getColumnId());
@@ -922,7 +926,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     @Override
     public LVColumnFile getColumnFileByReplicaPartitionAndColumn(int subPartitionId, int columnId) throws IOException {
         // partition ID is enough selective. no composite index is needed.
-        for (LVColumnFile file : bdbTableAccessors.columnFileAccessor.IX_PARTITION_ID.subIndex(subPartitionId).map().values()) {
+        for (LVColumnFile file : fetchAll(bdbTableAccessors.columnFileAccessor.IX_PARTITION_ID, subPartitionId)) {
             if (file.getColumnId() == columnId) {
                 return file;
             }
@@ -938,7 +942,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         LVColumn column = getColumn(columnId);
         LVReplica replica = getReplica(subPartition.getReplicaId());
         LVReplicaScheme scheme = getReplicaScheme(replica.getSchemeId());
-        LVColumnFile file = new LVColumnFile();
+        final LVColumnFile file = new LVColumnFile();
         file.setColumnFileId(bdbTableAccessors.columnFileAccessor.issueNewId());
         file.setColumnId(column.getColumnId());
         file.setFileSize(fileSize);
@@ -955,17 +959,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         file.setSorted(scheme.getSortColumnId() != null && scheme.getSortColumnId().intValue() == column.getColumnId());
         file.setTupleCount(tupleCount);
 
-        Transaction txn = bdbEnv.beginTransaction(null, null);
-        boolean committed = false;
-        try {
-            bdbTableAccessors.columnFileAccessor.PKX.putNoReturn(txn, file);
-            txn.commit();
-            committed = true;
-        } finally {
-            if (!committed) {
-                txn.abort();
-            }
-        }
+        putNoReturnTransactional(bdbTableAccessors.columnFileAccessor.PKX, file);
         return file;
     }
     @Override
@@ -976,19 +970,9 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
 
     @Override
     public LVColumnFile updateColumnFilePath(int columnFileId, String newLocalFilePath) throws IOException {
-        LVColumnFile file = getColumnFile(columnFileId);
+        final LVColumnFile file = getColumnFile(columnFileId);
         file.setLocalFilePath(newLocalFilePath);
-        Transaction txn = bdbEnv.beginTransaction(null, null);
-        boolean committed = false;
-        try {
-            bdbTableAccessors.columnFileAccessor.PKX.putNoReturn(file);
-            txn.commit();
-            committed = true;
-        } finally {
-            if (!committed) {
-                txn.abort();
-            }
-        }
+        putNoReturnTransactional(bdbTableAccessors.columnFileAccessor.PKX, file);
         return file;
     }
     @Override
@@ -997,20 +981,9 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     }
 
     @Override
-    public void dropColumnFile(int columnFileId) throws IOException {
+    public void dropColumnFile(final int columnFileId) throws IOException {
         assert (columnFileId > 0);
-        boolean deleted;
-        Transaction txn = bdbEnv.beginTransaction(null, null);
-        boolean committed = false;
-        try {
-            deleted = bdbTableAccessors.columnFileAccessor.PKX.delete(columnFileId);
-            txn.commit();
-            committed = true;
-        } finally {
-            if (!committed) {
-                txn.abort();
-            }
-        }
+        boolean deleted = deleteTransactional(bdbTableAccessors.columnFileAccessor.PKX, columnFileId);
         if (!deleted) {
             LOG.warn("this column file has been already deleted?? :" + columnFileId);
         }
@@ -1062,7 +1035,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         rack.setRackId(bdbTableAccessors.rackAccessor.issueNewId());
         rack.setName(name);
         rack.setStatus(RackStatus.OK);
-        bdbTableAccessors.rackAccessor.PKX.putNoReturn(rack);
+        putNoReturnTransactional(bdbTableAccessors.rackAccessor.PKX, rack);
         LOG.info("created new rack: " + rack);
         return rack;
     }
@@ -1072,7 +1045,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         assert (status != null);
         assert (rack.getRackId() > 0);
         rack.setStatus(status);
-        bdbTableAccessors.rackAccessor.PKX.putNoReturn(rack);
+        putNoReturnTransactional(bdbTableAccessors.rackAccessor.PKX, rack);
         return rack;
     }
 
@@ -1086,7 +1059,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         for (LVRackAssignment assignment : getAllRackAssignmentsByRackId(rack.getRackId())) {
             dropRackAssignment(assignment);
         }
-        bdbTableAccessors.rackAccessor.PKX.delete(rack.getRackId());
+        deleteTransactional(bdbTableAccessors.rackAccessor.PKX, rack.getRackId());
         LOG.info("dropped");
     }
 
@@ -1103,7 +1076,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     @Override
     public LVRackNode[] getAllRackNodes(int rackId) throws IOException {
         // ID order
-        return bdbTableAccessors.rackNodeAccessor.IX_RACK_ID.subIndex(rackId).sortedMap().values().toArray(new LVRackNode[0]);
+        return fetchAll(bdbTableAccessors.rackNodeAccessor.IX_RACK_ID, rackId).toArray(new LVRackNode[0]);
     }
 
     @Override
@@ -1124,7 +1097,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         node.setAddress(address);
         node.setStatus(RackNodeStatus.OK);
         node.setRackId(rack.getRackId());
-        bdbTableAccessors.rackNodeAccessor.PKX.putNoReturn(node);
+        putNoReturnTransactional(bdbTableAccessors.rackNodeAccessor.PKX, node);
         return node;
     }
     @Override
@@ -1138,7 +1111,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         assert (node.getNodeId() > 0);
         assert (status != null);
         node.setStatus(status);
-        bdbTableAccessors.rackNodeAccessor.PKX.putNoReturn(node);
+        putNoReturnTransactional(bdbTableAccessors.rackNodeAccessor.PKX, node);
         return node;
     }
     @Override
@@ -1151,7 +1124,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         assert (node.getNodeId() > 0);
         assert (address != null && address.length() > 0);
         node.setAddress(address);
-        bdbTableAccessors.rackNodeAccessor.PKX.putNoReturn(node);
+        putNoReturnTransactional(bdbTableAccessors.rackNodeAccessor.PKX, node);
         return node;
     }
     @Override
@@ -1164,19 +1137,19 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     public void dropRackNode(LVRackNode node) throws IOException {
         assert (node.getNodeId() > 0);
         // nullify partition's assignments on this node
-        for (LVReplicaPartition partition : bdbTableAccessors.replicaPartitionAccessor.IX_NODE_ID.subIndex(node.getNodeId()).map().values()) {
+        for (LVReplicaPartition partition : fetchAll(bdbTableAccessors.replicaPartitionAccessor.IX_NODE_ID, node.getNodeId())) {
             partition.setNodeId(null);
             if (partition.getStatus() == ReplicaPartitionStatus.OK) {
                 partition.setStatus(ReplicaPartitionStatus.LOST);
             }
             bdbTableAccessors.replicaPartitionAccessor.PKX.put(partition);
         }
-        bdbTableAccessors.rackNodeAccessor.PKX.delete(node.getNodeId());
+        deleteTransactional(bdbTableAccessors.rackNodeAccessor.PKX, node.getNodeId());
     }
     
     @Override
     public int getReplicaPartitionCountInNode(LVRackNode node) throws IOException {
-        return (int) bdbTableAccessors.replicaPartitionAccessor.IX_NODE_ID.subIndex(node.getNodeId()).count();
+        return (int) fetchAll(bdbTableAccessors.replicaPartitionAccessor.IX_NODE_ID, node.getNodeId()).size();
     }
 
     @Override
@@ -1187,10 +1160,8 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     @Override
     public LVRackAssignment getRackAssignment(LVRack rack, LVFracture fracture) throws IOException {
         // #assignments per fracture and rack shouldn't be large.. so, joining two indexes is not so slower than composite index
-        Map<Integer, LVRackAssignment> map2 = bdbTableAccessors.rackAssignmentAccessor.IX_RACK_ID.subIndex(rack.getRackId()).map();
-        Map<Integer, LVRackAssignment> map1 = bdbTableAccessors.rackAssignmentAccessor.IX_FRACTURE_ID.subIndex(fracture.getFractureId()).map();
-        for (LVRackAssignment value : map1.values()) {
-            if (map2.containsKey(value.getPrimaryKey())) {
+        for (LVRackAssignment value : fetchAll(bdbTableAccessors.rackAssignmentAccessor.IX_FRACTURE_ID, fracture.getFractureId())) {
+            if (value.getRackId() == rack.getRackId()) {
                 return value;
             }
         }
@@ -1200,13 +1171,13 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     @Override
     public LVRackAssignment[] getAllRackAssignmentsByRackId(int rackId) throws IOException {
         // ID order
-        return bdbTableAccessors.rackAssignmentAccessor.IX_RACK_ID.subIndex(rackId).sortedMap().values().toArray(new LVRackAssignment[0]);
+        return fetchAll(bdbTableAccessors.rackAssignmentAccessor.IX_RACK_ID, rackId).toArray(new LVRackAssignment[0]);
     }
 
     @Override
     public LVRackAssignment[] getAllRackAssignmentsByFractureId(int fractureId) throws IOException {
         // ID order
-        return bdbTableAccessors.rackAssignmentAccessor.IX_FRACTURE_ID.subIndex(fractureId).sortedMap().values().toArray(new LVRackAssignment[0]);
+        return fetchAll(bdbTableAccessors.rackAssignmentAccessor.IX_FRACTURE_ID, fractureId).toArray(new LVRackAssignment[0]);
     }
 
     @Override
@@ -1223,7 +1194,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         assignment.setFractureId(fracture.getFractureId());
         assignment.setRackId(rack.getRackId());
         assignment.setOwnerReplicaGroupId(owner.getGroupId());
-        bdbTableAccessors.rackAssignmentAccessor.PKX.putNoReturn(assignment);
+        putNoReturnTransactional(bdbTableAccessors.rackAssignmentAccessor.PKX, assignment);
         return assignment;
     }
 
@@ -1232,14 +1203,14 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         assert (assignment.getAssignmentId() > 0);
         assert (owner.getGroupId() > 0);
         assignment.setOwnerReplicaGroupId(owner.getGroupId());
-        bdbTableAccessors.rackAssignmentAccessor.PKX.putNoReturn(assignment);
+        putNoReturnTransactional(bdbTableAccessors.rackAssignmentAccessor.PKX, assignment);
         return assignment;
     }
 
     @Override
     public void dropRackAssignment(LVRackAssignment assignment) throws IOException {
         assert (assignment.getAssignmentId() > 0);
-        bdbTableAccessors.rackAssignmentAccessor.PKX.delete(assignment.getAssignmentId());
+        deleteTransactional(bdbTableAccessors.rackAssignmentAccessor.PKX, assignment.getAssignmentId());
     }
 
     
@@ -1264,7 +1235,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         job.setType(type);
         job.setStatus(JobStatus.CREATED);
         job.setParameters(parameters);
-        bdbTableAccessors.jobAccessor.PKX.putNoReturn(job);
+        putNoReturnTransactional(bdbTableAccessors.jobAccessor.PKX, job);
         return job;
     }
 
@@ -1289,7 +1260,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         if (errorMessages != null) {
             job.setErrorMessages(errorMessages);
         }
-        bdbTableAccessors.jobAccessor.PKX.putNoReturn(job);
+        putNoReturnTransactional(bdbTableAccessors.jobAccessor.PKX, job);
         return job;
     }
 
@@ -1304,7 +1275,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         for (LVTask task : getAllTasksByJob(jobId)) {
             dropTask (task.getTaskId());
         }
-        boolean deleted = bdbTableAccessors.jobAccessor.PKX.delete(jobId);
+        boolean deleted = deleteTransactional(bdbTableAccessors.jobAccessor.PKX, jobId);
         if (!deleted) {
             LOG.warn("Job-" + jobId + " doesn't exist (already deleted?)");
         }
@@ -1319,12 +1290,12 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     @Override
     public LVTask[] getAllTasksByJob(int jobId) throws IOException {
         // ID order
-        return bdbTableAccessors.taskAccessor.IX_JOB_ID.subIndex(jobId).sortedMap().values().toArray(new LVTask[0]);
+        return fetchAll(bdbTableAccessors.taskAccessor.IX_JOB_ID, jobId).toArray(new LVTask[0]);
     }
     @Override
     public LVTask[] getAllTasksByNode(int nodeId) throws IOException {
         // ID order
-        return bdbTableAccessors.taskAccessor.IX_NODE_ID.subIndex(nodeId).sortedMap().values().toArray(new LVTask[0]);
+        return fetchAll(bdbTableAccessors.taskAccessor.IX_NODE_ID, nodeId).toArray(new LVTask[0]);
     }
     
     @Override
@@ -1333,7 +1304,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         // because most of records will be historical (DONE/ERROR/etc status).
         // if this is not true, we should add a composite index on Status and NodeID.
         ArrayList<LVTask> tasks = new ArrayList<LVTask>();
-        for (LVTask task : bdbTableAccessors.taskAccessor.IX_STATUS.subIndex(status).sortedMap().values()) { // ID order
+        for (LVTask task : fetchAll(bdbTableAccessors.taskAccessor.IX_STATUS, status)) { // ID order
             if (task.getNodeId() == nodeId) {
                 tasks.add(task);
             }
@@ -1352,7 +1323,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         task.setType(type);
         task.setStatus(TaskStatus.CREATED);
         task.setParameters(parameters);
-        bdbTableAccessors.taskAccessor.PKX.putNoReturn(task);
+        putNoReturnTransactional(bdbTableAccessors.taskAccessor.PKX, task);
         return task;
     }
 
@@ -1380,7 +1351,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         if (errorMessages != null) {
             task.setErrorMessages(errorMessages);
         }
-        bdbTableAccessors.taskAccessor.PKX.putNoReturn(task);
+        putNoReturnTransactional(bdbTableAccessors.taskAccessor.PKX, task);
         return task;
     }
 
@@ -1391,9 +1362,80 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
 
     @Override
     public void dropTask(int taskId) throws IOException {
-        boolean deleted = bdbTableAccessors.taskAccessor.PKX.delete(taskId);
+        boolean deleted = deleteTransactional(bdbTableAccessors.taskAccessor.PKX, taskId);
         if (!deleted) {
             LOG.warn("Task-" + taskId + " doesn't exist (already deleted?)");
         }
-    }    
+    }
+
+    /**
+     * helper class to do something in a transaction.
+     * the metadata repository is not 100% ACID. rather, be careful to not
+     * cause any deadlocks. doTxn() should contain minimal stuffs in it.
+     */
+    private abstract class TransactionalSection {
+        protected abstract void doTxn(Transaction txn) throws IOException;
+        protected Object ret;
+        /** use this to return optional return values. */
+        protected final void setRet (Object ret) {
+            this.ret = ret;
+        }
+        public final Object run () throws IOException {
+            Transaction txn = bdbEnv.beginTransaction(null, null);
+            boolean committed = false;
+            try {
+                doTxn(txn);
+                txn.commit();
+                committed = true;
+            } finally {
+                if (!committed) {
+                    txn.abort();
+                }
+            }
+            return ret;
+        }
+    }
+
+    /** Inserts/updates an object in an independent transaction (not for full ACID. only record-level consistency, instead this won't cause deadlocks). */
+    private <T> void putNoReturnTransactional (final PrimaryIndex<Integer, T> pkx, final T obj) throws IOException {
+        new TransactionalSection() {
+            public void doTxn(Transaction txn) throws IOException {
+                pkx.putNoReturn(txn, obj);
+            }
+        }.run();
+    }
+
+    /** Deletes an object in an independent transaction (not for full ACID. only record-level consistency, instead this won't cause deadlocks). */
+    private <T> boolean deleteTransactional (final PrimaryIndex<Integer, T> pkx, final int objId) throws IOException {
+        return (Boolean) new TransactionalSection() {
+            public void doTxn(Transaction txn) throws IOException {
+                boolean deleted = pkx.delete(txn, objId);
+                setRet(deleted);
+            }
+        }.run();
+    }
+
+    /**
+     * Retrieves all (duplicate) entries from the secondary index for the given key.
+     * This method releases locks after reading each record and returns a separated (as opposed
+     * to BDB's own cursor) list. Again, deadlock avoidance at the cost of ACID.
+     * The result is sorted by ID.
+     */
+    private <K extends Comparable<K>, T extends LVObject> Collection<T> fetchAll (SecondaryIndex<K, Integer, T> index, K key) {
+        EntityIndex<Integer, T> subIndex = index.subIndex(key);
+        CursorConfig config = new CursorConfig();
+        config.setReadCommitted(true);
+        config.setReadUncommitted(false);
+        EntityCursor<T> cursor = subIndex.entities(null, config);
+        SortedMap<Integer, T> map = new TreeMap<Integer, T>();
+        while (true) {
+            T obj = cursor.next();
+            if (obj == null) {
+                break;
+            }
+            map.put (obj.getPrimaryKey(), obj);
+        }
+        cursor.close();
+        return map.values();
+    }
 }
