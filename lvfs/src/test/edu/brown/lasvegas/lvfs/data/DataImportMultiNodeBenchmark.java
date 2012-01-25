@@ -46,7 +46,7 @@ import edu.brown.lasvegas.util.ValueRange;
  * 
  * <h2>Step 2</h2>
  * <p>
- * Configure an xml file. Examples are in src/test/edu/brown/lasvegas/server/lvfs_conf_xxx.xml.
+ * Configure an xml file. Examples are in src/test/lvfs_conf_xxx.xml.
  * At least modify the followings for your environment:
  * lasvegas.server.meta.address,
  * lasvegas.server.data.address,

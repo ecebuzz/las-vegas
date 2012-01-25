@@ -12,17 +12,17 @@ public class ConfFileUtil {
      */
     public static final void addConfFilePath (String path) throws IOException {
         try {
-            InputStream test = ConfFileUtil.class.getResourceAsStream(path);
+            InputStream test = ConfFileUtil.class.getResourceAsStream("/" + path); // assumes it's directly in the root folder. See DefaultConfigTest
             test.read();
             test.close();
         } catch (Exception ex) {
-            throw new IOException (path + " cannot be read as a resource. Is it in the classpath?");
+            throw new IOException ("/" + path + " cannot be read as a resource. Is it in the classpath?");
         }
-        // Configuration.addDefaultResource(path);
+        Configuration.addDefaultResource(path);
         
         // at least it should have the central node's address
         Configuration conf = new Configuration();
-        conf.addResource(ConfFileUtil.class.getResource(path));
+        // conf.addResource(ConfFileUtil.class.getResource(path));
         String metaRepoAddresss = conf.get(LVCentralNode.METAREPO_ADDRESS_KEY);
         if (metaRepoAddresss == null || metaRepoAddresss.length() == 0) {
             throw new IOException ("It seems the file " + path + " doesn't even define " + LVCentralNode.METAREPO_ADDRESS_KEY);
