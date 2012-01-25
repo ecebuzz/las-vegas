@@ -75,6 +75,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     private final Environment bdbEnv;
     
     private BdbTableAccessors bdbTableAccessors;
+    private boolean didShutdown = false;
     
     private static final long BDB_CACHE_SIZE = 1L << 26;
     
@@ -189,7 +190,11 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         sync();
         bdbTableAccessors.closeAll();
         bdbEnv.close();
+        didShutdown = true;
         LOG.info("shutdown.");
+    }
+    public boolean isShutdown () {
+        return didShutdown;
     }
 
     @Override

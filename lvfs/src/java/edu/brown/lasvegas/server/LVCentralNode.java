@@ -79,6 +79,9 @@ public final class LVCentralNode implements ServicePlugin {
     /** instance of the query execution engine running in this central node.*/
     private QueryExecutionEngine queryExecutionEngine;
 
+    /** the thread to periodically check if metadataRepository has shutdown. */
+    private ShutdownPollingThread shutdownPollingThread;
+
     /** HDFS Name Node containing this object as a plugin. */
     private NameNode hdfsNameNode;
     public NameNode getHdfsNameNode () {
@@ -90,7 +93,6 @@ public final class LVCentralNode implements ServicePlugin {
      */
     @Override
     public void start(Object service) {
-        // TODO Auto-generated method stub
         hdfsNameNode = (NameNode) service;
         try {
             initialize();
@@ -129,12 +131,15 @@ public final class LVCentralNode implements ServicePlugin {
             queryExecutionServer.start();
             LOG.info("started query execution engine  server.");
         }
+        shutdownPollingThread = new ShutdownPollingThread();
+        shutdownPollingThread.start();
     }
     
     @Override
     public void close() throws IOException {
         stop ();
         hdfsNameNode = null;
+        shutdownPollingThread = null;
     }
 
     private boolean stopRequested = false;
@@ -160,7 +165,10 @@ public final class LVCentralNode implements ServicePlugin {
         if (metadataRepositoryServer != null) {
             metadataRepositoryServer.stop();
             try {
-                metadataRepository.shutdown();
+                if (!metadataRepository.isShutdown()) {
+                    metadataRepository.shutdown();
+                }
+                assert (metadataRepository.isShutdown());
             } catch (IOException ex) {
                 LOG.error("error on closing metadata repository", ex);
             }
@@ -186,10 +194,24 @@ public final class LVCentralNode implements ServicePlugin {
         }
     }
 
-    class Replicator implements Runnable {
+    private class ShutdownPollingThread extends Thread {
         @Override
         public void run() {
-            // TODO Auto-generated method stub
+            while (true) {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException ex) {
+                }
+                if (metadataRepository.isShutdown()) {
+                    LOG.error("Metadata repository has been already shutdown. closing the central node...");
+                    try {
+                        close ();
+                    } catch (Exception ex) {
+                        LOG.error("error on closing central node", ex);
+                    }
+                    break;
+                }
+            }
         }
     }
 }

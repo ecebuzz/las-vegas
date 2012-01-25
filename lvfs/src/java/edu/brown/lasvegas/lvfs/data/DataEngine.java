@@ -29,6 +29,8 @@ public final class DataEngine implements LVDataProtocol, Closeable {
     /** The thread to continuously pull new tasks for the node. */
     private final DataTaskPollingThread pollingThread;
     
+    private boolean didShutdown = false;
+    
     public DataEngine (LVMetadataProtocol metaRepo, int nodeId) throws IOException {
         this (metaRepo, nodeId, new Configuration());
     }
@@ -80,6 +82,10 @@ public final class DataEngine implements LVDataProtocol, Closeable {
             pollingThread.join();
         } catch (InterruptedException ex) {
         }
+        didShutdown = true;
+    }
+    public boolean isShutdown () {
+        return didShutdown;
     }
     
     @Override
@@ -153,14 +159,7 @@ public final class DataEngine implements LVDataProtocol, Closeable {
         }
         return deleteFileRecursive (file);
     }
-    private final static String SAFE_DIR_PREFIX = "/home/hkimura/workspace/las-vegas/lvfs/test/";
-    private final static String SAFE_DIR_PREFIX2 = "/var/lib/jenkins/jobs/lvfs/";
     private boolean deleteFileRecursive (File dir) throws IOException {
-        // TODO this additional check is a tentative code. will be removed when I become really confident
-        if (!dir.getAbsolutePath().startsWith(SAFE_DIR_PREFIX) && !dir.getAbsolutePath().startsWith(SAFE_DIR_PREFIX2)) {
-            throw new IOException ("wait, wait! you are going to recursively delete " + dir.getAbsolutePath());
-        }
-        
         if (!dir.isDirectory()) {
             return dir.delete();
         }

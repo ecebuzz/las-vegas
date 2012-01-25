@@ -101,6 +101,8 @@ public final class LVDataNode implements ServicePlugin {
     private Server dataServer;
     /** instance of the LVFS data management in this node. */
     private DataEngine dataEngine;
+    /** the thread to periodically check if dataEngine has shutdown. */
+    private ShutdownPollingThread shutdownPollingThread;
 
     @Override
     public void start(Object service) {
@@ -137,16 +139,21 @@ public final class LVDataNode implements ServicePlugin {
         InetSocketAddress sockAddress = NetUtils.createSocketAddr(address);
         dataEngine = new DataEngine(metaRepo, node.getNodeId(), conf);
         dataEngine.start();
+        
         dataServer = RPC.getServer(LVDataProtocol.class, dataEngine, sockAddress.getHostName(), sockAddress.getPort(), conf);
         LOG.info("initialized LVFS Data Server.");
         dataServer.start();
         LOG.info("started LVFS Data Server.");
+        
+        shutdownPollingThread = new ShutdownPollingThread();
+        shutdownPollingThread.start();
     }
     
     @Override
     public void close() throws IOException {
         stop ();
         hdfsDataNode = null;
+        shutdownPollingThread = null;
     }
 
     private boolean stopRequested = false;
@@ -164,7 +171,10 @@ public final class LVDataNode implements ServicePlugin {
         if (dataServer != null) {
             dataServer.stop();
             try {
-                dataEngine.close();
+                if (!dataEngine.isShutdown()) {
+                    dataEngine.close();
+                }
+                assert (dataEngine.isShutdown());
             } catch (IOException ex) {
                 LOG.error("error on closing data engine", ex);
             }
@@ -188,6 +198,27 @@ public final class LVDataNode implements ServicePlugin {
             LOG.info("data node has been stopped.");
         } catch (InterruptedException ex) {
             LOG.warn("Interrupted while joining data node.", ex);
+        }
+    }
+    
+    private class ShutdownPollingThread extends Thread {
+        @Override
+        public void run() {
+            while (true) {
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException ex) {
+                }
+                if (dataEngine.isShutdown()) {
+                    LOG.error("Data engine has been already shutdown. closing the data node...");
+                    try {
+                        close ();
+                    } catch (Exception ex) {
+                        LOG.error("error on closing data engine", ex);
+                    }
+                    break;
+                }
+            }
         }
     }
 }
