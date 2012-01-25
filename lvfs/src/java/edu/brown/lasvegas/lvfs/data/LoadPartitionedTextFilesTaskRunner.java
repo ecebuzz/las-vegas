@@ -165,7 +165,7 @@ public final class LoadPartitionedTextFilesTaskRunner extends DataTaskRunner<Loa
                 CheckCanceledCallback callback = new CheckCanceledCallback();
                 // if we don't have to sort after this. the files will be the final output. So, let's calculate checksum at this point
                 boolean calculateChecksum = scheme.getSortColumnId() == null;
-                BufferedTupleWriter writer = new BufferedTupleWriter(reader, 1 << 13, tmpOutputFolder, temporaryCompressionTypes, unsortedFileTemporaryNames, calculateChecksum, callback);
+                BufferedTupleWriter writer = new BufferedTupleWriter(reader, 1 << 16, tmpOutputFolder, temporaryCompressionTypes, unsortedFileTemporaryNames, calculateChecksum, callback);
                 try {
                     writer.appendAllTuples();
                     reader.close();

@@ -25,13 +25,11 @@ import edu.brown.lasvegas.LVRack;
 import edu.brown.lasvegas.LVRackNode;
 import edu.brown.lasvegas.LVReplica;
 import edu.brown.lasvegas.LVReplicaGroup;
-import edu.brown.lasvegas.LVReplicaPartition;
 import edu.brown.lasvegas.LVReplicaScheme;
 import edu.brown.lasvegas.LVTable;
 import edu.brown.lasvegas.lvfs.ColumnFileBundle;
 import edu.brown.lasvegas.lvfs.ColumnFileReaderBundle;
 import edu.brown.lasvegas.lvfs.LVFSFilePath;
-import edu.brown.lasvegas.lvfs.LVFSFileType;
 import edu.brown.lasvegas.lvfs.TypedReader;
 import edu.brown.lasvegas.lvfs.meta.MasterMetadataRepository;
 import edu.brown.lasvegas.server.LVDataNode;
@@ -140,9 +138,9 @@ public class ImportFractureJobControllerTest {
         CompressionType[] compressionScheme2 = new CompressionType[columnIds.length];
         Arrays.fill(compressionScheme2, CompressionType.NONE);
         LVReplicaScheme scheme11 = masterRepository.createNewReplicaScheme(group1, masterRepository.getColumnByName(table.getTableId(), "lo_orderkey"), columnIds, compressionScheme1);
-        LVReplicaScheme scheme12 = masterRepository.createNewReplicaScheme(group1, masterRepository.getColumnByName(table.getTableId(), "lo_orderdate"), columnIds, compressionScheme2);
-        LVReplicaScheme scheme21 = masterRepository.createNewReplicaScheme(group2, masterRepository.getColumnByName(table.getTableId(), "lo_orderkey"), columnIds, compressionScheme1);
-        LVReplicaScheme scheme22 = masterRepository.createNewReplicaScheme(group2, masterRepository.getColumnByName(table.getTableId(), "lo_orderdate"), columnIds, compressionScheme2);
+        /*LVReplicaScheme scheme12 =*/ masterRepository.createNewReplicaScheme(group1, masterRepository.getColumnByName(table.getTableId(), "lo_orderdate"), columnIds, compressionScheme2);
+        /*LVReplicaScheme scheme21 =*/ masterRepository.createNewReplicaScheme(group2, masterRepository.getColumnByName(table.getTableId(), "lo_orderkey"), columnIds, compressionScheme1);
+        /*LVReplicaScheme scheme22 =*/ masterRepository.createNewReplicaScheme(group2, masterRepository.getColumnByName(table.getTableId(), "lo_orderdate"), columnIds, compressionScheme2);
 
         // let's start!
         ImportFractureJobParameters params = new ImportFractureJobParameters(table.getTableId());
@@ -154,9 +152,7 @@ public class ImportFractureJobControllerTest {
         // check the contents of imported files
         LVFracture fracture = controller.getFracture();
         LVReplica replica = masterRepository.getReplicaFromSchemeAndFracture(scheme11.getSchemeId(), fracture.getFractureId());
-        LVReplicaPartition partition = masterRepository.getReplicaPartitionByReplicaAndRange(replica.getReplicaId(), 0);
         LVColumnFile columnFile = masterRepository.getColumnFileByReplicaPartitionAndColumn(replica.getReplicaId(), columns.get("lo_orderkey").getColumnId());
-        LVFSFilePath path = new LVFSFilePath(conf1, database.getDatabaseId(), table.getTableId(), fracture.getFractureId(), scheme11.getSchemeId(), 0, partition.getPartitionId(), columnFile.getColumnId(), columnFile.getColumnFileId(), LVFSFileType.DATA_FILE);
         ColumnFileBundle bundle = new ColumnFileBundle(columnFile);
         ColumnFileReaderBundle readers = new ColumnFileReaderBundle(bundle);
         @SuppressWarnings("unchecked")
@@ -184,8 +180,8 @@ public class ImportFractureJobControllerTest {
         CompressionType[] compressionScheme1 = MiniLineorder.getDefaultCompressions();
         CompressionType[] compressionScheme2 = new CompressionType[columnIds.length];
         Arrays.fill(compressionScheme2, CompressionType.NONE);
-        LVReplicaScheme scheme11 = masterRepository.createNewReplicaScheme(group1, masterRepository.getColumnByName(table.getTableId(), "lo_orderkey"), columnIds, compressionScheme1);
-        LVReplicaScheme scheme12 = masterRepository.createNewReplicaScheme(group1, masterRepository.getColumnByName(table.getTableId(), "lo_orderdate"), columnIds, compressionScheme2);
+        /*LVReplicaScheme scheme11 =*/ masterRepository.createNewReplicaScheme(group1, masterRepository.getColumnByName(table.getTableId(), "lo_orderkey"), columnIds, compressionScheme1);
+        /*LVReplicaScheme scheme12 =*/ masterRepository.createNewReplicaScheme(group1, masterRepository.getColumnByName(table.getTableId(), "lo_orderdate"), columnIds, compressionScheme2);
 
         // let's start!
         ImportFractureJobParameters params = new ImportFractureJobParameters(table.getTableId());

@@ -17,7 +17,7 @@ public class ClearAllTest {
             assertTrue(deleteFileRecursive (file));
         }
     }
-    private boolean deleteFileRecursive (File dir) throws IOException {
+    public static boolean deleteFileRecursive (File dir) throws IOException {
         if (!dir.isDirectory()) {
             return dir.delete();
         }

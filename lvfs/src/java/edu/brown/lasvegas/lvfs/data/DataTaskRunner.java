@@ -2,6 +2,7 @@ package edu.brown.lasvegas.lvfs.data;
 
 import java.io.IOException;
 
+import org.apache.hadoop.io.DoubleWritable;
 import org.apache.log4j.Logger;
 
 import edu.brown.lasvegas.LVTask;
@@ -37,7 +38,7 @@ public abstract class DataTaskRunner<ParamType extends TaskParameters> implement
         try {
             checkTaskCanceled ();
             String[] outputFilePaths = runDataTask();
-            context.metaRepo.updateTaskNoReturn(task.getTaskId(), TaskStatus.DONE, null, outputFilePaths, null);
+            context.metaRepo.updateTaskNoReturn(task.getTaskId(), TaskStatus.DONE, new DoubleWritable(1.0d), outputFilePaths, null);
         } catch (Exception ex) {
             if (ex instanceof TaskCanceledException) {
                 LOG.info("task canceled");

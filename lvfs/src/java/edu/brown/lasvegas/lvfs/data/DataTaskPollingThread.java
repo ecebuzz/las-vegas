@@ -66,6 +66,7 @@ public final class DataTaskPollingThread extends Thread {
         } catch (IOException ex) {
             LOG.error("unexpected exception while shutting down tasks on Node-" + context.nodeId, ex);
         }
+        workerPool.shutdown();
         interrupt();
     }
     /** Returns if this thread has stopped. */
@@ -93,8 +94,8 @@ public final class DataTaskPollingThread extends Thread {
                         continue;
                     }
                     runnable.init(context, task);
-                    workerPool.execute(runnable);
                     context.metaRepo.updateTaskNoReturn(task.getTaskId(), TaskStatus.RUNNING, null, null, null);
+                    workerPool.execute(runnable);
                 }
                 
                 

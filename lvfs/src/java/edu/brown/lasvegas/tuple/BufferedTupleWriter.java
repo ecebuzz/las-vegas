@@ -92,12 +92,16 @@ public class BufferedTupleWriter implements TupleWriter {
             if (read < 0) {
                 break;
             }
-            LOG.info("read " + read + " tuples.");
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("read " + read + " tuples.");
+            }
             for (int i = 0; i < columnCount; ++i) {
                 Object columnData = buffer.getColumnBuffer(i);
                 ((TypedWriter) columnWriters[i].getDataWriter()).writeValues(columnData, 0, read);
             }
-            LOG.info("wrote " + read + " tuples to " + columnCount + " column files.");
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("wrote " + read + " tuples to " + columnCount + " column files.");
+            }
             tuplesWritten += read;
             if (callback != null) {
                 boolean continued = callback.onBatchWritten(tuplesWritten);
