@@ -56,7 +56,7 @@ public final class LVTask implements LVObject {
     /** fraction of the work done (finished=1.0). just for report purpose. */
     private double progress;
     
-    /** The time this task has been created (largely the time this task has been started). */
+    /** The time this task has been started. */
     private Date startedTime = new Date(0L);
     
     /** The time this task has finished. */
@@ -269,18 +269,18 @@ public final class LVTask implements LVObject {
 
 
     /**
-     * Gets the time this task has been created (largely the time this task has been started).
+     * Gets the time this task has been started.
      *
-     * @return the time this task has been created (largely the time this task has been started)
+     * @return the time this task has been started
      */
     public Date getStartedTime() {
         return startedTime;
     }
 
     /**
-     * Sets the time this task has been created (largely the time this task has been started).
+     * Sets the time this task has been started.
      *
-     * @param startedTime the new time this task has been created (largely the time this task has been started)
+     * @param startedTime the new time this task has been started
      */
     public void setStartedTime(Date startedTime) {
         this.startedTime = startedTime;

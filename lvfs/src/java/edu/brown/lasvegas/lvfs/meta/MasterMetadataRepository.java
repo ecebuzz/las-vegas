@@ -1337,9 +1337,13 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         LVTask task = getTask(taskId);
         if (status != null) {
             boolean wasFinished = TaskStatus.isFinished(task.getStatus());
+            boolean wasStarted = status == TaskStatus.RUNNING && task.getStatus() == TaskStatus.START_REQUESTED;
             task.setStatus(status);
             if (!wasFinished && TaskStatus.isFinished(status)) {
                 task.setFinishedTime(new Date());
+            }
+            if (wasStarted) {
+                task.setStartedTime(new Date());
             }
         }
         if (progress != null) {
