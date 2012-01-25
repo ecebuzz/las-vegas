@@ -97,7 +97,7 @@
 	<target name="cleanall" depends="clean,compile,test,doc" description="Do all compilation and tests after cleaning" />
 	
 	<target name="sa-central" depends="compile"
-		description="Launch standalone central node. Specify the path of configuration xml (must be in classpath). eg: ant -Dconfxml=edu.brown.lasvegas.server.lvfs_conf_poseidon.xml -Dformat=true sa-central">
+		description="Launch standalone central node. Specify the path of configuration xml (must be in classpath). eg: ant -Dconfxml=lvfs_conf_poseidon.xml -Dformat=true sa-central">
 		<java fork="true" classname="edu.brown.lasvegas.server.StandaloneCentralNode">
 			<jvmarg value="-Xmx512m"/>
 			<jvmarg value="-server"/>
@@ -111,7 +111,7 @@
 	</target>
 
 	<target name="sa-data" depends="compile"
-		description="Launch standalone data node. Specify the path of configuration xml (must be in classpath). eg: ant -Dconfxml=edu.brown.lasvegas.server.lvfs_conf_poseidon.xml -Dformat=true sa-data">
+		description="Launch standalone data node. Specify the path of configuration xml (must be in classpath). eg: ant -Dconfxml=lvfs_conf_poseidon.xml -Dformat=true sa-data">
 		<java fork="true" classname="edu.brown.lasvegas.server.StandaloneDataNode">
 			<jvmarg value="-Xmx1024m"/>
 			<jvmarg value="-server"/>
@@ -123,7 +123,7 @@
 	</target>
 
 	<target name="sa-central-stop" depends="compile"
-		description="Stop central node. Specify the path of configuration xml (must be in classpath). eg: ant -Dconfxml=edu.brown.lasvegas.server.lvfs_conf_poseidon.xml sa-central-stop">
+		description="Stop central node. Specify the path of configuration xml (must be in classpath). eg: ant -Dconfxml=lvfs_conf_poseidon.xml sa-central-stop">
 		<java fork="true" classname="edu.brown.lasvegas.server.StopCentralNode">
 			<arg value="${confxml}" />
         	<classpath refid="lvfs.classpath"/>
@@ -131,10 +131,21 @@
 	</target>
 
 	<target name="sa-data-stop" depends="compile"
-		description="Stop data node. Specify the path of configuration xml (must be in classpath) and the data node address. eg: ant -Dconfxml=edu.brown.lasvegas.server.lvfs_conf_poseidon.xml -Daddress=poseidon:28712 sa-data-stop">
+		description="Stop data node. Specify the path of configuration xml (must be in classpath) and the data node address. eg: ant -Dconfxml=lvfs_conf_poseidon.xml -Daddress=poseidon:28712 sa-data-stop">
 		<java fork="true" classname="edu.brown.lasvegas.server.StopDataNode">
 			<arg value="${confxml}" />
 			<arg value="${address}" />
+        	<classpath refid="lvfs.classpath"/>
+		</java>
+	</target>
+
+	<target name="import-bench" depends="compile"
+		description="Start a distributed data import benchmark. Specify the path of configuration xml (must be in classpath).">
+		<java fork="true" classname="edu.brown.lasvegas.lvfs.data.DataImportMultiNodeBenchmark">
+			<jvmarg value="-Xmx256m"/>
+			<jvmarg value="-server"/>
+			<jvmarg value="-da"/>
+			<arg value="${confxml}" />
         	<classpath refid="lvfs.classpath"/>
 		</java>
 	</target>

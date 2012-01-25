@@ -12,6 +12,7 @@ import java.util.Random;
 import java.util.TreeMap;
 
 import org.apache.hadoop.io.DoubleWritable;
+import org.apache.hadoop.io.IntWritable;
 import org.apache.log4j.Logger;
 
 import edu.brown.lasvegas.ColumnType;
@@ -120,7 +121,8 @@ public final class LoadPartitionedTextFilesTaskRunner extends DataTaskRunner<Loa
         }
         // move files to non-temporary place
         DataTaskUtil.registerTemporaryFilesAsColumnFiles(context, partitionInput.partition, columns, finalFiles);
-        context.metaRepo.updateReplicaPartitionNoReturn(partitionInput.partition.getPartitionId(), ReplicaPartitionStatus.OK, partitionInput.partition.getNodeId());
+        IntWritable nodeId = partitionInput.partition.getNodeId() == null ? null : new IntWritable(partitionInput.partition.getNodeId());
+        context.metaRepo.updateReplicaPartitionNoReturn(partitionInput.partition.getPartitionId(), ReplicaPartitionStatus.OK, nodeId);
     }
     /**
      * sequentially copy all input files into unsorted column files.

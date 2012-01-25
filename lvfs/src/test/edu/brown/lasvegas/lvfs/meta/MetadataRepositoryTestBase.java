@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.util.HashMap;
 
 import org.apache.hadoop.io.DoubleWritable;
+import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.junit.Test;
 
@@ -1070,6 +1071,11 @@ public abstract class MetadataRepositoryTestBase {
         }
     }
 
+    @Test
+    public void testUpdateReplicaPartition() throws IOException {
+        repository.updateReplicaPartition(DEFAULT_REPLICA_PARTITIONS[0], ReplicaPartitionStatus.LOST, DEFAULT_RACK_NODE);
+        repository.updateReplicaPartitionNoReturn(DEFAULT_REPLICA_PARTITIONS[1].getPartitionId(), ReplicaPartitionStatus.OK, new IntWritable(DEFAULT_RACK_NODE.getNodeId()));
+    }
     @Test
     public void testGetColumnFile() throws IOException {
         validateColumnFile (repository.getColumnFile(DEFAULT_COLUMN_FILES[0][3].getColumnFileId()), 0, 3);

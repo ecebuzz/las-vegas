@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.apache.hadoop.io.DoubleWritable;
+import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.ipc.VersionedProtocol;
 
@@ -738,7 +739,7 @@ public interface LVMetadataProtocol extends VersionedProtocol {
      */
     void updateReplicaPartitionNoReturn(int subPartitionId,
         ReplicaPartitionStatus status,
-        Integer nodeId) throws IOException;
+        IntWritable nodeId) throws IOException;
 
     /**
      * Deletes the sub-partition metadata object and related objects from this repository.

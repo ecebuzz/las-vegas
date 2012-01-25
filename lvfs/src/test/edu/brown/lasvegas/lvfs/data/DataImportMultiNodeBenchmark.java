@@ -1,7 +1,6 @@
 package edu.brown.lasvegas.lvfs.data;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.HashMap;
 
 import org.apache.hadoop.conf.Configuration;
@@ -18,8 +17,8 @@ import edu.brown.lasvegas.LVTable;
 import edu.brown.lasvegas.LVTask;
 import edu.brown.lasvegas.client.LVMetadataClient;
 import edu.brown.lasvegas.protocol.LVMetadataProtocol;
+import edu.brown.lasvegas.server.ConfFileUtil;
 import edu.brown.lasvegas.server.LVDataNode;
-import edu.brown.lasvegas.server.StandaloneCentralNode;
 import edu.brown.lasvegas.util.ValueRange;
 
 /**
@@ -198,15 +197,7 @@ public class DataImportMultiNodeBenchmark {
             System.err.println("ex: java -server -Xmx256m " + DataImportMultiNodeBenchmark.class.getName() + " lvfs_conf.xml");
             return;
         }
-        try {
-            InputStream test = StandaloneCentralNode.class.getResourceAsStream(args[0]);
-            test.read();
-            test.close();
-        } catch (Exception ex) {
-            System.err.println (args[0] + " cannot be read as a resource. Is it in the classpath?");
-            return;
-        }
-        Configuration.addDefaultResource(args[0]);
+        ConfFileUtil.addConfFilePath(args[0]);
         DataImportMultiNodeBenchmark program = new DataImportMultiNodeBenchmark();
         program.setUp();
         try {

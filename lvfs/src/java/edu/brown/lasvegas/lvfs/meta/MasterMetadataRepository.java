@@ -13,6 +13,7 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.apache.hadoop.io.DoubleWritable;
+import org.apache.hadoop.io.IntWritable;
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.ipc.ProtocolSignature;
 import org.apache.log4j.Logger;
@@ -881,7 +882,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         return subPartition;
     }
     @Override
-    public void updateReplicaPartitionNoReturn(int subPartitionId, ReplicaPartitionStatus status, Integer nodeId) throws IOException {
+    public void updateReplicaPartitionNoReturn(int subPartitionId, ReplicaPartitionStatus status, IntWritable nodeId) throws IOException {
         LVReplicaPartition subPartition = bdbTableAccessors.replicaPartitionAccessor.PKX.get(subPartitionId);
         if (subPartition == null) {
             throw new IOException ("this replica partition ID doesn't exist: " + subPartitionId);
@@ -889,7 +890,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         
         LVRackNode node = null;
         if (nodeId != null) {
-            node = getRackNode(nodeId.intValue());
+            node = getRackNode(nodeId.get());
             if (node == null) {
                 throw new IOException ("this node ID doesn't exist: " + nodeId);
             }
