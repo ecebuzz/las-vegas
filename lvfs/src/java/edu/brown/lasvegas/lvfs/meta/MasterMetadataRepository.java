@@ -879,6 +879,9 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
             subPartition.setNodeId(node.getNodeId());
         }
         putNoReturnTransactional(bdbTableAccessors.replicaPartitionAccessor.PKX, subPartition);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Updated ReplicaPartition:" + subPartition);
+        }
         return subPartition;
     }
     @Override

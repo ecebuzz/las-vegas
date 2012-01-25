@@ -22,6 +22,7 @@ import edu.brown.lasvegas.LVReplicaPartition;
 import edu.brown.lasvegas.LVReplicaScheme;
 import edu.brown.lasvegas.LVTable;
 import edu.brown.lasvegas.LVTask;
+import edu.brown.lasvegas.ReplicaPartitionStatus;
 import edu.brown.lasvegas.TaskStatus;
 import edu.brown.lasvegas.TaskType;
 import edu.brown.lasvegas.lvfs.placement.PlacementEventHandlerImpl;
@@ -298,7 +299,9 @@ public class ImportFractureJobController implements JobController<ImportFracture
                     throw new IOException ("this partition has not been assigned to data node. " + partition);
                 }
                 if (!filesPerPartition.containsKey(partition.getRange())) {
-                    // this means there was no tuple to import for the partition. 
+                    // this means there was no tuple to import for the partition.
+                    // set the empty status and ignore.
+                    metaRepo.updateReplicaPartitionNoReturn(partition.getPartitionId(), ReplicaPartitionStatus.EMPTY, null);
                     continue;
                 }
                 NodeFileLoadAssignment assignments = assignmentsPerNode.get(nodeId);
@@ -378,6 +381,13 @@ public class ImportFractureJobController implements JobController<ImportFracture
                     if (nodeId == null) {
                         throw new IOException ("this partition has not been assigned to data node. " + partition);
                     }
+                    LVReplicaPartition buddyPartition = metaRepo.getReplicaPartitionByReplicaAndRange(buddyReplica.getReplicaId(), partition.getRange());
+                    if (buddyPartition.getStatus() == ReplicaPartitionStatus.EMPTY) {
+                        // this partition has no tuples. so, just set the EMPTY status and ignore.
+                        metaRepo.updateReplicaPartitionNoReturn(partition.getPartitionId(), ReplicaPartitionStatus.EMPTY, null);
+                        continue;
+                    }
+                    assert (buddyPartition.getStatus() == ReplicaPartitionStatus.OK);
                     NodeFileLoadAssignment assignments = assignmentsPerNode.get(nodeId);
                     // List<LVReplicaPartition> assignments = partitionsPerAssignedNode.get(nodeId);
                     if (assignments == null) {

@@ -1073,8 +1073,13 @@ public abstract class MetadataRepositoryTestBase {
 
     @Test
     public void testUpdateReplicaPartition() throws IOException {
-        repository.updateReplicaPartition(DEFAULT_REPLICA_PARTITIONS[0], ReplicaPartitionStatus.LOST, DEFAULT_RACK_NODE);
+        LVReplicaPartition part = repository.updateReplicaPartition(DEFAULT_REPLICA_PARTITIONS[0], ReplicaPartitionStatus.LOST, DEFAULT_RACK_NODE);
+        assertEquals (ReplicaPartitionStatus.LOST, part.getStatus());
+        assertEquals (DEFAULT_RACK_NODE.getNodeId(), part.getNodeId().intValue());
         repository.updateReplicaPartitionNoReturn(DEFAULT_REPLICA_PARTITIONS[1].getPartitionId(), ReplicaPartitionStatus.OK, new IntWritable(DEFAULT_RACK_NODE.getNodeId()));
+        part = repository.getReplicaPartition(DEFAULT_REPLICA_PARTITIONS[1].getPartitionId());
+        assertEquals (ReplicaPartitionStatus.OK, part.getStatus());
+        assertEquals (DEFAULT_RACK_NODE.getNodeId(), part.getNodeId().intValue());
     }
     @Test
     public void testGetColumnFile() throws IOException {
