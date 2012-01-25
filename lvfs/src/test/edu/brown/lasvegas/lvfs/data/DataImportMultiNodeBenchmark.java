@@ -73,7 +73,7 @@ import edu.brown.lasvegas.util.ValueRange;
  * <p>
  * Launch the data node in each machine.
  * <pre>
- * ant -Dconfxml=edu.brown.lasvegas.server.lvfs_conf_poseidon.xml -Dformat=true sa-data
+ * ant -Dconfxml=lvfs_conf_poseidon.xml -Dformat=true sa-data
  * </pre>
  * -Dformat is the parameter to specify whether to nuke the data folder.
  * In order to stop:  
@@ -98,9 +98,14 @@ import edu.brown.lasvegas.util.ValueRange;
 public class DataImportMultiNodeBenchmark {
     private static final Logger LOG = Logger.getLogger(DataImportMultiNodeBenchmark.class);
     /** hardcoded total count of partitions. */
-    private static final int partitionCount = 12;
-    /** hardcoded full path of input files in ALL nodes (yes, I'm lazy. but this is just a benchmark..). It should be a partitioned tbl (see SSB/TPCH's dbgen manual). */
-    private static final String inputFilePath = "/home/hkimura/workspace/las-vegas/ssb-dbgen/lineorder_s12_p.tbl";
+    // private static final int partitionCount = 12;
+    /**
+     * hardcoded full path of input files in ALL nodes (yes, I'm lazy. but this is just a benchmark..).
+     * It should be a partitioned tbl (see SSB/TPCH's dbgen manual. eg: ./dbgen -T l -s 4 -S 1 -C 2).
+    */
+    // private static final String inputFilePath = "/home/hkimura/workspace/las-vegas/ssb-dbgen/lineorder_s12_p.tbl";
+    private static final int partitionCount = 4;
+    private static final String inputFilePath = "/home/hkimura/workspace/las-vegas/ssb-dbgen/lineorder_s4_p.tbl";
 
     private Configuration conf;
     private LVMetadataClient client;

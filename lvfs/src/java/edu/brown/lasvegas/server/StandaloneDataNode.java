@@ -1,7 +1,5 @@
 package edu.brown.lasvegas.server;
 
-import java.io.InputStream;
-
 import org.apache.hadoop.conf.Configuration;
 
 /**
@@ -15,18 +13,11 @@ public class StandaloneDataNode {
             System.err.println("ex: java -server -Xmx1024m " + StandaloneDataNode.class.getName() + " lvfs_conf.xml true");
             return;
         }
-        try {
-            InputStream test = StandaloneDataNode.class.getResourceAsStream(args[0]);
-            test.read();
-            test.close();
-        } catch (Exception ex) {
-            System.err.println (args[0] + " cannot be read as a resource. Is it in the classpath?");
-            return;
-        }
-        Configuration.addDefaultResource(args[0]);
+        ConfFileUtil.addConfFilePath(args[0]);
         boolean clear = args.length >= 2 && new Boolean (args[1]).booleanValue();
         
         Configuration conf = new Configuration();
+        System.out.println("address of central node:" + conf.get(LVCentralNode.METAREPO_ADDRESS_KEY));
         LVDataNode dataNode = new LVDataNode(conf, null, true, clear);
         dataNode.start(null);
         dataNode.join();

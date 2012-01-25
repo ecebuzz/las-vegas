@@ -1,7 +1,5 @@
 package edu.brown.lasvegas.server;
 
-import java.io.InputStream;
-
 import org.apache.hadoop.conf.Configuration;
 
 import edu.brown.lasvegas.client.LVMetadataClient;
@@ -17,15 +15,7 @@ public class StopCentralNode {
             System.err.println("ex: java " + StopCentralNode.class.getName() + " lvfs_conf.xml");
             return;
         }
-        try {
-            InputStream test = StandaloneCentralNode.class.getResourceAsStream(args[0]);
-            test.read();
-            test.close();
-        } catch (Exception ex) {
-            System.err.println (args[0] + " cannot be read as a resource. Is it in the classpath?");
-            return;
-        }
-        Configuration.addDefaultResource(args[0]);
+        ConfFileUtil.addConfFilePath(args[0]);
         
         Configuration conf = new Configuration();
         LVMetadataClient client = new LVMetadataClient(conf);
