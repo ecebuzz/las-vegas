@@ -11,8 +11,8 @@ import org.apache.hadoop.conf.Configuration;
 public class StandaloneDataNode {
     public static void main (String[] args) throws Exception {
         if (args.length == 0) {
-            System.err.println("usage: java " + StandaloneDataNode.class.getName() + " <conf xml path in classpath>");
-            System.err.println("ex: java -server -Xmx1024m " + StandaloneDataNode.class.getName() + " lvfs_conf.xml");
+            System.err.println("usage: java " + StandaloneDataNode.class.getName() + " <conf xml path in classpath> <clear the data folder (default:false)>");
+            System.err.println("ex: java -server -Xmx1024m " + StandaloneDataNode.class.getName() + " lvfs_conf.xml true");
             return;
         }
         try {
@@ -24,9 +24,10 @@ public class StandaloneDataNode {
             return;
         }
         Configuration.addDefaultResource(args[0]);
+        boolean clear = args.length >= 2 && new Boolean (args[1]).booleanValue();
         
         Configuration conf = new Configuration();
-        LVDataNode dataNode = new LVDataNode(conf);
+        LVDataNode dataNode = new LVDataNode(conf, null, true, clear);
         dataNode.start(null);
         dataNode.join();
         

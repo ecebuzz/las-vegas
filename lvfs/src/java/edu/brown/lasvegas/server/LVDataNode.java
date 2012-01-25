@@ -11,7 +11,9 @@ import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.util.ServicePlugin;
 import org.apache.log4j.Logger;
 
+import edu.brown.lasvegas.LVRack;
 import edu.brown.lasvegas.LVRackNode;
+import edu.brown.lasvegas.RackNodeStatus;
 import edu.brown.lasvegas.client.LVMetadataClient;
 import edu.brown.lasvegas.lvfs.data.DataEngine;
 import edu.brown.lasvegas.protocol.LVDataProtocol;
@@ -63,13 +65,23 @@ public final class LVDataNode implements ServicePlugin {
         this(new Configuration());
     }
     public LVDataNode (Configuration conf) {
-        this.conf = conf;
+        this (conf, null);
     }
     /** Constructor to directly specify the metadata repository instance. usually for testing. */
     public LVDataNode (Configuration conf, LVMetadataProtocol metaRepo) {
+        this (conf, metaRepo, false, false);
+    }
+    /**
+     * Constructor to specify whether to newly register this node/rack and to format the data root directory on startup.
+     */
+    public LVDataNode (Configuration conf, LVMetadataProtocol metaRepo, boolean registerRackNode, boolean format) {
         this.conf = conf;
         this.metaRepo = metaRepo;
+        this.registerRackNode = registerRackNode;
+        this.format = format;
     }
+    private final boolean registerRackNode;
+    private final boolean format;
     
     /** hadoop configuration */
     private Configuration conf;
@@ -129,15 +141,44 @@ public final class LVDataNode implements ServicePlugin {
         } else {
             LOG.debug ("using metadata repository instance given to the constructor");
         }
-        // String nodeName = hdfsDataNode.getMachineName();
+        String rackName = conf.get(DATA_RACK_NAME_KEY, DATA_RACK_NAME_DEFAULT);
+        LVRack rack = metaRepo.getRack(rackName);
+        if (rack == null) {
+            if (registerRackNode) {
+                LOG.info("automatically creating LVRack:" + rackName);
+                rack = metaRepo.createNewRack(rackName);
+                if (rack == null) {
+                    throw new IOException ("Failed to create a rack: " + rackName);
+                }
+            } else {
+                throw new IOException ("This rack name doesn't exist: " + rackName);
+            }
+        }
+
         String nodeName = conf.get(DATA_NODE_NAME_KEY, DATA_NODE_NAME_DEFAULT);
         LVRackNode node = metaRepo.getRackNode(nodeName);
         if (node == null) {
-            throw new IOException ("This node name doesn't exist: " + nodeName);
+            if (registerRackNode) {
+                LOG.info("automatically creating LVRackNode:" + nodeName);
+                node = metaRepo.createNewRackNode(rack, nodeName, address);
+            } else {
+                throw new IOException ("This node name doesn't exist: " + nodeName);
+            }
         }
-        // TODO register node/rack if needed
+        if (node.getRackId() != rack.getRackId()) {
+            throw new IOException ("This node doesn't belong to the specified rack:" + node + " : " + rackName);
+        }
+        if (node.getStatus() != RackNodeStatus.OK) {
+            LOG.info("updating the status of the node");
+            metaRepo.updateRackNodeStatusNoReturn(node.getNodeId(), RackNodeStatus.OK);
+        }
+        if (node.getAddress().equals(address)) {
+            LOG.info("updating the address of the node");
+            metaRepo.updateRackNodeAddressNoReturn(node.getNodeId(), address);
+        }
+
         InetSocketAddress sockAddress = NetUtils.createSocketAddr(address);
-        dataEngine = new DataEngine(metaRepo, node.getNodeId(), conf);
+        dataEngine = new DataEngine(metaRepo, node.getNodeId(), conf, format);
         dataEngine.start();
         
         dataServer = RPC.getServer(LVDataProtocol.class, dataEngine, sockAddress.getHostName(), sockAddress.getPort(), conf);

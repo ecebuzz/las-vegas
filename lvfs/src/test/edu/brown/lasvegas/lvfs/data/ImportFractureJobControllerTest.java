@@ -76,6 +76,7 @@ public class ImportFractureJobControllerTest {
         conf1.setLong(DataTaskPollingThread.POLLING_INTERVAL_KEY, 100L);
         conf1.set(LVDataNode.DATA_ADDRESS_KEY, DATANODE1_ADDRESS);
         conf1.set(LVDataNode.DATA_NODE_NAME_KEY, DATANODE1_NAME);
+        conf1.set(LVDataNode.DATA_RACK_NAME_KEY, "rack1");
         dataNode1 = new LVDataNode(conf1, masterRepository);
 
         conf2 = new Configuration();
@@ -87,6 +88,7 @@ public class ImportFractureJobControllerTest {
         conf2.setLong(DataTaskPollingThread.POLLING_INTERVAL_KEY, 100L);
         conf2.set(LVDataNode.DATA_ADDRESS_KEY, DATANODE2_ADDRESS);
         conf2.set(LVDataNode.DATA_NODE_NAME_KEY, DATANODE2_NAME);
+        conf2.set(LVDataNode.DATA_RACK_NAME_KEY, "rack2");
         dataNode2 = new LVDataNode(conf2, masterRepository);
 
         // create the file to load

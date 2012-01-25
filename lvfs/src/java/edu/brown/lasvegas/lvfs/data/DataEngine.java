@@ -5,6 +5,9 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Random;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.ipc.ProtocolSignature;
@@ -35,13 +38,37 @@ public final class DataEngine implements LVDataProtocol, Closeable {
         this (metaRepo, nodeId, new Configuration());
     }
     public DataEngine (LVMetadataProtocol metaRepo, int nodeId, Configuration conf) throws IOException {
+        this (metaRepo, nodeId, conf, false);
+    }
+    public DataEngine (LVMetadataProtocol metaRepo, int nodeId, Configuration conf, boolean format) throws IOException {
         assert (metaRepo != null);
         assert (conf != null);
-        context = new DataEngineContext(nodeId, conf, metaRepo,
+        this.context = new DataEngineContext(nodeId, conf, metaRepo,
                 getLvfsDir (conf.get(LOCA_LVFS_ROOTDIR_KEY, LOCA_LVFS_ROOTDIR_DEFAULT)),
                 getLvfsDir (conf.get(LOCA_LVFS_TMPDIR_KEY, LOCA_LVFS_TMPDIR_DEFAULT)));
+        if (format) {
+            formatDataDir ();
+        }
         this.pollingThread = new DataTaskPollingThread(context);
     }
+    /** rename the existing data folder to cleanup everything. */
+    private void formatDataDir () throws IOException {
+        // we never delete the old folder. just rename.
+        if (context.localLvfsRootDir.exists()) {
+            File backup = new File(context.localLvfsRootDir.getParentFile(), context.localLvfsRootDir.getName() + "_backup_"
+                + new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date()) // append backup-date
+                + "_" + Math.abs(new Random(System.nanoTime()).nextInt())); // to make it unique
+            LOG.info("renaming the existing data folder to " + backup.getAbsolutePath());
+            boolean renamed = context.localLvfsRootDir.renameTo(backup);
+            if (!renamed) {
+                throw new IOException ("failed to backup the old data folder:" + context.localLvfsRootDir.getAbsolutePath());
+            }
+            LOG.info("renamed as a backup");
+            getLvfsDir(context.localLvfsRootDir.getAbsolutePath());
+            getLvfsDir(context.localLvfsTmpDir.getAbsolutePath());
+        }
+    }
+
     private File getLvfsDir (String path) throws IOException {
         File file = new File (path);
         if (!file.exists()) {

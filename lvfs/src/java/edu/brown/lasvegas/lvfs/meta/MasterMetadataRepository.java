@@ -133,7 +133,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         // we never delete the old repository. just rename.
         File backup = new File(bdbEnvHome.getParentFile(), bdbEnvHome.getName() + "_backup_"
             + new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date()) // append backup-date
-            + "_" + new Random(System.nanoTime()).nextInt()); // to make it unique
+            + "_" + Math.abs(new Random(System.nanoTime()).nextInt())); // to make it unique
         LOG.info("renaming the existing BDB folder to " + backup.getAbsolutePath());
         boolean renamed = bdbEnvHome.renameTo(backup);
         if (!renamed) {

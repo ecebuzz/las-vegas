@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<configuration>
+
+<property>
+  <name>dfs.namenode.plugins</name>
+  <value>edu.brown.lasvegas.server.LVCentralNode</value>
+</property>
+<property>
+  <name>dfs.datanode.plugins</name>
+  <value>edu.brown.lasvegas.server.LVFSDataNode</value>
+</property>
+
+
+<property>
+  <name>lasvegas.server.meta.address</name>
+  <value>poseidon:28710</value>
+</property>
+<property>
+  <name>lasvegas.server.meta.bdbhome</name>
+  <value>test/metarepo/bdb_data</value>
+</property>
+
+
+<property>
+  <name>lasvegas.server.data.address</name>
+  <value>ehs-cc1:28712</value>
+</property>
+<property>
+  <name>lasvegas.server.data.node_name</name>
+  <value>ehs-cc1</value>
+</property>
+<property>
+  <name>lasvegas.server.data.rack_name</name>
+  <value>rack1</value>
+</property>
+<property>
+  <name>lasvegas.lvfs.rootdir</name>
+  <value>test/lvfs_localdir</value>
+</property>
+<property>
+  <name>lasvegas.server.data.local.rootdir</name>
+  <value>test/lvfs_localdir</value>
+</property>
+<property>
+  <name>lasvegas.server.data.local.tmpdir</name>
+  <value>test/lvfs_localdir/tmp</value>
+</property>
+
+</configuration>

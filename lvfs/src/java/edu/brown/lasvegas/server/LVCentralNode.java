@@ -53,8 +53,16 @@ public final class LVCentralNode implements ServicePlugin {
         this(new Configuration());
     }
     public LVCentralNode (Configuration conf) {
-        this.conf = conf;
+        this (conf, false);
     }
+    /**
+     * @param formatMetarepo clears the existing meta repository on startup.
+     */
+    public LVCentralNode (Configuration conf, boolean formatMetarepo) {
+        this.conf = conf;
+        this.formatMetarepo = formatMetarepo;
+    }
+    private final boolean formatMetarepo;
 
     /** hadoop configuration */
     private Configuration conf;
@@ -114,7 +122,7 @@ public final class LVCentralNode implements ServicePlugin {
             String address = conf.get(METAREPO_ADDRESS_KEY, METAREPO_ADDRESS_DEFAULT);
             LOG.info("initializing metadata repository server. address=" + address + ", bdbHome=" + bdbHome);
             InetSocketAddress sockAddress = NetUtils.createSocketAddr(address);
-            metadataRepository = new MasterMetadataRepository(false, bdbHome);
+            metadataRepository = new MasterMetadataRepository(formatMetarepo, bdbHome);
             metadataRepositoryServer = RPC.getServer(LVMetadataProtocol.class, metadataRepository, sockAddress.getHostName(), sockAddress.getPort(), conf);
             LOG.info("initialized metadata repository server.");
             metadataRepositoryServer.start();
