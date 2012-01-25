@@ -102,6 +102,8 @@
 			<jvmarg value="-Xmx512m"/>
 			<jvmarg value="-server"/>
 			<jvmarg value="-da"/>
+<!--			<jvmarg value="-Djava.security.policy=allpermission.policy"/> -->
+<!--			<jvmarg value="-Djava.rmi.server.hostname=10.116.70.90"/> -->
 			<arg value="${confxml}" />
 			<arg value="${format}" />
         	<classpath refid="lvfs.classpath"/>

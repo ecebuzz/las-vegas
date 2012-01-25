@@ -14,6 +14,7 @@
 <property>
   <name>lasvegas.server.meta.address</name>
   <value>localhost:28710</value>
+<!-- NOTE: this should be FULLY qualified name to connect to remote node. Especially when you got 'Connection Refused' error, check your configuration here -->
 </property>
 <property>
   <name>lasvegas.server.meta.bdbhome</name>
@@ -24,6 +25,7 @@
 <property>
   <name>lasvegas.server.data.address</name>
   <value>localhost:28712</value>
+<!-- NOTE: this should be FULLY qualified name to connect to remote node. Especially when you got 'Connection Refused' error, check your configuration here -->
 </property>
 <property>
   <name>lasvegas.server.data.node_name</name>

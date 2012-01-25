@@ -13,7 +13,7 @@
 
 <property>
   <name>lasvegas.server.meta.address</name>
-  <value>poseidon:28710</value>
+  <value>poseidon.smn.cs.brown.edu:28710</value>
 </property>
 <property>
   <name>lasvegas.server.meta.bdbhome</name>
@@ -23,7 +23,7 @@
 
 <property>
   <name>lasvegas.server.data.address</name>
-  <value>ehs-cc1:28712</value>
+  <value>ehs-cc1.smn.cs.brown.edu:28710</value>
 </property>
 <property>
   <name>lasvegas.server.data.node_name</name>
