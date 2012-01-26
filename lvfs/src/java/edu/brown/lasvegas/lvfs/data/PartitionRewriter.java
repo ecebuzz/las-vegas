@@ -172,10 +172,12 @@ public final class PartitionRewriter {
         ColumnFileBundle newFile = newFiles[col];
         assert (oldFile.getDictionaryFile() != null);
         assert (newFile.getDictionaryFile() != null);
+        LOG.info("inheriting dictionary...");
         VirtualFileUtil.copyFile(oldFile.getDictionaryFile(), newFile.getDictionaryFile());
         // also, we can inherit statistics about dictionary
         newFile.setDictionaryBytesPerEntry(oldFile.getDictionaryBytesPerEntry());
         newFile.setDistinctValues(oldFile.getDistinctValues());
+        LOG.info("copied dictionary.");
     }
     /** copy a columnar file without changing anything. */
     private void inheritEverything (int col) throws IOException {
@@ -304,7 +306,7 @@ public final class PartitionRewriter {
             newData = oldData;
         }
         oldData = null; // we no longer need it. help GC 
-        LOG.info("read and re-ordered old data.");
+        LOG.info("read and re-ordered old data[" + col + "]. count=" + (dataTraits.length(newData)) + ". writing to the new file...");
         convertAndWriteData (newData, col);
         LOG.info("written new data file.");
     }
@@ -320,6 +322,7 @@ public final class PartitionRewriter {
 
         // do we have to make additional conversion because it was dictionary-encoded and we are now changing it?
         if (oldCompressions[col] == CompressionType.DICTIONARY && newCompressions[col] != CompressionType.DICTIONARY) {
+            LOG.info("decompression to the original data type...");
             // then, we need to decompress the data before writing them to new file
             Object converted = originalTraits.createArray(tupleCount);
             OrderedDictionary oldDict = oldFilesReader[col].getDictionary();
@@ -334,6 +337,7 @@ public final class PartitionRewriter {
             // notice we use *original* data traits here.
             writeToNewFile (converted, col, originalTraits);
         } else {
+            LOG.info("write as is.");
             // if original compression wasn't dictionary, nothing is tricky.
             writeToNewFile (data, col, dataTraits);
         }
@@ -354,6 +358,9 @@ public final class PartitionRewriter {
             dataWriter = LocalWriterFactory.getInstance(newFile, newCompressions[col], traits);
         }
         try {
+            if (LOG.isInfoEnabled()) {
+                LOG.info("writing " + traits.length(data) + " values...");
+            }
             dataWriter.writeValues(data, 0, tupleCount);
             long crc32Value = dataWriter.writeFileFooter();
             newFile.setDataFileChecksum(crc32Value);
@@ -373,8 +380,8 @@ public final class PartitionRewriter {
                 newFile.setUncompressedSizeKB(uncompressedSizeKB);
             }
             long end = System.currentTimeMillis();
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("wrote new data file (" + newFiles[col].getDataFile().length() + " bytes) in " + (end - start) + "ms");
+            if (LOG.isInfoEnabled()) {
+                LOG.info("wrote new data file (" + newFiles[col].getDataFile().length() + " bytes) in " + (end - start) + "ms");
             }
         } finally {
             dataWriter.close();
