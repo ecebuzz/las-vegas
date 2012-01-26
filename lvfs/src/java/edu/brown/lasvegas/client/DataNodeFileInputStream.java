@@ -70,6 +70,9 @@ public class DataNodeFileInputStream extends VirtualFileInputStream {
         if (cursorInFile + len > fileLength) {
             len = fileLength - cursorInFile;
         }
+        if (len <= 0) {
+            return -1;
+        }
         int totalRead = 0; 
         while (totalRead < len) {
             fetchIfNeeded();
