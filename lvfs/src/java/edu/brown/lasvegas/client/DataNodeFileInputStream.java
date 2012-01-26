@@ -13,7 +13,7 @@ import edu.brown.lasvegas.protocol.LVDataProtocol;
  */
 public class DataNodeFileInputStream extends VirtualFileInputStream {
     public static final String BUFFER_SIZE_KEY = "lasvegas.client.data.read_buffer_size";
-    public static final int BUFFER_SIZE_DEFAULT = 1 << 18;
+    public static final int BUFFER_SIZE_DEFAULT = 1 << 20;
     
     public DataNodeFileInputStream (Configuration conf, LVDataProtocol dataNode, String localPath) throws IOException {
         this.conf = conf;
@@ -23,7 +23,7 @@ public class DataNodeFileInputStream extends VirtualFileInputStream {
         fileLength = statuses[0];
         boolean exists = statuses[1] != 0;
         if (!exists) {
-            throw new FileNotFoundException("this file doesn't exist int the data node:" + localPath);
+            throw new FileNotFoundException("this file doesn't exist in the data node:" + localPath);
         }
         boolean directory = statuses[2] != 0;
         if (directory) {
