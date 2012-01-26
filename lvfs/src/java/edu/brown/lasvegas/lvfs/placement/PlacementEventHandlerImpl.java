@@ -1,8 +1,10 @@
 package edu.brown.lasvegas.lvfs.placement;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 
 import org.apache.log4j.Logger;
 
@@ -165,7 +167,7 @@ public final class PlacementEventHandlerImpl implements PlacementEventHandler {
         for (int partition = 0; partition < partitionCount; ++partition) {
             // first, check which nodes already store some replica partitions
             HashSet<Integer> usedNodeIds = new HashSet<Integer>();
-            HashSet<LVReplicaPartition> toBeStored = new HashSet<LVReplicaPartition>();
+            List<LVReplicaPartition> toBeStored = new ArrayList<LVReplicaPartition>();
             for (LVReplica replica : replicas) {
                 LVReplicaPartition replicaPartition = repository.getReplicaPartitionByReplicaAndRange(replica.getReplicaId(), partition);
                 if (replicaPartition == null) {
@@ -186,8 +188,8 @@ public final class PlacementEventHandlerImpl implements PlacementEventHandler {
             for (LVReplicaPartition replicaPartition : toBeStored) {
                 LVRackNode node = queue.pickNode();
                 repository.updateReplicaPartition(replicaPartition, ReplicaPartitionStatus.BEING_RECOVERED, node);
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug(replicaPartition + " will be materialized on " + node);
+                if (LOG.isInfoEnabled()) {
+                    LOG.info(replicaPartition + " will be materialized on " + node);
                 }
             }
         }

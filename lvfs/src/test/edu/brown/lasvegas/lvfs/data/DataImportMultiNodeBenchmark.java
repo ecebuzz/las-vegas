@@ -103,8 +103,11 @@ public class DataImportMultiNodeBenchmark {
      * It should be a partitioned tbl (see SSB/TPCH's dbgen manual. eg: ./dbgen -T l -s 4 -S 1 -C 2).
     */
     // private static final String inputFilePath = "/home/hkimura/workspace/las-vegas/ssb-dbgen/lineorder_s12_p.tbl";
-    private static final int partitionCount = 4;
-    private static final String inputFilePath = "/home/hkimura/workspace/las-vegas/ssb-dbgen/lineorder_s4_p.tbl";
+    //private static final int partitionCount = 4;
+    //private static final String inputFilePath = "/home/hkimura/workspace/las-vegas/ssb-dbgen/lineorder_s4_p.tbl";
+
+    private static final int partitionCount = 2;
+    private static final String inputFilePath = "/home/hkimura/workspace/las-vegas/ssb-dbgen/lineorder_s2_p.tbl";
 
     private Configuration conf;
     private LVMetadataClient client;
