@@ -23,7 +23,7 @@
 
 <property>
   <name>lasvegas.server.data.address</name>
-  <value>ehs-cc1.smn.cs.brown.edu:28710</value>
+  <value>ehs-cc1.smn.cs.brown.edu:28712</value>
 </property>
 <property>
   <name>lasvegas.server.data.node_name</name>

@@ -106,8 +106,11 @@ public class DataImportMultiNodeBenchmark {
     //private static final int partitionCount = 4;
     //private static final String inputFilePath = "/home/hkimura/workspace/las-vegas/ssb-dbgen/lineorder_s4_p.tbl";
 
-    private static final int partitionCount = 2;
-    private static final String inputFilePath = "/home/hkimura/workspace/las-vegas/ssb-dbgen/lineorder_s2_p.tbl";
+    //private static final int partitionCount = 2;
+    //private static final String inputFilePath = "/home/hkimura/workspace/las-vegas/ssb-dbgen/lineorder_s2_p.tbl";
+
+    private static final int partitionCount = 3;
+    private static final String inputFilePath = "/home/hkimura/workspace/las-vegas/ssb-dbgen/lineorder_s3_p.tbl";
 
     private Configuration conf;
     private LVMetadataClient client;
