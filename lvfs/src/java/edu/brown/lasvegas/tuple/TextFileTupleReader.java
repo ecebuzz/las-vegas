@@ -147,6 +147,7 @@ public class TextFileTupleReader extends DefaultTupleReader implements Sampleabl
             }
             */
             // to avoid creating a huge number of String objects, let's not use StringTokenizer nor String#split()
+            // this ended up 1.8x faster text file parsing. see exp_results/20120124_memo.txt. yay!
             int offset = 0;
             final int lineEnd = line.length();
             for (int i = 0; i < columnCount; ++i) {
@@ -164,6 +165,7 @@ public class TextFileTupleReader extends DefaultTupleReader implements Sampleabl
                 } else {
                     if (columnTypes[i] != null) {
                         switch (columnTypes[i]) {
+                        //ParseUtil to do value conversion without String object
                         case BIGINT: dest[i] = ParseUtil.parseLong(line, offset, pos - offset); break;
                         case DOUBLE: dest[i] = ParseUtil.parseDouble(line, offset, pos - offset); break;
                         case FLOAT: dest[i] = ParseUtil.parseFloat(line, offset, pos - offset); break;

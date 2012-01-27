@@ -123,18 +123,21 @@ public final class PartitionedTextFileWriters implements Closeable {
             TemporaryFilePath fileName = new TemporaryFilePath(outputDir.getAbsolutePath(), nodeId, groupId, fractureId, partition, Math.abs( new Random (System.nanoTime()).nextInt()), compression);
             file = new File(fileName.getFilePath());
             out = new FileOutputStream(file, false);
+            crlfBytes = "\r\n".getBytes(charset);
         }
         private final File file;
         private final FileOutputStream out;
         private final byte[] buffer;
+        private final byte[] crlfBytes;
         private int bufferUsed = 0;
         public void write (String line) throws IOException {
-            byte[] bytes = (line + "\r\n").getBytes(charset);
-            if (bufferUsed + bytes.length > buffer.length) {
+            byte[] bytes = line.getBytes(charset);
+            if (bufferUsed + bytes.length + crlfBytes.length > buffer.length) {
                 flushBlock ();
             }
             System.arraycopy(bytes, 0, buffer, bufferUsed, bytes.length);
-            bufferUsed += bytes.length;
+            System.arraycopy(crlfBytes, 0, buffer, bufferUsed + bytes.length, crlfBytes.length);
+            bufferUsed += bytes.length + crlfBytes.length;
         }
         private void flushBlock () throws IOException {
             // flush current buffer as a new block (if compressed, also put size before/after compression as a header)
