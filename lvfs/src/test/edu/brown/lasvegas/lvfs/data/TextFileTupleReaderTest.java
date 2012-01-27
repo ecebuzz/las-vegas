@@ -39,7 +39,7 @@ public class TextFileTupleReaderTest {
             ColumnType.VARCHAR,
         };
         
-        reader = new TextFileTupleReader(new VirtualFile[]{new URLVirtualFile(testFile)}, scheme, ",");
+        reader = new TextFileTupleReader(new VirtualFile[]{new URLVirtualFile(testFile)}, scheme, ',');
     }
 
     @After

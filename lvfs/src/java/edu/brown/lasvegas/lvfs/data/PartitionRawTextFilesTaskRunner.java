@@ -148,23 +148,23 @@ public final class PartitionRawTextFilesTaskRunner extends DataTaskRunner<Partit
         Arrays.fill(partitionsCompleted, false);
         int partitioningColumnIndex = -1;
         assert (!allColumns[0].getName().equals(LVColumn.EPOCH_COLUMN_NAME)); // epoch column should be already ignored
-        ColumnType[] columnTypes = new ColumnType[allColumns.length];
-        for (int i = 0; i < columnTypes.length; ++i) {
+        for (int i = 0; i < allColumns.length; ++i) {
             LVColumn column = allColumns[i];
             if (column.getColumnId() == partitioningColumn.getColumnId()) {
                 partitioningColumnIndex = i;
-                // set columnType only to the partitioning column to bypass parsing other columns.
-                // we only need partitioning in this task
-                columnTypes[i] = column.getType();
             }
         }
         assert (partitioningColumnIndex >= 0);
+        // set columnType only to the partitioning column to bypass parsing other columns.
+        // we only need partitioning in this task. also, we ignore columns after the partitioning column
+        ColumnType[] dummyColumnTypes = new ColumnType[partitioningColumnIndex + 1];
+        dummyColumnTypes[partitioningColumnIndex] = allColumns[partitioningColumnIndex].getType();
         while (true) {
             PartitionedTextFileWriters writers = new PartitionedTextFileWriters(context.localLvfsTmpDir, context.nodeId, group.getGroupId(), fracture.getFractureId(), partitions,
                             partitionsCompleted, parameters.getEncoding(), writeBufferSize, writePartitionsMax, compression);
             try {
                 // scan all input files
-                TextFileTupleReader reader = new TextFileTupleReader(inputFiles, CompressionType.NONE, columnTypes, 
+                TextFileTupleReader reader = new TextFileTupleReader(inputFiles, CompressionType.NONE, dummyColumnTypes, 
                                 parameters.getDelimiter(), readBufferSize, Charset.forName(parameters.getEncoding()),
                                 new SimpleDateFormat(parameters.getDateFormat()),
                                 new SimpleDateFormat(parameters.getTimeFormat()),

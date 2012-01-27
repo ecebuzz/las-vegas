@@ -39,9 +39,9 @@ public class DataImportSingleNodeBenchmark {
     private static final String DATANODE_NAME = "node";
     private static final Logger LOG = Logger.getLogger(DataImportSingleNodeBenchmark.class);
 
-    //private static final File inputFile = new File ("../ssb-dbgen/lineorder_s1.tbl");
+    private static final File inputFile = new File ("../ssb-dbgen/lineorder_s1.tbl");
     // private static final File inputFile = new File ("../ssb-dbgen/lineorder_s4.tbl");
-    private static final File inputFile = new File ("../ssb-dbgen/lineorder_s15.tbl");
+    // private static final File inputFile = new File ("../ssb-dbgen/lineorder_s15.tbl");
 
     private MasterMetadataRepository masterRepository;
     private String rootDir;
@@ -112,6 +112,7 @@ public class DataImportSingleNodeBenchmark {
         conf.setLong(DataTaskPollingThread.POLLING_INTERVAL_KEY, 1000L);
         conf.set(LVDataNode.DATA_ADDRESS_KEY, DATANODE_ADDRESS);
         conf.set(LVDataNode.DATA_NODE_NAME_KEY, DATANODE_NAME);
+        conf.set(LVDataNode.DATA_RACK_NAME_KEY, "rack");
         dataNode = new LVDataNode(conf, masterRepository);
         dataNode.start(null);
     }

@@ -251,7 +251,7 @@ public final class LVDataNode implements ServicePlugin {
                 } catch (InterruptedException ex) {
                 }
                 if (dataEngine.isShutdown()) {
-                    LOG.error("Data engine has been already shutdown. closing the data node...");
+                    LOG.info("Data engine has been already shutdown. closing the data node...");
                     try {
                         close ();
                     } catch (Exception ex) {

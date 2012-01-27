@@ -36,7 +36,7 @@ public final class MiniLineorder {
     public static TextFileTupleReader open() throws IOException {
         URL testFile = MiniLineorder.class.getResource("mini_lineorder.tbl");
         ColumnType[] scheme = getScheme();
-        TextFileTupleReader reader = new TextFileTupleReader(new VirtualFile[]{new URLVirtualFile(testFile)}, scheme, "|");
+        TextFileTupleReader reader = new TextFileTupleReader(new VirtualFile[]{new URLVirtualFile(testFile)}, scheme, '|');
         return reader;
     }
     public static byte[] getFileBody() throws IOException {

@@ -211,7 +211,7 @@ public final class LVCentralNode implements ServicePlugin {
                 } catch (InterruptedException ex) {
                 }
                 if (metadataRepository.isShutdown()) {
-                    LOG.error("Metadata repository has been already shutdown. closing the central node...");
+                    LOG.info("Metadata repository has been already shutdown. closing the central node...");
                     try {
                         close ();
                     } catch (Exception ex) {

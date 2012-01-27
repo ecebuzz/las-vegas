@@ -31,7 +31,7 @@ public abstract class TextFileImportTaskParameters extends DataTaskParameters {
     private String encoding;
 
     /** Column delimiter. */
-    private String delimiter;
+    private char delimiter;
 
     /**
      * the format string to parse a date column in the files.
@@ -63,7 +63,7 @@ public abstract class TextFileImportTaskParameters extends DataTaskParameters {
     public final void write(DataOutput out) throws IOException {
         out.writeInt(fractureId);
         out.writeUTF(encoding);
-        out.writeUTF(delimiter);
+        out.writeChar(delimiter);
         out.writeUTF(dateFormat);
         out.writeUTF(timeFormat);
         out.writeUTF(timestampFormat);
@@ -78,7 +78,7 @@ public abstract class TextFileImportTaskParameters extends DataTaskParameters {
     public final void readFields(DataInput in) throws IOException {
         fractureId = in.readInt();
         encoding = in.readUTF();
-        delimiter = in.readUTF();
+        delimiter = in.readChar();
         dateFormat = in.readUTF();
         timeFormat = in.readUTF();
         timestampFormat = in.readUTF();
@@ -130,7 +130,7 @@ public abstract class TextFileImportTaskParameters extends DataTaskParameters {
      *
      * @return the column delimiter
      */
-    public final String getDelimiter() {
+    public final char getDelimiter() {
         return delimiter;
     }
     
@@ -139,7 +139,7 @@ public abstract class TextFileImportTaskParameters extends DataTaskParameters {
      *
      * @param delimiter the new column delimiter
      */
-    public final void setDelimiter(String delimiter) {
+    public final void setDelimiter(char delimiter) {
         this.delimiter = delimiter;
     }
     

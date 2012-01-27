@@ -25,7 +25,7 @@ public final class ImportFractureJobParameters extends JobParameters {
     private String encoding;
 
     /** Column delimiter. */
-    private String delimiter;
+    private char delimiter;
 
     /**
      * the format string to parse a date column in the files.
@@ -64,18 +64,18 @@ public final class ImportFractureJobParameters extends JobParameters {
      * @param tableId The table to which a new fracture is constructed during this import.
      */
     public ImportFractureJobParameters (int tableId) {
-        this (tableId, "UTF-8", "|", "yyyy-MM-dd", "HH:mm:ss", "yyyy-MM-dd HH:mm:ss.SSS", CompressionType.SNAPPY);
+        this (tableId, "UTF-8", '|', "yyyy-MM-dd", "HH:mm:ss", "yyyy-MM-dd HH:mm:ss.SSS", CompressionType.SNAPPY);
     }
     /**
      * Instantiates a new data import parameters.
      * @param tableId The table to which a new fracture is constructed during this import.
      * @param encoding Encoding name of the imported files, eg, "UTF-8"
-     * @param delimiter Column delimiter, eg, "|"
+     * @param delimiter Column delimiter, eg, '|'
      * @param dateFormat the format string to parse a date column in the files, eg, "yyyy-MM-dd"
      * @param timeFormat the format string to parse a time column in the files, eg, "HH:mm:ss"
      * @param timestampFormat the format string to parse a timestamp column in the files, eg, "yyyy-MM-dd HH:mm:ss.SSS"
      */
-    public ImportFractureJobParameters (int tableId, String encoding, String delimiter,
+    public ImportFractureJobParameters (int tableId, String encoding, char delimiter,
                     String dateFormat, String timeFormat, String timestampFormat, CompressionType temporaryFileCompression) {
         this.tableId = tableId;
         this.encoding = encoding;
@@ -94,7 +94,7 @@ public final class ImportFractureJobParameters extends JobParameters {
     public void readFields(DataInput in) throws IOException {
         tableId = in.readInt();
         encoding = readNillableString(in);
-        delimiter = readNillableString(in);
+        delimiter = in.readChar();
         dateFormat = readNillableString(in);
         timeFormat = readNillableString(in);
         timestampFormat = readNillableString(in);
@@ -117,7 +117,7 @@ public final class ImportFractureJobParameters extends JobParameters {
     public void write(DataOutput out) throws IOException {
         out.writeInt(tableId);
         writeNillableString(out, encoding);
-        writeNillableString(out, delimiter);
+        out.writeChar(delimiter);
         writeNillableString(out, dateFormat);
         writeNillableString(out, timeFormat);
         writeNillableString(out, timestampFormat);
@@ -230,7 +230,7 @@ public final class ImportFractureJobParameters extends JobParameters {
      *
      * @return the column delimiter
      */
-    public String getDelimiter() {
+    public char getDelimiter() {
         return delimiter;
     }
 
@@ -239,7 +239,7 @@ public final class ImportFractureJobParameters extends JobParameters {
      *
      * @param delimiter the new column delimiter
      */
-    public void setDelimiter(String delimiter) {
+    public void setDelimiter(char delimiter) {
         this.delimiter = delimiter;
     }
 

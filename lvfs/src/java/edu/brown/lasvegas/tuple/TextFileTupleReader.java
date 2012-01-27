@@ -6,7 +6,6 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Random;
-import java.util.StringTokenizer;
 
 import org.apache.commons.codec.binary.Base64;
 
@@ -15,6 +14,7 @@ import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.lvfs.VirtualFile;
 import edu.brown.lasvegas.lvfs.data.PartitionedTextFileReader;
 import edu.brown.lasvegas.util.ByteArray;
+import edu.brown.lasvegas.util.ParseUtil;
 
 /**
  * A tuple reader implementation which reads one or more text files.
@@ -29,7 +29,7 @@ public class TextFileTupleReader extends DefaultTupleReader implements Sampleabl
 
     private final int buffersize;
     private final Charset charset;
-    private final String delimiter;
+    private final char delimiter;
     private final DateFormat dateFormat;
     private final DateFormat timeFormat;
     private final DateFormat timestampFormat;
@@ -40,10 +40,10 @@ public class TextFileTupleReader extends DefaultTupleReader implements Sampleabl
     private int nextTextFile = 0;
     private String currentLine;
 
-    public TextFileTupleReader (VirtualFile textFile, ColumnType[] columnTypes, String delimiter) throws IOException {
+    public TextFileTupleReader (VirtualFile textFile, ColumnType[] columnTypes, char delimiter) throws IOException {
         this (new VirtualFile[]{textFile}, columnTypes, delimiter);
     }
-    public TextFileTupleReader (VirtualFile[] textFiles, ColumnType[] columnTypes, String delimiter) throws IOException {
+    public TextFileTupleReader (VirtualFile[] textFiles, ColumnType[] columnTypes, char delimiter) throws IOException {
         this (textFiles, CompressionType.NONE, columnTypes, delimiter, 1 << 10,
             Charset.forName("UTF-8"), new SimpleDateFormat("yyyy-MM-dd"),
             new SimpleDateFormat("HH:mm:ss"),
@@ -51,7 +51,7 @@ public class TextFileTupleReader extends DefaultTupleReader implements Sampleabl
     }
     public TextFileTupleReader (
         VirtualFile[] textFiles, CompressionType textFileCompression,
-        ColumnType[] columnTypes, String delimiter, int buffersize, Charset charset,
+        ColumnType[] columnTypes, char delimiter, int buffersize, Charset charset,
         DateFormat dateFormat, DateFormat timeFormat, DateFormat timestampFormat)
     throws IOException {
         super (columnTypes);
@@ -122,7 +122,8 @@ public class TextFileTupleReader extends DefaultTupleReader implements Sampleabl
     }
     private void parseLine(String line, Object[] dest) throws IOException {
         try {
-            StringTokenizer tokenizer = new StringTokenizer(line, delimiter);
+            /*
+            StringTokenizer tokenizer = new StringTokenizer(line, String.valueOf(delimiter));
             for (int i = 0; i < columnCount; ++i) {
                 String token = tokenizer.nextToken();
                 if (columnTypes[i] == null) {
@@ -143,6 +144,44 @@ public class TextFileTupleReader extends DefaultTupleReader implements Sampleabl
                 case TIME: dest[i] = timeFormat.parse(token).getTime(); break;
                 case TIMESTAMP: dest[i] = timestampFormat.parse(token).getTime(); break;
                 }
+            }
+            */
+            // to avoid creating a huge number of String objects, let's not use StringTokenizer nor String#split()
+            int offset = 0;
+            final int lineEnd = line.length();
+            for (int i = 0; i < columnCount; ++i) {
+                if (offset >= lineEnd) {
+                    // already reached the end of line
+                    throw new IOException ("not enough columns in this line");
+                }
+                int pos;
+                for (pos = offset; pos < lineEnd && line.charAt(pos) != delimiter; ++pos);
+                
+                // now, pos should be pointing to a delimiter, or out of bound (EoL).
+                if (offset == pos) {
+                    // empty column data
+                    dest[i] = null;
+                } else {
+                    if (columnTypes[i] != null) {
+                        switch (columnTypes[i]) {
+                        case BIGINT: dest[i] = ParseUtil.parseLong(line, offset, pos - offset); break;
+                        case DOUBLE: dest[i] = ParseUtil.parseDouble(line, offset, pos - offset); break;
+                        case FLOAT: dest[i] = ParseUtil.parseFloat(line, offset, pos - offset); break;
+                        case INTEGER: dest[i] = ParseUtil.parseInt(line, offset, pos - offset); break;
+                        case SMALLINT: dest[i] = ParseUtil.parseShort(line, offset, pos - offset); break;
+                        case TINYINT: dest[i] = ParseUtil.parseByte(line, offset, pos - offset); break;
+                        case VARCHAR: dest[i] = line.substring(offset, pos); break;
+                        case VARBINARY: dest[i] = new ByteArray(Base64.decodeBase64(line.substring(offset, pos))); break;
+
+                        case BOOLEAN: dest[i] = ParseUtil.parseBoolean(line, offset, pos - offset) ? (byte) 1 : (byte) 0; break;
+                        // should we use ParsePosition? but we anyway create a Date object here... 
+                        case DATE: dest[i] = dateFormat.parse(line.substring(offset, pos)).getTime(); break;
+                        case TIME: dest[i] = timeFormat.parse(line.substring(offset, pos)).getTime(); break;
+                        case TIMESTAMP: dest[i] = timestampFormat.parse(line.substring(offset, pos)).getTime(); break;
+                        }
+                    }
+                }
+                offset = pos + 1; // skip the delimiter
             }
         } catch (Exception ex) {
             throw new IOException ("invalid line. failed to parse:" + line, ex);
