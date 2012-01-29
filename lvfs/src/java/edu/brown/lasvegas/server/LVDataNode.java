@@ -2,11 +2,14 @@ package edu.brown.lasvegas.server;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.rmi.AlreadyBoundException;
+import java.rmi.NoSuchObjectException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.hdfs.server.datanode.DataNode;
-import org.apache.hadoop.ipc.RPC;
-import org.apache.hadoop.ipc.RPC.Server;
 import org.apache.hadoop.net.NetUtils;
 import org.apache.hadoop.util.ServicePlugin;
 import org.apache.log4j.Logger;
@@ -110,7 +113,8 @@ public final class LVDataNode implements ServicePlugin {
     public static final String DATA_RACK_NAME_DEFAULT = "default_rack";
     
     /** server object to provide data accesses on LVFS files in this node. */
-    private Server dataServer;
+    //private Server dataServer;
+    private Registry rmiRegistry;
     /** instance of the LVFS data management in this node. */
     private DataEngine dataEngine;
     /** the thread to periodically check if dataEngine has shutdown. */
@@ -181,14 +185,23 @@ public final class LVDataNode implements ServicePlugin {
         dataEngine = new DataEngine(metaRepo, node.getNodeId(), conf, format);
         dataEngine.start();
         
-        dataServer = RPC.getServer(LVDataProtocol.class, dataEngine, sockAddress.getHostName(), sockAddress.getPort(), conf);
+        LVDataProtocol dataProtocol = (LVDataProtocol) UnicastRemoteObject.exportObject(dataEngine, sockAddress.getPort());
+        rmiRegistry = LocateRegistry.createRegistry(sockAddress.getPort());
+        try {
+            rmiRegistry.bind(DATA_ENGINE_SERVICE_NAME, dataProtocol);
+        } catch (AlreadyBoundException ex) {
+            LOG.warn("There seems a stale DataEngine. replacing with a new instance.", ex);
+            rmiRegistry.rebind(DATA_ENGINE_SERVICE_NAME, dataProtocol);
+        }
+        // dataServer = RPC.getServer(LVDataProtocol.class, dataEngine, sockAddress.getHostName(), sockAddress.getPort(), conf);
         LOG.info("initialized LVFS Data Server.");
-        dataServer.start();
-        LOG.info("started LVFS Data Server.");
+        //dataServer.start();
+        //LOG.info("started LVFS Data Server.");
         
         shutdownPollingThread = new ShutdownPollingThread();
         shutdownPollingThread.start();
     }
+    public static final String DATA_ENGINE_SERVICE_NAME = "LVDataEngineService";
     
     @Override
     public void close() throws IOException {
@@ -209,8 +222,18 @@ public final class LVDataNode implements ServicePlugin {
         LOG.info("Stopping data node...");
         stopRequested = true;
         // stop proceeds in the _opposite_ order to initialization
-        if (dataServer != null) {
-            dataServer.stop();
+        if (rmiRegistry != null) {
+            try {
+                rmiRegistry.unbind(DATA_ENGINE_SERVICE_NAME);
+            } catch (Exception ex) {
+                LOG.warn("error on unbinding RMI service for data engine. ignored", ex);
+            }
+            try {
+                UnicastRemoteObject.unexportObject(rmiRegistry, true);
+            } catch (NoSuchObjectException ex) {
+                LOG.warn("error on closing RMI registry for data engine. ignored", ex);
+            }
+            rmiRegistry = null;
             try {
                 if (!dataEngine.isShutdown()) {
                     dataEngine.close();
@@ -233,8 +256,8 @@ public final class LVDataNode implements ServicePlugin {
     public void join() {
         LOG.info("Waiting until data node stops...");
         try {
-            if (dataServer != null) {
-                dataServer.join();
+            if (rmiRegistry != null && shutdownPollingThread != null) {
+                shutdownPollingThread.join();
             }
             LOG.info("data node has been stopped.");
         } catch (InterruptedException ex) {

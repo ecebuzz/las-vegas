@@ -188,7 +188,7 @@ public class DataImportMultiNodeBenchmark {
         for (LVRackNode node : nodes) {
             params.getNodeFilePathMap().put(node.getNodeId(), new String[]{inputFilePath});
         }
-        ImportFractureJobController controller = new ImportFractureJobController(metaRepo);
+        ImportFractureJobController controller = new ImportFractureJobController(metaRepo, 1000L, 1000L, 100L);
         LOG.info("started the import job...");
         LVJob job = controller.startSync(params);
         LOG.info("finished the import job...:" + job);

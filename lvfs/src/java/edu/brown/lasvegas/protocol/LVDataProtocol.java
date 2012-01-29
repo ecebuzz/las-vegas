@@ -1,14 +1,15 @@
 package edu.brown.lasvegas.protocol;
 
 import java.io.IOException;
+import java.rmi.Remote;
 
-import org.apache.hadoop.ipc.VersionedProtocol;
+import com.healthmarketscience.rmiio.RemoteInputStream;
 
 /**
  * Defines a protocol to receive load/replication/recovery requests
  * for LVFS files.
  */
-public interface LVDataProtocol extends VersionedProtocol {
+public interface LVDataProtocol extends Remote {
 
     /**
      * Returns the byte size of the specified LVFS file in the data node.
@@ -29,6 +30,8 @@ public interface LVDataProtocol extends VersionedProtocol {
      * @throws IOException If the file doesn't exist, isn't readable or the given offset/len is out of range.
      */
     byte[] getFileBody (String localPath, int offset, int len) throws IOException;
+    
+    RemoteInputStream getFileInputStream (String localPath) throws IOException;
     
     /** Returns whether the specified file exists in the data node. */
     boolean existsFile (String localPath) throws IOException;

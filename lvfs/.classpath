@@ -83,5 +83,6 @@
 	<classpathentry kind="lib" path="lib/hadoop-yarn-server-resourcemanager-0.23.0.jar"/>
 	<classpathentry kind="lib" path="lib/hadoop-yarn-server-web-proxy-0.23.0.jar"/>
 	<classpathentry kind="lib" path="lib/hadoop-yarn-site-0.23.0.jar"/>
+	<classpathentry kind="lib" path="lib/rmiio-2.0.3.jar" sourcepath="lib/rmiio-2.0.3-sources.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

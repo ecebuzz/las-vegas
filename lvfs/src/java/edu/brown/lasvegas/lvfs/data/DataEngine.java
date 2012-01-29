@@ -1,7 +1,9 @@
 package edu.brown.lasvegas.lvfs.data;
 
+import java.io.BufferedInputStream;
 import java.io.Closeable;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -10,8 +12,11 @@ import java.util.Date;
 import java.util.Random;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.ipc.ProtocolSignature;
 import org.apache.log4j.Logger;
+
+import com.healthmarketscience.rmiio.RemoteInputStream;
+import com.healthmarketscience.rmiio.RemoteInputStreamServer;
+import com.healthmarketscience.rmiio.SimpleRemoteInputStream;
 
 import edu.brown.lasvegas.protocol.LVDataProtocol;
 import edu.brown.lasvegas.protocol.LVMetadataProtocol;
@@ -82,7 +87,7 @@ public final class DataEngine implements LVDataProtocol, Closeable {
         }
         return file;
     }
-    
+    /*
     @Override
     public ProtocolSignature getProtocolSignature(String protocol, long clientVersion, int clientMethodsHash) throws IOException {
         return ProtocolSignature.getProtocolSignature(this, protocol, clientVersion, clientMethodsHash);
@@ -96,6 +101,7 @@ public final class DataEngine implements LVDataProtocol, Closeable {
             throw new IOException("This protocol is not supported: " + protocol);
         }
     }
+    */
 
     /** start running the data node. */
     public void start() {
@@ -145,6 +151,30 @@ public final class DataEngine implements LVDataProtocol, Closeable {
         assert (read == len);
         return bytes;
     }
+    
+    @Override
+    public RemoteInputStream getFileInputStream(String localPath) throws IOException {
+        File file = new File (localPath);
+        if (!file.exists()) {
+            throw new FileNotFoundException(localPath + " doesn't exist");
+        }
+        if (file.isDirectory()) {
+            throw new IOException(localPath + " is a directory");
+        }
+
+        RemoteInputStreamServer istream = null;
+        try {
+            istream = new SimpleRemoteInputStream(new BufferedInputStream(new FileInputStream(file), 1 << 20));
+            RemoteInputStream result = istream.export();
+            istream = null;
+            return result;
+        } finally {
+            if (istream != null) {
+                istream.close();
+            }
+        }
+    }
+
     @Override
     public int getFileLength(String localPath) throws IOException {
         File file = new File (localPath);

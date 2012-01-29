@@ -3,14 +3,18 @@ package edu.brown.lasvegas.lvfs.data;
 import static org.junit.Assert.*;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.util.Random;
 
-import org.apache.hadoop.ipc.ProtocolSignature;
 import org.junit.Test;
+
+import com.healthmarketscience.rmiio.RemoteInputStream;
+import com.healthmarketscience.rmiio.RemoteInputStreamClient;
 
 import edu.brown.lasvegas.protocol.LVDataProtocol;
 
@@ -54,7 +58,7 @@ public abstract class DataEngineTestBase {
         out.close();
         assert (file.length() == fileSize * 4);
     }
-
+/*
     @Test
     public void testGetProtocolSignature() throws IOException {
         ProtocolSignature signature = dataProtocol.getProtocolSignature(LVDataProtocol.class.getName(), LVDataProtocol.versionID, 1234);
@@ -67,7 +71,7 @@ public abstract class DataEngineTestBase {
         long version = dataProtocol.getProtocolVersion(LVDataProtocol.class.getName(), LVDataProtocol.versionID);
         assertEquals(LVDataProtocol.versionID, version);
     }
-
+*/
     private static final int VALIDATE_BUF_SIZE = 30;
     private void validateRandomFile (String path, int fileSize, int fileSeed) throws IOException {
         assertTrue(dataProtocol.existsFile(path));
@@ -100,6 +104,59 @@ public abstract class DataEngineTestBase {
             // assertTrue (ex instanceof FileNotFoundException); the exception re-thrown by RPC loses the type information
         }
     }
+
+    @Test
+    public void testGetFileInputStream () throws Exception {
+        testGetFileInputStreamInternal (tmpDir + "/" + FILE1_NAME, FILE1_SIZE, FILE1_SEED);
+        testGetFileInputStreamInternal (tmpDir + "/" + FILE2_NAME, FILE2_SIZE, FILE2_SEED);
+        try {
+            testGetFileInputStreamInternal (tmpDir + "/" + "dummy", 0, 100);
+            fail();
+        } catch (Exception ex) {
+        }
+    }
+
+    private void testGetFileInputStreamInternal (String path, int fileSize, int fileSeed) throws Exception {
+        File destFile = new File (tmpDir, "dest");
+        destFile.delete();
+        RemoteInputStream inFile = dataProtocol.getFileInputStream(path);
+        InputStream wrapped = RemoteInputStreamClient.wrap(inFile);
+        try {
+            FileOutputStream out = new FileOutputStream(destFile);
+            byte[] bytes = new byte[1 << 13];
+            while (true) {
+                int read = wrapped.read(bytes);
+                if (read < 0) {
+                    break;
+                }
+                out.write(bytes, 0, read);
+            }
+            out.flush();
+            out.close();
+        } finally {
+            wrapped.close();
+        }
+        validateDestFile(destFile, fileSize, fileSeed);
+    }
+    private void validateDestFile (File destFile, int fileSize, int fileSeed) throws IOException {
+        assertTrue(destFile.exists());
+        assertEquals (fileSize * 4, destFile.length());
+        
+        byte[] answer = new byte[fileSize * 4];
+        IntBuffer data = ByteBuffer.wrap(answer).asIntBuffer();
+        Random rand = new Random(fileSeed);
+        for (int i = 0; i < fileSize; ++i) {
+            data.put(rand.nextInt());
+        }
+
+        FileInputStream in = new FileInputStream(destFile);
+        byte[] destData = new byte[fileSize * 4];
+        int read = in.read(destData);
+        assertEquals (fileSize * 4, read);
+        in.close();
+        assertArrayEquals (answer, destData);
+    }
+
 
     @Test
     public void testGetFileLength() throws IOException {
