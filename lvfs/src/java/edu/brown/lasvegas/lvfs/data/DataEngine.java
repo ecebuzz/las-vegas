@@ -6,7 +6,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Random;
@@ -87,21 +86,6 @@ public final class DataEngine implements LVDataProtocol, Closeable {
         }
         return file;
     }
-    /*
-    @Override
-    public ProtocolSignature getProtocolSignature(String protocol, long clientVersion, int clientMethodsHash) throws IOException {
-        return ProtocolSignature.getProtocolSignature(this, protocol, clientVersion, clientMethodsHash);
-    }
-    
-    @Override
-    public long getProtocolVersion(String protocol, long clientVersion) throws IOException {
-        if (protocol.equals(LVDataProtocol.class.getName())) {
-            return LVDataProtocol.versionID;
-        } else {
-            throw new IOException("This protocol is not supported: " + protocol);
-        }
-    }
-    */
 
     /** start running the data node. */
     public void start() {
@@ -125,33 +109,7 @@ public final class DataEngine implements LVDataProtocol, Closeable {
     public void close() throws IOException {
         shutdown();
     }
-    
-    @Override
-    public byte[] getFileBody(String localPath, int offset, int len) throws IOException {
-        File file = new File (localPath);
-        if (!file.exists()) {
-            throw new FileNotFoundException(localPath + " doesn't exist");
-        }
-        if (file.isDirectory()) {
-            throw new IOException(localPath + " is a directory");
-        }
-        if (offset >= file.length()) {
-            throw new IOException("out of bounds. " + localPath + " has only " + file.length() + " bytes");
-        }
-        if (file.length() > 0x7FFFFFFF) {
-            throw new IOException(localPath + " is too large");
-        }
-        if (offset + len > file.length()) {
-            len = (int) file.length() - offset;
-        }
-        RandomAccessFile raf = new RandomAccessFile(file, "r");
-        raf.seek(offset);
-        byte[] bytes = new byte[len];
-        int read = raf.read(bytes);
-        assert (read == len);
-        return bytes;
-    }
-    
+
     @Override
     public RemoteInputStream getFileInputStream(String localPath) throws IOException {
         File file = new File (localPath);

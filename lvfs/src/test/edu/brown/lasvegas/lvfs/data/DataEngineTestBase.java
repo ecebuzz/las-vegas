@@ -58,52 +58,6 @@ public abstract class DataEngineTestBase {
         out.close();
         assert (file.length() == fileSize * 4);
     }
-/*
-    @Test
-    public void testGetProtocolSignature() throws IOException {
-        ProtocolSignature signature = dataProtocol.getProtocolSignature(LVDataProtocol.class.getName(), LVDataProtocol.versionID, 1234);
-        assertEquals(LVDataProtocol.versionID, signature.getVersion());
-    }
-
-    @SuppressWarnings("deprecation")
-    @Test
-    public void testGetProtocolVersion() throws IOException {
-        long version = dataProtocol.getProtocolVersion(LVDataProtocol.class.getName(), LVDataProtocol.versionID);
-        assertEquals(LVDataProtocol.versionID, version);
-    }
-*/
-    private static final int VALIDATE_BUF_SIZE = 30;
-    private void validateRandomFile (String path, int fileSize, int fileSeed) throws IOException {
-        assertTrue(dataProtocol.existsFile(path));
-        assertEquals (fileSize * 4, dataProtocol.getFileLength(path));
-        
-        byte[] answer = new byte[fileSize * 4];
-        IntBuffer data = ByteBuffer.wrap(answer).asIntBuffer();
-        Random rand = new Random(fileSeed);
-        for (int i = 0; i < fileSize; ++i) {
-            data.put(rand.nextInt());
-        }
-
-        for (int cur = 0; cur != fileSize * 4;) {
-            byte[] bytes = dataProtocol.getFileBody(path, cur, VALIDATE_BUF_SIZE * 4);
-            assertTrue ("cur=" + cur + ", bytes.length=" + bytes.length, cur + bytes.length == fileSize * 4|| bytes.length == VALIDATE_BUF_SIZE * 4);
-            for (int i = 0; i < bytes.length; ++i) {
-                assertEquals ("cur=" + cur + ", i=" + i, answer[i + cur], bytes[i]);
-            }
-            cur += bytes.length;
-        }
-    }
-    @Test
-    public void testGetFileBody() throws IOException {
-        validateRandomFile (tmpDir + "/" + FILE1_NAME, FILE1_SIZE, FILE1_SEED);
-        validateRandomFile (tmpDir + "/" + FILE2_NAME, FILE2_SIZE, FILE2_SEED);
-        try {
-            dataProtocol.getFileBody(tmpDir + "/" + "dummy", 0, 100);
-            fail();
-        } catch (IOException ex) {
-            // assertTrue (ex instanceof FileNotFoundException); the exception re-thrown by RPC loses the type information
-        }
-    }
 
     @Test
     public void testGetFileInputStream () throws Exception {

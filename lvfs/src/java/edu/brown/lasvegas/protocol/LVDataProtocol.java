@@ -20,17 +20,11 @@ public interface LVDataProtocol extends Remote {
     int getFileLength (String localPath) throws IOException;
     
     /**
-     * Returns the data of the specified LVFS file in the data node.
-     * This is much simpler than what HDFS's DFSInputStream does.
-     * There might be some limitation because of that, but so far a simple interface suffices.
+     * Returns an input stream over RMI of the specified LVFS file in the data node.
      * @param localPath file path in the data node.
-     * @param offset the byte offset to start reading from
-     * @param len the byte size to read.
-     * @return read bytes
-     * @throws IOException If the file doesn't exist, isn't readable or the given offset/len is out of range.
+     * @return input stream to read the file
+     * @throws IOException
      */
-    byte[] getFileBody (String localPath, int offset, int len) throws IOException;
-    
     RemoteInputStream getFileInputStream (String localPath) throws IOException;
     
     /** Returns whether the specified file exists in the data node. */
