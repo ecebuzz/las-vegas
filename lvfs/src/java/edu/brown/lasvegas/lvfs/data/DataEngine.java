@@ -1,6 +1,5 @@
 package edu.brown.lasvegas.lvfs.data;
 
-import java.io.BufferedInputStream;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
@@ -122,7 +121,9 @@ public final class DataEngine implements LVDataProtocol, Closeable {
 
         RemoteInputStreamServer istream = null;
         try {
-            istream = new SimpleRemoteInputStream(new BufferedInputStream(new FileInputStream(file), 1 << 20));
+            // we do NOT buffer in this layer. It's caller's responsibility to access by reasonably large chunk.
+            // we can save memory consumption and additional overhead instead.
+            istream = new SimpleRemoteInputStream(new FileInputStream(file));
             RemoteInputStream result = istream.export();
             istream = null;
             return result;
