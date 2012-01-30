@@ -1107,6 +1107,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         node.setStatus(RackNodeStatus.OK);
         node.setRackId(rack.getRackId());
         putNoReturnTransactional(bdbTableAccessors.rackNodeAccessor.PKX, node);
+        LOG.info("created new node: " + node);
         return node;
     }
     @Override
