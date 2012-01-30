@@ -92,7 +92,7 @@
 			</packageset>
 		</javadoc>
 	</target>
-	
+
 	<target name="all" depends="compile,test,doc" description="Do all compilation and tests" />
 	<target name="cleanall" depends="clean,compile,test,doc" description="Do all compilation and tests after cleaning" />
 	
@@ -142,12 +142,14 @@
 	</target>
 
 	<target name="import-bench" depends="compile"
-		description="Start a distributed data import benchmark. Specify the path of configuration xml (must be in classpath).">
+		description="Start a distributed data import benchmark. Specify the number of partitions, the address of metadata repository, and input file. : ant -Dpartitions=2 -Daddress=poseidon:28710 -Dinputfile=inputs.txt import-bench">
 		<java fork="true" classname="edu.brown.lasvegas.lvfs.data.DataImportMultiNodeBenchmark">
 			<jvmarg value="-Xmx256m"/>
 			<jvmarg value="-server"/>
 			<jvmarg value="-da"/>
-			<arg value="${confxml}" />
+			<arg value="${partitions}" />
+			<arg value="${address}" />
+			<arg value="${inputfile}" />
         	<classpath refid="lvfs.classpath"/>
 		</java>
 	</target>

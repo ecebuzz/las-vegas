@@ -1,7 +1,12 @@
 package edu.brown.lasvegas.lvfs.data;
 
+import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.StringTokenizer;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.Logger;
@@ -10,15 +15,13 @@ import edu.brown.lasvegas.ColumnType;
 import edu.brown.lasvegas.LVColumn;
 import edu.brown.lasvegas.LVDatabase;
 import edu.brown.lasvegas.LVJob;
-import edu.brown.lasvegas.LVRack;
 import edu.brown.lasvegas.LVRackNode;
 import edu.brown.lasvegas.LVReplicaGroup;
 import edu.brown.lasvegas.LVTable;
 import edu.brown.lasvegas.LVTask;
 import edu.brown.lasvegas.client.LVMetadataClient;
 import edu.brown.lasvegas.protocol.LVMetadataProtocol;
-import edu.brown.lasvegas.server.ConfFileUtil;
-import edu.brown.lasvegas.server.LVDataNode;
+import edu.brown.lasvegas.server.LVCentralNode;
 import edu.brown.lasvegas.util.ValueRange;
 
 /**
@@ -96,49 +99,24 @@ import edu.brown.lasvegas.util.ValueRange;
  */
 public class DataImportMultiNodeBenchmark {
     private static final Logger LOG = Logger.getLogger(DataImportMultiNodeBenchmark.class);
-    /** hardcoded total count of partitions. */
-    // private static final int partitionCount = 12;
-    /**
-     * hardcoded full path of input files in ALL nodes (yes, I'm lazy. but this is just a benchmark..).
-     * It should be a partitioned tbl (see SSB/TPCH's dbgen manual. eg: ./dbgen -T l -s 4 -S 1 -C 2).
-    */
-    // private static final String inputFilePath = "/home/hkimura/workspace/las-vegas/ssb-dbgen/lineorder_s12_p.tbl";
-    //private static final int partitionCount = 4;
-    //private static final String inputFilePath = "/home/hkimura/workspace/las-vegas/ssb-dbgen/lineorder_s4_p.tbl";
-
-    private static final int partitionCount = 2;
-    private static final String inputFilePath = "/home/hkimura/workspace/las-vegas/ssb-dbgen/lineorder_s2_p.tbl";
-
-    // private static final int partitionCount = 3;
-    // private static final String inputFilePath = "/home/hkimura/workspace/las-vegas/ssb-dbgen/lineorder_s3_p.tbl";
+    private static int partitionCount = 0;
 
     private Configuration conf;
     private LVMetadataClient client;
     private LVMetadataProtocol metaRepo;
 
-    private LVRack rack;
-    private LVRackNode[] nodes;
     private LVDatabase database;
     private LVTable table;
     private HashMap<String, LVColumn> columns;
     private int[] columnIds;
     private LVReplicaGroup group;
     
-    private void setUp () throws IOException {
+    private void setUp (String metadataAddress) throws IOException {
         conf = new Configuration();
+        conf.set(LVCentralNode.METAREPO_ADDRESS_KEY, metadataAddress);
         client = new LVMetadataClient(conf);
-        LOG.info("connected to metadata repository");
+        LOG.info("connected to metadata repository: " + metadataAddress);
         metaRepo = client.getChannel();
-
-        String rackName = conf.get(LVDataNode.DATA_RACK_NAME_KEY);
-        rack = metaRepo.getRack(rackName);
-        if (rack == null) {
-            throw new IOException ("Rack not defined yet: " + rackName);
-        }
-        nodes = metaRepo.getAllRackNodes(rack.getRackId());
-        if (nodes.length == 0) {
-            throw new IOException ("No node defined in this rack: " + rackName);
-        }
         
         final String dbname = "db1";
         if (metaRepo.getDatabase(dbname) != null) {
@@ -183,11 +161,7 @@ public class DataImportMultiNodeBenchmark {
             client = null;
         }
     }
-    public void exec () throws Exception {
-        ImportFractureJobParameters params = new ImportFractureJobParameters(table.getTableId());
-        for (LVRackNode node : nodes) {
-            params.getNodeFilePathMap().put(node.getNodeId(), new String[]{inputFilePath});
-        }
+    public void exec (ImportFractureJobParameters params) throws Exception {
         ImportFractureJobController controller = new ImportFractureJobController(metaRepo, 1000L, 1000L, 100L);
         LOG.info("started the import job...");
         LVJob job = controller.startSync(params);
@@ -196,22 +170,58 @@ public class DataImportMultiNodeBenchmark {
             LOG.info("Sub-Task finished in " + (task.getFinishedTime().getTime() - task.getStartedTime().getTime()) + "ms:" + task);
         }
     }
+    public ImportFractureJobParameters parseInputFile (String inputFileName) throws IOException {
+        BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(inputFileName), "UTF-8"));
+        ImportFractureJobParameters params = new ImportFractureJobParameters(table.getTableId());
+        for (String line = reader.readLine(); line != null; line = reader.readLine()) {
+            LOG.info("input line:" + line);
+            StringTokenizer tokenizer = new StringTokenizer(line, "\t");
+            String nodeName = tokenizer.nextToken();
+            LVRackNode node = metaRepo.getRackNode(nodeName);
+            if (node == null) {
+                throw new IllegalArgumentException("node '" + nodeName + "' doesn't exist in metadata repository. have you started the node?");
+            }
+            ArrayList<String> list = new ArrayList<String>();
+            while (tokenizer.hasMoreTokens()) {
+                String path = tokenizer.nextToken().trim();
+                LOG.info("node " + nodeName + ": file=" + path);
+                list.add(path);
+            }
+            params.getNodeFilePathMap().put(node.getNodeId(), list.toArray(new String[0]));
+        }
+        reader.close();
+        return params;
+    }
     public static void main (String[] args) throws Exception {
         LOG.info("running a multi node experiment..");
-        if (args.length == 0) {
-            System.err.println("usage: java " + DataImportMultiNodeBenchmark.class.getName() + " <conf xml path in classpath>");
-            System.err.println("ex: java -server -Xmx256m " + DataImportMultiNodeBenchmark.class.getName() + " lvfs_conf.xml");
+        if (args.length < 3) {
+            System.err.println("usage: java " + DataImportMultiNodeBenchmark.class.getName() + " <partitionCount> <metadata repository address> <name of the file that lists input files (*)>");
+            System.err.println("ex: java " + DataImportMultiNodeBenchmark.class.getName() + " 2 poseidon:28710 inputs.txt");
+            System.err.println("(*) the file format is \"<data node name>TAB<input file path 1>TAB<input file path 2>...\". One line for one node. Should be UTF-8 encoded file.");
+            System.err.println("ex:\n"
+                            + "poseidon    /home/hkimura/workspace/las-vegas/ssb-dbgen/lineorder_s2_p.tbl\n"
+                            + "artemis  /home/hkimura/workspace/las-vegas/ssb-dbgen/lineorder_s2_p.tbl");
+            // It should be a partitioned tbl (see SSB/TPCH's dbgen manual. eg: ./dbgen -T l -s 4 -S 1 -C 2).
             return;
         }
-        ConfFileUtil.addConfFilePath(args[0]);
+        partitionCount = Integer.parseInt(args[0]);
+        if (partitionCount <= 0) {
+            throw new IllegalArgumentException ("invalid partition count :" + args[0]);
+        }
+        LOG.info("partitionCount=" + partitionCount);
+        String metaRepoAddress = args[1];
+        LOG.info("metaRepoAddress=" + metaRepoAddress);
+        String inputFileName = args[2];
+        
         DataImportMultiNodeBenchmark program = new DataImportMultiNodeBenchmark();
-        program.setUp();
+        program.setUp(metaRepoAddress);
         try {
-            LOG.info("started:" + inputFilePath + " (" + (program.nodes.length) + " nodes, " + partitionCount + " partitions)");
+            ImportFractureJobParameters params = program.parseInputFile (inputFileName); 
+            LOG.info("started: " + partitionCount + " partitions)");
             long start = System.currentTimeMillis();
-            program.exec();
+            program.exec(params);
             long end = System.currentTimeMillis();
-            LOG.info("ended:" + inputFilePath + " (" + (program.nodes.length) + " nodes, " + partitionCount + " partitions)" + ". elapsed time=" + (end - start) + "ms");
+            LOG.info("ended: " + partitionCount + " partitions). elapsed time=" + (end - start) + "ms");
         } catch (Exception ex) {
             LOG.error("unexpected exception:" + ex.getMessage(), ex);
         } finally {

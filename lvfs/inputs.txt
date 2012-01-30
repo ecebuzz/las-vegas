@@ -1,0 +1,2 @@
+poseidon	/home/hkimura/workspace/las-vegas/ssb-dbgen/lineorder_s2_p.tbl
+artemis	/home/hkimura/workspace/las-vegas/ssb-dbgen/lineorder_s2_p.tbl
