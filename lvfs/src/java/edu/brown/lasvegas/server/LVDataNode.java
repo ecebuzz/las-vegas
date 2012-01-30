@@ -185,13 +185,13 @@ public final class LVDataNode implements ServicePlugin {
         dataEngine = new DataEngine(metaRepo, node.getNodeId(), conf, format);
         dataEngine.start();
         
-        LVDataProtocol dataProtocol = (LVDataProtocol) UnicastRemoteObject.exportObject(dataEngine, sockAddress.getPort());
+        LVDataProtocol rmiDataProtocol = (LVDataProtocol) UnicastRemoteObject.exportObject(dataEngine, sockAddress.getPort());
         rmiRegistry = LocateRegistry.createRegistry(sockAddress.getPort());
         try {
-            rmiRegistry.bind(DATA_ENGINE_SERVICE_NAME, dataProtocol);
+            rmiRegistry.bind(DATA_ENGINE_SERVICE_NAME, rmiDataProtocol);
         } catch (AlreadyBoundException ex) {
             LOG.warn("There seems a stale DataEngine. replacing with a new instance.", ex);
-            rmiRegistry.rebind(DATA_ENGINE_SERVICE_NAME, dataProtocol);
+            rmiRegistry.rebind(DATA_ENGINE_SERVICE_NAME, rmiDataProtocol);
         }
         // dataServer = RPC.getServer(LVDataProtocol.class, dataEngine, sockAddress.getHostName(), sockAddress.getPort(), conf);
         LOG.info("initialized LVFS Data Server.");
@@ -224,10 +224,17 @@ public final class LVDataNode implements ServicePlugin {
         // stop proceeds in the _opposite_ order to initialization
         if (rmiRegistry != null) {
             try {
+                UnicastRemoteObject.unexportObject(dataEngine, true);
+            } catch (NoSuchObjectException ex) {
+                LOG.warn("error on unexporting RMI data engine object. ignored", ex);
+            }
+
+            try {
                 rmiRegistry.unbind(DATA_ENGINE_SERVICE_NAME);
             } catch (Exception ex) {
                 LOG.warn("error on unbinding RMI service for data engine. ignored", ex);
             }
+
             try {
                 UnicastRemoteObject.unexportObject(rmiRegistry, true);
             } catch (NoSuchObjectException ex) {

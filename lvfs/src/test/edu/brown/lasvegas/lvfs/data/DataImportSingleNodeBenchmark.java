@@ -39,9 +39,14 @@ public class DataImportSingleNodeBenchmark {
     private static final String DATANODE_NAME = "node";
     private static final Logger LOG = Logger.getLogger(DataImportSingleNodeBenchmark.class);
 
-    // private static final File inputFile = new File ("../ssb-dbgen/lineorder_s1.tbl");
-    private static final File inputFile = new File ("../ssb-dbgen/lineorder_s4.tbl");
+    // private static final String lvfsRoot = "/tmp/test";
+    // private static final File inputFile = new File ("/tmp/lineorder_s1.tbl");
+
+    private static final String lvfsRoot = "test";
+    private static final File inputFile = new File ("../ssb-dbgen/lineorder_s1.tbl");
+    // private static final File inputFile = new File ("../ssb-dbgen/lineorder_s4.tbl");
     // private static final File inputFile = new File ("../ssb-dbgen/lineorder_s15.tbl");
+    // private static final File inputFile = new File ("src/test/edu/brown/lasvegas/lvfs/data/mini_lineorder.tbl"); // just for testing
 
     private MasterMetadataRepository masterRepository;
     private String rootDir;
@@ -65,8 +70,10 @@ public class DataImportSingleNodeBenchmark {
         LOG.info("input file size:" + (inputFile.length() >> 20) + "MB");
         final int BYTES_PER_TUPLE = 100; // well, largely.
         final long TOTAL_TUPLES = inputFile.length() / BYTES_PER_TUPLE;
-        final int partitionCount = (int) Math.round((double) TOTAL_TUPLES / 6000000.0d);
-        assert (partitionCount > 0);
+        int partitionCount = (int) Math.round((double) TOTAL_TUPLES / 6000000.0d);
+        if (partitionCount == 0) {
+            partitionCount = 1;
+        }
         LOG.info("partitions the data into " + partitionCount + " partitions");
 
         masterRepository = new MasterMetadataRepository(true, TEST_BDB_HOME); // nuke the folder
@@ -104,7 +111,7 @@ public class DataImportSingleNodeBenchmark {
         masterRepository.createNewReplicaScheme(group, columns.get("lo_orderdate"), columnIds, MiniLineorder.getDefaultCompressions());
 
         conf = new Configuration();
-        rootDir = "test/node_lvfs_" + Math.abs(new Random(System.nanoTime()).nextInt());
+        rootDir = lvfsRoot + "/node_lvfs_" + Math.abs(new Random(System.nanoTime()).nextInt());
         tmpDir = rootDir + "/tmp";
         conf.set(DataEngine.LOCA_LVFS_ROOTDIR_KEY, rootDir);
         conf.set(DataEngine.LOCA_LVFS_TMPDIR_KEY, tmpDir);
