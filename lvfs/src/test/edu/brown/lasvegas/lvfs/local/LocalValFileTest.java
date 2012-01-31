@@ -24,6 +24,7 @@ public class LocalValFileTest {
     private <T extends Comparable<T>, AT> void runTest (ColumnType type, ValueTraits<T, AT> traits, T[] values) throws Exception {
         int count = values.length;
         LocalVirtualFile file = new LocalVirtualFile("test/local/test.vdx");
+        file.getParentFile().mkdirs();
         file.delete();
         List<Integer> positions = new ArrayList<Integer>();
         List<T> valueList = new ArrayList<T>();

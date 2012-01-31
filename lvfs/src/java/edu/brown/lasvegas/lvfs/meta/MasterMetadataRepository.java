@@ -207,7 +207,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     }
     @Override
     public LVDatabase getDatabase(String name) throws IOException {
-        return bdbTableAccessors.databaseAccessor.IX_NAME.get(name);
+        return getTransactional(bdbTableAccessors.databaseAccessor.IX_NAME, name);
     }
     @Override
     public LVDatabase[] getAllDatabases() throws IOException {
@@ -848,7 +848,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
 
     @Override
     public LVReplicaPartition getReplicaPartitionByReplicaAndRange(int replicaId, int range) throws IOException {
-        return bdbTableAccessors.replicaPartitionAccessor.IX_REPLICA_RANGE.get(new CompositeIntKey(replicaId, range));
+        return getTransactional(bdbTableAccessors.replicaPartitionAccessor.IX_REPLICA_RANGE, new CompositeIntKey(replicaId, range));
     }
 
     @Override
@@ -1025,7 +1025,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
 
     @Override
     public LVRack getRack(String rackName) throws IOException {
-        return bdbTableAccessors.rackAccessor.IX_NAME.get(rackName);
+        return getTransactional(bdbTableAccessors.rackAccessor.IX_NAME, rackName);
     }
 
     @Override
@@ -1082,7 +1082,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
 
     @Override
     public LVRackNode getRackNode(String nodeName) throws IOException {
-        return bdbTableAccessors.rackNodeAccessor.IX_NAME.get(nodeName);
+        return getTransactional(bdbTableAccessors.rackNodeAccessor.IX_NAME, nodeName);
     }
 
     @Override
@@ -1456,12 +1456,21 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         }.run();
     }
 
-    /** Get version, same as above. */
+    /** Get version (primary index), same as above. */
     @SuppressWarnings("unchecked")
     private <T> T getTransactional (final PrimaryIndex<Integer, T> pkx, final int objId) throws IOException {
         return (T) new TransactionalSection() {
             public void doTxn(Transaction txn) throws IOException {
                 setRet(pkx.get(txn, objId, LockMode.READ_COMMITTED));
+            }
+        }.run();
+    }
+    /** Get version (unique secondary index), same as above. */
+    @SuppressWarnings("unchecked")
+    private <K, T> T getTransactional (final SecondaryIndex<K, Integer, T> index, final K key) throws IOException {
+        return (T) new TransactionalSection() {
+            public void doTxn(Transaction txn) throws IOException {
+                setRet(index.get(txn, key, LockMode.READ_COMMITTED));
             }
         }.run();
     }

@@ -40,8 +40,8 @@ public class DataImportBenchmarkTest {
     private static final String lvfsRoot = "test";
     private static final File inputFile = new File ("src/test/edu/brown/lasvegas/lvfs/data/mini_lineorder.tbl"); // just for testing
     
-    private static final int rackCount = 3;
-    private static final int nodesPerRack = 20;
+    private static final int rackCount = 2; // 3;
+    private static final int nodesPerRack = 2; // 20;
 
     private MasterMetadataRepository masterRepository;
     private final LVDataNode[][] dataNodes = new LVDataNode[rackCount][nodesPerRack];
@@ -109,7 +109,7 @@ public class DataImportBenchmarkTest {
                 conf.set(DataEngine.LOCA_LVFS_ROOTDIR_KEY, rootDir);
                 conf.set(DataEngine.LOCA_LVFS_TMPDIR_KEY, tmpDir);
                 conf.set(LVFSFilePath.LVFS_CONF_ROOT_KEY, rootDir);
-                conf.setLong(DataTaskPollingThread.POLLING_INTERVAL_KEY, 1000L);
+                conf.setLong(DataTaskPollingThread.POLLING_INTERVAL_KEY, 100L);
                 conf.set(LVDataNode.DATA_ADDRESS_KEY, node.getAddress());
                 conf.set(LVDataNode.DATA_NODE_NAME_KEY, node.getName());
                 conf.set(LVDataNode.DATA_RACK_NAME_KEY, racks[i].getName());
@@ -142,7 +142,7 @@ public class DataImportBenchmarkTest {
                 params.getNodeFilePathMap().put(node.getNodeId(), new String[]{inputFile.getAbsolutePath()});
             }
         }
-        ImportFractureJobController controller = new ImportFractureJobController(masterRepository, 1000L, 1000L, 100L);
+        ImportFractureJobController controller = new ImportFractureJobController(masterRepository, 400L, 400L, 100L);
         LOG.info("started the import job...");
         LVJob job = controller.startSync(params);
         LOG.info("finished the import job...:" + job);
