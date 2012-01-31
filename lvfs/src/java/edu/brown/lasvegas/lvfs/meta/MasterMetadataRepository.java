@@ -23,7 +23,10 @@ import com.sleepycat.je.CursorConfig;
 import com.sleepycat.je.Durability;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.EnvironmentConfig;
+import com.sleepycat.je.LockMode;
+import com.sleepycat.je.LockTimeoutException;
 import com.sleepycat.je.Transaction;
+import com.sleepycat.je.TransactionConfig;
 import com.sleepycat.persist.EntityCursor;
 import com.sleepycat.persist.EntityIndex;
 import com.sleepycat.persist.PrimaryIndex;
@@ -200,7 +203,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
 
     @Override
     public LVDatabase getDatabase(int databaseId) throws IOException {
-        return bdbTableAccessors.databaseAccessor.PKX.get(databaseId);
+        return getTransactional(bdbTableAccessors.databaseAccessor.PKX, databaseId);
     }
     @Override
     public LVDatabase getDatabase(String name) throws IOException {
@@ -260,7 +263,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     
     @Override
     public LVTable getTable(int tableId) throws IOException {
-        return bdbTableAccessors.tableAccessor.PKX.get(tableId);
+        return getTransactional(bdbTableAccessors.tableAccessor.PKX, tableId);
     }
     @Override
     public LVTable getTable(int databaseId, String name) throws IOException {
@@ -436,7 +439,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
 
     @Override
     public LVColumn getColumn(int columnId) throws IOException {
-        return bdbTableAccessors.columnAccessor.PKX.get(columnId);
+        return getTransactional(bdbTableAccessors.columnAccessor.PKX, columnId);
     }
     @Override
     public LVColumn getColumnByName(int tableId, String name) throws IOException {
@@ -516,7 +519,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
 
     @Override
     public LVFracture getFracture(int fractureId) throws IOException {
-        return bdbTableAccessors.fractureAccessor.PKX.get(fractureId);
+        return getTransactional(bdbTableAccessors.fractureAccessor.PKX, fractureId);
     }
 
     @Override
@@ -587,7 +590,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
 
     @Override
     public LVReplicaGroup getReplicaGroup(int groupId) throws IOException {
-        return bdbTableAccessors.replicaGroupAccessor.PKX.get(groupId);
+        return getTransactional(bdbTableAccessors.replicaGroupAccessor.PKX, groupId);
     }
 
     @Override
@@ -694,7 +697,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
 
     @Override
     public LVReplicaScheme getReplicaScheme(int schemeId) throws IOException {
-        return bdbTableAccessors.replicaSchemeAccessor.PKX.get(schemeId);
+        return getTransactional(bdbTableAccessors.replicaSchemeAccessor.PKX, schemeId);
     }
 
     @Override
@@ -765,7 +768,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
 
     @Override
     public LVReplica getReplica(int replicaId) throws IOException {
-        return bdbTableAccessors.replicaAccessor.PKX.get(replicaId);
+        return getTransactional(bdbTableAccessors.replicaAccessor.PKX, replicaId);
     }
 
     @Override
@@ -827,7 +830,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     }
     @Override
     public LVReplicaPartition getReplicaPartition(int subPartitionId) throws IOException {
-        return bdbTableAccessors.replicaPartitionAccessor.PKX.get(subPartitionId);
+        return getTransactional(bdbTableAccessors.replicaPartitionAccessor.PKX, subPartitionId);
     }
 
     @Override
@@ -886,7 +889,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     }
     @Override
     public void updateReplicaPartitionNoReturn(int subPartitionId, ReplicaPartitionStatus status, IntWritable nodeId) throws IOException {
-        LVReplicaPartition subPartition = bdbTableAccessors.replicaPartitionAccessor.PKX.get(subPartitionId);
+        LVReplicaPartition subPartition = getReplicaPartition(subPartitionId);
         if (subPartition == null) {
             throw new IOException ("this replica partition ID doesn't exist: " + subPartitionId);
         }
@@ -916,7 +919,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
 
     @Override
     public LVColumnFile getColumnFile(int columnFileId) throws IOException {
-        return bdbTableAccessors.columnFileAccessor.PKX.get(columnFileId);
+        return getTransactional(bdbTableAccessors.columnFileAccessor.PKX, columnFileId);
     }
 
     @Override
@@ -1017,7 +1020,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
 
     @Override
     public LVRack getRack(int rackId) throws IOException {
-        return bdbTableAccessors.rackAccessor.PKX.get(rackId);
+        return getTransactional(bdbTableAccessors.rackAccessor.PKX, rackId);
     }
 
     @Override
@@ -1074,7 +1077,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
 
     @Override
     public LVRackNode getRackNode(int nodeId) throws IOException {
-        return bdbTableAccessors.rackNodeAccessor.PKX.get(nodeId);
+        return getTransactional(bdbTableAccessors.rackNodeAccessor.PKX, nodeId);
     }
 
     @Override
@@ -1164,7 +1167,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
 
     @Override
     public LVRackAssignment getRackAssignment(int assignmentId) throws IOException {
-        return bdbTableAccessors.rackAssignmentAccessor.PKX.get(assignmentId);
+        return getTransactional(bdbTableAccessors.rackAssignmentAccessor.PKX, assignmentId);
     }
     
     @Override
@@ -1226,7 +1229,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     
     @Override
     public LVJob getJob(int jobId) throws IOException {
-        return bdbTableAccessors.jobAccessor.PKX.get(jobId);
+        return getTransactional(bdbTableAccessors.jobAccessor.PKX, jobId);
     }
 
     @Override
@@ -1294,7 +1297,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     
     @Override
     public LVTask getTask(int taskId) throws IOException {
-        return bdbTableAccessors.taskAccessor.PKX.get(taskId);
+        return getTransactional(bdbTableAccessors.taskAccessor.PKX, taskId);
     }
 
     @Override
@@ -1394,23 +1397,47 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         protected final void setRet (Object ret) {
             this.ret = ret;
         }
+        private static final int RETRY_MAX = 20;
         public final Object run () throws IOException {
-            Transaction txn = bdbEnv.beginTransaction(null, null);
-            boolean committed = false;
-            try {
-                doTxn(txn);
-                txn.commit();
-                committed = true;
-            } finally {
-                if (!committed) {
-                    txn.abort();
+            LockTimeoutException lastEx = null;
+            for (int retry = 0; retry < RETRY_MAX; ++retry) {
+                try {
+                    TransactionConfig txnConfig = new TransactionConfig();
+                    txnConfig.setReadCommitted(true);
+                    txnConfig.setReadUncommitted(false);
+                    txnConfig.setSerializableIsolation(false);
+                    Transaction txn = bdbEnv.beginTransaction(null, txnConfig);
+                    boolean committed = false;
+                    try {
+                        doTxn(txn);
+                        txn.commit();
+                        committed = true;
+                    } finally {
+                        if (!committed) {
+                            txn.abort();
+                        }
+                    }
+                    return ret;
+                } catch (LockTimeoutException ex) {
+                    int randomWait = new Random(System.nanoTime()).nextInt(300);
+                    LOG.warn("lock timeout happened. retrying(" + retry + ") with wait " + randomWait + "ms");
+                    lastEx = ex;
+                    // to avoid further lock conflict, sleep for random interval
+                    try {
+                        Thread.sleep(randomWait);
+                    } catch (InterruptedException ie) {
+                    }
                 }
             }
-            return ret;
+            LOG.error("lock timeout happened too many times. gave up", lastEx);
+            throw lastEx;
         }
     }
 
-    /** Inserts/updates an object in an independent transaction (not for full ACID. only record-level consistency, instead this won't cause deadlocks). */
+    /**
+     * Inserts/updates an object in an independent transaction (not for full ACID. only record-level consistency, instead this won't cause deadlocks).
+     * these function also internally do retry to avoid lock timeouts.
+     */
     private <T> void putNoReturnTransactional (final PrimaryIndex<Integer, T> pkx, final T obj) throws IOException {
         new TransactionalSection() {
             public void doTxn(Transaction txn) throws IOException {
@@ -1429,27 +1456,46 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
         }.run();
     }
 
+    /** Get version, same as above. */
+    @SuppressWarnings("unchecked")
+    private <T> T getTransactional (final PrimaryIndex<Integer, T> pkx, final int objId) throws IOException {
+        return (T) new TransactionalSection() {
+            public void doTxn(Transaction txn) throws IOException {
+                setRet(pkx.get(txn, objId, LockMode.READ_COMMITTED));
+            }
+        }.run();
+    }
+
     /**
      * Retrieves all (duplicate) entries from the secondary index for the given key.
      * This method releases locks after reading each record and returns a separated (as opposed
      * to BDB's own cursor) list. Again, deadlock avoidance at the cost of ACID.
      * The result is sorted by ID.
      */
-    private <K extends Comparable<K>, T extends LVObject> Collection<T> fetchAll (SecondaryIndex<K, Integer, T> index, K key) {
-        EntityIndex<Integer, T> subIndex = index.subIndex(key);
-        CursorConfig config = new CursorConfig();
-        config.setReadCommitted(true);
-        config.setReadUncommitted(false);
-        EntityCursor<T> cursor = subIndex.entities(null, config);
-        SortedMap<Integer, T> map = new TreeMap<Integer, T>();
-        while (true) {
-            T obj = cursor.next();
-            if (obj == null) {
-                break;
+    @SuppressWarnings("unchecked")
+    private <K extends Comparable<K>, T extends LVObject> Collection<T> fetchAll (final SecondaryIndex<K, Integer, T> index, final K key) throws IOException {
+        return (Collection<T>) new TransactionalSection() {
+            @Override
+            protected void doTxn(Transaction txn) throws IOException {
+                SortedMap<Integer, T> map = new TreeMap<Integer, T>();
+                EntityIndex<Integer, T> subIndex = index.subIndex(key);
+                CursorConfig config = new CursorConfig();
+                config.setReadCommitted(true);
+                config.setReadUncommitted(false);
+                EntityCursor<T> cursor = subIndex.entities(txn, config);
+                try {
+                    while (true) {
+                        T obj = cursor.next();
+                        if (obj == null) {
+                            break;
+                        }
+                        map.put (obj.getPrimaryKey(), obj);
+                    }
+                } finally {
+                    cursor.close();
+                }
+                setRet(map.values());
             }
-            map.put (obj.getPrimaryKey(), obj);
-        }
-        cursor.close();
-        return map.values();
+        }.run();
     }
 }
