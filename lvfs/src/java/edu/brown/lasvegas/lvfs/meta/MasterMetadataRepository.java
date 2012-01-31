@@ -212,7 +212,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
     @Override
     public LVDatabase[] getAllDatabases() throws IOException {
         // ID order
-        return bdbTableAccessors.databaseAccessor.PKX.sortedMap().values().toArray(new LVDatabase[0]);
+        return fetchAll(bdbTableAccessors.databaseAccessor.PKX).toArray(new LVDatabase[0]);
     }
     @Override
     public LVDatabase createNewDatabase(String name) throws IOException {
@@ -1492,6 +1492,35 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
                 config.setReadCommitted(true);
                 config.setReadUncommitted(false);
                 EntityCursor<T> cursor = subIndex.entities(txn, config);
+                try {
+                    while (true) {
+                        T obj = cursor.next();
+                        if (obj == null) {
+                            break;
+                        }
+                        map.put (obj.getPrimaryKey(), obj);
+                    }
+                } finally {
+                    cursor.close();
+                }
+                setRet(map.values());
+            }
+        }.run();
+    }
+
+    /**
+     * Primary index version, same as above.
+     */
+    @SuppressWarnings("unchecked")
+    private <T extends LVObject> Collection<T> fetchAll (final PrimaryIndex<Integer, T> pkx) throws IOException {
+        return (Collection<T>) new TransactionalSection() {
+            @Override
+            protected void doTxn(Transaction txn) throws IOException {
+                SortedMap<Integer, T> map = new TreeMap<Integer, T>();
+                CursorConfig config = new CursorConfig();
+                config.setReadCommitted(true);
+                config.setReadUncommitted(false);
+                EntityCursor<T> cursor = pkx.entities(txn, config);
                 try {
                     while (true) {
                         T obj = cursor.next();
