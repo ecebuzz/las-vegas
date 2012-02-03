@@ -1,4 +1,4 @@
-package edu.brown.lasvegas.lvfs.data;
+package edu.brown.lasvegas.lvfs.data.job;
 
 import java.io.DataInput;
 import java.io.DataOutput;

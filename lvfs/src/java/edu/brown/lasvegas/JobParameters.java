@@ -10,6 +10,7 @@ import java.io.IOException;
 
 import org.apache.hadoop.io.Writable;
 
+
 /**
  * Marker interface for parameter types used to serialize/deserialize
  * job-type-dependent parameters.

@@ -1,4 +1,4 @@
-package edu.brown.lasvegas.lvfs.data;
+package edu.brown.lasvegas.lvfs.data.task;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -31,6 +31,11 @@ import edu.brown.lasvegas.client.DataNodeFile;
 import edu.brown.lasvegas.client.LVDataClient;
 import edu.brown.lasvegas.lvfs.ColumnFileBundle;
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.lvfs.data.DataTaskRunner;
+import edu.brown.lasvegas.lvfs.data.DataTaskUtil;
+import edu.brown.lasvegas.lvfs.data.PartitionRewriter;
+import edu.brown.lasvegas.lvfs.data.TaskCanceledException;
+import edu.brown.lasvegas.lvfs.data.TemporaryFilePath;
 import edu.brown.lasvegas.lvfs.local.LocalVirtualFile;
 import edu.brown.lasvegas.tuple.BufferedTupleWriter;
 import edu.brown.lasvegas.tuple.TextFileTupleReader;

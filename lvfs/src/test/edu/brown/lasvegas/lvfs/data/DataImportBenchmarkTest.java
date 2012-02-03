@@ -26,6 +26,8 @@ import edu.brown.lasvegas.LVTable;
 import edu.brown.lasvegas.LVTask;
 import edu.brown.lasvegas.TaskStatus;
 import edu.brown.lasvegas.lvfs.LVFSFilePath;
+import edu.brown.lasvegas.lvfs.data.job.ImportFractureJobController;
+import edu.brown.lasvegas.lvfs.data.job.ImportFractureJobParameters;
 import edu.brown.lasvegas.lvfs.meta.MasterMetadataRepository;
 import edu.brown.lasvegas.server.LVDataNode;
 import edu.brown.lasvegas.util.ValueRange;

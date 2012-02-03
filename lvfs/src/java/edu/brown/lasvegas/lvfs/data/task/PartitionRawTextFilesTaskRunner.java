@@ -1,4 +1,4 @@
-package edu.brown.lasvegas.lvfs.data;
+package edu.brown.lasvegas.lvfs.data.task;
 
 import java.io.File;
 import java.io.IOException;
@@ -18,6 +18,8 @@ import edu.brown.lasvegas.LVFracture;
 import edu.brown.lasvegas.LVReplicaGroup;
 import edu.brown.lasvegas.TaskType;
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.lvfs.data.DataTaskRunner;
+import edu.brown.lasvegas.lvfs.data.PartitionedTextFileWriters;
 import edu.brown.lasvegas.lvfs.local.LocalVirtualFile;
 import edu.brown.lasvegas.tuple.TextFileTupleReader;
 import edu.brown.lasvegas.util.ValueRange;

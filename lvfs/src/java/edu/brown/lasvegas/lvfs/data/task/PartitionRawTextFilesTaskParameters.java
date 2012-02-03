@@ -1,10 +1,11 @@
-package edu.brown.lasvegas.lvfs.data;
+package edu.brown.lasvegas.lvfs.data.task;
 
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 
 import edu.brown.lasvegas.LVTask;
+import edu.brown.lasvegas.lvfs.data.TextFileImportTaskParameters;
 
 /**
  * Parameters for {@link PartitionRawTextFilesTaskRunner}.

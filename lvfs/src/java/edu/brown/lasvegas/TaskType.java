@@ -1,11 +1,11 @@
 package edu.brown.lasvegas;
 
-import edu.brown.lasvegas.lvfs.data.LoadPartitionedTextFilesTaskRunner;
-import edu.brown.lasvegas.lvfs.data.LoadPartitionedTextFilesTaskParameters;
-import edu.brown.lasvegas.lvfs.data.PartitionRawTextFilesTaskRunner;
-import edu.brown.lasvegas.lvfs.data.PartitionRawTextFilesTaskParameters;
-import edu.brown.lasvegas.lvfs.data.RecoverPartitionFromBuddyTaskParameters;
-import edu.brown.lasvegas.lvfs.data.RecoverPartitionFromBuddyTaskRunner;
+import edu.brown.lasvegas.lvfs.data.task.LoadPartitionedTextFilesTaskParameters;
+import edu.brown.lasvegas.lvfs.data.task.LoadPartitionedTextFilesTaskRunner;
+import edu.brown.lasvegas.lvfs.data.task.PartitionRawTextFilesTaskParameters;
+import edu.brown.lasvegas.lvfs.data.task.PartitionRawTextFilesTaskRunner;
+import edu.brown.lasvegas.lvfs.data.task.RecoverPartitionFromBuddyTaskParameters;
+import edu.brown.lasvegas.lvfs.data.task.RecoverPartitionFromBuddyTaskRunner;
 
 /**
  * Defines types of local Tasks ({@link TaskJob}).

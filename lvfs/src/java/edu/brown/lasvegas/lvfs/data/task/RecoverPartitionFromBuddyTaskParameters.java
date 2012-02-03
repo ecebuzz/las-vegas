@@ -1,4 +1,4 @@
-package edu.brown.lasvegas.lvfs.data;
+package edu.brown.lasvegas.lvfs.data.task;
 
 import java.io.DataInput;
 import java.io.DataOutput;
@@ -7,6 +7,7 @@ import java.io.IOException;
 import edu.brown.lasvegas.LVReplica;
 import edu.brown.lasvegas.LVReplicaPartition;
 import edu.brown.lasvegas.LVTask;
+import edu.brown.lasvegas.lvfs.data.DataTaskParameters;
 
 /**
  * Parameters for {@link RecoverPartitionFromBuddyTaskRunner}.

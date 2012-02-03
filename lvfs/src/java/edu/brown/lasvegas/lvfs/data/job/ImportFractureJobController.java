@@ -1,4 +1,4 @@
-package edu.brown.lasvegas.lvfs.data;
+package edu.brown.lasvegas.lvfs.data.job;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -8,14 +8,11 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-import org.apache.hadoop.io.DoubleWritable;
 import org.apache.log4j.Logger;
 
-import edu.brown.lasvegas.JobController;
-import edu.brown.lasvegas.JobStatus;
+import edu.brown.lasvegas.AbstractJobController;
 import edu.brown.lasvegas.JobType;
 import edu.brown.lasvegas.LVFracture;
-import edu.brown.lasvegas.LVJob;
 import edu.brown.lasvegas.LVReplica;
 import edu.brown.lasvegas.LVReplicaGroup;
 import edu.brown.lasvegas.LVReplicaPartition;
@@ -25,6 +22,10 @@ import edu.brown.lasvegas.LVTask;
 import edu.brown.lasvegas.ReplicaPartitionStatus;
 import edu.brown.lasvegas.TaskStatus;
 import edu.brown.lasvegas.TaskType;
+import edu.brown.lasvegas.lvfs.data.TemporaryFilePath;
+import edu.brown.lasvegas.lvfs.data.task.LoadPartitionedTextFilesTaskParameters;
+import edu.brown.lasvegas.lvfs.data.task.PartitionRawTextFilesTaskParameters;
+import edu.brown.lasvegas.lvfs.data.task.RecoverPartitionFromBuddyTaskParameters;
 import edu.brown.lasvegas.lvfs.placement.PlacementEventHandlerImpl;
 import edu.brown.lasvegas.protocol.LVMetadataProtocol;
 
@@ -47,34 +48,20 @@ import edu.brown.lasvegas.protocol.LVMetadataProtocol;
  * </p>
  * @see JobType#IMPORT_FRACTURE
  */
-public class ImportFractureJobController implements JobController<ImportFractureJobParameters> {
+public class ImportFractureJobController extends AbstractJobController<ImportFractureJobParameters> {
     private static Logger LOG = Logger.getLogger(ImportFractureJobController.class);
 
-    /**
-     * Metadata repository.
-     */
-    private final LVMetadataProtocol metaRepo;
-    
-    private ImportFractureJobParameters param;
-    private int jobId;
     private LVTable table;
     private LVFracture fracture;
     private LVReplicaGroup[] groups;
     private Map<Integer, LVReplicaScheme> defaultReplicaSchemes;
     private Map<Integer, LVReplicaScheme[]> otherReplicaSchemes;
     
-    private final long stopMaxWaitMilliseconds;
-    private final long taskJoinIntervalMilliseconds;
-    private final long taskJoinIntervalOnErrorMilliseconds;
-
     public ImportFractureJobController (LVMetadataProtocol metaRepo) throws IOException {
-        this (metaRepo, 3000L, 5000L, 500L);
+        super (metaRepo);
     }
     public ImportFractureJobController (LVMetadataProtocol metaRepo, long stopMaxWaitMilliseconds, long taskJoinIntervalMilliseconds, long taskJoinIntervalOnErrorMilliseconds) throws IOException {
-        this.metaRepo = metaRepo;
-        this.stopMaxWaitMilliseconds = stopMaxWaitMilliseconds;
-        this.taskJoinIntervalMilliseconds = taskJoinIntervalMilliseconds;
-        this.taskJoinIntervalOnErrorMilliseconds = taskJoinIntervalOnErrorMilliseconds;
+        super(metaRepo, stopMaxWaitMilliseconds, taskJoinIntervalMilliseconds, taskJoinIntervalOnErrorMilliseconds);
     }
     
     /** returns the newly created fracture. */
@@ -82,64 +69,8 @@ public class ImportFractureJobController implements JobController<ImportFracture
         return fracture;
     }
     
-    // differences between stopRequested and errorEncountered
-    // errorEncountered: will cancel all the tasks, but will also wait to see all tasks are actually stopped.
-    // stopRequested: will cancel all the tasks, but exit before checking they are actually stopped.
-    private boolean stopRequested = false;
-    private boolean errorEncountered = false;
-    private String errorMessages = "";
-
-    private boolean stopped = false;
     @Override
-    public boolean isStopped() {
-        return stopped;
-    }
-    @Override
-    public void requestStop() {
-        stopRequested = true;
-    }
-
-    @Override
-    public void stop () {
-        stopRequested = true;
-        try {
-            metaRepo.updateJobNoReturn(jobId, JobStatus.CANCEL_REQUESTED, null, null);
-        } catch (IOException ex) {
-            LOG.error("failed to update job status", ex);
-        }
-        long initTime = System.currentTimeMillis();
-        while (!stopped && System.currentTimeMillis() - initTime < stopMaxWaitMilliseconds) {
-            try {
-                Thread.sleep(30);
-            } catch (InterruptedException ex) {
-                // don't continue.. someone else might REALLY want to stop everything
-                LOG.warn("gave up stopping", ex);
-                break;
-            }
-            
-        }
-    }
-    @Override
-    public LVJob startAsync(ImportFractureJobParameters param) throws IOException {
-        init (param);
-        Thread thread = new Thread() {
-            @Override
-            public void run() {
-                runInternal();
-            }
-        };
-        thread.start();
-        return metaRepo.getJob(jobId);
-    }
-    @Override
-    public LVJob startSync(ImportFractureJobParameters param) throws IOException {
-        init (param);
-        runInternal();
-        return metaRepo.getJob(jobId);
-    }
-    
-    private void init (ImportFractureJobParameters param) throws IOException {
-        this.param = param;
+    protected void initDerived() throws IOException {
         // create a new fracture.
         this.table = metaRepo.getTable(param.getTableId());
         assert (table != null);
@@ -177,53 +108,27 @@ public class ImportFractureJobController implements JobController<ImportFracture
         new PlacementEventHandlerImpl(metaRepo).onNewFracture(fracture);
     }
 
-    private void runInternal() {
-        try {
-            // First, create a job object for the import.
-            LOG.info("importing Fracture-" + fracture.getFractureId());
-            metaRepo.updateJobNoReturn(jobId, JobStatus.RUNNING, null, null);
-    
-            // partition raw files at each node
-            TemporaryFilePath[] allPartitionedFiles = null;
-            if (!stopRequested && !errorEncountered) {
-                allPartitionedFiles = partitionRawFiles (0.0d, 1.0d / 3.0d); // 0%-33% progress
-            }
-    
-            // collect and load the partitioned files into LVFS
-            // here, we only load them to *one* replica scheme in each replica group.
-            // other replica schemes are loaded after this task, using the buddy files.
-            if (!stopRequested && !errorEncountered) {
-                assert (allPartitionedFiles != null);
-                loadPartitionedFiles (allPartitionedFiles, 1.0d / 3.0d, 2.0d / 3.0d); // 33%-66% progress
-            }
-            
-            // loads other replica schemes in each replica group
-            // this is supposed to be efficient because of the buddy files which are loaded in the previous tasks.
-            if (!stopRequested && !errorEncountered) {
-                copyFromBuddyFiles (2.0d / 3.0d, 1.0d); // 66%-100% progress
-            }
-    
-            // okay, done!
-            // TODO should we delete temporary files now that they are no longer needed?
-            if (errorEncountered) {
-                metaRepo.updateJobNoReturn(jobId, JobStatus.ERROR, null, errorMessages);
-            } else if (stopRequested) {
-                metaRepo.updateJobNoReturn(jobId, JobStatus.CANCELED, null, null);
-            } else {
-                metaRepo.updateJobNoReturn(jobId, JobStatus.DONE, new DoubleWritable(1.0d), null);
-            }
-        } catch (Exception ex) {
-            LOG.error("unexpected error:" + ex.getMessage(), ex);
-            errorEncountered = true;
-            errorMessages = ex.getMessage();
-            try {
-                metaRepo.updateJobNoReturn(jobId, JobStatus.ERROR, null, errorMessages);
-            } catch (Exception ex2) {
-                LOG.error("failed again to report an unexpected error:" + ex.getMessage(), ex);
-            }
+    @Override
+    protected void runDerived() throws IOException {
+        // partition raw files at each node
+        TemporaryFilePath[] allPartitionedFiles = null;
+        if (!stopRequested && !errorEncountered) {
+            allPartitionedFiles = partitionRawFiles (0.0d, 1.0d / 3.0d); // 0%-33% progress
         }
-        stopped = true;
-        LOG.info("exit the job.");
+
+        // collect and load the partitioned files into LVFS
+        // here, we only load them to *one* replica scheme in each replica group.
+        // other replica schemes are loaded after this task, using the buddy files.
+        if (!stopRequested && !errorEncountered) {
+            assert (allPartitionedFiles != null);
+            loadPartitionedFiles (allPartitionedFiles, 1.0d / 3.0d, 2.0d / 3.0d); // 33%-66% progress
+        }
+        
+        // loads other replica schemes in each replica group
+        // this is supposed to be efficient because of the buddy files which are loaded in the previous tasks.
+        if (!stopRequested && !errorEncountered) {
+            copyFromBuddyFiles (2.0d / 3.0d, 1.0d); // 66%-100% progress
+        }
     }
     
     private TemporaryFilePath[] partitionRawFiles (double baseProgress, double completedProgress) throws IOException {
@@ -414,59 +319,5 @@ public class ImportFractureJobController implements JobController<ImportFracture
             }
         }
         joinTasks(taskMap, baseProgress, completedProgress);
-    }
-
-    /** request all nodes to cancel ongoing task. */
-    private void cancelAllTasks (SortedMap<Integer, LVTask> taskMap) throws IOException {
-        LOG.info("cancelling tasks...");
-        for (LVTask task : taskMap.values()) {
-            if (TaskStatus.isFinished(task.getStatus()) || task.getStatus() == TaskStatus.CANCEL_REQUESTED) {
-                continue;
-            }
-            metaRepo.updateTaskNoReturn(task.getTaskId(), TaskStatus.CANCEL_REQUESTED, null, null, null);
-            task.setStatus(TaskStatus.CANCEL_REQUESTED);
-        }
-    }
-
-    /**
-     * wait until all tasks are completed.
-     * if any task threw an error, we stop the entire job (as this is a raw local drive, there is no back-up node to recover from a crash)
-     */
-    private void joinTasks (SortedMap<Integer, LVTask> taskMap, double baseProgress, double completedProgress) throws IOException {
-        int finishedCount = 0;
-        while (!stopRequested && finishedCount != taskMap.size()) {
-            try {
-                Thread.sleep(errorEncountered ? taskJoinIntervalOnErrorMilliseconds : taskJoinIntervalMilliseconds);
-            } catch (InterruptedException ex) {
-            }
-            LOG.debug("polling the progress of tasks...");
-            for (LVTask task : taskMap.values()) {
-                if (TaskStatus.isFinished(task.getStatus())) {
-                    continue;
-                }
-                LVTask updated = metaRepo.getTask(task.getTaskId());
-                if (updated.getStatus() != task.getStatus() || updated.getProgress() != task.getProgress()) {
-                    LOG.info("some change on task progress: " + updated);
-                }
-                taskMap.put(updated.getTaskId(), updated);
-                if (TaskStatus.isFinished(updated.getStatus())) {
-                    ++finishedCount;
-                    double jobProgress = baseProgress + (completedProgress - baseProgress) * finishedCount / taskMap.size();
-                    metaRepo.updateJobNoReturn(jobId, null, new DoubleWritable(jobProgress), null);
-                }
-                if (updated.getStatus() == TaskStatus.ERROR) {
-                    LOG.error("A task reported an error! : " + updated);
-                    errorEncountered = true;
-                    errorMessages = updated.getErrorMessages();
-                    break;
-                }
-            }
-            if (errorEncountered) {
-                cancelAllTasks (taskMap);
-            }
-        }
-        if (stopRequested) {
-            cancelAllTasks (taskMap);
-        }
     }
 }

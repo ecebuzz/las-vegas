@@ -1,6 +1,6 @@
 package edu.brown.lasvegas;
 
-import edu.brown.lasvegas.lvfs.data.ImportFractureJobController;
+import edu.brown.lasvegas.lvfs.data.job.ImportFractureJobController;
 
 /**
  * Defines types of Jobs ({@link LVJob}).

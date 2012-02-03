@@ -1,4 +1,4 @@
-package edu.brown.lasvegas.lvfs.data;
+package edu.brown.lasvegas.lvfs.data.task;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -23,6 +23,9 @@ import edu.brown.lasvegas.TaskType;
 import edu.brown.lasvegas.client.LVDataClient;
 import edu.brown.lasvegas.lvfs.ColumnFileBundle;
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.lvfs.data.DataTaskRunner;
+import edu.brown.lasvegas.lvfs.data.DataTaskUtil;
+import edu.brown.lasvegas.lvfs.data.PartitionRewriter;
 import edu.brown.lasvegas.lvfs.local.LocalVirtualFile;
 
 /**

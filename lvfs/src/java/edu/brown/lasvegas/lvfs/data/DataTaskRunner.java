@@ -84,9 +84,4 @@ public abstract class DataTaskRunner<ParamType extends TaskParameters> implement
             return true;
         }
     }
-
-    /** thrown from runDerived when the task is canceled. */
-    public static class TaskCanceledException extends Exception {
-        public static final long serialVersionUID = 1L;
-    }
 }

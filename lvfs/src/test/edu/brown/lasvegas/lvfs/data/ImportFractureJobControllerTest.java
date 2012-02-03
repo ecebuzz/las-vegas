@@ -31,6 +31,8 @@ import edu.brown.lasvegas.lvfs.ColumnFileBundle;
 import edu.brown.lasvegas.lvfs.ColumnFileReaderBundle;
 import edu.brown.lasvegas.lvfs.LVFSFilePath;
 import edu.brown.lasvegas.lvfs.TypedReader;
+import edu.brown.lasvegas.lvfs.data.job.ImportFractureJobController;
+import edu.brown.lasvegas.lvfs.data.job.ImportFractureJobParameters;
 import edu.brown.lasvegas.lvfs.meta.MasterMetadataRepository;
 import edu.brown.lasvegas.server.LVDataNode;
 import edu.brown.lasvegas.util.ValueRange;

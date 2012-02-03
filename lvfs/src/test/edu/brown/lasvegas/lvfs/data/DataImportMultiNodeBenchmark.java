@@ -20,6 +20,8 @@ import edu.brown.lasvegas.LVReplicaGroup;
 import edu.brown.lasvegas.LVTable;
 import edu.brown.lasvegas.LVTask;
 import edu.brown.lasvegas.client.LVMetadataClient;
+import edu.brown.lasvegas.lvfs.data.job.ImportFractureJobController;
+import edu.brown.lasvegas.lvfs.data.job.ImportFractureJobParameters;
 import edu.brown.lasvegas.protocol.LVMetadataProtocol;
 import edu.brown.lasvegas.server.LVCentralNode;
 import edu.brown.lasvegas.util.ValueRange;
