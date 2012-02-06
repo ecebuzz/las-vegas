@@ -170,4 +170,21 @@ public class DoubleValueTraitsTest {
         }
     }
 
+
+    @Test
+    public void testMergeDictionary() {
+        double[][] oldDicts = new double[][]{
+            new double[]{-5794875.0d, -5432.0d, 0.0d, 34343.0d, 54298234.0d},
+            new double[]{-5794875.0d, 3.0d, 54298234.0d},
+            new double[]{-5432.0d},
+            new double[]{34298234.0d, 44298234.0d, 84298234.0d},
+        };
+        int[][] conversions = new int[oldDicts.length][];
+        double[] newDicts = traits.mergeDictionary(oldDicts, conversions);
+        assertArrayEquals(new double[]{-5794875.0d, -5432.0d, 0.0d, 3.0d, 34343.0d, 34298234.0d, 44298234.0d, 54298234.0d, 84298234.0d}, newDicts, 0.000000001d);
+        assertArrayEquals(new int[]{0, 1, 2, 4, 7}, conversions[0]);
+        assertArrayEquals(new int[]{0, 3, 7}, conversions[1]);
+        assertArrayEquals(new int[]{1}, conversions[2]);
+        assertArrayEquals(new int[]{5, 6, 8}, conversions[3]);
+    }
 }

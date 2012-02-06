@@ -183,4 +183,61 @@ public final class VarcharValueTraits implements VarLenValueTraits<String> {
         }
         return writtenBytes;
     }
+
+    
+    @Override
+    public String[] mergeDictionary(String[][] arrays, int[][] conversions) {
+        int dictionaries = arrays.length;
+        assert (dictionaries >= 2);
+        assert (dictionaries == conversions.length);
+        String[] tmpDictionary = createArray(arrays[0].length * 2);
+        int curCount = 0;
+        int[] positions = new int[dictionaries];
+        int[] sizes = new int[dictionaries];
+        int finishedDictionaryCount = 0;
+
+        for (int i = 0; i < dictionaries; ++i) {
+            sizes[i] = arrays[i].length;
+            conversions[i] = new int[sizes[i]];
+        }
+
+        while (finishedDictionaryCount < dictionaries) {
+            boolean picked = false;
+            String minVal = null;
+            for (int i = 0; i < dictionaries; ++i) {
+                if (positions[i] == sizes[i]) {
+                    continue;
+                }
+                if (!picked || arrays[i][positions[i]].compareTo(minVal) < 0) {
+                    picked = true;
+                    minVal = arrays[i][positions[i]];
+                }
+            }
+            assert (picked);
+
+            for (int i = 0; i < dictionaries; ++i) {
+                if (positions[i] == sizes[i] || !arrays[i][positions[i]].equals(minVal)) {
+                    continue;
+                }
+                conversions[i][positions[i]] = curCount;
+                ++positions[i];
+                if (positions[i] == sizes[i]) {
+                    ++finishedDictionaryCount;
+                }
+            }
+            tmpDictionary[curCount] = minVal;
+            ++curCount;
+            
+            if (tmpDictionary.length == curCount) {
+                String[] tmpDictionaryExpanded = createArray(tmpDictionary.length * 2);
+                System.arraycopy(tmpDictionary, 0, tmpDictionaryExpanded, 0, tmpDictionary.length);
+                tmpDictionary = tmpDictionaryExpanded;
+            }
+        }
+
+        // adjust the array size
+        String[] finalDictionary = createArray(curCount);
+        System.arraycopy(tmpDictionary, 0, finalDictionary, 0, curCount);
+        return finalDictionary;
+    }
 }

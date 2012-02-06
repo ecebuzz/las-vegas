@@ -170,4 +170,21 @@ public class VarcharValueTraitsTest {
             assertArrayEquals(values, deserialized);
         }
     }
+
+    @Test
+    public void testMergeDictionary() {
+        String[][] oldDicts = new String[][]{
+            new String[]{format(-5794875L), format(-5432L), format(0L), format(34343L), format(54298234L)},
+            new String[]{format(-5794875L), format(3L), format(54298234L)},
+            new String[]{format(-5432L)},
+            new String[]{format(34298234L), format(44298234L), format(84298234L)},
+        };
+        int[][] conversions = new int[oldDicts.length][];
+        String[] newDicts = traits.mergeDictionary(oldDicts, conversions);
+        assertArrayEquals(new String[]{format(-5794875L), format(-5432L), format(0L), format(3L), format(34343L), format(34298234L), format(44298234L), format(54298234L), format(84298234L)}, newDicts);
+        assertArrayEquals(new int[]{0, 1, 2, 4, 7}, conversions[0]);
+        assertArrayEquals(new int[]{0, 3, 7}, conversions[1]);
+        assertArrayEquals(new int[]{1}, conversions[2]);
+        assertArrayEquals(new int[]{5, 6, 8}, conversions[3]);
+    }
 }

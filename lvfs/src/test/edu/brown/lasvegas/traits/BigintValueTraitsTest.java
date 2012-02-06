@@ -190,4 +190,21 @@ public class BigintValueTraitsTest {
         }
     }
 
+
+    @Test
+    public void testMergeDictionary() {
+        long[][] oldDicts = new long[][]{
+            new long[]{-5794875L, -5432L, 0L, 34343L, 54298234L},
+            new long[]{-5794875L, 3L, 54298234L},
+            new long[]{-5432L},
+            new long[]{34298234L, 44298234L, 84298234L},
+        };
+        int[][] conversions = new int[oldDicts.length][];
+        long[] newDicts = traits.mergeDictionary(oldDicts, conversions);
+        assertArrayEquals(new long[]{-5794875L, -5432L, 0L, 3L, 34343L, 34298234L, 44298234L, 54298234L, 84298234L}, newDicts);
+        assertArrayEquals(new int[]{0, 1, 2, 4, 7}, conversions[0]);
+        assertArrayEquals(new int[]{0, 3, 7}, conversions[1]);
+        assertArrayEquals(new int[]{1}, conversions[2]);
+        assertArrayEquals(new int[]{5, 6, 8}, conversions[3]);
+    }
 }

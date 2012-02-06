@@ -149,4 +149,60 @@ public final class DoubleValueTraits implements FixLenValueTraits<Double, double
         if (array == null) return 4;
         return 4 + array.length * (getBitsPerValue() / 8);
     }
+
+    @Override
+    public double[] mergeDictionary(double[][] arrays, int[][] conversions) {
+        int dictionaries = arrays.length;
+        assert (dictionaries >= 2);
+        assert (dictionaries == conversions.length);
+        double[] tmpDictionary = createArray(arrays[0].length * 2);
+        int curCount = 0;
+        int[] positions = new int[dictionaries];
+        int[] sizes = new int[dictionaries];
+        int finishedDictionaryCount = 0;
+
+        for (int i = 0; i < dictionaries; ++i) {
+            sizes[i] = arrays[i].length;
+            conversions[i] = new int[sizes[i]];
+        }
+
+        while (finishedDictionaryCount < dictionaries) {
+            boolean picked = false;
+            double minVal = 0;
+            for (int i = 0; i < dictionaries; ++i) {
+                if (positions[i] == sizes[i]) {
+                    continue;
+                }
+                if (!picked || arrays[i][positions[i]] < minVal) {
+                    picked = true;
+                    minVal = arrays[i][positions[i]];
+                }
+            }
+            assert (picked);
+
+            for (int i = 0; i < dictionaries; ++i) {
+                if (positions[i] == sizes[i] || arrays[i][positions[i]] != minVal) {
+                    continue;
+                }
+                conversions[i][positions[i]] = curCount;
+                ++positions[i];
+                if (positions[i] == sizes[i]) {
+                    ++finishedDictionaryCount;
+                }
+            }
+            tmpDictionary[curCount] = minVal;
+            ++curCount;
+            
+            if (tmpDictionary.length == curCount) {
+                double[] tmpDictionaryExpanded = createArray(tmpDictionary.length * 2);
+                System.arraycopy(tmpDictionary, 0, tmpDictionaryExpanded, 0, tmpDictionary.length);
+                tmpDictionary = tmpDictionaryExpanded;
+            }
+        }
+
+        // adjust the array size
+        double[] finalDictionary = createArray(curCount);
+        System.arraycopy(tmpDictionary, 0, finalDictionary, 0, curCount);
+        return finalDictionary;
+    }
 }

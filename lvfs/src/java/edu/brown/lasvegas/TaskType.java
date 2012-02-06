@@ -2,6 +2,8 @@ package edu.brown.lasvegas;
 
 import edu.brown.lasvegas.lvfs.data.task.LoadPartitionedTextFilesTaskParameters;
 import edu.brown.lasvegas.lvfs.data.task.LoadPartitionedTextFilesTaskRunner;
+import edu.brown.lasvegas.lvfs.data.task.MergePartitionSameSchemeTaskParameters;
+import edu.brown.lasvegas.lvfs.data.task.MergePartitionSameSchemeTaskRunner;
 import edu.brown.lasvegas.lvfs.data.task.PartitionRawTextFilesTaskParameters;
 import edu.brown.lasvegas.lvfs.data.task.PartitionRawTextFilesTaskRunner;
 import edu.brown.lasvegas.lvfs.data.task.RecoverPartitionFromBuddyTaskParameters;
@@ -53,6 +55,19 @@ public enum TaskType {
      */
     RECOVER_PARTITION_FROM_BUDDY,
     
+    /**
+     * Sub task of {@link JobType#MERGE_FRACTURE}.
+     * Given existing ReplicaPartition in the same replica scheme,
+     * merge them into one file.
+     * This task has low CPU-overhead because it assumes base partitions in the same scheme (sorting).
+     * However, it might cause additional network I/O because some other replica scheme might have
+     * corresponding partitions in the same node or at least in the same rack although
+     * it needs re-sorting to use.
+     * Another version of this task (MergePartitionDifferentScheme?) might be added later to see
+     * the tradeoff.
+     * @see MergePartitionSameSchemeTaskRunner
+     */
+    MERGE_PARTITION_SAME_SCHEME,
     
     /**
      * Sub task of {@link JobType#QUERY} (maybe other use?).
@@ -85,6 +100,8 @@ public enum TaskType {
             return new LoadPartitionedTextFilesTaskParameters();
         case RECOVER_PARTITION_FROM_BUDDY:
             return new RecoverPartitionFromBuddyTaskParameters();
+        case MERGE_PARTITION_SAME_SCHEME:
+            return new MergePartitionSameSchemeTaskParameters();
         default:
             return null;
         }
@@ -102,6 +119,8 @@ public enum TaskType {
             return new LoadPartitionedTextFilesTaskRunner();
         case RECOVER_PARTITION_FROM_BUDDY:
             return new RecoverPartitionFromBuddyTaskRunner();
+        case MERGE_PARTITION_SAME_SCHEME:
+            return new MergePartitionSameSchemeTaskRunner();
         default:
             return null;
         }

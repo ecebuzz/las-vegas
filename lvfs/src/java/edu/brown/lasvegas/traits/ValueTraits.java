@@ -148,4 +148,14 @@ public interface ValueTraits<T extends Comparable<T>, AT> {
      * Returns the required bytes to serialize the given array. 
      */
     int getSerializedByteSize (AT array);
+    
+    /**
+     * Given multiple arrays of the values that are pre-sorted and distinct respectively (in other words, a dictionary),
+     * produces a merged array and a mapping table from the old index to new index.
+     * As the name suggests, this is used for merging multiple dictionaries into one.
+     * @param arrays (in) dictionaries to be merged
+     * @param conversions (out) [dictionary][position in the dictionary] : position in the new dictionary
+     * @return merged array
+     */
+    AT mergeDictionary (AT[] arrays, int[][] conversions);
 }

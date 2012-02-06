@@ -30,6 +30,8 @@ public final class ColumnFileReaderBundle implements Closeable {
     private final ValueTraits<?, ?> compressedDataTraits;
     /** traits for original data type. */
     private final ValueTraits<?, ?> originalDataTraits;
+    /** buffer size for the data reader. */
+    private final int streamBufferSize;
 
     /** reader for main data file. */
     private TypedReader<?, ?> dataReader;
@@ -44,8 +46,12 @@ public final class ColumnFileReaderBundle implements Closeable {
      * because some file might not be required.
      */
     public ColumnFileReaderBundle (ColumnFileBundle fileBundle) {
+        this (fileBundle, 1 << 16);
+    }
+    public ColumnFileReaderBundle (ColumnFileBundle fileBundle, int streamBufferSize) {
         this.fileBundle = fileBundle;
         this.originalDataTraits = ValueTraitsFactory.getInstance(fileBundle.getColumnType());
+        this.streamBufferSize = streamBufferSize;
         if (fileBundle.getCompressionType() == CompressionType.DICTIONARY) {
             // dictionary encoding changes the data type in main data file to be 1/2/4 integers
             switch (fileBundle.getDictionaryBytesPerEntry()) {
@@ -98,9 +104,9 @@ public final class ColumnFileReaderBundle implements Closeable {
     private TypedReader<?, ?> instantiateDataReader () throws IOException {
         switch (fileBundle.getCompressionType()) {
         case DICTIONARY:
-            return new LocalDictCompressionReader(fileBundle.getDataFile(), (FixLenValueTraits<?, ?>) compressedDataTraits, fileBundle.getDictionaryFile(), originalDataTraits);
+            return new LocalDictCompressionReader(fileBundle.getDataFile(), (FixLenValueTraits<?, ?>) compressedDataTraits, fileBundle.getDictionaryFile(), originalDataTraits, streamBufferSize);
         case RLE:
-            return new LocalRLEReader(fileBundle.getDataFile(), originalDataTraits);
+            return new LocalRLEReader(fileBundle.getDataFile(), null, originalDataTraits, streamBufferSize);
         case GZIP_BEST_COMPRESSION:
         case SNAPPY:
             if (originalDataTraits instanceof VarLenValueTraits<?>) {
@@ -110,9 +116,9 @@ public final class ColumnFileReaderBundle implements Closeable {
             }
         case NONE:
             if (originalDataTraits instanceof VarLenValueTraits<?>) {
-                return new LocalVarLenReader(fileBundle.getDataFile(), (VarLenValueTraits<?>) originalDataTraits);
+                return new LocalVarLenReader(fileBundle.getDataFile(), null, (VarLenValueTraits<?>) originalDataTraits, streamBufferSize);
             } else {
-                return new LocalFixLenReader(fileBundle.getDataFile(), (FixLenValueTraits<?, ?>) originalDataTraits);
+                return new LocalFixLenReader(fileBundle.getDataFile(), (FixLenValueTraits<?, ?>) originalDataTraits, streamBufferSize);
             }
         default:
             throw new IllegalArgumentException("unexpected compression type:" + fileBundle.getCompressionType());
