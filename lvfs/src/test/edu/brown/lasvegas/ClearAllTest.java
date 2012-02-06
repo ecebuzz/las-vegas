@@ -13,7 +13,11 @@ import org.junit.Test;
 public class ClearAllTest {
     @Test
     public void deleteAll () throws IOException {
-        for (File file : new File("test").listFiles()) {
+        File folder = new File("test");
+        if (folder == null || !folder.exists()) {
+            return; // it doesn't exist yet. fine.
+        }
+        for (File file : folder.listFiles()) {
             assertTrue(deleteFileRecursive (file));
         }
     }
