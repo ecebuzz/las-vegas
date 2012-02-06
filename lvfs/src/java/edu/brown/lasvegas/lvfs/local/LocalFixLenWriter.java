@@ -49,7 +49,10 @@ public final class LocalFixLenWriter<T extends Number & Comparable<T>, AT> exten
     }
 
     public LocalFixLenWriter(VirtualFile file, FixLenValueTraits<T, AT> traits) throws IOException {
-        super(file, traits, 0); // the only API of this class is a batch-write. No buffering needed
+        this (file, traits, 1 << 16);
+    }
+    public LocalFixLenWriter(VirtualFile file, FixLenValueTraits<T, AT> traits, int streamBufferSize) throws IOException {
+        super(file, traits, streamBufferSize);
         this.traits = traits;
     }
 

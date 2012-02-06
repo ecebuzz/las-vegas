@@ -1,6 +1,7 @@
 package edu.brown.lasvegas.lvfs.data;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.log4j.Logger;
 
@@ -20,9 +21,18 @@ import edu.brown.lasvegas.lvfs.data.task.MergePartitionSameSchemeTaskRunner;
 import edu.brown.lasvegas.lvfs.local.LocalDictFile;
 import edu.brown.lasvegas.lvfs.local.LocalFixLenWriter;
 import edu.brown.lasvegas.lvfs.local.LocalWriterFactory;
+import edu.brown.lasvegas.traits.BigintValueTraits;
+import edu.brown.lasvegas.traits.DoubleValueTraits;
 import edu.brown.lasvegas.traits.FixLenValueTraits;
+import edu.brown.lasvegas.traits.FloatValueTraits;
+import edu.brown.lasvegas.traits.IntegerValueTraits;
+import edu.brown.lasvegas.traits.SmallintValueTraits;
+import edu.brown.lasvegas.traits.TinyintValueTraits;
 import edu.brown.lasvegas.traits.ValueTraits;
 import edu.brown.lasvegas.traits.ValueTraitsFactory;
+import edu.brown.lasvegas.traits.VarbinValueTraits;
+import edu.brown.lasvegas.traits.VarcharValueTraits;
+import edu.brown.lasvegas.util.ByteArray;
 
 /**
  * Core implementation of partition merging ({@link MergePartitionSameSchemeTaskRunner}).
@@ -39,13 +49,13 @@ public final class PartitionMergerForSameScheme {
     /** number of existing partitions to be based on. */
     private final int basePartitionCount;
 
-    /** original column types BEFORE compression. */
-    private final ColumnType[] columnTypes;
-
-    /** traits for the column types BEFORe compression*/
+    /** traits for the column types BEFORE compression*/
     @SuppressWarnings("rawtypes")
     private final ValueTraits[] originalTraits;
 
+    /** traits for the column types AFTER dictionary-compression. */
+    @SuppressWarnings("rawtypes")
+    private final ValueTraits[] compressedTraits;
 
     /** existing columnar files. [0 to basePartitions.len-1][0 to columnCount-1]. */
     private final ColumnFileBundle[][] baseFiles;
@@ -87,9 +97,6 @@ public final class PartitionMergerForSameScheme {
         this.basePartitionCount = baseFiles.length;
         this.columnCount = newFileNames.length;
 
-        this.columnTypes = columnTypes;
-        assert (columnCount == columnTypes.length);
-
         this.compressions = compressions;
         assert (columnCount == compressions.length);
 
@@ -110,9 +117,11 @@ public final class PartitionMergerForSameScheme {
         assert (tupleCount < (1L << 31));
 
         this.originalTraits = new ValueTraits[columnCount];
+        this.compressedTraits = new ValueTraits[columnCount];
         this.newFiles = new ColumnFileBundle[columnCount];
         for (int i = 0; i < columnCount; ++i) {
             originalTraits[i] = ValueTraitsFactory.getInstance(columnTypes[i]);
+            compressedTraits[i] = originalTraits[i]; //overwritten later if dictionary compressed
             ColumnFileBundle newFile = new ColumnFileBundle();
             newFile.setColumnType(columnTypes[i]);
             newFile.setCompressionType(compressions[i]);
@@ -190,6 +199,17 @@ public final class PartitionMergerForSameScheme {
             LocalDictFile newDictFile = new LocalDictFile(mergedDict, originalTraits[i]);
             newDictFile.writeToFile(newFiles[i].getDictionaryFile());
             newDictionaryBytesPerEntry[i] = newDictFile.getBytesPerEntry();
+            switch (newDictionaryBytesPerEntry[i]) {
+            case 1:
+                compressedTraits[i] = ValueTraitsFactory.TINYINT_TRAITS;
+                break;
+            case 2:
+                compressedTraits[i] = ValueTraitsFactory.SMALLINT_TRAITS;
+                break;
+            default:
+                assert (newDictionaryBytesPerEntry[i] == 4);
+                compressedTraits[i] = ValueTraitsFactory.INTEGER_TRAITS;
+            }
 
             newFiles[i].setDistinctValues(newDictFile.getDictionarySize());
             newFiles[i].setDictionaryBytesPerEntry(newDictFile.getBytesPerEntry());
@@ -197,17 +217,17 @@ public final class PartitionMergerForSameScheme {
             LOG.info("wrote.");
         }
         
-        LOG.info("prepared!");
+        LOG.info("prepared dictionary!");
     }
 
-    private final int cacheArrraySize = 1 << 16;
+    private final static int cacheArrraySize = 1 << 14;
 
     /**
      * Simply append each base partition's data into the new file. This assumes the scheme has no sorting.
      */
     @SuppressWarnings({"unchecked", "rawtypes"})
     private void copyBaseDataNoSorting (int col) throws IOException {
-        ValueTraits traits = baseFilesReader[0][col].getCompressedDataTraits();
+        ValueTraits traits = compressedTraits[col];
         ColumnFileBundle newFile = newFiles[col];
         TypedWriter dataWriter;
         if (compressions[col] == CompressionType.DICTIONARY) {
@@ -236,22 +256,7 @@ public final class PartitionMergerForSameScheme {
                     LOG.debug("copied old data file (" + baseFiles[i][col].getDataFile().length() + " bytes) in " + (end - start) + "ms");
                 }
             }
-    
-            long crc32Value = dataWriter.writeFileFooter();
-            newFile.setDataFileChecksum(crc32Value);
-            if (newFile.getPositionFile() != null) {
-                dataWriter.writePositionFile(newFile.getPositionFile());
-            }
-            dataWriter.flush();
-            // collect statistics
-            assert (!(dataWriter instanceof TypedDictWriter));
-            if (dataWriter instanceof TypedRLEWriter) {
-                newFile.setRunCount(((TypedRLEWriter) dataWriter).getRunCount());
-            } else if (dataWriter instanceof TypedBlockCmpWriter) {
-                long uncompressedSize = ((TypedBlockCmpWriter) dataWriter).getTotalUncompressedSize();
-                int uncompressedSizeKB = (int) (uncompressedSize / 1024L + (uncompressedSize % 1024 == 0 ? 0 : 1));
-                newFile.setUncompressedSizeKB(uncompressedSizeKB);
-            }
+            finishDataWriter (newFile, dataWriter);
         } finally {
             dataWriter.close();
         }
@@ -295,77 +300,520 @@ public final class PartitionMergerForSameScheme {
                 break;
             }
             // as it's dictionary-encoded, a little more conversion is needed
-            if (outCacheArray == inCacheArray) {
-                // convert the values using the old->new dictionary mapping
-                if (outCacheArray instanceof byte[]) {
-                    convertDictionaryCompressedValues ((byte[]) outCacheArray, 0, read, dictionaryConversion[col][base]);
-                } else if (outCacheArray instanceof short[]) {
-                    convertDictionaryCompressedValues ((short[]) outCacheArray, 0, read, dictionaryConversion[col][base]);
-                } else {
-                    convertDictionaryCompressedValues ((int[]) outCacheArray, 0, read, dictionaryConversion[col][base]);
-                }
-            } else {
-                // further, the integer size is different (new one should be larger).
-                // byte->short, byte->int or short->int
-                if (inCacheArray instanceof short[]) {
-                    resizeAndConvertDictionaryCompressedValues ((short[]) inCacheArray, (int[]) outCacheArray, 0, read, dictionaryConversion[col][base]);
-                } else {
-                    if (outCacheArray instanceof int[]) {
-                        resizeAndConvertDictionaryCompressedValues ((byte[]) inCacheArray, (int[]) outCacheArray, 0, read, dictionaryConversion[col][base]);
-                    } else {
-                        resizeAndConvertDictionaryCompressedValues ((byte[]) inCacheArray, (short[]) outCacheArray, 0, read, dictionaryConversion[col][base]);
+            convertDictionaryCompressedData(dictionaryConversion[col][base], outCacheArray, inCacheArray, 0, read);
+            dataWriter.writeValues(outCacheArray, 0, read);
+        }
+    }
+    
+    /**
+     * Merges each base partition's data for each column by the order of sorting column.
+     */
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private void mergeSortedBaseData () throws IOException {
+        assert (sortColumn != null);
+        MergeSortedBaseDataContext context = getMergeSortedBaseDataContextInstance();
+        try {
+            LOG.info("preparing readers/writers...");
+            context.prepare();
+            
+            LOG.info("prepared. starts reading/writing");
+            for (int base = 0; base < basePartitionCount; ++base) {
+                context.readBasePartition(base); // read the first chunk
+            }
+            
+            while (context.finishedBasePartitionCount < basePartitionCount) {
+                // consume tuples in each base partition with minimum sorting-column-value.
+                // repeat this until we use up all tuples from all partitions
+                context.setNextToConsume();
+                for (int base = 0; base < basePartitionCount; ++base) {
+                    if (context.nextToConsume[base] > 0) {
+                        for (int col = 0; col < columnCount; ++col) {
+                            context.dataWriters[col].writeValues(context.outCacheArrays[col][base], context.cacheArrayPosition[base], context.nextToConsume[base]);
+                        }
+                        context.cacheArrayPosition[base] += context.nextToConsume[base];
+                        assert (context.cacheArrayPosition[base] <= context.cacheArrayRead[base]);
+                        if (context.cacheArrayPosition[base] == context.cacheArrayRead[base]) {
+                            context.readBasePartition(base);
+                        }
                     }
                 }
             }
-            dataWriter.writeValues(outCacheArray, 0, read);
+
+            LOG.info("consumed all data. finishing up...");
+            for (int col = 0; col < columnCount; ++col) {
+                finishDataWriter (newFiles[col], context.dataWriters[col]);
+            }
+            LOG.info("done.");
+        } finally {
+            context.release();
+        }
+    }
+
+
+    @SuppressWarnings("rawtypes")
+    private MergeSortedBaseDataContext getMergeSortedBaseDataContextInstance() throws IOException {
+        ValueTraits sortingColumnTraits = compressedTraits[sortColumn];
+        if (sortingColumnTraits instanceof TinyintValueTraits) {
+            return new MergeSortedBaseDataContextTinyint();
+        }
+        if (sortingColumnTraits instanceof SmallintValueTraits) {
+            return new MergeSortedBaseDataContextSmallint();
+        }
+        if (sortingColumnTraits instanceof IntegerValueTraits) {
+            return new MergeSortedBaseDataContextInteger();
+        }
+        if (sortingColumnTraits instanceof BigintValueTraits) {
+            return new MergeSortedBaseDataContextBigint();
+        }
+        if (sortingColumnTraits instanceof FloatValueTraits) {
+            return new MergeSortedBaseDataContextFloat();
+        }
+        if (sortingColumnTraits instanceof DoubleValueTraits) {
+            return new MergeSortedBaseDataContextDouble();
+        }
+        if (sortingColumnTraits instanceof VarcharValueTraits) {
+            return new MergeSortedBaseDataContextVarchar();
+        }
+        if (sortingColumnTraits instanceof VarbinValueTraits) {
+            return new MergeSortedBaseDataContextVarbin();
+        }
+        throw new IOException ("unexpected traits type :" + sortingColumnTraits.getClass().getName());
+    }
+    /**
+     * Context class to hold the reader/writer objects and cached values used in
+     * {@link #mergeSortedBaseData()}.
+     * @param <SAT> sorting column's array data type after compression.
+     */
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    private abstract class MergeSortedBaseDataContext<SAT> {
+        int sortCol = sortColumn.intValue();
+        TypedWriter[] dataWriters = new TypedWriter[columnCount];
+        TypedReader[][] baseDataReaders = new TypedReader[columnCount][basePartitionCount];
+
+        /** array to receive data read from baseReaders. */
+        Object[][] inCacheArrays = new Object[columnCount][basePartitionCount];
+
+        /** the received data after dictionary-conversion. */
+        Object[][] outCacheArrays = new Object[columnCount][basePartitionCount];
+
+        /** copy of outCacheArrays for sorting column. */
+        SAT[] sortingColumnArray;
+
+        ValueTraits[][] baseTraits = new ValueTraits[columnCount][basePartitionCount];
+
+        boolean[] baseReaderCompleted = new boolean [basePartitionCount];
+        int[] cacheArrayPosition = new int [basePartitionCount];
+        int[] cacheArrayRead = new int [basePartitionCount];
+        int finishedBasePartitionCount = 0;
+        int[] nextToConsume = new int [basePartitionCount];
+
+        /** initialize the context. */
+        private void prepare() throws IOException {
+            for (int col = 0; col < columnCount; ++col) {
+                if (compressions[col] == CompressionType.DICTIONARY) {
+                    dataWriters[col] = new LocalFixLenWriter(newFiles[col].getDataFile(), (FixLenValueTraits<?, ?>) compressedTraits[col], 1 << 20);
+                } else {
+                    dataWriters[col] = LocalWriterFactory.getInstance(newFiles[col], compressions[col], compressedTraits[col], 1 << 20);
+                }
+
+                for (int base = 0; base < basePartitionCount; ++base) {
+                    baseDataReaders[col][base] = baseFilesReader[base][col].getCompressedDataReader();
+                    baseTraits[col][base] = baseFilesReader[base][col].getCompressedDataTraits();
+
+                    outCacheArrays[col][base] = compressedTraits[col].createArray(cacheArrraySize);
+                    if (compressions[col] == CompressionType.DICTIONARY
+                                    && newDictionaryBytesPerEntry[base] != baseFiles[base][col].getDictionaryBytesPerEntry()) {
+                        // the base dictionary and the new dictionary has different size-per-entry. a bit tricky
+                        inCacheArrays[col][base] = baseTraits[col][base].createArray(cacheArrraySize);
+                    }
+                    if (inCacheArrays[col][base] == null) {
+                        inCacheArrays[col][base] = outCacheArrays[col][base]; // otherwise in=out
+                    }
+                    if (col == sortCol) {
+                        sortingColumnArray[base] = (SAT) outCacheArrays[col][base];
+                    }
+                }
+            }
+            
+            Arrays.fill(baseReaderCompleted, false);
+            Arrays.fill(cacheArrayPosition, 0);
+            Arrays.fill(cacheArrayRead, 0);
+            Arrays.fill(nextToConsume, 0);
+        }
+        private void release () throws IOException {
+            for (int col = 0; col < columnCount; ++col) {
+                dataWriters[col].close();
+                for (int base = 0; base < basePartitionCount; ++base) {
+                    baseDataReaders[col][base].close();
+                }
+            }
+        }
+
+        private void readBasePartition (int base) throws IOException {
+            if (baseReaderCompleted[base]) {
+                return;
+            }
+            cacheArrayPosition[base] = 0;
+            for (int col = 0; col < columnCount; ++col) {
+                int read = baseDataReaders[col][base].readValues(inCacheArrays[col][base], 0, cacheArrraySize);
+                if (read < 0) {
+                    assert (col == 0);
+                    cacheArrayRead[base] = 0;
+                    baseReaderCompleted[base] = true;
+                    ++finishedBasePartitionCount;
+                    return;
+                }
+                if (cacheArrayRead[base] < 0) {
+                    cacheArrayRead[base] = read;
+                } else {
+                    assert (read == cacheArrayRead[base]);
+                }
+                if (compressions[col] == CompressionType.DICTIONARY) {
+                    convertDictionaryCompressedData(dictionaryConversion[col][base], outCacheArrays[col][base], inCacheArrays[col][base], 0, read);
+                }
+            }
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("read " + cacheArrayRead[base] + " tuples from " + base + "th base partition");
+            }
+        }
+        /**
+         * looks at the current cached values of sorting columns and determines
+         * the number of tuples from each base partition that has the next minimal sorting column value.
+         * This method is implemented in derived classes for efficiency.
+         */
+        abstract void setNextToConsume ();
+    }
+    // followings are ugly copy-paste. all because of Java not supporting primitive generics! I miss C++...
+    private class MergeSortedBaseDataContextTinyint extends MergeSortedBaseDataContext<byte[]> {
+        MergeSortedBaseDataContextTinyint() { sortingColumnArray = new byte[basePartitionCount][]; }
+        @Override
+        void setNextToConsume() {
+            //first, pick the minimal value
+            boolean picked = false;
+            byte minVal = 0;
+            for (int base = 0; base < basePartitionCount; ++base) {
+                if (cacheArrayPosition[base] >= cacheArrayRead[base]) {
+                    continue;
+                }
+                byte val = sortingColumnArray[base][cacheArrayPosition[base]];
+                if (!picked || val < minVal) {
+                    picked = true;
+                    minVal = val;
+                }
+            }
+            assert (picked);
+
+            //then, count the number of tuples in each base partition that has the minimal value.
+            for (int base = 0; base < basePartitionCount; ++base) {
+                int count;
+                for (count = 0;
+                    cacheArrayPosition[base] + count < cacheArrayRead[base] 
+                      && sortingColumnArray[base][cacheArrayPosition[base] + count] == minVal;
+                    ++count);
+                nextToConsume[base] = count;
+            }
+        }
+    }
+    private class MergeSortedBaseDataContextSmallint extends MergeSortedBaseDataContext<short[]> {
+        MergeSortedBaseDataContextSmallint() { sortingColumnArray = new short[basePartitionCount][]; }
+        @Override
+        void setNextToConsume() {
+            //first, pick the minimal value
+            boolean picked = false;
+            short minVal = 0;
+            for (int base = 0; base < basePartitionCount; ++base) {
+                if (cacheArrayPosition[base] >= cacheArrayRead[base]) {
+                    continue;
+                }
+                short val = sortingColumnArray[base][cacheArrayPosition[base]];
+                if (!picked || val < minVal) {
+                    picked = true;
+                    minVal = val;
+                }
+            }
+            assert (picked);
+
+            //then, count the number of tuples in each base partition that has the minimal value.
+            for (int base = 0; base < basePartitionCount; ++base) {
+                int count;
+                for (count = 0;
+                    cacheArrayPosition[base] + count < cacheArrayRead[base] 
+                      && sortingColumnArray[base][cacheArrayPosition[base] + count] == minVal;
+                    ++count);
+                nextToConsume[base] = count;
+            }
+        }
+    }
+    private class MergeSortedBaseDataContextInteger extends MergeSortedBaseDataContext<int[]> {
+        MergeSortedBaseDataContextInteger() { sortingColumnArray = new int[basePartitionCount][]; }
+        @Override
+        void setNextToConsume() {
+            //first, pick the minimal value
+            boolean picked = false;
+            int minVal = 0;
+            for (int base = 0; base < basePartitionCount; ++base) {
+                if (cacheArrayPosition[base] >= cacheArrayRead[base]) {
+                    continue;
+                }
+                int val = sortingColumnArray[base][cacheArrayPosition[base]];
+                if (!picked || val < minVal) {
+                    picked = true;
+                    minVal = val;
+                }
+            }
+            assert (picked);
+
+            //then, count the number of tuples in each base partition that has the minimal value.
+            for (int base = 0; base < basePartitionCount; ++base) {
+                int count;
+                for (count = 0;
+                    cacheArrayPosition[base] + count < cacheArrayRead[base] 
+                      && sortingColumnArray[base][cacheArrayPosition[base] + count] == minVal;
+                    ++count);
+                nextToConsume[base] = count;
+            }
+        }
+    }
+    private class MergeSortedBaseDataContextBigint extends MergeSortedBaseDataContext<long[]> {
+        MergeSortedBaseDataContextBigint() { sortingColumnArray = new long[basePartitionCount][]; }
+        @Override
+        void setNextToConsume() {
+            //first, pick the minimal value
+            boolean picked = false;
+            long minVal = 0;
+            for (int base = 0; base < basePartitionCount; ++base) {
+                if (cacheArrayPosition[base] >= cacheArrayRead[base]) {
+                    continue;
+                }
+                long val = sortingColumnArray[base][cacheArrayPosition[base]];
+                if (!picked || val < minVal) {
+                    picked = true;
+                    minVal = val;
+                }
+            }
+            assert (picked);
+
+            //then, count the number of tuples in each base partition that has the minimal value.
+            for (int base = 0; base < basePartitionCount; ++base) {
+                int count;
+                for (count = 0;
+                    cacheArrayPosition[base] + count < cacheArrayRead[base] 
+                      && sortingColumnArray[base][cacheArrayPosition[base] + count] == minVal;
+                    ++count);
+                nextToConsume[base] = count;
+            }
+        }
+    }
+    private class MergeSortedBaseDataContextFloat extends MergeSortedBaseDataContext<float[]> {
+        MergeSortedBaseDataContextFloat() { sortingColumnArray = new float[basePartitionCount][]; }
+        @Override
+        void setNextToConsume() {
+            //first, pick the minimal value
+            boolean picked = false;
+            float minVal = 0;
+            for (int base = 0; base < basePartitionCount; ++base) {
+                if (cacheArrayPosition[base] >= cacheArrayRead[base]) {
+                    continue;
+                }
+                float val = sortingColumnArray[base][cacheArrayPosition[base]];
+                if (!picked || val < minVal) {
+                    picked = true;
+                    minVal = val;
+                }
+            }
+            assert (picked);
+
+            //then, count the number of tuples in each base partition that has the minimal value.
+            for (int base = 0; base < basePartitionCount; ++base) {
+                int count;
+                for (count = 0;
+                    cacheArrayPosition[base] + count < cacheArrayRead[base] 
+                      && sortingColumnArray[base][cacheArrayPosition[base] + count] == minVal;
+                    ++count);
+                nextToConsume[base] = count;
+            }
+        }
+    }
+    private class MergeSortedBaseDataContextDouble extends MergeSortedBaseDataContext<double[]> {
+        MergeSortedBaseDataContextDouble() { sortingColumnArray = new double[basePartitionCount][]; }
+        @Override
+        void setNextToConsume() {
+            //first, pick the minimal value
+            boolean picked = false;
+            double minVal = 0;
+            for (int base = 0; base < basePartitionCount; ++base) {
+                if (cacheArrayPosition[base] >= cacheArrayRead[base]) {
+                    continue;
+                }
+                double val = sortingColumnArray[base][cacheArrayPosition[base]];
+                if (!picked || val < minVal) {
+                    picked = true;
+                    minVal = val;
+                }
+            }
+            assert (picked);
+
+            //then, count the number of tuples in each base partition that has the minimal value.
+            for (int base = 0; base < basePartitionCount; ++base) {
+                int count;
+                for (count = 0;
+                    cacheArrayPosition[base] + count < cacheArrayRead[base] 
+                      && sortingColumnArray[base][cacheArrayPosition[base] + count] == minVal;
+                    ++count);
+                nextToConsume[base] = count;
+            }
+        }
+    }
+    private class MergeSortedBaseDataContextVarchar extends MergeSortedBaseDataContext<String[]> {
+        MergeSortedBaseDataContextVarchar() { sortingColumnArray = new String[basePartitionCount][]; }
+        @Override
+        void setNextToConsume() {
+            //first, pick the minimal value
+            boolean picked = false;
+            String minVal = null;
+            for (int base = 0; base < basePartitionCount; ++base) {
+                if (cacheArrayPosition[base] >= cacheArrayRead[base]) {
+                    continue;
+                }
+                String val = sortingColumnArray[base][cacheArrayPosition[base]];
+                if (!picked || val.compareTo(minVal) < 0) {
+                    picked = true;
+                    minVal = val;
+                }
+            }
+            assert (picked);
+
+            //then, count the number of tuples in each base partition that has the minimal value.
+            for (int base = 0; base < basePartitionCount; ++base) {
+                int count;
+                for (count = 0;
+                    cacheArrayPosition[base] + count < cacheArrayRead[base] 
+                      && sortingColumnArray[base][cacheArrayPosition[base] + count].equals(minVal);
+                    ++count);
+                nextToConsume[base] = count;
+            }
+        }
+    }
+    private class MergeSortedBaseDataContextVarbin extends MergeSortedBaseDataContext<ByteArray[]> {
+        MergeSortedBaseDataContextVarbin() { sortingColumnArray = new ByteArray[basePartitionCount][]; }
+        @Override
+        void setNextToConsume() {
+            //first, pick the minimal value
+            boolean picked = false;
+            ByteArray minVal = null;
+            for (int base = 0; base < basePartitionCount; ++base) {
+                if (cacheArrayPosition[base] >= cacheArrayRead[base]) {
+                    continue;
+                }
+                ByteArray val = sortingColumnArray[base][cacheArrayPosition[base]];
+                if (!picked || val.compareTo(minVal) < 0) {
+                    picked = true;
+                    minVal = val;
+                }
+            }
+            assert (picked);
+
+            //then, count the number of tuples in each base partition that has the minimal value.
+            for (int base = 0; base < basePartitionCount; ++base) {
+                int count;
+                for (count = 0;
+                    cacheArrayPosition[base] + count < cacheArrayRead[base] 
+                      && sortingColumnArray[base][cacheArrayPosition[base] + count].equals(minVal);
+                    ++count);
+                nextToConsume[base] = count;
+            }
+        }
+    }
+
+    /**
+     * Converts dictionary-compressed values in the base partition to
+     * compressed values in the new partition with the new dictionary.
+     * This method does lots of casting and type-specific things to avoid creating Objects.
+     */
+    private static void convertDictionaryCompressedData (int[] conversion,
+                    Object outCacheArray, Object inCacheArray,
+                    int offset, int len) throws IOException {
+        if (outCacheArray == inCacheArray) {
+            // convert the values using the old->new dictionary mapping
+            if (outCacheArray instanceof byte[]) {
+                convertDictionaryCompressedValues ((byte[]) outCacheArray, offset, len, conversion);
+            } else if (outCacheArray instanceof short[]) {
+                convertDictionaryCompressedValues ((short[]) outCacheArray, offset, len, conversion);
+            } else {
+                convertDictionaryCompressedValues ((int[]) outCacheArray, offset, len, conversion);
+            }
+        } else {
+            // further, the integer size is different (new one should be larger).
+            // byte->short, byte->int or short->int
+            if (inCacheArray instanceof short[]) {
+                resizeAndConvertDictionaryCompressedValues ((short[]) inCacheArray, (int[]) outCacheArray, offset, len, conversion);
+            } else {
+                if (outCacheArray instanceof int[]) {
+                    resizeAndConvertDictionaryCompressedValues ((byte[]) inCacheArray, (int[]) outCacheArray, offset, len, conversion);
+                } else {
+                    resizeAndConvertDictionaryCompressedValues ((byte[]) inCacheArray, (short[]) outCacheArray, offset, len, conversion);
+                }
+            }
         }
     }
 
     // followings are for the case where new/old dictionary use the same integer size
-    private void convertDictionaryCompressedValues (byte[] values, int offset, int len, int[] conversion) {
+    private static void convertDictionaryCompressedValues (byte[] values, int offset, int len, int[] conversion) {
         int adjustment = 1 << 7;
         for (int i = offset; i < offset + len; ++i) {
             assert (conversion[values[i] + adjustment] >= 0 && conversion[values[i] + adjustment] < 2 * adjustment);
             values[i] = (byte) (conversion[values[i] + adjustment] - adjustment);
         }
     }
-    private void convertDictionaryCompressedValues (short[] values, int offset, int len, int[] conversion) {
+    private static void convertDictionaryCompressedValues (short[] values, int offset, int len, int[] conversion) {
         int adjustment = 1 << 15;
         for (int i = offset; i < offset + len; ++i) {
             assert (conversion[values[i] + adjustment] >= 0 && conversion[values[i] + adjustment] < 2 * adjustment);
             values[i] = (short) (conversion[values[i] + adjustment] - adjustment);
         }
     }
-    private void convertDictionaryCompressedValues (int[] values, int offset, int len, int[] conversion) {
+    private static void convertDictionaryCompressedValues (int[] values, int offset, int len, int[] conversion) {
         for (int i = offset; i < offset + len; ++i) {
             values[i] = conversion[values[i] ^ 0x80000000] ^ 0x80000000;
         }
     }
 
     // followings are for the case where new/old dictionary use different integer size (new one must be larger as this is merging)
-    private void resizeAndConvertDictionaryCompressedValues (byte[] before, short[] after, int offset, int len, int[] conversion) {
+    private static void resizeAndConvertDictionaryCompressedValues (byte[] before, short[] after, int offset, int len, int[] conversion) {
         for (int i = offset; i < offset + len; ++i) {
             assert (conversion[before[i] + (1 << 7)] >= 0 && conversion[before[i] + (1 << 7)] < (1 << 16));
             after[i] = (short) (conversion[before[i] + (1 << 7)] - (1 << 15));
         }
     }
-    private void resizeAndConvertDictionaryCompressedValues (byte[] before, int[] after, int offset, int len, int[] conversion) {
+    private static void resizeAndConvertDictionaryCompressedValues (byte[] before, int[] after, int offset, int len, int[] conversion) {
         for (int i = offset; i < offset + len; ++i) {
             assert (conversion[before[i] + (1 << 7)] >= 0);
             after[i] = conversion[before[i] + (1 << 7)] ^ 0x80000000;
         }
     }
-    private void resizeAndConvertDictionaryCompressedValues (short[] before, int[] after, int offset, int len, int[] conversion) {
+    private static void resizeAndConvertDictionaryCompressedValues (short[] before, int[] after, int offset, int len, int[] conversion) {
         for (int i = offset; i < offset + len; ++i) {
             assert (conversion[before[i] + (1 << 15)] >= 0);
             after[i] = conversion[before[i] + (1 << 15)] ^ 0x80000000;
         }
     }
 
-    /**
-     * Merges each base partition's data for each column by the order of sorting column.
-     */
-    private void mergeSortedBaseData () throws IOException {
-        //TODO
+    @SuppressWarnings({ "rawtypes" })
+    private static void finishDataWriter (ColumnFileBundle newFile, TypedWriter dataWriter) throws IOException {
+        long crc32Value = dataWriter.writeFileFooter();
+        newFile.setDataFileChecksum(crc32Value);
+        if (newFile.getPositionFile() != null) {
+            dataWriter.writePositionFile(newFile.getPositionFile());
+        }
+        dataWriter.flush();
+        // collect statistics
+        assert (!(dataWriter instanceof TypedDictWriter));
+        if (dataWriter instanceof TypedRLEWriter) {
+            newFile.setRunCount(((TypedRLEWriter) dataWriter).getRunCount());
+        } else if (dataWriter instanceof TypedBlockCmpWriter) {
+            long uncompressedSize = ((TypedBlockCmpWriter) dataWriter).getTotalUncompressedSize();
+            int uncompressedSizeKB = (int) (uncompressedSize / 1024L + (uncompressedSize % 1024 == 0 ? 0 : 1));
+            newFile.setUncompressedSizeKB(uncompressedSizeKB);
+        }
     }
 }

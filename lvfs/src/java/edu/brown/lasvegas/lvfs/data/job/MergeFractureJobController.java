@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import org.apache.hadoop.io.LongWritable;
 import org.apache.log4j.Logger;
 import org.mortbay.log.Log;
 
@@ -20,6 +21,10 @@ import edu.brown.lasvegas.LVReplicaScheme;
 import edu.brown.lasvegas.LVTable;
 import edu.brown.lasvegas.LVTask;
 import edu.brown.lasvegas.ReplicaPartitionStatus;
+import edu.brown.lasvegas.TaskStatus;
+import edu.brown.lasvegas.TaskType;
+import edu.brown.lasvegas.lvfs.data.task.DeletePartitionFilesTaskParameters;
+import edu.brown.lasvegas.lvfs.data.task.MergePartitionSameSchemeTaskParameters;
 import edu.brown.lasvegas.lvfs.placement.PlacementEventHandlerImpl;
 import edu.brown.lasvegas.protocol.LVMetadataProtocol;
 
@@ -85,11 +90,24 @@ public class MergeFractureJobController extends AbstractJobController<MergeFract
     }
     @Override
     protected void runDerived() throws IOException {
-        // TODO Auto-generated method stub
         if (!stopRequested && !errorEncountered) {
             mergePartitions(0.0d, 0.99d); // 99% of the work is this
         }
         
+        if (!stopRequested && !errorEncountered) {
+            deleteMergedPartitions (0.99d, 1.0d);
+            
+        }
+        if (!stopRequested && !errorEncountered) {
+            // delete metadata of merged fractures
+            long totalTupleCount = 0;
+            for (int i = 0; i < oldFractures.length; ++i) {
+                totalTupleCount += oldFractures[i].getTupleCount();
+                metaRepo.dropFracture(oldFractures[i].getFractureId());
+            }
+            // activate the new fracture. all done!
+            metaRepo.updateFractureNoReturn(newFracture.getFractureId(), FractureStatus.OK, new LongWritable(totalTupleCount), null);
+        }
     }
     
     /**
@@ -142,9 +160,64 @@ public class MergeFractureJobController extends AbstractJobController<MergeFract
                         continue;
                     }
                     
+                    int[] baseReplicaPartitionIdsArray = new int[baseReplicaPartitionIds.size()];
+                    for (int j = 0; j < baseReplicaPartitionIdsArray.length; ++j) {
+                        baseReplicaPartitionIdsArray[j] = baseReplicaPartitionIds.get(j);
+                    }
                     
+                    MergePartitionSameSchemeTaskParameters taskParam = new MergePartitionSameSchemeTaskParameters();
+                    taskParam.setBasePartitionIds(baseReplicaPartitionIdsArray);
+                    taskParam.setNewPartitionId(newPartitions[i].getPartitionId());
+                    int taskId = metaRepo.createNewTaskIdOnlyReturn(jobId, newPartitions[i].getNodeId(), TaskType.MERGE_PARTITION_SAME_SCHEME, taskParam.writeToBytes());
+                    LVTask task = metaRepo.updateTask(taskId, TaskStatus.START_REQUESTED, null, null, null);
+                    LOG.info("launched partition merging task: " + task);
+                    assert (!taskMap.containsKey(taskId));
+                    taskMap.put(taskId, task);
                 }
+                
             }
         }        
+        joinTasks(taskMap, baseProgress, completedProgress);
+    }
+
+    private void deleteMergedPartitions (double baseProgress, double completedProgress) throws IOException {
+        SortedMap<Integer, List<Integer>> basePartitionIdsToDeleteByNode = new TreeMap<Integer, List<Integer>>(); // map<nodeId, partitionIds>
+        for (int i = 0; i < oldFractures.length; ++i) {
+            // inactivate the merged fracture
+            metaRepo.updateFractureNoReturn(oldFractures[i].getFractureId(), FractureStatus.INACTIVE, null, null);
+            
+            // collect target files in each node
+            for (LVReplica replica : metaRepo.getAllReplicasByFractureId(oldFractures[i].getFractureId())) {
+                for (LVReplicaPartition partition : metaRepo.getAllReplicaPartitionsByReplicaId(replica.getReplicaId())) {
+                    if (partition.getStatus() == ReplicaPartitionStatus.EMPTY) {
+                        continue;
+                    }
+                    List<Integer> ids = basePartitionIdsToDeleteByNode.get(partition.getNodeId());
+                    if (ids == null) {
+                        ids = new ArrayList<Integer> ();
+                        basePartitionIdsToDeleteByNode.put(partition.getNodeId(), ids);
+                    }
+                    ids.add(partition.getPartitionId());
+                }
+            }
+        }
+        
+        SortedMap<Integer, LVTask> taskMap = new TreeMap<Integer, LVTask>();
+        for (Integer nodeId : basePartitionIdsToDeleteByNode.keySet()) {
+            List<Integer> partitionIds = basePartitionIdsToDeleteByNode.get(nodeId);
+            DeletePartitionFilesTaskParameters taskParam = new DeletePartitionFilesTaskParameters();
+            int[] array = new int[partitionIds.size()];
+            for (int j = 0; j < array.length; ++j) {
+                array[j] = partitionIds.get(j);
+            }
+            taskParam.setPartitionIds(array);
+
+            int taskId = metaRepo.createNewTaskIdOnlyReturn(jobId, nodeId, TaskType.DELETE_PARTITION_FILES, taskParam.writeToBytes());
+            LVTask task = metaRepo.updateTask(taskId, TaskStatus.START_REQUESTED, null, null, null);
+            LOG.info("launched task to delete files in " + partitionIds.size() + " partitions: " + task);
+            assert (!taskMap.containsKey(taskId));
+            taskMap.put(taskId, task);
+        }
+        joinTasks(taskMap, baseProgress, completedProgress);
     }
 }

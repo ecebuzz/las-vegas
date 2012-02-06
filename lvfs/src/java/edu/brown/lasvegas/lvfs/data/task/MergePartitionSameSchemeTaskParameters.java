@@ -56,6 +56,11 @@ public final class MergePartitionSameSchemeTaskParameters extends DataTaskParame
     public void write(DataOutput out) throws IOException {
         out.writeInt(newPartitionId);
         out.writeInt(basePartitionIds == null ? -1 : basePartitionIds.length);
+        if (basePartitionIds != null) {
+            for (int i = 0; i < basePartitionIds.length; ++i) {
+                out.writeInt(basePartitionIds[i]);
+            }
+        }
     }
 
     /**

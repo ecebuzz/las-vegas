@@ -18,22 +18,22 @@ public final class ValueTraitsFactory {
         case TIME:
         case TIMESTAMP:
         case BIGINT:
-            return new BigintValueTraits();
+            return BIGINT_TRAITS;
         case INTEGER:
-            return new IntegerValueTraits();
+            return INTEGER_TRAITS;
         case SMALLINT:
-            return new SmallintValueTraits();
+            return SMALLINT_TRAITS;
         case BOOLEAN:
         case TINYINT:
-            return new TinyintValueTraits();
+            return TINYINT_TRAITS;
         case FLOAT:
-            return new FloatValueTraits();
+            return FLOAT_TRAITS;
         case DOUBLE:
-            return new DoubleValueTraits();
+            return DOUBLE_TRAITS;
         case VARCHAR:
-            return new VarcharValueTraits();
+            return VARCHAR_TRAITS;
         case VARBINARY:
-            return new VarbinValueTraits();
+            return VARBIN_TRAITS;
         default:
             throw new IllegalArgumentException("unexpected type: " + type);
         }
@@ -46,14 +46,14 @@ public final class ValueTraitsFactory {
      */
     public static FixLenValueTraits<?, ?> getIntegerTraits (byte size) {
         if (size == 1) {
-            return new TinyintValueTraits();
+            return TINYINT_TRAITS;
         } else if (size == 2) {
-            return new SmallintValueTraits();
+            return SMALLINT_TRAITS;
         } else if (size == 4) {
-            return new IntegerValueTraits();
+            return INTEGER_TRAITS;
         } else {
             assert (size == 8);
-            return new BigintValueTraits();
+            return BIGINT_TRAITS;
         }
     }
 
@@ -64,12 +64,22 @@ public final class ValueTraitsFactory {
      */
     public static FixLenValueTraits<?, ?> getFloatTraits (byte size) {
         if (size == 4) {
-            return new FloatValueTraits();
+            return FLOAT_TRAITS;
         } else {
             assert (size == 8);
-            return new DoubleValueTraits();
+            return DOUBLE_TRAITS;
         }
     }
+
+    // reused instances. traits classes should be totally state-less. reusing has no problem.
+    public static final BigintValueTraits BIGINT_TRAITS = new BigintValueTraits();
+    public static final IntegerValueTraits INTEGER_TRAITS = new IntegerValueTraits();
+    public static final SmallintValueTraits SMALLINT_TRAITS = new SmallintValueTraits();
+    public static final TinyintValueTraits TINYINT_TRAITS = new TinyintValueTraits();
+    public static final FloatValueTraits FLOAT_TRAITS = new FloatValueTraits();
+    public static final DoubleValueTraits DOUBLE_TRAITS = new DoubleValueTraits();
+    public static final VarcharValueTraits VARCHAR_TRAITS = new VarcharValueTraits();
+    public static final VarbinValueTraits VARBIN_TRAITS = new VarbinValueTraits();
 
     private ValueTraitsFactory() {}
 }

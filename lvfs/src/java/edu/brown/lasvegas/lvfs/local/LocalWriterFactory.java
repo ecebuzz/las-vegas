@@ -21,8 +21,20 @@ public final class LocalWriterFactory {
      * @return writer object
      * @throws IOException
      */
-    @SuppressWarnings({ "unchecked", "rawtypes" })
     public static TypedWriter<?, ?> getInstance(ColumnFileBundle fileBundle, CompressionType compression, ValueTraits<?,?> traits) throws IOException {
+        return getInstance(fileBundle, compression, traits, 1 << 20);
+    }
+    /**
+     * Instantiate a file writer for the given file(s) and compression type.
+     * @param fileBundle the file to output
+     * @param compression the compression to apply while the writes.
+     * @param traits the data type traits BEFORE compression.
+     * @param streamBufferSize buffering size for underlying output stream
+     * @return writer object
+     * @throws IOException
+     */
+    @SuppressWarnings({ "unchecked", "rawtypes" })
+    public static TypedWriter<?, ?> getInstance(ColumnFileBundle fileBundle, CompressionType compression, ValueTraits<?,?> traits, int streamBufferSize) throws IOException {
         assert (fileBundle.getDataFile() != null);
         switch (compression) {
         case DICTIONARY:

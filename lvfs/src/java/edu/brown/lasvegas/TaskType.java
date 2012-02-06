@@ -1,5 +1,7 @@
 package edu.brown.lasvegas;
 
+import edu.brown.lasvegas.lvfs.data.task.DeletePartitionFilesTaskParameters;
+import edu.brown.lasvegas.lvfs.data.task.DeletePartitionFilesTaskRunner;
 import edu.brown.lasvegas.lvfs.data.task.LoadPartitionedTextFilesTaskParameters;
 import edu.brown.lasvegas.lvfs.data.task.LoadPartitionedTextFilesTaskRunner;
 import edu.brown.lasvegas.lvfs.data.task.MergePartitionSameSchemeTaskParameters;
@@ -70,6 +72,12 @@ public enum TaskType {
     MERGE_PARTITION_SAME_SCHEME,
     
     /**
+     * Sub task of a few jobs.
+     * Physically delete files in specified partitions in the node.
+     */
+    DELETE_PARTITION_FILES,
+
+    /**
      * Sub task of {@link JobType#QUERY} (maybe other use?).
      * Process projection (evaluate expression etc). If it's purely projection (output column itself),
      * this task is not needed (directly read column files without this).
@@ -102,6 +110,8 @@ public enum TaskType {
             return new RecoverPartitionFromBuddyTaskParameters();
         case MERGE_PARTITION_SAME_SCHEME:
             return new MergePartitionSameSchemeTaskParameters();
+        case DELETE_PARTITION_FILES:
+            return new DeletePartitionFilesTaskParameters();
         default:
             return null;
         }
@@ -121,6 +131,8 @@ public enum TaskType {
             return new RecoverPartitionFromBuddyTaskRunner();
         case MERGE_PARTITION_SAME_SCHEME:
             return new MergePartitionSameSchemeTaskRunner();
+        case DELETE_PARTITION_FILES:
+            return new DeletePartitionFilesTaskRunner();
         default:
             return null;
         }
