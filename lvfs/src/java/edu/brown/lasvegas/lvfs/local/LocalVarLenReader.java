@@ -70,6 +70,9 @@ public final class LocalVarLenReader<T extends Comparable<T>> extends LocalTyped
     public int readValues(T[] buffer, int off, int len) throws IOException {
         // unlike fixed-len reader. there is no faster way to do this.
         // so, just call readValue for each value...
+        if (!getRawValueReader().hasMore()) {
+            return -1;
+        }
         int count = 0;
         for (; count < len && getRawValueReader().hasMore(); ++count) {
             buffer[off + count] = readValue();

@@ -50,6 +50,11 @@ public interface ValueTraits<T extends Comparable<T>, AT> {
      * Creates an array of the specified size.
      */
     AT createArray (int size);
+
+    /**
+     * Creates an array of array (only the outer array is materialized. their elements are null).
+     */
+    AT[] create2DArray (int size);
     
     /** Returns the length of the array. */
     int length (AT array);

@@ -54,6 +54,9 @@ public class LocalBlockCompressionVarLenReader<T extends Comparable<T>> extends 
     }
     @Override
     public int readValues(T[] buffer, int off, int len) throws IOException {
+        if (!getProxyValueReader().hasMore()) {
+            return -1; // EOF
+        }
         for (int i = off; i < off + len; ++i) {
             if (!getProxyValueReader().hasMore()) {
                 return i - off; // EOF

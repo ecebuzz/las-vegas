@@ -108,8 +108,8 @@ public final class PartitionMergerForSameScheme {
         for (int i = 0; i < basePartitionCount; ++i) {
             assert (columnCount == baseFiles[i].length);
             for (int j = 0; j < columnCount; ++j) {
-                assert (columnTypes[i] == baseFiles[i][j].getColumnType());
-                assert (compressions[i] == baseFiles[i][j].getCompressionType());
+                assert (columnTypes[j] == baseFiles[i][j].getColumnType());
+                assert (compressions[j] == baseFiles[i][j].getCompressionType());
                 baseFilesReader[i][j] = new ColumnFileReaderBundle(baseFiles[i][j], 1 << 20);
             }
             tupleCount += baseFiles[i][0].getTupleCount();
@@ -183,7 +183,7 @@ public final class PartitionMergerForSameScheme {
             // first, load all dictionary
             LOG.info("loading all dictionaries for column-" + i + "...");
             OrderedDictionary<?, ?>[] baseDicts = new OrderedDictionary<?, ?>[basePartitionCount];
-            Object[] baseDictsEntries = new Object[basePartitionCount];
+            Object[] baseDictsEntries = originalTraits[i].create2DArray(basePartitionCount);
             for (int j = 0; j < basePartitionCount; ++j) {
                 baseDicts[j] = baseFilesReader[j][i].getDictionary();
                 baseDictsEntries[j] = baseDicts[j].getDictionary(); 
@@ -422,8 +422,10 @@ public final class PartitionMergerForSameScheme {
 
                     outCacheArrays[col][base] = compressedTraits[col].createArray(cacheArrraySize);
                     if (compressions[col] == CompressionType.DICTIONARY
-                                    && newDictionaryBytesPerEntry[base] != baseFiles[base][col].getDictionaryBytesPerEntry()) {
+                                    && newDictionaryBytesPerEntry[col] != baseFiles[base][col].getDictionaryBytesPerEntry()) {
                         // the base dictionary and the new dictionary has different size-per-entry. a bit tricky
+                        assert (newDictionaryBytesPerEntry[col] > baseFiles[base][col].getDictionaryBytesPerEntry()); // the merged one should be larger
+                        assert (compressedTraits[col] != baseTraits[col][base]);
                         inCacheArrays[col][base] = baseTraits[col][base].createArray(cacheArrraySize);
                     }
                     if (inCacheArrays[col][base] == null) {
@@ -463,7 +465,7 @@ public final class PartitionMergerForSameScheme {
                     ++finishedBasePartitionCount;
                     return;
                 }
-                if (cacheArrayRead[base] < 0) {
+                if (col == 0) {
                     cacheArrayRead[base] = read;
                 } else {
                     assert (read == cacheArrayRead[base]);
@@ -748,9 +750,11 @@ public final class PartitionMergerForSameScheme {
             if (inCacheArray instanceof short[]) {
                 resizeAndConvertDictionaryCompressedValues ((short[]) inCacheArray, (int[]) outCacheArray, offset, len, conversion);
             } else {
+                assert (inCacheArray instanceof byte[]);
                 if (outCacheArray instanceof int[]) {
                     resizeAndConvertDictionaryCompressedValues ((byte[]) inCacheArray, (int[]) outCacheArray, offset, len, conversion);
                 } else {
+                    assert (outCacheArray instanceof short[]);
                     resizeAndConvertDictionaryCompressedValues ((byte[]) inCacheArray, (short[]) outCacheArray, offset, len, conversion);
                 }
             }

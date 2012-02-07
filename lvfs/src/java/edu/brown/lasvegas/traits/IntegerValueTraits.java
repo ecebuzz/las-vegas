@@ -53,6 +53,10 @@ public final class IntegerValueTraits implements FixLenValueTraits<Integer, int[
         return new int[size];
     }
     @Override
+    public int[][] create2DArray(int size) {
+        return new int[size][];
+    }
+    @Override
     public int length(int[] array) {
         return array.length;
     }

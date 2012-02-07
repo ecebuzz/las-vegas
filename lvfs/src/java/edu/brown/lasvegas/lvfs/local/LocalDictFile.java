@@ -62,11 +62,11 @@ public final class LocalDictFile<T extends Comparable<T>, AT> implements Ordered
             AT buf = traits.createArray(BUF_SIZE);
             while (true) {
                 int read = dataReader.readValues(buf, 0, BUF_SIZE);
+                if (read < 0) {
+                    break;
+                }
                 for (int i = 0; i < read; ++i) {
                     distinctValues.add(traits.get(buf, i));
-                }
-                if (read == 0) {
-                    break;
                 }
             }
             long endMillisec = System.currentTimeMillis();

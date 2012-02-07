@@ -52,6 +52,10 @@ public final class BigintValueTraits implements FixLenValueTraits<Long, long[]> 
         return new long[size];
     }
     @Override
+    public long[][] create2DArray(int size) {
+        return new long[size][];
+    }
+    @Override
     public int length(long[] array) {
         return array.length;
     }

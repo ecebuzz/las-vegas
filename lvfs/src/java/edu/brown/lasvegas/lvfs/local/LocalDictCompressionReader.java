@@ -129,6 +129,9 @@ public class LocalDictCompressionReader<T extends Comparable<T>, AT, CT extends 
         }
         assureCATBuffer(len);
         int read = readCompressedValues(catBuffer, 0, len);
+        if (read <= 0) {
+            return read;
+        }
         if (catBuffer instanceof byte[]) {
             dict.decompressBatch((byte[]) catBuffer, 0, buffer, off, len);
         } else if (catBuffer instanceof short[]) {

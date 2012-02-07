@@ -39,6 +39,10 @@ public final class DoubleValueTraits implements FixLenValueTraits<Double, double
         return new double[size];
     }
     @Override
+    public double[][] create2DArray(int size) {
+        return new double[size][];
+    }
+    @Override
     public int length(double[] array) {
         return array.length;
     }

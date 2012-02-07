@@ -36,7 +36,7 @@ public interface TypedReader<T extends Comparable<T>, AT> extends Closeable {
      * @param buffer the buffer to receive results
      * @param off offset of the buffer
      * @param len maximum number of values to read
-     * @return number of values actually read
+     * @return number of values actually read. -1 if no more values to read.
      */
     int readValues (AT buffer, int off, int len) throws IOException;
 

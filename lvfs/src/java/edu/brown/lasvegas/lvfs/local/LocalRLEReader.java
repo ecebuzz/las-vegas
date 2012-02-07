@@ -120,7 +120,7 @@ public final class LocalRLEReader<T extends Comparable<T>, AT> extends LocalType
     @Override
     public final int readValues(AT buffer, int off, int len) throws IOException {
         assert (curTuple >= curRun.startTuple);
-        if (len <= 0) {
+        if (len == 0) {
             return 0;
         }
         int totalRead = 0;
@@ -135,7 +135,11 @@ public final class LocalRLEReader<T extends Comparable<T>, AT> extends LocalType
             }
             ValueRun<T> next = getNextRun();
             if (next == null) {
-                return totalRead;
+                if (totalRead == 0) {
+                    return -1;
+                } else {
+                    return totalRead;
+                }
             }
             assert (curTuple == curRun.startTuple); // increased during getNextRun()
         }
@@ -144,7 +148,11 @@ public final class LocalRLEReader<T extends Comparable<T>, AT> extends LocalType
         curTuple += len;
         assert (curTuple >= curRun.startTuple);
         assert (curTuple <= curRun.startTuple + curRun.runLength);
-        return totalRead;
+        if (totalRead == 0) {
+            return -1;
+        } else {
+            return totalRead;
+        }
     }
     
     @Override

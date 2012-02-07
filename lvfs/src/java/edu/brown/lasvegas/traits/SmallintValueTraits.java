@@ -52,6 +52,10 @@ public final class SmallintValueTraits implements FixLenValueTraits<Short, short
         return new short[size];
     }
     @Override
+    public short[][] create2DArray(int size) {
+        return new short[size][];
+    }
+    @Override
     public int length(short[] array) {
         return array.length;
     }

@@ -15,7 +15,7 @@ public abstract class RawValueReader {
      * @param buf buffer to receive the result
      * @param off offset of buf
      * @param len number of bytes to read
-     * @return number of bytes actually read
+     * @return number of bytes actually read.  -1 if no more values to read.
      * @throws IOException
      */
     public abstract int readBytes (byte[] buf, int off, int len) throws IOException;
@@ -118,37 +118,72 @@ public abstract class RawValueReader {
         return readBytes(conversionBuffer, 0, bytesToRead);
     }
 
-    /** Reads arbitrary number of 2-byte integers at once. */
+    /**
+     * Reads arbitrary number of 2-byte integers at once.
+     * @return number of values actually read.  -1 if no more values to read.
+     */
     public final int readShorts(short[] buffer, int off, int len) throws IOException {
-        len = readIntoConversionBuffer(len * 2) / 2;
+        int bytesRead = readIntoConversionBuffer(len * 2);
+        if (bytesRead <= 0) {
+            return bytesRead;
+        }
+        len = bytesRead / 2;
         ByteBuffer.wrap(conversionBuffer).asShortBuffer().get(buffer, off, len);
         return len;
     }
 
-    /** Reads arbitrary number of 4-byte integers at once. */
+    /**
+     * Reads arbitrary number of 4-byte integers at once.
+     * @return number of values actually read.  -1 if no more values to read.
+     */
     public final int readInts(int[] buffer, int off, int len) throws IOException {
-        len = readIntoConversionBuffer(len * 4) / 4;
+        int bytesRead = readIntoConversionBuffer(len * 4);
+        if (bytesRead <= 0) {
+            return bytesRead;
+        }
+        len = bytesRead / 4;
         ByteBuffer.wrap(conversionBuffer).asIntBuffer().get(buffer, off, len);
         return len;
     }
 
-    /** Reads arbitrary number of 8-byte integers at once. */
+    /**
+     * Reads arbitrary number of 8-byte integers at once.
+     * @return number of values actually read.  -1 if no more values to read.
+     */
     public final int readLongs(long[] buffer, int off, int len) throws IOException {
-        len = readIntoConversionBuffer(len * 8) / 8;
+        int bytesRead = readIntoConversionBuffer(len * 8);
+        if (bytesRead <= 0) {
+            return bytesRead;
+        }
+        len = bytesRead / 8;
         ByteBuffer.wrap(conversionBuffer).asLongBuffer().get(buffer, off, len);
         return len;
     }
     
-    /** Reads arbitrary number of 4-byte floats at once. */
+    /**
+     * Reads arbitrary number of 4-byte floats at once.
+     * @return number of values actually read.  -1 if no more values to read.
+     */
     public final int readFloats(float[] buffer, int off, int len) throws IOException {
-        len = readIntoConversionBuffer(len * 4) / 4;
+        int bytesRead = readIntoConversionBuffer(len * 4);
+        if (bytesRead <= 0) {
+            return bytesRead;
+        }
+        len = bytesRead / 4;
         ByteBuffer.wrap(conversionBuffer).asFloatBuffer().get(buffer, off, len);
         return len;
     }
 
-    /** Reads arbitrary number of 8-byte floats at once. */
+    /**
+     * Reads arbitrary number of 8-byte floats at once.
+     * @return number of values actually read.  -1 if no more values to read.
+     */
     public final int readDoubles(double[] buffer, int off, int len) throws IOException {
-        len = readIntoConversionBuffer(len * 8) / 8;
+        int bytesRead = readIntoConversionBuffer(len * 8);
+        if (bytesRead <= 0) {
+            return bytesRead;
+        }
+        len = bytesRead / 8;
         ByteBuffer.wrap(conversionBuffer).asDoubleBuffer().get(buffer, off, len);
         return len;
     }

@@ -52,6 +52,10 @@ public final class FloatValueTraits implements FixLenValueTraits<Float, float[]>
         return new float[size];
     }
     @Override
+    public float[][] create2DArray(int size) {
+        return new float[size][];
+    }
+    @Override
     public int length(float[] array) {
         return array.length;
     }

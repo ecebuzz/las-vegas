@@ -43,6 +43,10 @@ public final class VarcharValueTraits implements VarLenValueTraits<String> {
         return new String[size];
     }
     @Override
+    public String[][] create2DArray(int size) {
+        return new String[size][];
+    }
+    @Override
     public int length(String[] array) {
         return array.length;
     }

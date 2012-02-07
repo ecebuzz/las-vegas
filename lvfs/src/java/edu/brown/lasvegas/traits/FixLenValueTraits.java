@@ -17,7 +17,7 @@ public interface FixLenValueTraits<T extends Number & Comparable<T>, AT> extends
      * @param buffer the buffer to receive results
      * @param off offset of the buffer
      * @param len maximum number of values to read
-     * @return number of values read
+     * @return number of values read. -1 if no more values to read.
      */
     int readValues (RawValueReader reader, AT buffer, int off, int len) throws IOException;
     

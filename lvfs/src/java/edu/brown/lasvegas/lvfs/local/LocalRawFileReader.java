@@ -76,8 +76,8 @@ public class LocalRawFileReader implements Closeable {
             @Override
             public int readBytes(byte[] buf, int off, int len) throws IOException {
                 int read = rawStream.read(buf, off, len);
-                if (read < 0) {
-                    return 0;
+                if (read <= 0) {
+                    return read;
                 }
                 curPosition += read;
                 return read;

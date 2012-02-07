@@ -53,6 +53,10 @@ public final class TinyintValueTraits implements FixLenValueTraits<Byte, byte[]>
         return new byte[size];
     }
     @Override
+    public byte[][] create2DArray(int size) {
+        return new byte[size][];
+    }
+    @Override
     public int length(byte[] array) {
         return array.length;
     }

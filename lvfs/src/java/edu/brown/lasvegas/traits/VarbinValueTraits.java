@@ -45,6 +45,10 @@ public final class VarbinValueTraits implements VarLenValueTraits<ByteArray> {
         return new ByteArray[size];
     }
     @Override
+    public ByteArray[][] create2DArray(int size) {
+        return new ByteArray[size][];
+    }
+    @Override
     public int length(ByteArray[] array) {
         return array.length;
     }

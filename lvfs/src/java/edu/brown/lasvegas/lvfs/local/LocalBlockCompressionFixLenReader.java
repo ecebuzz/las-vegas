@@ -59,6 +59,9 @@ public final class LocalBlockCompressionFixLenReader<T extends Number & Comparab
         if (currentBlockIndex < 0) {
             seekToBlock(0);
         }
+        if (!getProxyValueReader().hasMore()) {
+            return -1; //EOF
+        }
         int totalRead = 0;
         while (totalRead < len) {
             if (!getProxyValueReader().hasMore()) {

@@ -14,23 +14,23 @@ import edu.brown.lasvegas.util.URLVirtualFile;
 public final class MiniLineorder {
     public static ColumnType[] getScheme() {
         return new ColumnType[]{
-            /*"lo_orderkey", */ColumnType.INTEGER,
-            /*"lo_linenumber", */ColumnType.TINYINT,
-            /*"lo_custkey", */ColumnType.INTEGER,
-            /*"lo_partkey", */ColumnType.INTEGER,
-            /*"lo_suppkey",*/ ColumnType.INTEGER,
-            /*"lo_orderdate",*/ ColumnType.INTEGER,
-            /*"lo_orderpriority",*/ ColumnType.VARCHAR,
-            /*"lo_shippriority",*/ ColumnType.VARCHAR,
-            /*"lo_quantity",*/ ColumnType.INTEGER,
-            /*"lo_extendedprice",*/ ColumnType.BIGINT,
-            /*"lo_ordertotalprice",*/ ColumnType.INTEGER,
-            /*"lo_discount",*/ ColumnType.SMALLINT,
-            /*"lo_revenue",*/ ColumnType.BIGINT,
-            /*"lo_supplycost",*/ ColumnType.INTEGER,
-            /*"lo_tax",*/ ColumnType.INTEGER,
-            /*"lo_commitdate",*/ ColumnType.INTEGER,
-            /*"lo_shipmode",*/ ColumnType.VARCHAR,
+            /*"0: lo_orderkey", */ColumnType.INTEGER,
+            /*"1: lo_linenumber", */ColumnType.TINYINT,
+            /*"2: lo_custkey", */ColumnType.INTEGER,
+            /*"3: lo_partkey", */ColumnType.INTEGER,
+            /*"4: lo_suppkey",*/ ColumnType.INTEGER,
+            /*"5: lo_orderdate",*/ ColumnType.INTEGER,
+            /*"6: lo_orderpriority",*/ ColumnType.VARCHAR,
+            /*"7: lo_shippriority",*/ ColumnType.VARCHAR,
+            /*"8: lo_quantity",*/ ColumnType.INTEGER,
+            /*"9: lo_extendedprice",*/ ColumnType.BIGINT,
+            /*"10: lo_ordertotalprice",*/ ColumnType.INTEGER,
+            /*"11: lo_discount",*/ ColumnType.SMALLINT,
+            /*"12: lo_revenue",*/ ColumnType.BIGINT,
+            /*"13: lo_supplycost",*/ ColumnType.INTEGER,
+            /*"14: lo_tax",*/ ColumnType.INTEGER,
+            /*"15: lo_commitdate",*/ ColumnType.INTEGER,
+            /*"16: lo_shipmode",*/ ColumnType.VARCHAR,
         };
     }
     public static TextFileTupleReader open() throws IOException {
@@ -91,4 +91,6 @@ public final class MiniLineorder {
             "lo_shipmode",
         };
     }
+    
+    public static final int MINI_LINEORDER_COUNT = 45;
 }
