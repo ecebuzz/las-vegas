@@ -44,4 +44,29 @@ public abstract class DataTaskParameters implements TaskParameters {
         write(out);
         return bytes.toByteArray();
     }
+    
+    /** helper method to serialize int[]. */
+    public final void writeIntArray (DataOutput out, int[] array) throws IOException {
+        out.writeInt(array == null ? -1 : array.length);
+        if (array != null) {
+            for (int i = 0; i < array.length; ++i) {
+                out.writeInt(array[i]);
+            }
+        }
+    }
+    /** helper method to deserialize int[]. */
+    public final int[] readIntArray (DataInput in) throws IOException {
+        int len = in.readInt();
+        assert (len >= -1);
+        int[] ret;
+        if (len == -1) {
+            ret = null;
+        } else {
+            ret = new int[len];
+            for (int i = 0; i < len; ++i) {
+                ret[i] = in.readInt();
+            }
+        }
+        return ret;
+    }
 }

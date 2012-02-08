@@ -1,5 +1,7 @@
 package edu.brown.lasvegas;
 
+import edu.brown.lasvegas.lvfs.data.task.BenchmarkTpchQ17TaskParameters;
+import edu.brown.lasvegas.lvfs.data.task.BenchmarkTpchQ17TaskRunner;
 import edu.brown.lasvegas.lvfs.data.task.DeletePartitionFilesTaskParameters;
 import edu.brown.lasvegas.lvfs.data.task.DeletePartitionFilesTaskRunner;
 import edu.brown.lasvegas.lvfs.data.task.LoadPartitionedTextFilesTaskParameters;
@@ -89,6 +91,12 @@ public enum TaskType {
      * Apply filtering to column-files of a sub-partition and output the column-files after filtering.
      */
     FILTER_COLUMN_FILES,
+    
+    // tasks below are for benchmarks and tests
+    /**
+     * @see JobType#BENCHMARK_TPCH_Q17
+     */
+    BENCHMARK_TPCH_Q17,
 
     /** kind of null. */
     INVALID,
@@ -112,6 +120,8 @@ public enum TaskType {
             return new MergePartitionSameSchemeTaskParameters();
         case DELETE_PARTITION_FILES:
             return new DeletePartitionFilesTaskParameters();
+        case BENCHMARK_TPCH_Q17:
+            return new BenchmarkTpchQ17TaskParameters();
         default:
             return null;
         }
@@ -133,6 +143,8 @@ public enum TaskType {
             return new MergePartitionSameSchemeTaskRunner();
         case DELETE_PARTITION_FILES:
             return new DeletePartitionFilesTaskRunner();
+        case BENCHMARK_TPCH_Q17:
+            return new BenchmarkTpchQ17TaskRunner();
         default:
             return null;
         }

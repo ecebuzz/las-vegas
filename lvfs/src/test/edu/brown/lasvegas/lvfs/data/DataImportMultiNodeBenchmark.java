@@ -173,7 +173,7 @@ public class DataImportMultiNodeBenchmark {
             LOG.info("Sub-Task finished in " + (task.getFinishedTime().getTime() - task.getStartedTime().getTime()) + "ms:" + task);
         }
     }
-    public ImportFractureJobParameters parseInputFile (String inputFileName) throws IOException {
+    public static ImportFractureJobParameters parseInputFile (LVMetadataProtocol metaRepo, LVTable table, String inputFileName) throws IOException {
         BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(inputFileName), "UTF-8"));
         ImportFractureJobParameters params = new ImportFractureJobParameters(table.getTableId());
         for (String line = reader.readLine(); line != null; line = reader.readLine()) {
@@ -219,7 +219,7 @@ public class DataImportMultiNodeBenchmark {
         DataImportMultiNodeBenchmark program = new DataImportMultiNodeBenchmark();
         program.setUp(metaRepoAddress);
         try {
-            ImportFractureJobParameters params = program.parseInputFile (inputFileName); 
+            ImportFractureJobParameters params = parseInputFile (program.metaRepo, program.table, inputFileName); 
             LOG.info("started: " + partitionCount + " partitions)");
             long start = System.currentTimeMillis();
             program.exec(params);

@@ -108,7 +108,7 @@ public class DataImportSingleNodeTpchBenchmark {
         masterRepository.createNewReplicaScheme(partGroup, masterRepository.getColumnByName(partTable.getTableId(), "p_partkey"), getColumnIds(partTable), partSource.getDefaultCompressions());
         
         lineitemTable = masterRepository.createNewTable(database.getDatabaseId(), "lineitem", lineitemSource.getColumnNames(), lineitemSource.getScheme());
-        lineitemGroup = masterRepository.createNewReplicaGroup(lineitemTable, masterRepository.getColumnByName(lineitemTable.getTableId(), "l_partkey"), ranges);
+        lineitemGroup = masterRepository.createNewReplicaGroup(lineitemTable, masterRepository.getColumnByName(lineitemTable.getTableId(), "l_partkey"), partGroup); // link to partGroup
         masterRepository.createNewReplicaScheme(lineitemGroup, masterRepository.getColumnByName(lineitemTable.getTableId(), "l_partkey"), getColumnIds(lineitemTable), lineitemSource.getDefaultCompressions());
 
         conf = new Configuration();

@@ -153,4 +153,18 @@
         	<classpath refid="lvfs.classpath"/>
 		</java>
 	</target>
+
+	<target name="import-bench-tpch" depends="compile"
+		description="Start a distributed data import benchmark for TPCH. Specify the number of partitions, the address of metadata repository, and input file for lineitem table and part table. : ant -Dpartitions=2 -Daddress=poseidon:28710 -Dinputfile_lineitem=inputs_lineitem.txt -Dinputfile_part=inputs_part.txt import-bench-tpch">
+		<java fork="true" classname="edu.brown.lasvegas.lvfs.data.DataImportMultiNodeTpchBenchmark">
+			<jvmarg value="-Xmx256m"/>
+			<jvmarg value="-server"/>
+			<jvmarg value="-da"/>
+			<arg value="${partitions}" />
+			<arg value="${address}" />
+			<arg value="${inputfile_lineitem}" />
+			<arg value="${inputfile_part}" />
+        	<classpath refid="lvfs.classpath"/>
+		</java>
+	</target>
 </project>

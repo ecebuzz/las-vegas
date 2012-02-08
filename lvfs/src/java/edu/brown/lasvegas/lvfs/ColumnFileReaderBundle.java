@@ -188,4 +188,13 @@ public final class ColumnFileReaderBundle implements Closeable {
     public ValueTraits<?, ?> getOriginalDataTraits() {
         return originalDataTraits;
     }
+    
+    /**
+     * Gets the columnar file.
+     *
+     * @return the columnar file
+     */
+    public ColumnFileBundle getFileBundle() {
+        return fileBundle;
+    }
 }

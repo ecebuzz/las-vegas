@@ -13,7 +13,7 @@ public final class MiniTPCHLineitem extends MiniDataSource {
             /*"1: l_partkey", */ColumnType.INTEGER,
             /*"2: l_suppkey",*/ ColumnType.INTEGER,
             /*"3: l_linenumber",*/ ColumnType.TINYINT,
-            /*"4: l_quantity",*/ ColumnType.DOUBLE,
+            /*"4: l_quantity",*/ ColumnType.FLOAT,
             /*"5: l_extendedprice",*/ ColumnType.DOUBLE,
             /*"6: l_discount",*/ ColumnType.FLOAT,
             /*"7: l_tax",*/ ColumnType.FLOAT,
