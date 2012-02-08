@@ -21,6 +21,7 @@ public class PartitionRewriterTest {
     private VirtualFile tmpFolder;
     private ColumnFileBundle[] columnFiles;
     private CompressionType[] compressions;
+    private final MiniDataSource dataSource = new MiniSSBLineorder();
     @Before
     public void setUp () throws Exception {
         tmpFolder = new LocalVirtualFile("test/imp/");
@@ -32,8 +33,8 @@ public class PartitionRewriterTest {
             throw new IOException ("can't make a temporary folder: " + tmpFolder);
         }
 
-        TextFileTupleReader reader = MiniLineorder.open();
-        compressions = MiniLineorder.getDefaultCompressions();
+        TextFileTupleReader reader = dataSource.open();
+        compressions = dataSource.getDefaultCompressions();
         String[] names = new String[compressions.length];
         for (int i = 0; i < names.length; ++i) names[i] = "tmp_" + i;
         BufferedTupleWriter writer = new BufferedTupleWriter(reader, 1 << 10, tmpFolder, compressions, names, false);

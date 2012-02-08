@@ -16,9 +16,10 @@ import edu.brown.lasvegas.util.ValueRange;
  */
 public class EquiWidthPartitionerTest {
     private TextFileTupleReader reader;
+    private final MiniDataSource dataSource = new MiniSSBLineorder();
     @Before
     public void setUp () throws IOException {
-        reader = MiniLineorder.open();
+        reader = dataSource.open();
     }
     @After
     public void tearDown () throws IOException {

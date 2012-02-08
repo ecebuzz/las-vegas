@@ -12,10 +12,11 @@ import edu.brown.lasvegas.tuple.TextFileTupleReader;
  * Another test using lineorder.tbl.
  */
 public class TextFileTupleReaderLineorderTest {
+    private final MiniDataSource dataSource = new MiniSSBLineorder();
     @Test
     public void testAll() throws Exception {
-        ColumnType[] scheme = MiniLineorder.getScheme();
-        TextFileTupleReader reader = MiniLineorder.open();
+        ColumnType[] scheme = dataSource.getScheme();
+        TextFileTupleReader reader = dataSource.open();
         assertEquals (17, scheme.length);
         assertEquals (scheme.length, reader.getColumnCount());
         int linesRead = 0;

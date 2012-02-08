@@ -28,6 +28,8 @@ public class PartitionMergerForSameSchemeTest {
     private ColumnType[] columnTypes;
     private CompressionType[] compressions;
 
+    private final MiniDataSource dataSource = new MiniSSBLineorder();
+
     @Before
     public void setUp () throws Exception {
         tmpFolder = new LocalVirtualFile("test/merge/");
@@ -38,14 +40,14 @@ public class PartitionMergerForSameSchemeTest {
         if (!tmpFolder.exists()) {
             throw new IOException ("can't make a temporary folder: " + tmpFolder);
         }
-        columnTypes = MiniLineorder.getScheme();
-        compressions = MiniLineorder.getDefaultCompressions();
+        columnTypes = dataSource.getScheme();
+        compressions = dataSource.getDefaultCompressions();
     }
     private void createColumnFiles (int sortColumn) throws Exception {
         columnFiles = new ColumnFileBundle[FRACTURES][];
         for (int rep = 0; rep < FRACTURES; ++rep) {
             {
-                TextFileTupleReader reader = MiniLineorder.open();
+                TextFileTupleReader reader = dataSource.open();
                 String[] names = new String[compressions.length];
                 for (int i = 0; i < names.length; ++i) names[i] = "tmp_" + rep + "_" + i;
                 BufferedTupleWriter writer = new BufferedTupleWriter(reader, 1 << 10, tmpFolder, compressions, names, false);
@@ -110,7 +112,7 @@ public class PartitionMergerForSameSchemeTest {
     @SuppressWarnings({ "rawtypes", "unchecked" })
     private void checkMergedFiles (ColumnFileBundle[] mergedFiles, Integer sorting, String name) throws IOException {
         ColumnFileTupleReader tupleReader = new ColumnFileTupleReader(mergedFiles);
-        assertEquals(MiniLineorder.MINI_LINEORDER_COUNT * FRACTURES, tupleReader.getTupleCount());
+        assertEquals(dataSource.getCount() * FRACTURES, tupleReader.getTupleCount());
         StringBuffer buf = new StringBuffer(8192);
         buf.append(name + " all tuples\r\n");
         Comparable prev = null;

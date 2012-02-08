@@ -146,17 +146,31 @@ public abstract class AbstractJobController<Param extends JobParameters>
         }
     }
 
+    private final static long CANCEL_REQUEST_GIVEUP_AFTER = 20000L;
+    
     /**
      * wait until all tasks are completed.
      * if any task threw an error, we stop the entire job (as this is a raw local drive, there is no back-up node to recover from a crash)
      */
     protected final void joinTasks (SortedMap<Integer, LVTask> taskMap, double baseProgress, double completedProgress) throws IOException {
         int finishedCount = 0;
+        boolean cancelRequested = false;
+        long cancelRequestedAt = 0;
         while (!stopRequested && finishedCount != taskMap.size()) {
             try {
                 Thread.sleep(errorEncountered ? taskJoinIntervalOnErrorMilliseconds : taskJoinIntervalMilliseconds);
             } catch (InterruptedException ex) {
             }
+
+            if (errorEncountered && cancelRequested) {
+                if (cancelRequestedAt < System.currentTimeMillis() - CANCEL_REQUEST_GIVEUP_AFTER) {
+                    LOG.error("Task cancel request ignored for too long time. Gave up");
+                    return;
+                } else {
+                    LOG.warn("Waiting for cancelled tasks to exit(" + (System.currentTimeMillis() - cancelRequestedAt) + "ms/" + CANCEL_REQUEST_GIVEUP_AFTER + "ms)...");
+                }
+            }
+
             LOG.debug("polling the progress of tasks...");
             for (LVTask task : taskMap.values()) {
                 if (TaskStatus.isFinished(task.getStatus())) {
@@ -180,11 +194,18 @@ public abstract class AbstractJobController<Param extends JobParameters>
                 }
             }
             if (errorEncountered) {
-                cancelAllTasks (taskMap);
+                if (!cancelRequested) {
+                    cancelAllTasks (taskMap);
+                    cancelRequested = true;
+                    cancelRequestedAt = System.currentTimeMillis();
+                }
             }
         }
         if (stopRequested) {
-            cancelAllTasks (taskMap);
+            if (!cancelRequested) {
+                cancelAllTasks (taskMap);
+                cancelRequested = true;
+            }
         }
     }
 }

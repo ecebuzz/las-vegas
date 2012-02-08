@@ -54,6 +54,8 @@ public class DataImportBenchmarkTest {
     private HashMap<String, LVColumn> columns;
     private int[] columnIds;
     private LVReplicaGroup group;
+    
+    private final MiniDataSource dataSource = new MiniSSBLineorder();
 
     @Before
     public void setUp () throws IOException {
@@ -70,9 +72,9 @@ public class DataImportBenchmarkTest {
             }
         }
         database = masterRepository.createNewDatabase("db1");
-        final String[] columnNames = MiniLineorder.getColumnNames();
+        final String[] columnNames = dataSource.getColumnNames();
         columns = new HashMap<String, LVColumn>();
-        table = masterRepository.createNewTable(database.getDatabaseId(), "lineorder", columnNames, MiniLineorder.getScheme());
+        table = masterRepository.createNewTable(database.getDatabaseId(), "lineorder", columnNames, dataSource.getScheme());
         for (LVColumn column : masterRepository.getAllColumnsExceptEpochColumn(table.getTableId())) {
             columns.put(column.getName(), column);
         }
@@ -97,9 +99,9 @@ public class DataImportBenchmarkTest {
             }
         }
         group = masterRepository.createNewReplicaGroup(table, columns.get("lo_orderkey"), ranges);
-        masterRepository.createNewReplicaScheme(group, columns.get("lo_orderkey"), columnIds, MiniLineorder.getDefaultCompressions());
-        masterRepository.createNewReplicaScheme(group, columns.get("lo_suppkey"), columnIds, MiniLineorder.getDefaultCompressions());
-        masterRepository.createNewReplicaScheme(group, columns.get("lo_orderdate"), columnIds, MiniLineorder.getDefaultCompressions());
+        masterRepository.createNewReplicaScheme(group, columns.get("lo_orderkey"), columnIds, dataSource.getDefaultCompressions());
+        masterRepository.createNewReplicaScheme(group, columns.get("lo_suppkey"), columnIds, dataSource.getDefaultCompressions());
+        masterRepository.createNewReplicaScheme(group, columns.get("lo_orderdate"), columnIds, dataSource.getDefaultCompressions());
 
         
         for (int i = 0; i < rackCount; ++i) {

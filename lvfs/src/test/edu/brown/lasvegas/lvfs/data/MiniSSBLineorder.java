@@ -1,18 +1,14 @@
 package edu.brown.lasvegas.lvfs.data;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
 
 import edu.brown.lasvegas.ColumnType;
 import edu.brown.lasvegas.CompressionType;
-import edu.brown.lasvegas.lvfs.VirtualFile;
-import edu.brown.lasvegas.tuple.TextFileTupleReader;
-import edu.brown.lasvegas.util.URLVirtualFile;
 
 /** helper methods to use min_lineorder.tbl in this package. */
-public final class MiniLineorder {
-    public static ColumnType[] getScheme() {
+public final class MiniSSBLineorder extends MiniDataSource {
+    @Override
+    public ColumnType[] getScheme() {
         return new ColumnType[]{
             /*"0: lo_orderkey", */ColumnType.INTEGER,
             /*"1: lo_linenumber", */ColumnType.TINYINT,
@@ -33,23 +29,13 @@ public final class MiniLineorder {
             /*"16: lo_shipmode",*/ ColumnType.VARCHAR,
         };
     }
-    public static TextFileTupleReader open() throws IOException {
-        URL testFile = MiniLineorder.class.getResource("mini_lineorder.tbl");
-        ColumnType[] scheme = getScheme();
-        TextFileTupleReader reader = new TextFileTupleReader(new VirtualFile[]{new URLVirtualFile(testFile)}, scheme, '|');
-        return reader;
-    }
-    public static byte[] getFileBody() throws IOException {
-        URL testFile = MiniLineorder.class.getResource("mini_lineorder.tbl");
-        InputStream in = testFile.openStream();
-        byte[] bytes = new byte[in.available()];
-        int read = in.read(bytes);
-        assert (bytes.length == read);
-        in.close();
-        return bytes;
+    @Override
+    public URL getFileURL() {
+        return MiniSSBLineorder.class.getResource("mini_lineorder.tbl");
     }
     
-    public static CompressionType[] getDefaultCompressions() {
+    @Override
+    public CompressionType[] getDefaultCompressions() {
         return new CompressionType[]{
             /*"lo_orderkey", */CompressionType.NONE,
             /*"lo_linenumber", */CompressionType.NONE,
@@ -70,7 +56,8 @@ public final class MiniLineorder {
             /*"lo_shipmode",*/ CompressionType.DICTIONARY,
         };
     }
-    public static String[] getColumnNames () {
+    @Override
+    public String[] getColumnNames () {
         return new String[]{
             "lo_orderkey", 
             "lo_linenumber", 
@@ -92,5 +79,8 @@ public final class MiniLineorder {
         };
     }
     
-    public static final int MINI_LINEORDER_COUNT = 45;
+    @Override
+    public int getCount() {
+        return 45;
+    }
 }

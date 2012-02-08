@@ -112,6 +112,7 @@ public class DataImportMultiNodeBenchmark {
     private HashMap<String, LVColumn> columns;
     private int[] columnIds;
     private LVReplicaGroup group;
+    private final MiniDataSource dataSource = new MiniSSBLineorder();
     
     private void setUp (String metadataAddress) throws IOException {
         conf = new Configuration();
@@ -127,9 +128,9 @@ public class DataImportMultiNodeBenchmark {
         }
 
         database = metaRepo.createNewDatabase(dbname);
-        final String[] columnNames = MiniLineorder.getColumnNames();
+        final String[] columnNames = dataSource.getColumnNames();
         columns = new HashMap<String, LVColumn>();
-        table = metaRepo.createNewTable(database.getDatabaseId(), "lineorder", columnNames, MiniLineorder.getScheme());
+        table = metaRepo.createNewTable(database.getDatabaseId(), "lineorder", columnNames, dataSource.getScheme());
         for (LVColumn column : metaRepo.getAllColumnsExceptEpochColumn(table.getTableId())) {
             columns.put(column.getName(), column);
         }
@@ -153,9 +154,9 @@ public class DataImportMultiNodeBenchmark {
             }
         }
         group = metaRepo.createNewReplicaGroup(table, columns.get("lo_orderkey"), ranges);
-        metaRepo.createNewReplicaScheme(group, columns.get("lo_orderkey"), columnIds, MiniLineorder.getDefaultCompressions());
-        metaRepo.createNewReplicaScheme(group, columns.get("lo_suppkey"), columnIds, MiniLineorder.getDefaultCompressions());
-        metaRepo.createNewReplicaScheme(group, columns.get("lo_orderdate"), columnIds, MiniLineorder.getDefaultCompressions());
+        metaRepo.createNewReplicaScheme(group, columns.get("lo_orderkey"), columnIds, dataSource.getDefaultCompressions());
+        metaRepo.createNewReplicaScheme(group, columns.get("lo_suppkey"), columnIds, dataSource.getDefaultCompressions());
+        metaRepo.createNewReplicaScheme(group, columns.get("lo_orderdate"), columnIds, dataSource.getDefaultCompressions());
     }
     private void tearDown () throws IOException {
         if (client != null) {

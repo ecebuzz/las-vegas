@@ -64,6 +64,8 @@ public class DataImportSingleNodeBenchmark {
     private int[] columnIds;
     private LVReplicaGroup group;
 
+    private final MiniDataSource dataSource = new MiniSSBLineorder();
+
     private void setUp () throws IOException {
         ClearAllTest.deleteFileRecursive(new File("test"));
         if (!inputFile.exists()) {
@@ -82,9 +84,9 @@ public class DataImportSingleNodeBenchmark {
         rack = masterRepository.createNewRack("rack");
         node = masterRepository.createNewRackNode(rack, DATANODE_NAME, DATANODE_ADDRESS);
         database = masterRepository.createNewDatabase("db1");
-        final String[] columnNames = MiniLineorder.getColumnNames();
+        final String[] columnNames = dataSource.getColumnNames();
         columns = new HashMap<String, LVColumn>();
-        table = masterRepository.createNewTable(database.getDatabaseId(), "lineorder", columnNames, MiniLineorder.getScheme());
+        table = masterRepository.createNewTable(database.getDatabaseId(), "lineorder", columnNames, dataSource.getScheme());
         for (LVColumn column : masterRepository.getAllColumnsExceptEpochColumn(table.getTableId())) {
             columns.put(column.getName(), column);
         }
@@ -108,9 +110,9 @@ public class DataImportSingleNodeBenchmark {
             }
         }
         group = masterRepository.createNewReplicaGroup(table, columns.get("lo_orderkey"), ranges);
-        masterRepository.createNewReplicaScheme(group, columns.get("lo_orderkey"), columnIds, MiniLineorder.getDefaultCompressions());
-        masterRepository.createNewReplicaScheme(group, columns.get("lo_suppkey"), columnIds, MiniLineorder.getDefaultCompressions());
-        masterRepository.createNewReplicaScheme(group, columns.get("lo_orderdate"), columnIds, MiniLineorder.getDefaultCompressions());
+        masterRepository.createNewReplicaScheme(group, columns.get("lo_orderkey"), columnIds, dataSource.getDefaultCompressions());
+        masterRepository.createNewReplicaScheme(group, columns.get("lo_suppkey"), columnIds, dataSource.getDefaultCompressions());
+        masterRepository.createNewReplicaScheme(group, columns.get("lo_orderdate"), columnIds, dataSource.getDefaultCompressions());
 
         conf = new Configuration();
         rootDir = lvfsRoot + "/node_lvfs_" + Math.abs(new Random(System.nanoTime()).nextInt());
