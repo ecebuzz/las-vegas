@@ -15,6 +15,7 @@ import edu.brown.lasvegas.lvfs.VirtualFile;
 import edu.brown.lasvegas.lvfs.data.PartitionedTextFileReader;
 import edu.brown.lasvegas.util.ByteArray;
 import edu.brown.lasvegas.util.ParseUtil;
+import edu.brown.lasvegas.util.ParseUtil.DateCachedParser;
 
 /**
  * A tuple reader implementation which reads one or more text files.
@@ -30,9 +31,7 @@ public class TextFileTupleReader extends DefaultTupleReader implements Sampleabl
     private final int buffersize;
     private final Charset charset;
     private final char delimiter;
-    private final DateFormat dateFormat;
-    private final DateFormat timeFormat;
-    private final DateFormat timestampFormat;
+    private final DateCachedParser dateParser, timeParser, timestampParser;
 
     private PartitionedTextFileReader reader;
 
@@ -60,9 +59,9 @@ public class TextFileTupleReader extends DefaultTupleReader implements Sampleabl
         this.delimiter = delimiter;
         this.buffersize = buffersize;
         this.charset = charset;
-        this.dateFormat = dateFormat;
-        this.timeFormat = timeFormat;
-        this.timestampFormat = timestampFormat;
+        this.dateParser = new DateCachedParser(dateFormat);
+        this.timeParser = new DateCachedParser(timeFormat);
+        this.timestampParser = new DateCachedParser(timestampFormat);
     }
     @Override
     public String getCurrentTupleAsString() {
@@ -176,10 +175,9 @@ public class TextFileTupleReader extends DefaultTupleReader implements Sampleabl
                         case VARBINARY: dest[i] = new ByteArray(Base64.decodeBase64(line.substring(offset, pos))); break;
 
                         case BOOLEAN: dest[i] = ParseUtil.parseBoolean(line, offset, pos - offset) ? (byte) 1 : (byte) 0; break;
-                        // should we use ParsePosition? but we anyway create a Date object here... 
-                        case DATE: dest[i] = dateFormat.parse(line.substring(offset, pos)).getTime(); break;
-                        case TIME: dest[i] = timeFormat.parse(line.substring(offset, pos)).getTime(); break;
-                        case TIMESTAMP: dest[i] = timestampFormat.parse(line.substring(offset, pos)).getTime(); break;
+                        case DATE: dest[i] = dateParser.parse(line, offset, pos - offset).getTime(); break;
+                        case TIME: dest[i] = timeParser.parse(line, offset, pos - offset).getTime(); break;
+                        case TIMESTAMP: dest[i] = timestampParser.parse(line, offset, pos - offset).getTime(); break;
                         }
                     }
                 }

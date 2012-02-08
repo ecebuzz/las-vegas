@@ -1,4 +1,5 @@
 *.o
 *.tbl
+*.tbl.*
 dbgen
 qgen

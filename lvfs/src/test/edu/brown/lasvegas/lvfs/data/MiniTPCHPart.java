@@ -16,7 +16,7 @@ public final class MiniTPCHPart extends MiniDataSource {
             /*"4: p_type",*/ ColumnType.VARCHAR,
             /*"5: p_size",*/ ColumnType.INTEGER,
             /*"6: p_container",*/ ColumnType.VARCHAR,
-            /*"7: p_retailprice",*/ ColumnType.DOUBLE,
+            /*"7: p_retailprice",*/ ColumnType.FLOAT,
             /*"8: p_comment",*/ ColumnType.VARCHAR,
         };
     }
@@ -32,7 +32,7 @@ public final class MiniTPCHPart extends MiniDataSource {
             /*"1: p_name", */CompressionType.NONE,
             /*"2: p_mfgr",*/ CompressionType.DICTIONARY,
             /*"3: p_brand",*/ CompressionType.DICTIONARY,
-            /*"4: p_type",*/ CompressionType.NONE,
+            /*"4: p_type",*/ CompressionType.DICTIONARY,
             /*"5: p_size",*/ CompressionType.NONE,
             /*"6: p_container",*/ CompressionType.DICTIONARY,
             /*"7: p_retailprice",*/ CompressionType.NONE,

@@ -1,5 +1,9 @@
 package edu.brown.lasvegas.util;
 
+import java.text.DateFormat;
+import java.text.ParseException;
+import java.util.Date;
+
 /**
  * A set of slightly optimized value-parsing functions such as Integer#parseInt().
  * These are useful while parsing a huge text data.
@@ -312,6 +316,23 @@ return 0;
     }
     
     */
+    
+    
+    public static class DateCachedParser extends CachedParser<Date> {
+        public DateCachedParser (DateFormat format) {
+            super ();
+            this.format = format;
+        }
+        public DateCachedParser (DateFormat format, int maxCacheSize, int hashtableInitialCapacity, float hashtableLoadFactor) {
+            super (maxCacheSize, hashtableInitialCapacity, hashtableLoadFactor);
+            this.format = format;
+        }
+        private final DateFormat format;
+        @Override
+        protected Date parseMiss(String chunk, int offset, int length) throws ParseException {
+            return format.parse(chunk.substring(offset, offset + length));
+        }
+    }
 
     private static void checkInput(final String str, final int offset, final int len, final int radix) {
         if (str == null) {
@@ -337,6 +358,6 @@ return 0;
     private static NumberFormatException forInputString (final String message, final String str, final int offset, final int len) {
         return new NumberFormatException((message == null ? "" : message + ": ") + "inputString=" + str + "[offset=" + offset + ",len=" + len + "]");
     }
-
+    
     private ParseUtil() {}
 }
