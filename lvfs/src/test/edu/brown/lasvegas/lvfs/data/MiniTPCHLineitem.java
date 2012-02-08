@@ -29,7 +29,7 @@ public final class MiniTPCHLineitem extends MiniDataSource {
     }
     @Override
     public URL getFileURL() {
-        return MiniTPCHLineitem.class.getResource("mini_tpch_lineitem.tbl");
+        return getClass().getResource("mini_tpch_lineitem.tbl");
     }
     
     @Override

@@ -31,7 +31,7 @@ public final class MiniSSBLineorder extends MiniDataSource {
     }
     @Override
     public URL getFileURL() {
-        return MiniSSBLineorder.class.getResource("mini_lineorder.tbl");
+        return getClass().getResource("mini_lineorder.tbl");
     }
     
     @Override
