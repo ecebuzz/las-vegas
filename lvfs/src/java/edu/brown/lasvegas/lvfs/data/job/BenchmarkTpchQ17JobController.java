@@ -122,39 +122,52 @@ public class BenchmarkTpchQ17JobController extends AbstractJobController<Benchma
     public double getQueryResult () {
         return queryResult;
     }
-    
+
+    private static class NodeParam {
+        List<Integer> lineitemPartitionIds = new ArrayList<Integer>();
+        List<Integer> partPartitionIds = new ArrayList<Integer>();
+    }
+    private static int[] asIntArray (List<Integer> list) {
+        int[] array = new int[list.size()];
+        for (int i = 0; i < array.length; ++i) {
+            array[i] = list.get(i);
+        }
+        return array;
+    }
     @Override
     protected void runDerived() throws IOException {
         LOG.info("going to run TPCH Q17. brand=" + param.getBrand() + ", container=" + param.getContainer());
-        SortedMap<Integer, List<Integer>> nodeMap = new TreeMap<Integer, List<Integer>>(); // map<nodeId, partition idx>
+        SortedMap<Integer, NodeParam> nodeMap = new TreeMap<Integer, NodeParam>(); // key=nodeId
         for (int i = 0; i < lineitemPartitions.length; ++i) {
             if (lineitemPartitions[i].getStatus() == ReplicaPartitionStatus.EMPTY || partPartitions[i].getStatus() == ReplicaPartitionStatus.EMPTY) {
                 LOG.info("this partition will produce no result. skipped:" + lineitemPartitions[i] + "," + partPartitions[i]);
                 continue;
             }
-            List<Integer> partitions = nodeMap.get(lineitemPartitions[i].getNodeId());
-            if (partitions == null) {
-                partitions = new ArrayList<Integer>();
-                nodeMap.put (lineitemPartitions[i].getNodeId(), partitions);
+            LOG.info("existing lineitem partition: " + lineitemPartitions[i]);
+            LOG.info("existing part partition: " + partPartitions[i]);
+            if (lineitemPartitions[i].getNodeId().intValue() != partPartitions[i].getNodeId().intValue()) {
+                throw new IOException ("not co-partitioned! lineitem partition:" + lineitemPartitions[i] + ". part partition:" + partPartitions[i]);
             }
-            partitions.add(i);
+            NodeParam param = nodeMap.get(lineitemPartitions[i].getNodeId());
+            if (param == null) {
+                param = new NodeParam();
+                nodeMap.put (lineitemPartitions[i].getNodeId(), param);
+            }
+            param.lineitemPartitionIds.add(lineitemPartitions[i].getPartitionId());
+            param.partPartitionIds.add(partPartitions[i].getPartitionId());
         }
 
         SortedMap<Integer, LVTask> taskMap = new TreeMap<Integer, LVTask>();
         for (Integer nodeId : nodeMap.keySet()) {
-            List<Integer> idxs = nodeMap.get(nodeId);
+            NodeParam node = nodeMap.get(nodeId);
             BenchmarkTpchQ17TaskParameters taskParam = new BenchmarkTpchQ17TaskParameters();
             taskParam.setBrand(param.getBrand());
             taskParam.setContainer(param.getContainer());
             taskParam.setLineitemTableId(lineitemTable.getTableId());
             taskParam.setPartTableId(partTable.getTableId());
             
-            int[] lineitemPartitionIds = new int[idxs.size()];
-            int[] partPartitionIds = new int[idxs.size()];
-            for (int i = 0; i < idxs.size(); ++i) {
-                lineitemPartitionIds[i] = lineitemPartitions[i].getPartitionId();
-                partPartitionIds[i] = partPartitions[i].getPartitionId();
-            }
+            int[] lineitemPartitionIds = asIntArray(node.lineitemPartitionIds);
+            int[] partPartitionIds = asIntArray(node.partPartitionIds);
             taskParam.setLineitemPartitionIds(lineitemPartitionIds);
             taskParam.setPartPartitionIds(partPartitionIds);
 

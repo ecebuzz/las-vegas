@@ -22,6 +22,7 @@ import edu.brown.lasvegas.RackNodeStatus;
 import edu.brown.lasvegas.RackStatus;
 import edu.brown.lasvegas.ReplicaPartitionStatus;
 import edu.brown.lasvegas.protocol.LVMetadataProtocol;
+import edu.brown.lasvegas.util.IntHashSet;
 
 /**
  * The default implementation of {@link PlacementEventHandler}.
@@ -47,8 +48,9 @@ public final class PlacementEventHandlerImpl implements PlacementEventHandler {
                     LOG.warn("this table doesn't have replica groups defined yet. skipped: " + table);
                     continue;
                 }
+                LVReplicaGroup[] linkedGroups = getLinkedGroups(groups);
                 for (LVFracture fracture : repository.getAllFractures(table.getTableId())) {
-                    ReplicaGroupToAssignRack result = pickReplicaGroupToAssignRack (rack, table, fracture, groups);
+                    ReplicaGroupToAssignRack result = pickReplicaGroupToAssignRack (rack, table, fracture, groups, linkedGroups);
                     LVReplicaGroup group = result.group;
                     // store the assignment to the metadata store
                     repository.createNewRackAssignment(rack, fracture, group);
@@ -72,10 +74,31 @@ public final class PlacementEventHandlerImpl implements PlacementEventHandler {
     /**
      * Pick the replica group that has currently the least racks assigned.
      */
-    private ReplicaGroupToAssignRack pickReplicaGroupToAssignRack (LVRack rack, LVTable table, LVFracture fracture, LVReplicaGroup[] groups) throws IOException {
+    private ReplicaGroupToAssignRack pickReplicaGroupToAssignRack (LVRack rack, LVTable table, LVFracture fracture, LVReplicaGroup[] groups, LVReplicaGroup[] linkedGroups) throws IOException {
+        IntHashSet otherOwnerGroupIds = new IntHashSet();
+        for (LVRackAssignment assignment : repository.getAllRackAssignmentsByRackId(rack.getRackId())) {
+            otherOwnerGroupIds.add(assignment.getOwnerReplicaGroupId());
+        }
+
         HashMap<Integer, Integer> counts = new HashMap<Integer, Integer>(); // map<groupId, count of rack assignments>
-        for (LVReplicaGroup group : groups) {
+        for (int i = 0; i < groups.length; ++i) {
+            LVReplicaGroup group = groups[i];
             counts.put(group.getGroupId(), 0);
+            
+            // linked group (co-partition) has higher priority
+            if (group.getLinkedGroupId() != null && otherOwnerGroupIds.contains(group.getLinkedGroupId())) {
+                ReplicaGroupToAssignRack result = new ReplicaGroupToAssignRack();
+                result.group = group;
+                int currentCount = 0;
+                for (LVRackAssignment assignment : repository.getAllRackAssignmentsByFractureId(fracture.getFractureId())) {
+                    if (assignment.getOwnerReplicaGroupId() == group.getGroupId()) {
+                        ++currentCount;
+                    }
+                }
+
+                result.rackCount = currentCount;
+                LOG.info("picked replica group: " + group + " to assign " + rack + " because its linked group was already assigned to the rack");
+            }
         }
         
         for (LVRackAssignment assignment : repository.getAllRackAssignmentsByFractureId(fracture.getFractureId())) {
@@ -105,6 +128,16 @@ public final class PlacementEventHandlerImpl implements PlacementEventHandler {
         result.rackCount = minCount;
         return result;
     }
+
+    private LVReplicaGroup[] getLinkedGroups (LVReplicaGroup[] groups) throws IOException {
+        LVReplicaGroup[] linkedGroups = new LVReplicaGroup[groups.length];
+        for (int i = 0; i < groups.length; ++i) {
+            if (groups[i].getLinkedGroupId() != null) {
+                linkedGroups[i] = repository.getReplicaGroup(groups[i].getLinkedGroupId());
+            }
+        }
+        return linkedGroups;
+    }
     
     @Override
     public void onNewFracture(LVFracture fracture) throws IOException {
@@ -113,9 +146,10 @@ public final class PlacementEventHandlerImpl implements PlacementEventHandler {
         // First, we assign the racks to replica groups in the table.
         LVTable table = repository.getTable(fracture.getTableId());
         LVReplicaGroup[] groups = repository.getAllReplicaGroups(fracture.getTableId());
+        LVReplicaGroup[] linkedGroups = getLinkedGroups(groups);
         HashSet<LVReplicaGroup> assignedGroups = new HashSet<LVReplicaGroup>(); // groups that got some rack assignment.
         for (LVRack rack : repository.getAllRacks()) {
-            ReplicaGroupToAssignRack result = pickReplicaGroupToAssignRack (rack, table, fracture, groups);
+            ReplicaGroupToAssignRack result = pickReplicaGroupToAssignRack (rack, table, fracture, groups, linkedGroups);
             LVReplicaGroup group = result.group;
             assignedGroups.add(group);
             // store the assignment to the metadata store
@@ -131,6 +165,50 @@ public final class PlacementEventHandlerImpl implements PlacementEventHandler {
     /** Place replica files exploiting newly assigned racks. */
     private void rebalanceReplicas (LVFracture fracture, LVReplicaGroup group) throws IOException {
         LOG.info("materializing replicas for " + group + ", fracture=" + fracture);
+        
+        // try co-partitioning first
+        if (group.getLinkedGroupId() != null) {
+            LVReplicaGroup linkedGroup = repository.getReplicaGroup(group.getLinkedGroupId());
+            LOG.info("co-partitioning with " + linkedGroup);
+            int linkedTableId = linkedGroup.getTableId();
+            LVFracture[] fractures = repository.getAllFractures(linkedTableId);
+            if (fractures.length > 0) {
+                // let's co-partition with its last fracture.
+                LVFracture lastFracture = fractures[fractures.length - 1];
+                LVReplica[] linkedReplicas = repository.getAllReplicasByFractureId(lastFracture.getFractureId());
+                assert (linkedReplicas.length > 0);
+                // co-partition with some of its replicas. we do round-robin here.
+                // this choice is arbitrary. maybe revisit this design later
+
+                LVReplicaScheme[] schemes = repository.getAllReplicaSchemes(group.getGroupId());
+                for (int i = 0; i < schemes.length; ++i) {
+                    LVReplica replica = repository.getReplicaFromSchemeAndFracture(schemes[i].getSchemeId(), fracture.getFractureId());
+                    if (replica == null) {
+                        replica = repository.createNewReplica(schemes[i], fracture);
+                    }
+                    LVReplica linkedReplica = linkedReplicas[i % (linkedReplicas.length)]; // round robin
+                    LVReplicaPartition[] linkedPartitions = repository.getAllReplicaPartitionsByReplicaId(linkedReplica.getReplicaId());
+
+                    LOG.info("co-partitioning replica " + replica + " with " + linkedReplica);
+                    int partitionCount = group.getRanges().length;
+                    assert (linkedPartitions.length == partitionCount);
+                    for (int partition = 0; partition < partitionCount; ++partition) {
+                        LVReplicaPartition replicaPartition = repository.getReplicaPartitionByReplicaAndRange(replica.getReplicaId(), partition);
+                        if (replicaPartition == null) {
+                            replicaPartition = repository.createNewReplicaPartition(replica, partition);
+                        }
+                        int nodeId = linkedPartitions[partition].getNodeId();
+                        LVRackNode node = repository.getRackNode(nodeId);
+                        repository.updateReplicaPartition(replicaPartition, ReplicaPartitionStatus.BEING_RECOVERED, node);
+                    }
+                }
+                
+                return;
+            } else {
+                LOG.warn("the linked group doesn't have any fracture yet. gave up co-partitioning with " + linkedGroup);
+            }
+        }
+        
         // we list all the active nodes in the assigned rack(s) and the number of replica partitions they store.
         HashMap<Integer, RackNodeUsage> nodeUsages = new HashMap<Integer, RackNodeUsage>();
         for (LVRackAssignment assignment : repository.getAllRackAssignmentsByFractureId(fracture.getFractureId())) {
