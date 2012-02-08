@@ -111,7 +111,7 @@ public final class BenchmarkTpchQ17TaskRunner extends DataTaskRunner<BenchmarkTp
         byte[] brands = new byte[partTuples];
         int readBrand = p_brandFile.readValues(brands, 0, partTuples);
         LOG.info("read.");
-        l_partkeyFile.close();
+        p_brandFile.close();
         assert (readBrand == partTuples);
 
         LOG.info("reading p_partkeyFile at once...");
@@ -151,6 +151,7 @@ public final class BenchmarkTpchQ17TaskRunner extends DataTaskRunner<BenchmarkTp
         assert (readQuantities == lineitemTuples);
         
         int matchedPartKeyCount = 0;
+        int matchedLineitemCount = 0;
         double sum = 0;
         int lpartPos = 0;
         for (int partIndex = 0; partIndex < partTuples; ++partIndex) {
@@ -192,18 +193,19 @@ public final class BenchmarkTpchQ17TaskRunner extends DataTaskRunner<BenchmarkTp
             for (lpartEnd = lpartPos; lpartEnd < lineitemTuples && lparts[lpartEnd] == partkey; ++lpartEnd) {
                 subQuantityTotal += quantities[lpartEnd];
             }
-            lpartPos = lpartEnd;
             double thresholdQuantity = 0.2d * subQuantityTotal / (lpartEnd - lpartPos);
             
             // then, check if the quantity is below the threahold 
             for (int i = lpartPos; i < lpartEnd; ++ i) {
                 if (quantities[i] < thresholdQuantity) {
                     sum += prices[i] / 7.0d;
+                    ++matchedLineitemCount;
                 }
             }
+            lpartPos = lpartEnd;
         }
         
-        LOG.info("read the partition. in total " + matchedPartKeyCount + " matching partkey. sum=" + sum);
+        LOG.info("read the partition. in total " + matchedPartKeyCount + " matching partkey and " + matchedLineitemCount + " matching lineitem tuples. sum=" + sum);
         return sum;
     }
 

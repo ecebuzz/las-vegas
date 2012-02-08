@@ -115,6 +115,7 @@ public class BenchmarkTpchQ17JobController extends AbstractJobController<Benchma
                 throw new IOException ("this lineitem and part partitions are not collocated. lineitem:" + lineitemPartitions[i] + ", part:" + partPartitions[i]);
             }
         }
+        this.jobId = metaRepo.createNewJobIdOnlyReturn("Q17", JobType.BENCHMARK_TPCH_Q17, null);
     }
     
     private double queryResult = 0;
@@ -169,10 +170,12 @@ public class BenchmarkTpchQ17JobController extends AbstractJobController<Benchma
         LOG.info("all tasks seem done!");
         queryResult = 0;
         for (LVTask task : metaRepo.getAllTasksByJob(jobId)) {
-            assert (task.getStatus() == TaskStatus.DONE);
             // a hack. see BenchmarkTpchQ17TaskRunner. this property is used to store the subtotal from the node. 
             String[] results = task.getOutputFilePaths();
-            assert (results.length == 1);
+            if (results.length != 1 && task.getStatus() == TaskStatus.DONE) {
+                LOG.error("This task should be successfully done, but didn't return the result:" + task);
+                continue;
+            }
             queryResult += Double.parseDouble(results[0]);
         }
         LOG.info("query result=" + queryResult);

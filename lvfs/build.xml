@@ -133,7 +133,7 @@
 	</target>
 
 	<target name="sa-data-stop" depends="compile"
-		description="Stop data node. Specify the path of configuration xml (must be in classpath) and the data node address. eg: ant -Dconfxml=lvfs_conf_poseidon.xml -Daddress=poseidon:28712 sa-data-stop">
+		description="Stop data node. Specify the path of configuration xml (must be in classpath) and the data node address. eg: ant -Dconfxml=lvfs_conf_poseidon.xml -Daddress=poseidon.smn.cs.brown.edu:28712 sa-data-stop">
 		<java fork="true" classname="edu.brown.lasvegas.server.StopDataNode">
 			<arg value="${confxml}" />
 			<arg value="${address}" />
@@ -142,7 +142,7 @@
 	</target>
 
 	<target name="import-bench" depends="compile"
-		description="Start a distributed data import benchmark. Specify the number of partitions, the address of metadata repository, and input file. : ant -Dpartitions=2 -Daddress=poseidon:28710 -Dinputfile=inputs.txt import-bench">
+		description="Start a distributed data import benchmark. Specify the number of partitions, the address of metadata repository, and input file. : ant -Dpartitions=2 -Daddress=poseidon.smn.cs.brown.edu:28710 -Dinputfile=inputs.txt import-bench">
 		<java fork="true" classname="edu.brown.lasvegas.lvfs.data.DataImportMultiNodeBenchmark">
 			<jvmarg value="-Xmx256m"/>
 			<jvmarg value="-server"/>
@@ -155,7 +155,7 @@
 	</target>
 
 	<target name="import-bench-tpch" depends="compile"
-		description="Start a distributed data import benchmark for TPCH. Specify the number of partitions, the address of metadata repository, and input file for lineitem table and part table. : ant -Dpartitions=2 -Daddress=poseidon:28710 -Dinputfile_lineitem=inputs_lineitem.txt -Dinputfile_part=inputs_part.txt import-bench-tpch">
+		description="Start a distributed data import benchmark for TPCH. Specify the number of partitions, the address of metadata repository, and input file for lineitem table and part table. : ant -Dpartitions=2 -Daddress=poseidon.smn.cs.brown.edu:28710 -Dinputfile_lineitem=inputs_lineitem.txt -Dinputfile_part=inputs_part.txt import-bench-tpch">
 		<java fork="true" classname="edu.brown.lasvegas.lvfs.data.DataImportMultiNodeTpchBenchmark">
 			<jvmarg value="-Xmx256m"/>
 			<jvmarg value="-server"/>
@@ -164,6 +164,19 @@
 			<arg value="${address}" />
 			<arg value="${inputfile_lineitem}" />
 			<arg value="${inputfile_part}" />
+        	<classpath refid="lvfs.classpath"/>
+		</java>
+	</target>
+
+	<target name="tpch-bench-q17" depends="compile"
+		description="Run TPCH's Q17. Specify the address of metadata repository, brand name, and container. : ant -Daddress=poseidon.smn.cs.brown.edu:28710 -Dbrand=Brand#34 -Dcontainer='MED DRUM' tpch-bench-q17">
+		<java fork="true" classname="edu.brown.lasvegas.lvfs.data.TpchQ17MultinodeBenchmark">
+			<jvmarg value="-Xmx256m"/>
+			<jvmarg value="-server"/>
+			<jvmarg value="-da"/>
+			<arg value="${address}" />
+			<arg value="${brand}" />
+			<arg value="${container}" />
         	<classpath refid="lvfs.classpath"/>
 		</java>
 	</target>

@@ -1,0 +1,2 @@
+poseidon	/home/hkimura/workspace/las-vegas/tpch-dbgen/lineitem.tbl.1
+artemis	/home/hkimura/workspace/las-vegas/tpch-dbgen/lineitem.tbl.2

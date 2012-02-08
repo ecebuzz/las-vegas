@@ -62,6 +62,7 @@ public class LocalRawFileReader implements Closeable {
         } else {
             rawStream = rawFile.getInputStream();
         }
+        assert (rawStream != null);
         curPosition = 0;
         reader = new RawValueReader() {
             @Override
