@@ -12,10 +12,10 @@ cslab2d	/ltmp/adf-lasvegas/lineorder.tbl.11
 cslab2e	/ltmp/adf-lasvegas/lineorder.tbl.12
 cslab2f	/ltmp/adf-lasvegas/lineorder.tbl.13
 cslab3a	/ltmp/adf-lasvegas/lineorder.tbl.14
-cslab3b	/ltmp/adf-lasvegas/lineorder.tbl.15
-cslab3c	/ltmp/adf-lasvegas/lineorder.tbl.16
-cslab3d	/ltmp/adf-lasvegas/lineorder.tbl.17
-cslab3e	/ltmp/adf-lasvegas/lineorder.tbl.18
+cslab3c	/ltmp/adf-lasvegas/lineorder.tbl.15
+cslab3d	/ltmp/adf-lasvegas/lineorder.tbl.16
+cslab3e	/ltmp/adf-lasvegas/lineorder.tbl.17
+cslab3f	/ltmp/adf-lasvegas/lineorder.tbl.18
 cslab3g	/ltmp/adf-lasvegas/lineorder.tbl.19
 cslab3h	/ltmp/adf-lasvegas/lineorder.tbl.20
 cslab4a	/ltmp/adf-lasvegas/lineorder.tbl.21

@@ -12,10 +12,10 @@ cslab2d
 cslab2e
 cslab2f
 cslab3a
-cslab3b
 cslab3c
 cslab3d
 cslab3e
+cslab3f
 cslab3g
 cslab3h
 cslab4a
