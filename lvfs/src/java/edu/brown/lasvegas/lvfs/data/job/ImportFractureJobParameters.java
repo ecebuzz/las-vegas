@@ -57,14 +57,16 @@ public final class ImportFractureJobParameters extends JobParameters {
     /**
      * Instantiates a new data import parameters.
      */
-    public ImportFractureJobParameters () {}
+    public ImportFractureJobParameters () {
+        this (0);
+    }
     
     /**
      * Instantiates a new data import parameters.
      * @param tableId The table to which a new fracture is constructed during this import.
      */
     public ImportFractureJobParameters (int tableId) {
-        this (tableId, "UTF-8", '|', "yyyy-MM-dd", "HH:mm:ss", "yyyy-MM-dd HH:mm:ss.SSS", CompressionType.SNAPPY);
+        this (tableId, "UTF-8", '|', "yyyy-MM-dd", "HH:mm:ss", "yyyy-MM-dd HH:mm:ss.SSS", CompressionType.NONE);
     }
     /**
      * Instantiates a new data import parameters.
