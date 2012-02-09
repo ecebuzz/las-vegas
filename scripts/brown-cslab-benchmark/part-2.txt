@@ -1,0 +1,2 @@
+cslab0a	/ltmp/adf-lasvegas/part.tbl.1
+cslab1a	/ltmp/adf-lasvegas/part.tbl.2
