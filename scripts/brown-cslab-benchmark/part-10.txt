@@ -1,0 +1,10 @@
+cslab0a	/ltmp/adf-lasvegas/part.tbl.1
+cslab1a	/ltmp/adf-lasvegas/part.tbl.2
+cslab1b	/ltmp/adf-lasvegas/part.tbl.3
+cslab1c	/ltmp/adf-lasvegas/part.tbl.4
+cslab1d	/ltmp/adf-lasvegas/part.tbl.5
+cslab1e	/ltmp/adf-lasvegas/part.tbl.6
+cslab1h	/ltmp/adf-lasvegas/part.tbl.7
+cslab2a	/ltmp/adf-lasvegas/part.tbl.8
+cslab2b	/ltmp/adf-lasvegas/part.tbl.9
+cslab2c	/ltmp/adf-lasvegas/part.tbl.10

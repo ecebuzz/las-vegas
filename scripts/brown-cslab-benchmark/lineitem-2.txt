@@ -1,0 +1,2 @@
+cslab0a	/ltmp/adf-lasvegas/lineitem.tbl.1
+cslab1a	/ltmp/adf-lasvegas/lineitem.tbl.2

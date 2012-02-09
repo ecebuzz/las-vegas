@@ -1,9 +1,8 @@
 #!/bin/bash
 
-HOST_INDEX=$1
-NUM_PARTS=$2
-INSTALL_DIR=$3
-RESOURCE_DIR=$4
+NUM_PARTS=$1
+INSTALL_DIR=$2
+RESOURCE_DIR=$3
 
 RACK_MAPPER="/home/adf/_hadoop-install/cslab-rackmap/rack-mapper.sh"
 
@@ -18,6 +17,8 @@ if [ "$RESOURCE_DIR" == "" ]; then
 fi
 
 RACKNAME=`$RACK_MAPPER $HOSTNAME | tr -d /\ `
+HOSTS_FILE=hosts-$NUM_PARTS.txt
+HOST_INDEX=`grep -n $HOSTNAME $RESOURCE_DIR/$HOSTS_FILE | cut -d: -f1`
 
 rm -rf $INSTALL_DIR
 mkdir $INSTALL_DIR
@@ -28,7 +29,7 @@ cd $INSTALL_DIR
 git clone git://github.com/hkimura/las-vegas.git >> $STDOUT_LOG 2>&1
 
 cd las-vegas/lvfs
-ant >> $STDOUT_LOG
+ant compile >> $STDOUT_LOG
 
 # Generate StarSchema Benchmark
 
@@ -38,7 +39,7 @@ make >> $STDOUT_LOG 2>&1
 mv lineorder.tbl.$HOST_INDEX $INSTALL_DIR
 
 # Can have a race condition. Keep a hard-coded file for now.
-# echo -e "$HOSTNAME\t$INSTALL_DIR/lineorder.tbl.$HOST_INDEX" >> $RESOURCE_DIR/inputs-sunlab.txt
+# echo -e "$HOSTNAME\t$INSTALL_DIR/lineorder.tbl.$HOST_INDEX" >> $RESOURCE_DIR/ssb-sunlab.txt
 
 # Generate config file 
 
