@@ -160,12 +160,14 @@ public class BenchmarkTpchQ17JobController extends AbstractJobController<Benchma
         SortedMap<Integer, LVTask> taskMap = new TreeMap<Integer, LVTask>();
         for (Integer nodeId : nodeMap.keySet()) {
             NodeParam node = nodeMap.get(nodeId);
+            
+            // whether to parallelize the tasks at each node? it has tradeoffs...
+            //this code runs only one task at each node
             BenchmarkTpchQ17TaskParameters taskParam = new BenchmarkTpchQ17TaskParameters();
             taskParam.setBrand(param.getBrand());
             taskParam.setContainer(param.getContainer());
             taskParam.setLineitemTableId(lineitemTable.getTableId());
             taskParam.setPartTableId(partTable.getTableId());
-            
             int[] lineitemPartitionIds = asIntArray(node.lineitemPartitionIds);
             int[] partPartitionIds = asIntArray(node.partPartitionIds);
             taskParam.setLineitemPartitionIds(lineitemPartitionIds);
@@ -176,6 +178,24 @@ public class BenchmarkTpchQ17JobController extends AbstractJobController<Benchma
             LOG.info("launched new task to run TPCH Q17: " + task);
             assert (!taskMap.containsKey(taskId));
             taskMap.put(taskId, task);
+            /*
+            // this code runs one task for one partition
+            for (int j = 0; j < node.lineitemPartitionIds.size(); ++j) {
+                BenchmarkTpchQ17TaskParameters taskParam = new BenchmarkTpchQ17TaskParameters();
+                taskParam.setBrand(param.getBrand());
+                taskParam.setContainer(param.getContainer());
+                taskParam.setLineitemTableId(lineitemTable.getTableId());
+                taskParam.setPartTableId(partTable.getTableId());
+                taskParam.setLineitemPartitionIds(new int[]{node.lineitemPartitionIds.get(j)});
+                taskParam.setPartPartitionIds(new int[]{node.partPartitionIds.get(j)});
+    
+                int taskId = metaRepo.createNewTaskIdOnlyReturn(jobId, nodeId, TaskType.BENCHMARK_TPCH_Q17, taskParam.writeToBytes());
+                LVTask task = metaRepo.updateTask(taskId, TaskStatus.START_REQUESTED, null, null, null);
+                LOG.info("launched new task to run TPCH Q17: " + task);
+                assert (!taskMap.containsKey(taskId));
+                taskMap.put(taskId, task);
+            }
+            */
         }
         LOG.info("waiting for task completion...");
         joinTasks(taskMap, 0.0d, 1.0d);
