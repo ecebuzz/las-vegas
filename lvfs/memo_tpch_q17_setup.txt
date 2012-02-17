@@ -1,0 +1,82 @@
+1. At each node, get the source code.
+git clone git://github.com:hkimura/las-vegas.git
+
+2. Compile it.
+  cd las-vegas/lvfs
+  ant
+
+This also runs testcases. See if all testcases pass on the environment.
+To compile without test, run
+  ant compile
+
+3. Generate data.
+  cd ../tpch-dbgen/
+  make
+Here, we make a part of the dataset in each node.
+Suppose you have 60 nodes, and generate 17GB each (=30*17=1020GB),
+In 4th node (for example), you should run
+  ./dbgen -T L -s 1020 -S 4 -C 60
+  ./dbgen -T P -s 1020 -S 4 -C 60
+(Notice L and P are capital.)
+Run "./dbgen -h" for more details.
+The result is lineitem.tbl.xxx and part.tbl.xxx
+
+4. Prepare a config xml.
+Configure an xml file. Examples are in src/test/lvfs_conf_xxx.xml.
+At least modify the followings for your environment:
+lasvegas.server.meta.address,
+lasvegas.server.data.address,
+lasvegas.server.data.node_name,
+lasvegas.server.data.rack_name
+
+Do this in EACH node.
+
+
+From here, there are two paths. One is easier, another is more real.
+Let's do the easier scenario first.
+
+
+5. Launch a standalone (no-Hadoop) central node
+Pick one central node.
+Place its config xml in lvfs/bin (say the file name is lvfs_conf_xx.xml).
+
+Run this command:
+  ant -Dconfxml=lvfs_conf_xx.xml -Dformat=true sa-central
+You should see "waiting until..." as the last message.
+
+6. Launch standalone (no-Hadoop) data nodes
+In each data node, place its config xml in lvfs/bin (again, lvfs_conf_xx.xml).
+
+Run this command:
+  ant -Dconfxml=lvfs_conf_xx.xml -Dformat=true sa-data
+
+7. Configure input list file.
+Create a text file in some node, say "input_yours.txt".
+Place list of files to import where it resides.
+Each line should be:
+  <data node name>TAB<input file path 1>TAB<input file path 2>...
+See lvfs/inputs.txt as an example.
+
+8. Load the data.
+  ant -Dpartitions=1020 -Daddress=poseidon.smn.cs.brown.edu:28710 -Dinputfile_lineitem=inputs_lineitem.txt -Dinputfile_part=inputs_part.txt import-bench-tpch
+
+
+9. Run the query Q17.
+  ant -Daddress=poseidon.smn.cs.brown.edu:28710 -Dbrand=Brand#34 -Dcontainer='MED DRUM' tpch-bench-q17
+
+When it's successfully done, please send me lvfs.log in the node.
+
+
+For more details, see the class comment in
+
+https://github.com/hkimura/las-vegas/blob/master/lvfs/src/test/edu/brown/lasvegas/lvfs/data/DataImportMultiNodeBenchmark.java
+
+
+If Step 5-9 went well, then let's try a real experiment on Hadoop.
+Install hadoop (_0.23_) on each node, put the configuration to hdfs-site.xml rather than our own conf file. Add classpath to our lvfs/bin and jars in lvfs/lib (you can also zip lvfs/bin as a jar and throw it into hadoop's folder with other jars). Launch namenode first, datanode second, then redo Step 7 and 8.
+
+Also, please check the pure throughput of Hadoop by measuring the performance of pure file-transfer on the same network.
+
+If you get any problems, let me know.
+-- 
+Hideaki Kimura <hkimura@cs.brown.edu>
