@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 
+import org.apache.hadoop.io.IntWritable;
 import org.apache.log4j.Logger;
 
 import edu.brown.lasvegas.LVDatabase;
@@ -197,9 +198,11 @@ public final class PlacementEventHandlerImpl implements PlacementEventHandler {
                         if (replicaPartition == null) {
                             replicaPartition = repository.createNewReplicaPartition(replica, partition);
                         }
-                        int nodeId = linkedPartitions[partition].getNodeId();
-                        LVRackNode node = repository.getRackNode(nodeId);
-                        repository.updateReplicaPartition(replicaPartition, ReplicaPartitionStatus.BEING_RECOVERED, node);
+                        if (linkedPartitions[partition].getNodeId() == null) {
+                            throw new IOException("linked partition[" + partition + "]:" + linkedPartitions[partition]
+                               + " doesn't have a node assigned");
+                        }
+                        repository.updateReplicaPartitionNoReturn(replicaPartition.getPartitionId(), ReplicaPartitionStatus.BEING_RECOVERED, new IntWritable(linkedPartitions[partition].getNodeId()));
                     }
                 }
                 
@@ -265,7 +268,7 @@ public final class PlacementEventHandlerImpl implements PlacementEventHandler {
             queue.moveToNextPartition(usedNodeIds);
             for (LVReplicaPartition replicaPartition : toBeStored) {
                 LVRackNode node = queue.pickNode();
-                repository.updateReplicaPartition(replicaPartition, ReplicaPartitionStatus.BEING_RECOVERED, node);
+                repository.updateReplicaPartitionNoReturn(replicaPartition.getPartitionId(), ReplicaPartitionStatus.BEING_RECOVERED, new IntWritable(node.getNodeId()));
                 if (LOG.isInfoEnabled()) {
                     LOG.info(replicaPartition + " will be materialized on " + node);
                 }

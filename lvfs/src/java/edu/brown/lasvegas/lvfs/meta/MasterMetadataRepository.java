@@ -876,9 +876,7 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
             throw new IOException ("a valid replica partition needs to be phisycally stored somewhere.");
         }
         subPartition.setStatus(status);
-        if (node == null) {
-            subPartition.setNodeId(null);
-        } else {
+        if (node != null) {
             subPartition.setNodeId(node.getNodeId());
         }
         putNoReturnTransactional(bdbTableAccessors.replicaPartitionAccessor.PKX, subPartition);
