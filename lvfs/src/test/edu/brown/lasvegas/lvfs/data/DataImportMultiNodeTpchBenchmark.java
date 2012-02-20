@@ -85,7 +85,7 @@ public class DataImportMultiNodeTpchBenchmark {
         metaRepo.createNewReplicaScheme(partGroup, metaRepo.getColumnByName(partTable.getTableId(), "p_partkey"), getColumnIds(partTable), partSource.getDefaultCompressions());
         
         lineitemTable = metaRepo.createNewTable(database.getDatabaseId(), "lineitem", lineitemSource.getColumnNames(), lineitemSource.getScheme());
-        lineitemGroup = metaRepo.createNewReplicaGroup(lineitemTable, metaRepo.getColumnByName(lineitemTable.getTableId(), "l_partkey"), ranges);
+        lineitemGroup = metaRepo.createNewReplicaGroup(lineitemTable, metaRepo.getColumnByName(lineitemTable.getTableId(), "l_partkey"), partGroup);
         metaRepo.createNewReplicaScheme(lineitemGroup, metaRepo.getColumnByName(lineitemTable.getTableId(), "l_partkey"), getColumnIds(lineitemTable), lineitemSource.getDefaultCompressions());
     }
     private void tearDown () throws IOException {
