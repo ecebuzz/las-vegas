@@ -1,8 +1,9 @@
 #!/bin/bash
 
-NUM_PARTS=$1
-INSTALL_DIR=$2
-RESOURCE_DIR=$3
+SCALE_SIZE=$1
+NUM_PARTS=$2
+INSTALL_DIR=$3
+RESOURCE_DIR=$4
 
 RACK_MAPPER="/home/adf/_hadoop-install/cslab-rackmap/rack-mapper.sh"
 
@@ -12,7 +13,7 @@ STDOUT_LOG="$INSTALL_DIR/stdout.log"
 ##
 
 if [ "$RESOURCE_DIR" == "" ]; then
-	echo "three arguments required: NUM_PARTS INSTALL_DIR RESOURCE_DIR"
+	echo "four arguments required: SCALE_SIZE NUM_PARTS INSTALL_DIR RESOURCE_DIR"
 	exit
 fi
 
@@ -26,7 +27,7 @@ cd $INSTALL_DIR
 
 # Get latest code and compile
 
-git clone git://github.com/hkimura/las-vegas.git >> $STDOUT_LOG 2>&1
+cp -a $RESOURCE_DIR/las-vegas.git las-vegas
 
 cd las-vegas/lvfs
 ant compile >> $STDOUT_LOG
@@ -35,8 +36,8 @@ ant compile >> $STDOUT_LOG
 
 cd ../tpch-dbgen/
 make >> $STDOUT_LOG 2>&1
-./dbgen -T L -s $NUM_PARTS -S $HOST_INDEX -C $NUM_PARTS >> $STDOUT_LOG 2>&1  # $HOST_INDEX is 1-based
-./dbgen -T P -s $NUM_PARTS -S $HOST_INDEX -C $NUM_PARTS >> $STDOUT_LOG 2>&1  # $HOST_INDEX is 1-based
+./dbgen -T L -s $SCALE_SIZE -S $HOST_INDEX -C $NUM_PARTS >> $STDOUT_LOG 2>&1  # $HOST_INDEX is 1-based
+./dbgen -T P -s $SCALE_SIZE -S $HOST_INDEX -C $NUM_PARTS >> $STDOUT_LOG 2>&1  # $HOST_INDEX is 1-based
 mv lineitem.tbl.$HOST_INDEX $INSTALL_DIR
 mv part.tbl.$HOST_INDEX $INSTALL_DIR
 
