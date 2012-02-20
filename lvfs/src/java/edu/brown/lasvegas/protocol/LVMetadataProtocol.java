@@ -722,7 +722,7 @@ public interface LVMetadataProtocol extends VersionedProtocol {
      * corrupted, recovered, migrated etc.
      * @param subPartition the sub-partition object to update
      * @param status new status of the sub-partition
-     * @param node the node that physically stores the sub-partition. could be NULL, if the new status is LOST or BEING_RECOVERED. 
+     * @param node the node that physically stores the sub-partition. NULL to not change. 
      * @return modified sub-partition
      * @throws IOException
      */
@@ -734,7 +734,7 @@ public interface LVMetadataProtocol extends VersionedProtocol {
      * Updates the sub-partition object without sending/receiving redundant data.
      * @param subPartitionId ID of the sub-partition object to update
      * @param status new status of the sub-partition
-     * @param nodeId ID of the node that physically stores the sub-partition. could be NULL, if the new status is LOST or BEING_RECOVERED. 
+     * @param nodeId ID of the node that physically stores the sub-partition. NULL to not change. 
      * @throws IOException
      */
     void updateReplicaPartitionNoReturn(int subPartitionId,
