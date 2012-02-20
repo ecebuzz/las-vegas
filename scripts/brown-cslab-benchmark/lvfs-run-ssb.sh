@@ -48,7 +48,7 @@ sleep 5
 pusher --hosts=central.txt "cd $LVFS_DIR; ant -Dpartitions=$NUM_PARTS -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dinputfile=$INPUT_FILE import-bench > /dev/null"
 
 RUN_NAME=`date +"$DATE_FORMAT"`
-scp $CENTRAL_NODE:$LVFS_DIR/lvfs.log logs/lvfs-central-ssb-$RUN_NAME.log
+scp $CENTRAL_NODE:$LVFS_DIR/lvfs.log logs/lvfs-central-ssb-scale-$NUM_PARTS-$RUN_NAME.log
 gzip logs/lvfs-central-ssb-$RUN_NAME.log
 
 pusher --hosts=$HOSTS_FILE "killall java"
