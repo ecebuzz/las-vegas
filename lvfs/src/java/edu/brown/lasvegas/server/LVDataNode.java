@@ -136,6 +136,7 @@ public final class LVDataNode implements ServicePlugin {
         }
     }
 
+    
     private void initialize() throws IOException {
         String address = conf.get(DATA_ADDRESS_KEY, DATA_ADDRESS_DEFAULT);
         LOG.info("initializing LVFS Data Server. address=" + address);
