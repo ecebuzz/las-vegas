@@ -247,7 +247,7 @@ public class ImportFractureJobControllerTest {
             columns.put(column.getName(), column);
         }
 
-        LVReplicaGroup group1 = masterRepository.createNewReplicaGroup(table, masterRepository.getColumnByName(table.getTableId(), "l_orderkey"), new ValueRange[]{new ValueRange(ColumnType.INTEGER, null, null)});
+        LVReplicaGroup group1 = masterRepository.createNewReplicaGroup(table, masterRepository.getColumnByName(table.getTableId(), "l_orderkey"), new ValueRange[]{new ValueRange(ColumnType.BIGINT, null, null)});
         LVReplicaGroup group2 = masterRepository.createNewReplicaGroup(table, masterRepository.getColumnByName(table.getTableId(), "l_suppkey"), new ValueRange[]{new ValueRange(ColumnType.INTEGER, null, null)});
         int[] columnIds = new int[columnNames.length];
         for (int i = 0; i < columnIds.length; ++i) {
@@ -276,9 +276,9 @@ public class ImportFractureJobControllerTest {
         ColumnFileBundle bundle = new ColumnFileBundle(columnFile);
         ColumnFileReaderBundle readers = new ColumnFileReaderBundle(bundle);
         @SuppressWarnings("unchecked")
-        TypedReader<Integer, int[]> dataReader = (TypedReader<Integer, int[]>) readers.getDataReader();
+        TypedReader<Long, long[]> dataReader = (TypedReader<Long, long[]>) readers.getDataReader();
         assertEquals(dataSource.getCount(), dataReader.getTotalTuples());
-        int[] values = new int[dataReader.getTotalTuples()];
+        long[] values = new long[dataReader.getTotalTuples()];
         assertEquals(values.length, dataReader.readValues(values, 0, values.length));
         assertEquals(1, values[0]);
         for (int i = 1; i < values.length; ++i) {
