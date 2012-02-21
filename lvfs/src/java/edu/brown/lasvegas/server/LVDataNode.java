@@ -150,7 +150,15 @@ public final class LVDataNode implements ServicePlugin {
         if (rack == null) {
             if (registerRackNode) {
                 LOG.info("automatically creating LVRack:" + rackName);
-                rack = metaRepo.createNewRack(rackName);
+                try {
+                    rack = metaRepo.createNewRack(rackName);
+                } catch (IOException ex) {
+                    LOG.warn("couldn't create a rack, but this might be because two nodes tried to create the rack record in short period. trying to re-get the record...");
+                    rack = metaRepo.getRack(rackName);
+                    if (rack != null) {
+                        LOG.info("yes! it was just because two nodes in contention. problem solved");
+                    }
+                }
                 if (rack == null) {
                     throw new IOException ("Failed to create a rack: " + rackName);
                 }
