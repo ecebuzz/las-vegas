@@ -63,10 +63,18 @@ sleep 10
 
 pusher --hosts=central.txt "cd $LVFS_DIR; ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dbrand=Brand#34 -Dcontainer='MED DRUM' tpch-bench-q17 > /dev/null"
 
-RUN_NAME=`date +"$DATE_FORMAT"`
-LOG_NAME="lvfs-central-tpch-scale-$SCALE_SIZE-$RUN_NAME.log"
+# Collect all the logs
 
-scp $CENTRAL_NODE:$LVFS_DIR/lvfs.log logs/$LOG_NAME
-gzip logs/$LOG_NAME
+TIMESTAMP=`date +"$DATE_FORMAT"`
+RUN_NAME="tpch-scale-$SCALE_SIZE-$TIMESTAMP"
+CENTRAL_LOG="lvfs-central-$RUN_NAME.log"
+
+scp $CENTRAL_NODE:$LVFS_DIR/lvfs.log logs/$CENTRAL_LOG
+gzip logs/$CENTRAL_LOG
+
+mkdir logs/datanode-$RUN_NAME
+pusher --hosts=$HOSTS_FILE "$RESOURCE_DIR/lvfs-copy-log.sh $LVFS_DIR $RESOURCE_DIR/logs/datanode-$RUN_NAME"
+
+# Cleanup unmercifully
 
 pusher --hosts=$HOSTS_FILE "killall java"

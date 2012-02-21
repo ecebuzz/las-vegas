@@ -47,10 +47,18 @@ sleep 5
 
 pusher --hosts=central.txt "cd $LVFS_DIR; ant -Dpartitions=$NUM_PARTS -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dinputfile=$INPUT_FILE import-bench > /dev/null"
 
-RUN_NAME=`date +"$DATE_FORMAT"`
-LOG_NAME="lvfs-central-ssb-scale-$NUM_PARTS-$RUN_NAME.log"
+# Collect all the logs
 
-scp $CENTRAL_NODE:$LVFS_DIR/lvfs.log logs/$LOG_NAME
-gzip logs/$LOG_NAME
+TIMESTAMP=`date +"$DATE_FORMAT"`
+RUN_NAME="ssb-scale-$SCALE_SIZE-$TIMESTAMP"
+CENTRAL_LOG="lvfs-central-$RUN_NAME.log"
+
+scp $CENTRAL_NODE:$LVFS_DIR/lvfs.log logs/$CENTRAL_LOG
+gzip logs/$CENTRAL_LOG
+
+mkdir logs/datanode-$RUN_NAME
+pusher --hosts=$HOSTS_FILE "$RESOURCE_DIR/lvfs-copy-log.sh $LVFS_DIR $RESOURCE_DIR/logs/datanode-$RUN_NAME"
+
+# Cleanup unmercifully
 
 pusher --hosts=$HOSTS_FILE "killall java"
