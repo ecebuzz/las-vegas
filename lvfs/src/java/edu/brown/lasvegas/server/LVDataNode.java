@@ -153,7 +153,7 @@ public final class LVDataNode implements ServicePlugin {
                 try {
                     rack = metaRepo.createNewRack(rackName);
                 } catch (IOException ex) {
-                    LOG.warn("couldn't create a rack, but this might be because two nodes tried to create the rack record in short period. trying to re-get the record...");
+                    LOG.warn("couldn't create a rack, but this might be because two nodes tried to create the rack record in short period. trying to re-get the record...", ex);
                     rack = metaRepo.getRack(rackName);
                     if (rack != null) {
                         LOG.info("yes! it was just because two nodes in contention. problem solved");
