@@ -9,7 +9,7 @@ import edu.brown.lasvegas.CompressionType;
 public final class MiniTPCHLineitem extends MiniDataSource {
     public ColumnType[] getScheme() {
         return new ColumnType[]{
-            /*"0: l_orderkey", */ColumnType.INTEGER,
+            /*"0: l_orderkey", */ColumnType.BIGINT, // NOTE: Scale 500 and beyond exceeds int32 limit. So, this has to be BIGINT
             /*"1: l_partkey", */ColumnType.INTEGER,
             /*"2: l_suppkey",*/ ColumnType.INTEGER,
             /*"3: l_linenumber",*/ ColumnType.TINYINT,
