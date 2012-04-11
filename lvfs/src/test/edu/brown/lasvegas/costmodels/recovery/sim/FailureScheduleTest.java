@@ -13,7 +13,6 @@ public class FailureScheduleTest {
 	public void testDefault () {
 		ExperimentalConfiguration config = new ExperimentalConfiguration();
 		FailureSchedule schedule = new FailureSchedule(config, 12345L);
-		boolean someNodeIdLargerThanRacks = false;
 		for (int i = 0; i < 30000; ++i) {
 			FailureEvent event = schedule.generateNextEvent();
 			assertTrue (event.interval > 0);
@@ -21,14 +20,10 @@ public class FailureScheduleTest {
 				assertTrue (event.failedNode >= 0);
 				assertTrue (event.failedNode < config.racks);
 			} else {
-				assertTrue (event.failedNode >= 0);
-				assertTrue (event.failedNode < config.nodes);
-				if (event.failedNode >= config.racks) {
-					someNodeIdLargerThanRacks = true;
-				}
+				assertTrue (event.failedNode >= config.racks);
+				assertTrue (event.failedNode < config.racks + config.nodes);
 			}
 		}
-		assertTrue (someNodeIdLargerThanRacks);
 		schedule.debugOut();
 	}
 }
