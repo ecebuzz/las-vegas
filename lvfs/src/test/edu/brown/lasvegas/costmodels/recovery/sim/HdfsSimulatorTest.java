@@ -22,7 +22,7 @@ public class HdfsSimulatorTest {
 	
 	@Test
 	public void testRepFac1 () {
-		HdfsSimulator simulator = new HdfsSimulator(config, new HdfsPlacementPolicy(1), 3311);
+		HdfsSimulator simulator = new HdfsSimulator(config, new HdfsPlacementParameters(1), 3311);
 		simulator.decidePlacement();
 		ArrayList<Double> results = simulator.simulateMeanTimeToFail(10);
 		for (Double time : results) {
@@ -31,14 +31,14 @@ public class HdfsSimulatorTest {
 	}
 	@Test
 	public void testRepFac2 () {
-		HdfsSimulator simulator = new HdfsSimulator(config, new HdfsPlacementPolicy(2), 3311);
+		HdfsSimulator simulator = new HdfsSimulator(config, new HdfsPlacementParameters(2), 3311);
 		simulator.decidePlacement();
 		simulator.simulateMeanTimeToFail(10);
 		// replication factor 2 will also see data loss, but not certainly.
 	}
 	@Test
 	public void testRepFac3 () {
-		HdfsSimulator simulator = new HdfsSimulator(config, new HdfsPlacementPolicy(3), 3311);
+		HdfsSimulator simulator = new HdfsSimulator(config, new HdfsPlacementParameters(3), 3311);
 		simulator.decidePlacement();
 		simulator.simulateMeanTimeToFail(10);
 		// replication factor 3 should be okay (for this number of node/rack). but not certainly either.

@@ -66,7 +66,7 @@ public class FailureSchedule {
 		++eventCount;
 		if (random.nextDouble() < nodeFailureFraction) {
 			++nodeEventCount;
-			return new FailureEvent(false, config.racks + random.nextInt(config.nodes), interval);
+			return new FailureEvent(false, random.nextInt(config.nodes), interval);
 		} else {
 			return new FailureEvent(true, random.nextInt(config.racks), interval);
 		}

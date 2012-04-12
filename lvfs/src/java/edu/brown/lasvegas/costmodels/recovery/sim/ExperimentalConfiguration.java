@@ -3,6 +3,7 @@ package edu.brown.lasvegas.costmodels.recovery.sim;
 /**
  * Specifies the hardware configuration to simulate.
  * Immutable, thus all properties are public final.
+ * To avoid confusion, all data units are in GB, all time units are in minutes.
  */
 public class ExperimentalConfiguration {
 	
@@ -79,18 +80,15 @@ public class ExperimentalConfiguration {
 	/** maximum length of simulation in minutes. */
 	public final double maxSimulationPeriod;
 	
-	/**
-	 * Racks use IDs 0 to racks-1. Nodes use IDs racks to racks + nodes.
-	 */
 	public int rackIdFromNodeId (int nodeId) {
-		assert (nodeId >= racks);
-		assert (nodeId < racks + nodes);
-		return (nodeId - racks) / nodesPerRack;
+		assert (nodeId >= 0);
+		assert (nodeId < nodes);
+		return nodeId / nodesPerRack;
 	}
 	public int firstNodeIdFromRackId (int rackId) {
 		assert (rackId >= 0);
 		assert (rackId < racks);
-		return racks + (rackId * nodesPerRack);
+		return rackId * nodesPerRack;
 	}
 	
 	public double getNetworkRate (int concurrentTasks) {

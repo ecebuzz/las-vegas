@@ -13,8 +13,8 @@ import edu.brown.lasvegas.costmodels.recovery.sim.FailureSchedule.FailureEvent;
  */
 public class HdfsSimulator extends Simulator {
     private static Logger LOG = Logger.getLogger(HdfsSimulator.class);
-	private final HdfsPlacementPolicy policy;
-	public HdfsSimulator(ExperimentalConfiguration config, HdfsPlacementPolicy policy, long firstRandomSeed) {
+	private final HdfsPlacementParameters policy;
+	public HdfsSimulator(ExperimentalConfiguration config, HdfsPlacementParameters policy, long firstRandomSeed) {
 		super (config, firstRandomSeed);
 		this.policy = policy;
 	}
@@ -27,11 +27,11 @@ public class HdfsSimulator extends Simulator {
 		Random random = new Random(123456L);
 		hdfsBlocks = config.gigabytesTotal * (1024 / 64);
 		redundancies = new byte[hdfsBlocks];
-		blocksInNodes = new int[config.racks + config.nodes][];
-		blocksInNodesStored = new int[config.racks + config.nodes];
+		blocksInNodes = new int[config.nodes][];
+		blocksInNodesStored = new int[config.nodes];
 		for (int i = 0; i < config.nodes; ++i) {
 			// *2 to make expansion rare. but, it might happen!
-			blocksInNodes[i + config.racks] = new int[(hdfsBlocks / config.nodes) * 2 * policy.replicationFactor];
+			blocksInNodes[i] = new int[(hdfsBlocks / config.nodes) * 2 * policy.replicationFactor];
 		}
 		Arrays.fill(blocksInNodesStored, 0);
 		
@@ -43,7 +43,7 @@ public class HdfsSimulator extends Simulator {
 			for (int rep = 0; rep < policy.replicationFactor; ++rep) {
 				int nodeId;
 				if (rep == 0) {
-					nodeId = config.racks + random.nextInt(config.nodes);
+					nodeId = random.nextInt(config.nodes);
 					firstReplicaNodeId = nodeId;
 					firstReplicaRackId = config.rackIdFromNodeId(firstReplicaNodeId);
 				} else if (rep == 1 && policy.replicationFactor >= 3) {
@@ -96,17 +96,10 @@ public class HdfsSimulator extends Simulator {
 			this.id = id;
 			this.remainingGigabytes = remainingGigabytes;
 		}
-		/** ID of node or rack. should be unique.*/
+		/** ID of node. */
 		int id;
 		double remainingGigabytes;
 	}
-	private static class DataLostException extends Exception {
-		private static final long serialVersionUID = 0;
-		public DataLostException (String message) {
-			super (message);
-		}
-	}
-
 	/** ongoing recoveries. */
 	private ArrayList<Recovery> recoveries;
 	/** how many replicas (including the original) are available for the block. zero means the block is permanently lost.*/
@@ -156,7 +149,8 @@ public class HdfsSimulator extends Simulator {
 		}
 	}
 	private void onNodeRecovered (int nodeId) {
-		assert (nodeId >= config.racks);
+		assert (nodeId >= 0);
+		assert (nodeId < config.nodes);
 		final int count = blocksInNodesStored[nodeId];
 		for (int i = 0; i < count; ++i) {
 			int block = blocksInNodes[nodeId][i];
@@ -164,12 +158,14 @@ public class HdfsSimulator extends Simulator {
 		}
 	}
 	private void onNodeFailure (int nodeId) throws DataLostException {
-		assert (nodeId >= config.racks);
+		assert (nodeId >= 0);
+		assert (nodeId < config.nodes);
 		final int count = blocksInNodesStored[nodeId];
 		for (int i = 0; i < count; ++i) {
 			int block = blocksInNodes[nodeId][i];
 			--redundancies[block];
-			if (redundancies[block] <= 0) {
+			assert (redundancies[block] >= 0);
+			if (redundancies[block] == 0) {
 				throw new DataLostException("block " + block + " has been permanently lost because of a failure in node " + nodeId + "!");
 			}
 		}

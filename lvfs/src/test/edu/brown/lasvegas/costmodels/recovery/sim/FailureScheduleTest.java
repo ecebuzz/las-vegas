@@ -20,8 +20,8 @@ public class FailureScheduleTest {
 				assertTrue (event.failedNode >= 0);
 				assertTrue (event.failedNode < config.racks);
 			} else {
-				assertTrue (event.failedNode >= config.racks);
-				assertTrue (event.failedNode < config.racks + config.nodes);
+				assertTrue (event.failedNode >= 0);
+				assertTrue (event.failedNode < config.nodes);
 			}
 		}
 		schedule.debugOut();
