@@ -40,4 +40,21 @@ public class LvfsPlacementParameters {
 	public final boolean nodeCoupling;
 	/** whether to do buddy swapping. */
 	public final boolean buddySwapping;
+	
+	@Override
+	public String toString() {
+		String str = "replicaSchemes=[";
+		for (int i = 0; i < replicaSchemes.length; ++i) {
+			if (i != 0) {
+				str += ",";
+			}
+			str += replicaSchemes[i];
+		}
+		str += "], fracturesPerTable=" + fracturesPerTable;
+		str += ", racksPerGroup=" + racksPerGroup;
+		str += ", buddyExclusion=" + buddyExclusion;
+		str += ", nodeCoupling=" + nodeCoupling;
+		str += ", buddySwapping=" + buddySwapping;
+		return str;
+	}
 }
