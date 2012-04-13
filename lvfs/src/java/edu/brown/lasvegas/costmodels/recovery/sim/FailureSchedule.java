@@ -21,7 +21,7 @@ public class FailureSchedule {
 		this.rackFailureContribution = (double) config.racks / config.rackMeanTimeToFail;
 		this.meanTimeToFailCombined = 1.0d / (nodeFailureContribution + rackFailureContribution);
 		this.nodeFailureFraction = nodeFailureContribution / (nodeFailureContribution + rackFailureContribution);
-		LOG.info("generating failure schedule for " + config.maxSimulationPeriod + " minutes..");
+		LOG.debug("generating failure schedule for " + config.maxSimulationPeriod + " minutes..");
 	}
 	
     private static Logger LOG = Logger.getLogger(FailureSchedule.class);
@@ -85,6 +85,6 @@ public class FailureSchedule {
 	}
 	
 	public void debugOut () {
-		LOG.info("now=" + now + ". generated " + eventCount + " events (among them, rack failures=" + getRackEventCount() + ")");
+		LOG.debug("now=" + now + ". generated " + eventCount + " events (among them, rack failures=" + getRackEventCount() + ")");
 	}
 }

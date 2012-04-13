@@ -33,7 +33,7 @@ public class LvfsSimulator extends Simulator {
 		super (config, firstRandomSeed);
 		this.policy = policy;
 		double partitionsIdeal = (double) config.gigabytesTotal
-			/ policy.fracturesPerTable * config.tables
+			/ (policy.fracturesPerTable * config.tables)
 			/ COLUMNS_PER_TABLE
 			/ COLUMN_FILE_SIZE
 			;
@@ -504,7 +504,7 @@ public class LvfsSimulator extends Simulator {
 				}
 			}
 		} catch (DataLostException ex) {
-			LOG.info("Simulated a data loss! now=" + schedule.getNow() + ". " + ex.getMessage());
+			LOG.debug("Simulated a data loss! now=" + schedule.getNow() + ". " + ex.getMessage());
 			return schedule.getNow();
 		}
 

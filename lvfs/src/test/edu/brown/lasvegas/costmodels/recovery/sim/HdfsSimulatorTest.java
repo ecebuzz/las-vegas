@@ -1,9 +1,9 @@
 package edu.brown.lasvegas.costmodels.recovery.sim;
 
-import java.util.ArrayList;
-
 import org.junit.Before;
 import org.junit.Test;
+
+import edu.brown.lasvegas.costmodels.recovery.sim.Simulator.SimulationResult;
 import static org.junit.Assert.*;
 
 /**
@@ -24,8 +24,8 @@ public class HdfsSimulatorTest {
 	public void testRepFac1 () {
 		HdfsSimulator simulator = new HdfsSimulator(config, new HdfsPlacementParameters(1), 3311);
 		simulator.decidePlacement();
-		ArrayList<Double> results = simulator.simulateMeanTimeToFail(10);
-		for (Double time : results) {
+		SimulationResult results = simulator.simulateMeanTimeToFail(10);
+		for (Double time : results.getResults()) {
 			assertTrue(!time.isInfinite()); // replication factor 1 should immediately fail.
 		}
 	}

@@ -2,10 +2,10 @@ package edu.brown.lasvegas.costmodels.recovery.sim;
 
 import static org.junit.Assert.assertTrue;
 
-import java.util.ArrayList;
-
 import org.junit.Before;
 import org.junit.Test;
+
+import edu.brown.lasvegas.costmodels.recovery.sim.Simulator.SimulationResult;
 
 /**
  * Testcase for {@link LvfsSimulator}.
@@ -15,7 +15,7 @@ public class LvfsSimulatorTest {
 	@Before
 	public void setup () {
 		// relatively small setting for faster tests.
-		config = new ExperimentalConfiguration(10,10,100,10,
+		config = new ExperimentalConfiguration(10,10,10,10,
 				4.3d * 30 * 24 * 60, 10.2d * 365 * 24 * 60,
 				0.05d * 60, 3.0d * 60, 0.1d * 60,
 				365.0d * 24 * 60);
@@ -26,8 +26,8 @@ public class LvfsSimulatorTest {
 				new LvfsPlacementParameters(10, new int[]{1}, 10, false, false, false),
 				3311);
 		simulator.decidePlacement();
-		ArrayList<Double> results = simulator.simulateMeanTimeToFail(10);
-		for (Double time : results) {
+		SimulationResult results = simulator.simulateMeanTimeToFail(10);
+		for (Double time : results.getResults()) {
 			assertTrue(!time.isInfinite()); // replication factor 1 should immediately fail.
 		}
 	}

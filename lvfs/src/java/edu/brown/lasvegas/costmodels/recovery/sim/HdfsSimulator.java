@@ -218,7 +218,7 @@ public class HdfsSimulator extends Simulator {
 				}
 			}
 		} catch (DataLostException ex) {
-			LOG.info("Simulated a data loss! now=" + schedule.getNow() + ". " + ex.getMessage());
+			LOG.debug("Simulated a data loss! now=" + schedule.getNow() + ". " + ex.getMessage());
 			return schedule.getNow();
 		}
 		LOG.debug("ran schedule without data loss.");
