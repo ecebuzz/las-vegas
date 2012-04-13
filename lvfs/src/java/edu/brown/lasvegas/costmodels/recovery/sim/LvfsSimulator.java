@@ -263,7 +263,7 @@ public class LvfsSimulator extends Simulator {
 					for (int i = 0; i < policy.racksPerGroup; ++i) {
 						int firstNodeId = config.firstNodeIdFromRackId(currentRack);
 						for (int j = 0; j < config.nodesPerRack; ++j) {
-							assignedNodes[i * policy.racksPerGroup + j] = firstNodeId + j;
+							assignedNodes[i * config.nodesPerRack + j] = firstNodeId + j;
 						}
 						assignedRacks[i] = currentRack;
 						++currentRack;
@@ -318,11 +318,21 @@ public class LvfsSimulator extends Simulator {
 				}
 			}
 		}
+		int sumBlocks = 0, maxBlocks = 0, maxNode = 0;
 		for (int i = 0; i < config.nodes; ++i) {
 			nodeStatuses[i].finalizeBlockGroups();
+			sumBlocks += nodeStatuses[i].blockGroups.length;
+			if (nodeStatuses[i].blockGroups.length > maxBlocks) {
+				maxBlocks = nodeStatuses[i].blockGroups.length;
+				maxNode = i;
+			}
 		}
-
-		LOG.info("decided data placement");
+		LOG.info("decided data placement. average blockGroups-per-node=" + ((double) sumBlocks / config.nodes) + ", max=" + maxBlocks + "(node=" + maxNode + ")");
+		for (int i = 0; i < config.nodes; ++i) {
+			if (nodeStatuses[i].blockGroups.length > (double) sumBlocks * 3 / config.nodes) {
+				LOG.warn("node-" + i + " has as many as " + nodeStatuses[i].blockGroups.length + " blockGroups.. wtf??");
+			}
+		}
 	}
 	/** pick the given number of values from the given domain without duplicates. */
 	private static void generateRandomSet (Random random, int setSize, int domainFrom, int domainTo, int[] buffer) {
@@ -360,13 +370,19 @@ public class LvfsSimulator extends Simulator {
 		double minTime = Double.MAX_VALUE;
 		double combinedNodeRecoveryRate = config.getCombinedRate(networkRate);
 		for (Integer nodeId : copyTasks) {
-			for (BlockGroup bg : nodeStatuses[nodeId].blockGroupsActivelyBeingRecovered) {
+			NodeStatus nodeStatus = nodeStatuses[nodeId];
+			assert (nodeStatus.blockGroupsBeingRecovered > 0);
+			if (nodeStatus.blockGroupsActivelyBeingRecovered.isEmpty()) {
+				continue;
+			}
+			double timeTotal = 0;
+			for (BlockGroup bg : nodeStatus.blockGroupsActivelyBeingRecovered) {
 				assert (bg.beingActivelyRecovered);
-				double time = bg.remainingGigabytes / combinedNodeRecoveryRate;
-				if (time < minTime) {
-					minTime = time;
-				}
-				break; // only take a look at the first active task. we can copy blocks in arbitrary order, but let's simplify
+				timeTotal += bg.remainingGigabytes / combinedNodeRecoveryRate;
+			}
+			// consider the active copy tasks as one composite task.
+			if (timeTotal < minTime) {
+				minTime = timeTotal;
 			}
 		}
 		for (ReplicaGroupFractureStatus status : repartitionTasks) {
@@ -390,15 +406,21 @@ public class LvfsSimulator extends Simulator {
 			for (Integer nodeId : copyTasks.toArray(new Integer[0])) { // copy to avoid 'deletion in loop'
 				// complete tasks one by one
 				NodeStatus nodeStatus = nodeStatuses[nodeId];
-				for (BlockGroup bg : nodeStatus.blockGroupsActivelyBeingRecovered) {
+				assert (nodeStatus.blockGroupsBeingRecovered > 0);
+				if (nodeStatuses[nodeId].blockGroupsActivelyBeingRecovered.isEmpty()) {
+					continue;
+				}
+				double budget = spent;
+				for (BlockGroup bg : nodeStatus.blockGroupsActivelyBeingRecovered.toArray(new BlockGroup[0])) {// copy to avoid 'deletion in loop'
 					assert (bg.beingActivelyRecovered);
-					double progressedGigabytes = combinedNodeRecoveryRate * spent;
-					if (progressedGigabytes < bg.remainingGigabytes) {
-						bg.remainingGigabytes -= progressedGigabytes;
-					} else {
+					double required = bg.remainingGigabytes / combinedNodeRecoveryRate;
+					if (budget >= required) {
 						onBlockGroupRecovered(nodeStatus, bg);
+						budget -= required;
+					} else {
+						bg.remainingGigabytes -= combinedNodeRecoveryRate * budget;
+						break;
 					}
-					break; // only process the first active task
 				}
 
 				if (nodeStatus.blockGroupsBeingRecovered == 0) {
@@ -406,6 +428,7 @@ public class LvfsSimulator extends Simulator {
 				}
 			}
 			for (ReplicaGroupFractureStatus status : repartitionTasks.toArray(new ReplicaGroupFractureStatus[0])) { // copy to avoid 'deletion in loop'
+				assert (status.remainingGigabytes > 0);
 				double progressedGigabytes = status.totalRepartitionRate * spent;
 				if (progressedGigabytes < status.remainingGigabytes) {
 					status.remainingGigabytes -= progressedGigabytes;
@@ -460,11 +483,14 @@ public class LvfsSimulator extends Simulator {
 	private void addNodeFailure (double now, int nodeId) throws DataLostException {
 		assert (nodeId >= 0);
 		assert (nodeId < config.nodes);
+		NodeStatus nodeStatus = nodeStatuses[nodeId];
+		if (nodeStatus.blockGroups.length == 0) {
+			return; // empty node.
+		}
 		if (!copyTasks.contains(nodeId)) {
 			copyTasks.add(nodeId);
 		}
 		
-		NodeStatus nodeStatus = nodeStatuses[nodeId];
 		for (BlockGroup bg : nodeStatus.blockGroups) {
 			// invalidate blocks unless the blocks were already being recovered
 			if (!bg.beingRecovered) {
@@ -522,6 +548,7 @@ public class LvfsSimulator extends Simulator {
 			}
 			bg.remainingGigabytes = bg.partitions.length * COLUMN_FILE_SIZE * COLUMNS_PER_TABLE;
 		}
+		assert (nodeStatus.blockGroupsBeingRecovered > 0);
 	}
 	private void addRackFailure (double now, int rackId) throws DataLostException {
 		for (int i = 0; i < config.nodesPerRack; ++i) {
@@ -576,8 +603,14 @@ public class LvfsSimulator extends Simulator {
 				doRecoveries(prevNow, event.interval);
 
 				if (!event.rackFailure) {
+					/*
+					if (event.failedNode == 0) {
+						LOG.info(schedule.getNow() + ": node-" + event.failedNode);
+					}
+					*/
 					addNodeFailure (schedule.getNow(), event.failedNode);
 				} else {
+					// LOG.info(schedule.getNow() + ": rack-" + event.failedNode);
 					addRackFailure (schedule.getNow(), event.failedNode);
 				}
 			}
