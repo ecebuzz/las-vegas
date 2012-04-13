@@ -17,7 +17,7 @@ public class LvfsSimulatorTest {
 		// relatively small setting for faster tests.
 		config = new ExperimentalConfiguration(10,10,10,10,
 				4.3d * 30 * 24 * 60, 10.2d * 365 * 24 * 60,
-				0.05d * 60, 3.0d * 60, 0.1d * 60,
+				0.05d * 60, 0.02d * 60, 3.0d * 60, 0.1d * 60,
 				365.0d * 24 * 60);
 	}
 	@Test

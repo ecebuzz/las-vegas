@@ -3,6 +3,7 @@ package edu.brown.lasvegas.costmodels.recovery.sim;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Random;
 
 import org.apache.log4j.Logger;
@@ -28,6 +29,8 @@ public class LvfsSimulator extends Simulator {
 	private static final int COLUMNS_PER_TABLE = 20;
 	/** 50MB per columnar file */
 	private static final double COLUMN_FILE_SIZE = 0.05d;
+	/** keep the repartitioned files in stable storage for 5 hours. */
+	private static final double REPARTITIONED_FILES_HOLD = 5 * 60;
     private static Logger LOG = Logger.getLogger(LvfsSimulator.class);
 	private final LvfsPlacementParameters policy;
 	public LvfsSimulator(ExperimentalConfiguration config, LvfsPlacementParameters policy, long firstRandomSeed) {
@@ -46,31 +49,50 @@ public class LvfsSimulator extends Simulator {
 
 	private static class NodeStatus {
 		BlockGroup[] blockGroups;
-		ArrayList<BlockGroup> blockGroupsList = new ArrayList<BlockGroup>();
+		ArrayList<BlockGroup> tmpBlockGroupsList = new ArrayList<BlockGroup>();
 		
 		void finalizeBlockGroups() {
-			blockGroups = blockGroupsList.toArray(new BlockGroup[blockGroupsList.size()]);
-			blockGroupsList = null;
+			blockGroups = tmpBlockGroupsList.toArray(new BlockGroup[tmpBlockGroupsList.size()]);
+			tmpBlockGroupsList = null;
 			for (BlockGroup bg : blockGroups) {
 				bg.finalizePartitions();
 			}
 		}
 		void resetStatus() {
 			blockGroupsBeingRecovered = 0;
-			blockGroupsActivelyBeingRecovered = 0;
+			blockGroupsActivelyBeingRecovered.clear();
 			for (BlockGroup bg : blockGroups) {
 				bg.resetStatus();
 			}
+		}
+		
+		/** for debugging. */
+		void validate () {
+			int recoveringGroups = 0;
+			for (BlockGroup bg : blockGroups) {
+				if (bg.beingRecovered) {
+					++recoveringGroups;
+					if (bg.beingActivelyRecovered) {
+						assert (blockGroupsActivelyBeingRecovered.contains(bg));
+					}
+				} else {
+					assert (bg.remainingGigabytes == 0);
+					assert (!bg.beingActivelyRecovered);
+					assert (!blockGroupsActivelyBeingRecovered.contains(bg));
+				}
+			}
+			assert (blockGroupsBeingRecovered == recoveringGroups);
 		}
 		
 		/**
 		 * Total number of BlockGroup that are being recovered at this node.
 		 */
 		int blockGroupsBeingRecovered = 0;
+		
 		/**
-		 * Number of BlockGroup that are being recovered without pending (due to wait for repartitioning) at this node.
+		 * BlockGroup that are being recovered without pending (due to wait for repartitioning) at this node.
 		 */
-		int blockGroupsActivelyBeingRecovered = 0;
+		HashSet<BlockGroup> blockGroupsActivelyBeingRecovered = new HashSet<BlockGroup>();
 	}
 	private static class BlockGroup {
 		BlockGroup (int table, int fracture, int group, int nodeId) {
@@ -84,14 +106,14 @@ public class LvfsSimulator extends Simulator {
 		final int group;
 		final int nodeId;
 		int[] partitions;
-		ArrayList<Integer> partitionsList = new ArrayList<Integer>();
+		ArrayList<Integer> tmpPartitionsList = new ArrayList<Integer>();
 		// final ArrayList<Integer> schemes = new ArrayList<Integer>();
 		void finalizePartitions() {
-			partitions = new int[partitionsList.size()];
+			partitions = new int[tmpPartitionsList.size()];
 			for (int i = 0; i < partitions.length; ++i) {
-				partitions[i] = partitionsList.get(i);
+				partitions[i] = tmpPartitionsList.get(i);
 			}
-			partitionsList = null;
+			tmpPartitionsList = null;
 		}
 		void resetStatus() {
 			beingRecovered = false;
@@ -113,12 +135,10 @@ public class LvfsSimulator extends Simulator {
 			this.group = group;
 			this.buddySchemes = policy.replicaSchemes[group];
 			this.redundancies = new byte[partitions];
-			Arrays.fill(redundancies, (byte) buddySchemes);
 			this.redundancyStats = new int[128];
-			Arrays.fill(redundancyStats, 0);
-			redundancyStats[buddySchemes] = partitions;
 			this.totalGigabytes = partitions * COLUMN_FILE_SIZE * COLUMNS_PER_TABLE;
-			this.totalDiskRate = config.localDisk * assignedRacks.length * config.nodesPerRack;
+			this.totalRepartitionRate = config.localRepartition * assignedRacks.length * config.nodesPerRack;
+			resetStatus();
 		}
 		final int table;
 		final int fracture;
@@ -133,25 +153,44 @@ public class LvfsSimulator extends Simulator {
 
 		/** total amount of original (without replication) data. referred for re-partitioning.*/
 		final double totalGigabytes;
-		/** total amount of disk read/write throughput available while re-partitioning.*/
-		final double totalDiskRate;
+		/** total (all nodes involved) combined (disk read/write, partition) throughput of re-partitioning.*/
+		final double totalRepartitionRate;
 		
 		void resetStatus () {
 			Arrays.fill(redundancies, (byte) buddySchemes);
 			Arrays.fill(redundancyStats, 0);
 			redundancyStats[buddySchemes] = partitions;
-			repartitionTask = null;
 			waitingForRepartition.clear();
 			remainingGigabytes = 0;
 			repartitionedBlocksAvailableUntil = 0;
 		}
 		
-		/**
-		 * The recovery task to repartition another replica group's data
-		 * when this replica group is lost (redundancyStats[0] > 0).
-		 * Once done, this property is set to NULL.
-		 */
-		Repartition repartitionTask;
+		/** for debugging. */
+		void validate () {
+			if (remainingGigabytes == 0) {
+				assert (waitingForRepartition.size() == 0);
+			} else {
+				assert (remainingGigabytes > 0);
+				assert (waitingForRepartition.size() > 0);
+				for (BlockGroup bg : waitingForRepartition.values()) {
+					assert (bg.table == table);
+					assert (bg.fracture == fracture);
+					assert (bg.group == group);
+					assert (bg.beingRecovered);
+					assert (!bg.beingActivelyRecovered);
+					assert (bg.remainingGigabytes > 0);
+				}
+			}
+			int[] redundancyStatsCorrect = new int[redundancyStats.length];
+			Arrays.fill(redundancyStatsCorrect, 0);
+			for (int i = 0; i < redundancies.length; ++i) {
+				assert (redundancies[i] >= 0);
+				++redundancyStatsCorrect[redundancies[i]];
+			}
+			for (int i = 0; i < redundancyStats.length; ++i) {
+				assert (redundancyStats[i] == redundancyStatsCorrect[i]);
+			}
+		}
 		
 		/**
 		 * Block groups that are being recovered, but pending because of this repartitioning.
@@ -171,41 +210,22 @@ public class LvfsSimulator extends Simulator {
 		double repartitionedBlocksAvailableUntil = 0;
 	}
 	
-	private static class Recovery {
-	}
-	/**
-	 * Recovery task to copy lost partitions from other nodes.
-	 * One task per one node (because it uses the same disk bandwidth).
-	 */
-	private static class Copy extends Recovery {
-		public Copy(int nodeId) {
-			this.nodeId = nodeId;
-		}
-		int nodeId;
-	}
-	/**
-	 * Recovery task to create partition files from other replica group.
-	 * One task per one ReplicaGroupFractureStatus.
-	 */
-	private static class Repartition extends Recovery {
-		public Repartition(ReplicaGroupFractureStatus target) {
-			assert (target.repartitionTask == null);
-			this.target = target;
-			target.repartitionTask = this;
-			target.remainingGigabytes = target.totalGigabytes;
-		}
-		/** the replica group _to be recovered_ (not the source). */
-		final ReplicaGroupFractureStatus target;
+	private void addRepartitionTask (ReplicaGroupFractureStatus target) {
+		assert (!repartitionTasks.contains(target));
+		repartitionTasks.add(target);
+		target.remainingGigabytes = target.totalGigabytes;
 	}
 
 	private NodeStatus[] nodeStatuses;
 	/** status of each replica group in each fracture. [table][fracture][group].*/
 	private ReplicaGroupFractureStatus[][][] groupStatuses;
-	/** ongoing recoveries. */
-	private ArrayList<Recovery> recoveries;
+	/** ongoing copy tasks (nodeID to recover). */
+	private HashSet<Integer> copyTasks;
+	/** ongoing repartition tasks (the replica group _to be recovered_ (not the source)). */
+	private HashSet<ReplicaGroupFractureStatus> repartitionTasks;
 
 	private void assignBlock (int nodeId, int table, int fracture, int group, int scheme, int partition) {
-		ArrayList<BlockGroup> blocks = nodeStatuses[nodeId].blockGroupsList;
+		ArrayList<BlockGroup> blocks = nodeStatuses[nodeId].tmpBlockGroupsList;
 		BlockGroup blockGroup = null;
 		for (BlockGroup bg : blocks) {
 			if (bg.table == table && bg.fracture == fracture && bg.group == group) {
@@ -217,7 +237,7 @@ public class LvfsSimulator extends Simulator {
 			blockGroup = new BlockGroup (table, fracture, group, nodeId);
 			blocks.add(blockGroup);
 		}
-		blockGroup.partitionsList.add(partition);
+		blockGroup.tmpPartitionsList.add(partition);
 	}
 
 	@Override
@@ -328,86 +348,70 @@ public class LvfsSimulator extends Simulator {
 
 	private double getNetworkRate (double now) {
 		int activeCopyTaskCount = 0;
-		for (Recovery task : recoveries) {
-			if (task instanceof Copy) {
-				int nodeId = ((Copy) task).nodeId;
-				if (nodeStatuses[nodeId].blockGroupsActivelyBeingRecovered > 0) {
-					++activeCopyTaskCount;
-				}
+		for (Integer nodeId : copyTasks) {
+			if (!nodeStatuses[nodeId].blockGroupsActivelyBeingRecovered.isEmpty()) {
+				++activeCopyTaskCount;
 			}
 		}
-		assert (activeCopyTaskCount <= recoveries.size());
+		assert (activeCopyTaskCount <= copyTasks.size());
 		return config.getNetworkRate(activeCopyTaskCount);
 	}
 	private double getNextTimeToSpend(double now, double networkRate) {
 		double minTime = Double.MAX_VALUE;
-		for (Recovery task : recoveries) {
-			if (task instanceof Copy) {
-				int nodeId = ((Copy) task).nodeId;
-				for (BlockGroup bg : nodeStatuses[nodeId].blockGroups) {
-					if (!bg.beingActivelyRecovered) {
-						continue;
-					}
-					double time = bg.remainingGigabytes / config.getCombinedRate(networkRate);
-					if (time < minTime) {
-						minTime = time;
-					}
-					break; // only take a look at the first active task. we can copy blocks in arbitrary order, but let's simplify
-				}
-			} else {
-				ReplicaGroupFractureStatus status = ((Repartition) task).target;
-				double time = status.remainingGigabytes / status.totalDiskRate;
+		double combinedNodeRecoveryRate = config.getCombinedRate(networkRate);
+		for (Integer nodeId : copyTasks) {
+			for (BlockGroup bg : nodeStatuses[nodeId].blockGroupsActivelyBeingRecovered) {
+				assert (bg.beingActivelyRecovered);
+				double time = bg.remainingGigabytes / combinedNodeRecoveryRate;
 				if (time < minTime) {
 					minTime = time;
 				}
+				break; // only take a look at the first active task. we can copy blocks in arbitrary order, but let's simplify
+			}
+		}
+		for (ReplicaGroupFractureStatus status : repartitionTasks) {
+			double time = status.remainingGigabytes / status.totalRepartitionRate;
+			if (time < minTime) {
+				minTime = time;
 			}
 		}
 		return minTime;
 	}
 
 	private void doRecoveries (double now, double elapsed) {
-		while (!recoveries.isEmpty()) {
+		while (!copyTasks.isEmpty() || !repartitionTasks.isEmpty()) {
 			double networkRate = getNetworkRate (now);
+			double combinedNodeRecoveryRate = config.getCombinedRate(networkRate);
 			double spent = getNextTimeToSpend (now, networkRate);
 			if (spent > elapsed) {
 				spent = elapsed; 
 			}
 
-			for (int i = 0; i < recoveries.size(); ++i) {
-				Recovery task = recoveries.get(i);
-
-				boolean somethingRemaining = false;
-				if (task instanceof Copy) {
-					// complete tasks one by one
-					int nodeId = ((Copy) task).nodeId;
-					NodeStatus nodeStatus = nodeStatuses[nodeId];
-					for (BlockGroup bg : nodeStatus.blockGroups) {
-						if (!bg.beingActivelyRecovered) {
-							continue;
-						}
-						double progressedGigabytes = config.getCombinedRate(networkRate) * spent;
-						if (progressedGigabytes < bg.remainingGigabytes) {
-							bg.remainingGigabytes -= progressedGigabytes;
-						} else {
-							onBlockGroupRecovered(nodeStatus, bg);
-						}
-						break; // only process the first active task
-					}
-					somethingRemaining = nodeStatus.blockGroupsBeingRecovered > 0;
-				} else {
-					ReplicaGroupFractureStatus status = ((Repartition) task).target;
-					double progressedGigabytes = status.totalDiskRate * spent;
-					if (progressedGigabytes < status.remainingGigabytes) {
-						status.remainingGigabytes -= progressedGigabytes;
-						somethingRemaining = false;
+			for (Integer nodeId : copyTasks.toArray(new Integer[0])) { // copy to avoid 'deletion in loop'
+				// complete tasks one by one
+				NodeStatus nodeStatus = nodeStatuses[nodeId];
+				for (BlockGroup bg : nodeStatus.blockGroupsActivelyBeingRecovered) {
+					assert (bg.beingActivelyRecovered);
+					double progressedGigabytes = combinedNodeRecoveryRate * spent;
+					if (progressedGigabytes < bg.remainingGigabytes) {
+						bg.remainingGigabytes -= progressedGigabytes;
 					} else {
-						onRepartitionCompleted(now, status);
+						onBlockGroupRecovered(nodeStatus, bg);
 					}
+					break; // only process the first active task
 				}
 
-				if (!somethingRemaining) {
-					recoveries.remove(i);
-					--i; // to keep checking the following (otherwise the next entry will be skipped).
+				if (nodeStatus.blockGroupsBeingRecovered == 0) {
+					copyTasks.remove(nodeId);
+				}
+			}
+			for (ReplicaGroupFractureStatus status : repartitionTasks.toArray(new ReplicaGroupFractureStatus[0])) { // copy to avoid 'deletion in loop'
+				double progressedGigabytes = status.totalRepartitionRate * spent;
+				if (progressedGigabytes < status.remainingGigabytes) {
+					status.remainingGigabytes -= progressedGigabytes;
+				} else {
+					onRepartitionCompleted(now, status);
+					repartitionTasks.remove(status);
 				}
 			}
 
@@ -423,7 +427,7 @@ public class LvfsSimulator extends Simulator {
 		assert (bg.beingActivelyRecovered);
 		bg.remainingGigabytes = 0;
 		ReplicaGroupFractureStatus status = groupStatuses[bg.table][bg.fracture][bg.group];
-		for (Integer partition : bg.partitions) {
+		for (int partition : bg.partitions) {
 			assert (status.redundancies[partition] < policy.replicaSchemes[bg.group]);
 			--status.redundancyStats[status.redundancies[partition]];
 			++status.redundancyStats[status.redundancies[partition] + 1];
@@ -431,26 +435,24 @@ public class LvfsSimulator extends Simulator {
 		}
 		bg.beingRecovered = false;
 		bg.beingActivelyRecovered = false;
-		--nodeStatus.blockGroupsActivelyBeingRecovered;
+		assert (nodeStatus.blockGroupsActivelyBeingRecovered.contains(bg));
+		nodeStatus.blockGroupsActivelyBeingRecovered.remove(bg);
 		--nodeStatus.blockGroupsBeingRecovered;
-		assert (nodeStatus.blockGroupsActivelyBeingRecovered >= 0);
 		assert (nodeStatus.blockGroupsBeingRecovered >= 0);
 	}
 	private void onRepartitionCompleted(double now, ReplicaGroupFractureStatus status) {
 		status.remainingGigabytes = 0;
-		status.repartitionTask = null;
-		status.repartitionedBlocksAvailableUntil = now + 1440; // keep the repartitioned data for 24 hours
+		status.repartitionedBlocksAvailableUntil = now + REPARTITIONED_FILES_HOLD;
 		for (BlockGroup bg : status.waitingForRepartition.values()) {
 			NodeStatus nodeStatus = nodeStatuses[bg.nodeId];
 			assert (bg.beingRecovered);
 			assert (!bg.beingActivelyRecovered);
+			assert (!nodeStatus.blockGroupsActivelyBeingRecovered.contains(bg));
 			assert (bg.table == status.table);
 			assert (bg.fracture == status.fracture);
 			assert (bg.group == status.group);
 			bg.beingActivelyRecovered = true;
-			++nodeStatus.blockGroupsActivelyBeingRecovered;
-			assert (nodeStatus.blockGroupsActivelyBeingRecovered <= nodeStatus.blockGroupsBeingRecovered);
-			assert (nodeStatus.blockGroupsActivelyBeingRecovered <= nodeStatus.blockGroups.length);
+			nodeStatus.blockGroupsActivelyBeingRecovered.add(bg);
 		}
 		status.waitingForRepartition.clear();
 	}
@@ -458,50 +460,50 @@ public class LvfsSimulator extends Simulator {
 	private void addNodeFailure (double now, int nodeId) throws DataLostException {
 		assert (nodeId >= 0);
 		assert (nodeId < config.nodes);
-		boolean exists = false;
-		for (Recovery recovery : recoveries) {
-			if (!(recovery instanceof Copy)) {
-				continue;
-			}
-			Copy copy = (Copy) recovery;
-			if (copy.nodeId != nodeId) {
-				continue;
-			}
-			exists = true;
-			break;
-		}
-		if (!exists) {
-			recoveries.add(new Copy (nodeId));
+		if (!copyTasks.contains(nodeId)) {
+			copyTasks.add(nodeId);
 		}
 		
 		NodeStatus nodeStatus = nodeStatuses[nodeId];
 		for (BlockGroup bg : nodeStatus.blockGroups) {
 			// invalidate blocks unless the blocks were already being recovered
 			if (!bg.beingRecovered) {
+				boolean otherGroupAvailable = false;
+				for (int group = 0; group < policy.replicaSchemes.length; ++group) {
+					if (group == bg.group) {
+						continue;
+					}
+					if (groupStatuses[bg.table][bg.fracture][group].redundancyStats[0] == 0
+							|| groupStatuses[bg.table][bg.fracture][group].isRepartitionedBlocksAvailable(now)) {
+						// some other replica group is active. we can recover from it
+						otherGroupAvailable = true;
+						break;
+					}
+				}
 				ReplicaGroupFractureStatus status = groupStatuses[bg.table][bg.fracture][bg.group];
-				for (Integer partition : bg.partitions) {
+				boolean recoverableFromRepartitionedFiles = status.isRepartitionedBlocksAvailable(now);
+
+				for (int partition : bg.partitions) {
 					assert (status.redundancies[partition] > 0);
 					--status.redundancyStats[status.redundancies[partition]];
 					++status.redundancyStats[status.redundancies[partition] - 1];
 					--status.redundancies[partition];
-					if (status.repartitionTask == null && !status.isRepartitionedBlocksAvailable(now)) {
-						if (status.redundancies[partition] == 0 && status.redundancyStats[0] == 1) {
-							// we have just lost a partition, and there is no repartitioning going on.
-							boolean recoverable = false;
-							for (int group = 0; group < policy.replicaSchemes.length; ++group) {
-								if (groupStatuses[bg.table][bg.fracture][group].redundancyStats[0] == 0
-										|| groupStatuses[bg.table][bg.fracture][group].isRepartitionedBlocksAvailable(now)) {
-									// some other replica group is active. let's recover from it
-									recoverable = true;
-									break;
-								}
-							}
-							if (!recoverable) {
-								throw new DataLostException("lost a partition " + partition
-										+ " in table " + bg.table + ", fracture " + bg.fracture
-										+ " permanently! triggered by a failure in node " + nodeId);
-							}
-							recoveries.add(new Repartition(status));
+					assert (status.redundancies[partition] >= 0);
+					if (status.redundancies[partition] == 0) {
+						// we have lost this partition! no recovery possible in this group
+						if (recoverableFromRepartitionedFiles) {
+							continue; // okay, we can recover from the repartitioned files
+						}
+						if (!otherGroupAvailable) {
+							// no other group is available. fail
+							throw new DataLostException("lost a partition " + partition
+									+ " in table " + bg.table + ", fracture " + bg.fracture
+									+ " permanently! triggered by a failure in node " + nodeId);
+						}
+						// okay, some other group is available, but we need to repartition
+						if (status.remainingGigabytes == 0) {
+							addRepartitionTask (status);
+							assert (status.remainingGigabytes > 0);
 						}
 					}
 				}
@@ -509,17 +511,22 @@ public class LvfsSimulator extends Simulator {
 				bg.beingRecovered = true;
 				++nodeStatus.blockGroupsBeingRecovered;
 				assert (nodeStatus.blockGroupsBeingRecovered <= nodeStatus.blockGroups.length);
-				if (status.repartitionTask == null) {
+				if (status.remainingGigabytes == 0) {
 					bg.beingActivelyRecovered = true;
-					++nodeStatus.blockGroupsActivelyBeingRecovered;
-					assert (nodeStatus.blockGroupsActivelyBeingRecovered <= nodeStatus.blockGroupsBeingRecovered);
-					assert (nodeStatus.blockGroupsActivelyBeingRecovered <= nodeStatus.blockGroups.length);
+					assert (!nodeStatus.blockGroupsActivelyBeingRecovered.contains(bg));
+					nodeStatus.blockGroupsActivelyBeingRecovered.add(bg);
 				} else {
 					assert (!status.waitingForRepartition.containsKey(nodeId));
 					status.waitingForRepartition.put(nodeId, bg);
 				}
 			}
 			bg.remainingGigabytes = bg.partitions.length * COLUMN_FILE_SIZE * COLUMNS_PER_TABLE;
+		}
+	}
+	private void addRackFailure (double now, int rackId) throws DataLostException {
+		for (int i = 0; i < config.nodesPerRack; ++i) {
+			int nodeId = config.firstNodeIdFromRackId(rackId) + i;
+			addNodeFailure (now, nodeId);
 		}
 	}
 	
@@ -535,7 +542,23 @@ public class LvfsSimulator extends Simulator {
 				}
 			}
 		}
-		recoveries = new ArrayList<Recovery>();
+		copyTasks = new HashSet<Integer>();
+		repartitionTasks = new HashSet<ReplicaGroupFractureStatus>();
+		Runtime.getRuntime().gc();
+	}
+	/** for debugging. */
+	private boolean validateAll () {
+		for (NodeStatus nodeStatus : nodeStatuses) {
+			nodeStatus.validate();
+		}
+		for (int table = 0; table < config.tables; ++table) {
+			for (int fracture = 0; fracture < policy.fracturesPerTable; ++fracture) {
+				for (int group = 0; group < policy.replicaSchemes.length; ++group) {
+					groupStatuses[table][fracture][group].validate();
+				}
+			}
+		}
+		return true;
 	}
 	@Override
 	protected double simulateTimeToFail(FailureSchedule schedule) {
@@ -555,17 +578,16 @@ public class LvfsSimulator extends Simulator {
 				if (!event.rackFailure) {
 					addNodeFailure (schedule.getNow(), event.failedNode);
 				} else {
-					for (int i = 0; i < config.nodesPerRack; ++i) {
-						int nodeId = config.firstNodeIdFromRackId(event.failedNode) + i;
-						addNodeFailure (schedule.getNow(), nodeId);
-					}
+					addRackFailure (schedule.getNow(), event.failedNode);
 				}
 			}
 		} catch (DataLostException ex) {
 			LOG.debug("Simulated a data loss! now=" + schedule.getNow() + ". " + ex.getMessage());
+			assert(validateAll());
 			return schedule.getNow();
 		}
-
+		
+		assert(validateAll());
 		LOG.debug("ran schedule without data loss.");
 		return Double.POSITIVE_INFINITY;
 	}

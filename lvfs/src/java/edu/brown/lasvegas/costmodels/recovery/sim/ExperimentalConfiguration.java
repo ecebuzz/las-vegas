@@ -13,7 +13,7 @@ public class ExperimentalConfiguration {
 	public ExperimentalConfiguration() {
 		this (100, 100, 100, 100,
 				4.3d * 30 * 24 * 60, 10.2d * 365 * 24 * 60,
-				0.05d * 60, 3.0d * 60, 0.1d * 60,
+				0.05d * 60, 0.02d * 60, 3.0d * 60, 0.1d * 60,
 				3650.0d * 24 * 60);
 		// numbers are from: http://www.cs.cornell.edu/projects/ladis2009/talks/dean-keynote-ladis2009.pdf
 		// and OSDI'10
@@ -29,13 +29,14 @@ public class ExperimentalConfiguration {
 	 * @param nodeMeanTimeToFail the node mean time to fail
 	 * @param rackMeanTimeToFail the rack mean time to fail
 	 * @param localDisk local disk throughput
+	 * @param localRepartition local repartitioning throughput
 	 * @param backboneNetwork the backbone network gb/min
 	 * @param localNetwork local network gb/min
 	 * @param maxSimulationPeriod the max simulation period
 	 */
 	public ExperimentalConfiguration(int racks, int nodesPerRack, int gigabytesPerNode, int tables,
 			double nodeMeanTimeToFail, double rackMeanTimeToFail,
-			double localDisk, double backboneNetwork, double localNetwork,
+			double localDisk, double localRepartition, double backboneNetwork, double localNetwork,
 			double maxSimulationPeriod) {
 		this.racks = racks;
 		this.nodesPerRack = nodesPerRack;
@@ -46,6 +47,7 @@ public class ExperimentalConfiguration {
 		this.nodeMeanTimeToFail = nodeMeanTimeToFail;
 		this.rackMeanTimeToFail = rackMeanTimeToFail;
 		this.localDisk = localDisk;
+		this.localRepartition = localRepartition;
 		this.backboneNetwork = backboneNetwork;
 		this.localNetwork = localNetwork;
 		this.maxSimulationPeriod = maxSimulationPeriod;
@@ -76,6 +78,9 @@ public class ExperimentalConfiguration {
 	public final double backboneNetwork;
 	/** local network throughput GB/min. */
 	public final double localNetwork;
+
+	/** repartition throughput at a node GB/min. usually slower than localDisk because of partitioning. */
+	public final double localRepartition;
 	
 	/** maximum length of simulation in minutes. */
 	public final double maxSimulationPeriod;
