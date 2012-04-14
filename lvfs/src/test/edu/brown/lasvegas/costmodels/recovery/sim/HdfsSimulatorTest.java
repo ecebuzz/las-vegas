@@ -19,30 +19,31 @@ public class HdfsSimulatorTest {
 				0.05d * 60, 0.02d * 60, 3.0d * 60, 0.1d * 60,
 				365.0d * 24 * 60);
 	}
-	
-	@Test
-	public void testRepFac1 () {
-		HdfsSimulator simulator = new HdfsSimulator(config, new HdfsPlacementParameters(1), 3311);
+
+	private void test (int replicationFactor, boolean secondReplicaInSameRack) {
+		HdfsSimulator simulator = new HdfsSimulator(config, new HdfsPlacementParameters(replicationFactor, secondReplicaInSameRack), 3311);
 		simulator.decidePlacement();
 		SimulationResult results = simulator.simulateMeanTimeToFail(10);
-		for (Double time : results.getResults()) {
-			assertTrue(!time.isInfinite()); // replication factor 1 should immediately fail.
+		if (replicationFactor == 1) {
+			for (double time : results.getResults() ) {
+				assertTrue(time != Double.POSITIVE_INFINITY); // replication factor 1 should immediately fail.
+			}
 		}
+		// replication factor 2,3 should be okay (for this number of node/rack). but not certainly.
 	}
+	
 	@Test
-	public void testRepFac2 () {
-		HdfsSimulator simulator = new HdfsSimulator(config, new HdfsPlacementParameters(2), 3311);
-		simulator.decidePlacement();
-		simulator.simulateMeanTimeToFail(10);
-		// replication factor 2 will also see data loss, but not certainly.
-	}
+	public void testRepFac1 () { test (1, true); }
 	@Test
-	public void testRepFac3 () {
-		HdfsSimulator simulator = new HdfsSimulator(config, new HdfsPlacementParameters(3), 3311);
-		simulator.decidePlacement();
-		simulator.simulateMeanTimeToFail(10);
-		// replication factor 3 should be okay (for this number of node/rack). but not certainly either.
-	}
+	public void testRepFac1Rack () { test (1, false); }
+	@Test
+	public void testRepFac2 () { test (2, true); }
+	@Test
+	public void testRepFac2Rack () { test (2, false); }
+	@Test
+	public void testRepFac3 () { test (3, true); }
+	@Test
+	public void testRepFac3Rack () { test (3, false); }
 /* this test takes time.
 	@Test
 	public void testRepFac3Larger () {

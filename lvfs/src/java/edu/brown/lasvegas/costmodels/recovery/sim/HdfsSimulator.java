@@ -46,7 +46,7 @@ public class HdfsSimulator extends Simulator {
 					nodeId = random.nextInt(config.nodes);
 					firstReplicaNodeId = nodeId;
 					firstReplicaRackId = config.rackIdFromNodeId(firstReplicaNodeId);
-				} else if (rep == 1 && policy.replicationFactor >= 3) {
+				} else if (rep == 1 && policy.secondReplicaInSameRack) {
 					// following the HDFS implementation, we place the second replica in the same rack
 					// and the 3rd, 4th.. in other racks.
 					// this is not quite optimal for recoverability, but that's what HDFS does.

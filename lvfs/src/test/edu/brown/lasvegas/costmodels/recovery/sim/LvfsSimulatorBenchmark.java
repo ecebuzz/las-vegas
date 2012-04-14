@@ -16,7 +16,7 @@ public class LvfsSimulatorBenchmark {
 		run (new LvfsPlacementParameters(10, new int[]{2, 2}, 4, true, true, true));
 	}
 	
-	private static ExperimentalConfiguration createConfig() {
+	static ExperimentalConfiguration createConfig() {
 		return new ExperimentalConfiguration(100,100,100,100,
 			4.3d * 30 * 24 * 60, 10.2d * 365 * 24 * 60,
 			0.05d * 60, 0.02d * 60, 3.0d * 60, 0.1d * 60,
@@ -28,5 +28,4 @@ public class LvfsSimulatorBenchmark {
 		simulator.decidePlacement();
 		simulator.simulateMeanTimeToFail(100);
 	}
-
 }
