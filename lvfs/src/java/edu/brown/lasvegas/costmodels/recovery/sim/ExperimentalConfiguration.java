@@ -109,4 +109,21 @@ public class ExperimentalConfiguration {
 		double inverse = (1.0d / networkRate) + (1.0d / localDisk);
 		return 1.0d / inverse;
 	}
+	
+	
+	@Override
+	public String toString() {
+		return ""
+			+ "racks = " + racks
+			+ ", nodesPerRack = " + nodesPerRack
+			+ ", gigabytesPerNode = " + gigabytesPerNode
+			+ ", tables = " + tables
+			+ ", nodeMeanTimeToFail = " + nodeMeanTimeToFail
+			+ ", this.rackMeanTimeToFail = " + rackMeanTimeToFail
+			+ ", localDisk = " + localDisk
+			+ ", localRepartition = " + localRepartition
+			+ ", backboneNetwork = " + backboneNetwork
+			+ ", localNetwork = " + localNetwork
+			+ ", maxSimulationPeriod = " + maxSimulationPeriod;
+	}
 }

@@ -20,8 +20,8 @@ public class HdfsSimulatorTest {
 				365.0d * 24 * 60);
 	}
 
-	private void test (int replicationFactor, boolean secondReplicaInSameRack) {
-		HdfsSimulator simulator = new HdfsSimulator(config, new HdfsPlacementParameters(replicationFactor, secondReplicaInSameRack), 3311);
+	private void test (int replicationFactor, boolean secondReplicaInSameRack, boolean stripeChunking) {
+		HdfsSimulator simulator = new HdfsSimulator(config, new HdfsPlacementParameters(replicationFactor, secondReplicaInSameRack, stripeChunking), 3311);
 		simulator.decidePlacement();
 		SimulationResult results = simulator.simulateMeanTimeToFail(10);
 		if (replicationFactor == 1) {
@@ -33,17 +33,23 @@ public class HdfsSimulatorTest {
 	}
 	
 	@Test
-	public void testRepFac1 () { test (1, true); }
+	public void testRepFac1 () { test (1, true, false); }
 	@Test
-	public void testRepFac1Rack () { test (1, false); }
+	public void testRepFac1Rack () { test (1, false, false); }
 	@Test
-	public void testRepFac2 () { test (2, true); }
+	public void testRepFac1RackStripe () { test (1, false, true); }
 	@Test
-	public void testRepFac2Rack () { test (2, false); }
+	public void testRepFac2 () { test (2, true, false); }
 	@Test
-	public void testRepFac3 () { test (3, true); }
+	public void testRepFac2Rack () { test (2, false, false); }
 	@Test
-	public void testRepFac3Rack () { test (3, false); }
+	public void testRepFac2RackStripe () { test (2, false, true); }
+	@Test
+	public void testRepFac3 () { test (3, true, false); }
+	@Test
+	public void testRepFac3Rack () { test (3, false, false); }
+	@Test
+	public void testRepFac3RackStripe () { test (3, false, true); }
 /* this test takes time.
 	@Test
 	public void testRepFac3Larger () {

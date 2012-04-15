@@ -14,7 +14,8 @@ public class FailureScheduleTest {
 		ExperimentalConfiguration config = new ExperimentalConfiguration();
 		FailureSchedule schedule = new FailureSchedule(config, 12345L);
 		for (int i = 0; i < 30000; ++i) {
-			FailureEvent event = schedule.generateNextEvent();
+			FailureEvent event = schedule.getNextEvent();
+			schedule.peekNextEvent();
 			assertTrue (event.interval > 0);
 			if (event.rackFailure) {
 				assertTrue (event.failedNode >= 0);

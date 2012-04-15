@@ -22,6 +22,7 @@ public class FailureSchedule {
 		this.meanTimeToFailCombined = 1.0d / (nodeFailureContribution + rackFailureContribution);
 		this.nodeFailureFraction = nodeFailureContribution / (nodeFailureContribution + rackFailureContribution);
 		LOG.debug("generating failure schedule for " + config.maxSimulationPeriod + " minutes..");
+		nextEvent = generateNextEvent();
 	}
 	
     private static Logger LOG = Logger.getLogger(FailureSchedule.class);
@@ -40,6 +41,7 @@ public class FailureSchedule {
 			this.rackFailure = rackFailure;
 			this.failedNode = failedNode;
 			this.interval = interval;
+			// LOG.info("rackFailure=" + rackFailure + ", node=" + failedNode + ", interval=" + interval);
 		}
 		/** whether the event is a rack failure or not (=node failure).*/
 		public final boolean rackFailure;
@@ -49,20 +51,29 @@ public class FailureSchedule {
 		public final double interval;
 	}
 
-	public FailureEvent generateNextEvent() {
+	public FailureEvent getNextEvent() {
+		FailureEvent currentEvent = nextEvent;
+		now += currentEvent.interval;
 		if (now > config.maxSimulationPeriod) {
+			now = config.maxSimulationPeriod;
+			debugOut();
+			nextEvent = null;
+			return null;
+		}
+		nextEvent = generateNextEvent ();
+		return currentEvent;
+	}
+	public FailureEvent peekNextEvent() {
+		return nextEvent;
+	}
+	private FailureEvent generateNextEvent() {
+		if (now >= config.maxSimulationPeriod) {
 			return null;
 		}
 		// Now, let's assume exponential distribution of the failure.
 		// Thanks to the memory-less property of exponential distribution,
 		// we can simplify the failure schedule generation as follows
 		double interval = Math.log(1.0d - random.nextDouble()) * -meanTimeToFailCombined;
-		now += interval;
-		if (now > config.maxSimulationPeriod) {
-			now = config.maxSimulationPeriod;
-			debugOut();
-			return null;
-		}
 		++eventCount;
 		if (random.nextDouble() < nodeFailureFraction) {
 			++nodeEventCount;
@@ -71,6 +82,7 @@ public class FailureSchedule {
 			return new FailureEvent(true, random.nextInt(config.racks), interval);
 		}
 	}
+	private FailureEvent nextEvent;
 	public double getNow () {
 		return now;
 	}

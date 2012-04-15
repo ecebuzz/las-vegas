@@ -9,11 +9,20 @@ public class LvfsSimulatorBenchmark {
 		run (new LvfsPlacementParameters(1, new int[]{1, 1}, 50, true, true, true));
 		run (new LvfsPlacementParameters(10, new int[]{1, 1}, 2, true, true, true));
 		run (new LvfsPlacementParameters(10, new int[]{2}, 4, true, true, true));
+		run (new LvfsPlacementParameters(10, new int[]{2}, 4, true, true, false));
+		run (new LvfsPlacementParameters(10, new int[]{2}, 4, true, false, false));
+		run (new LvfsPlacementParameters(10, new int[]{2}, 4, false, false, false));
 		run (new LvfsPlacementParameters(1, new int[]{1, 1, 1}, 33, true, true, true));
 		run (new LvfsPlacementParameters(10, new int[]{1, 1, 1}, 2, true, true, true));
 		run (new LvfsPlacementParameters(10, new int[]{1, 2}, 4, true, true, true));
 		run (new LvfsPlacementParameters(10, new int[]{3}, 6, true, true, true));
+		run (new LvfsPlacementParameters(10, new int[]{3}, 6, true, true, false));
+		run (new LvfsPlacementParameters(10, new int[]{3}, 6, true, false, false));
+		run (new LvfsPlacementParameters(10, new int[]{3}, 6, false, false, false));
 		run (new LvfsPlacementParameters(10, new int[]{2, 2}, 4, true, true, true));
+		run (new LvfsPlacementParameters(10, new int[]{1, 1, 2}, 4, true, true, true));
+		run (new LvfsPlacementParameters(10, new int[]{1, 3}, 6, true, true, true));
+		run (new LvfsPlacementParameters(10, new int[]{1, 1, 1, 1}, 2, true, true, true));
 	}
 	
 	static ExperimentalConfiguration createConfig() {

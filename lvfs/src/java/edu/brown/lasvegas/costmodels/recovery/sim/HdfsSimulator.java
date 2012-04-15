@@ -14,9 +14,19 @@ import edu.brown.lasvegas.costmodels.recovery.sim.FailureSchedule.FailureEvent;
 public class HdfsSimulator extends Simulator {
     private static Logger LOG = Logger.getLogger(HdfsSimulator.class);
 	private final HdfsPlacementParameters policy;
+	private static final double DEFAULT_BLOCK_SIZE = 1.0d / 16.0d;
+	private final double BLOCK_SIZE;
+	
 	public HdfsSimulator(ExperimentalConfiguration config, HdfsPlacementParameters policy, long firstRandomSeed) {
 		super (config, firstRandomSeed);
 		this.policy = policy;
+		if (policy.stripeChunking) {
+			BLOCK_SIZE = config.gigabytesPerNode / (config.backboneNetwork / config.localDisk);
+			// following the conclusion in Lian et al. ICSCS'05, we assign B/b stripes per node
+			LOG.info ("HDFS stripe placement size=" + BLOCK_SIZE + "GB");
+		} else {
+			BLOCK_SIZE = DEFAULT_BLOCK_SIZE;
+		}
 	}
 
 	@Override
@@ -25,13 +35,13 @@ public class HdfsSimulator extends Simulator {
 		// use a fixed random seed to determine the placement.
 		// should be okay. we are iterating over various schedules, not placement.
 		Random random = new Random(123456L);
-		hdfsBlocks = config.gigabytesTotal * (1024 / 64);
+		hdfsBlocks = (int) Math.ceil(config.gigabytesTotal / BLOCK_SIZE);
 		redundancies = new byte[hdfsBlocks];
 		blocksInNodes = new int[config.nodes][];
 		blocksInNodesStored = new int[config.nodes];
 		for (int i = 0; i < config.nodes; ++i) {
-			// *2 to make expansion rare. but, it might happen!
-			blocksInNodes[i] = new int[(hdfsBlocks / config.nodes) * 2 * policy.replicationFactor];
+			// *1.5 to make expansion rare. but, it might happen!
+			blocksInNodes[i] = new int[(hdfsBlocks / config.nodes) * 3 / 2 * policy.replicationFactor];
 		}
 		Arrays.fill(blocksInNodesStored, 0);
 		
@@ -101,7 +111,7 @@ public class HdfsSimulator extends Simulator {
 		double remainingGigabytes;
 	}
 	/** ongoing recoveries. */
-	private ArrayList<Recovery> recoveries;
+	private ArrayList<Recovery> recoveries = new ArrayList<Recovery>();
 	/** how many replicas (including the original) are available for the block. zero means the block is permanently lost.*/
 	private byte[] redundancies;
 
@@ -174,7 +184,7 @@ public class HdfsSimulator extends Simulator {
 	private void addNodeFailure (int nodeId) throws DataLostException {
 		// check if the node is already being recovered
 		boolean exists = false;
-		double gbToRecover = blocksInNodesStored[nodeId] / (1024.0d / 64.0d);
+		double gbToRecover = blocksInNodesStored[nodeId] * BLOCK_SIZE;
 		for (Recovery recovery : recoveries) {
 			if (recovery.id == nodeId) {
 				recovery.remainingGigabytes = gbToRecover;
@@ -192,7 +202,8 @@ public class HdfsSimulator extends Simulator {
 	public double simulateTimeToFail (FailureSchedule schedule) {
 		LOG.debug("running one schedule...");
 		Arrays.fill(redundancies, (byte) policy.replicationFactor);
-		recoveries = new ArrayList<Recovery>();
+		recoveries.clear();
+		Runtime.getRuntime().gc();
 
 		// remaining times for recovery as of the previous event. 0 means the node is available
 		double[] nodeRecoveryTimes = new double[config.nodes];
@@ -201,7 +212,7 @@ public class HdfsSimulator extends Simulator {
 		assert (schedule.getNow() == 0.0d);
 		try {
 			while (true) {
-				FailureEvent event = schedule.generateNextEvent();
+				FailureEvent event = schedule.getNextEvent();
 				if (event == null) {
 					break;
 				}
@@ -223,5 +234,9 @@ public class HdfsSimulator extends Simulator {
 		}
 		LOG.debug("ran schedule without data loss.");
 		return Double.POSITIVE_INFINITY;
+	}
+	@Override
+	protected String summarizeParameters() {
+		return "HDFS:" + policy;
 	}
 }

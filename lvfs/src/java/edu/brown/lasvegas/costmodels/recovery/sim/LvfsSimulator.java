@@ -25,10 +25,10 @@ import edu.brown.lasvegas.costmodels.recovery.sim.FailureSchedule.FailureEvent;
  * need to do the latter.</p>
  */
 public class LvfsSimulator extends Simulator {
-	/** assume 20 columns per table */
-	private static final int COLUMNS_PER_TABLE = 20;
-	/** 50MB per columnar file */
-	private static final double COLUMN_FILE_SIZE = 0.05d;
+	/** 1GB per partition (with 20 columns, 50MB per file). */
+	private static final double DEFAULT_PARTITION_SIZE = 1.0d;
+	/** this might not be the default value if racksPerGroup is too large. */
+	private final double PARTITION_SIZE;
 	/** keep the repartitioned files in stable storage for 5 hours. */
 	private static final double REPARTITIONED_FILES_HOLD = 5 * 60;
     private static Logger LOG = Logger.getLogger(LvfsSimulator.class);
@@ -36,26 +36,51 @@ public class LvfsSimulator extends Simulator {
 	public LvfsSimulator(ExperimentalConfiguration config, LvfsPlacementParameters policy, long firstRandomSeed) {
 		super (config, firstRandomSeed);
 		this.policy = policy;
-		double partitionsIdeal = (double) config.gigabytesTotal
-			/ (policy.fracturesPerTable * config.tables)
-			/ COLUMNS_PER_TABLE
-			/ COLUMN_FILE_SIZE
-			;
+		double fractureSize = (double) config.gigabytesTotal / (policy.fracturesPerTable * config.tables);
+		double partitionsIdeal = fractureSize / DEFAULT_PARTITION_SIZE;
+		int minSchemes = Integer.MAX_VALUE;
+		for (int schemes : policy.replicaSchemes) {
+			minSchemes = Math.min(minSchemes, schemes);
+		}
+		if (policy.racksPerGroup * config.nodesPerRack / minSchemes > partitionsIdeal) {
+			LOG.warn("WARNING!: racksPerGroup=" + policy.racksPerGroup + " is too large to assign at least one partition for each node. reducing the size of partition."
+					+ "Consider using smaller racksPerGroup (unless you're testing it on purpose).");
+			PARTITION_SIZE = (fractureSize / (policy.racksPerGroup * config.nodesPerRack / minSchemes)) + 0.00001d;
+			partitionsIdeal = fractureSize / PARTITION_SIZE;
+			assert (policy.racksPerGroup * config.nodesPerRack / minSchemes <= partitionsIdeal);
+		} else {
+			PARTITION_SIZE = DEFAULT_PARTITION_SIZE;
+		}
 		this.partitions = (int) Math.ceil(partitionsIdeal);
 		LOG.info("number of partitions in each fracture=" + partitions + " (" + partitionsIdeal + ")");
 	}
 	/** number of partitions in each fracture. */
 	private final int partitions;
 
-	private static class NodeStatus {
+	private static int NEXT_BLOCK_GROUP_ID = 0; 
+	private static int NEXT_STATUS_ID = 0; 
+
+	private class NodeStatus {
 		BlockGroup[] blockGroups;
 		ArrayList<BlockGroup> tmpBlockGroupsList = new ArrayList<BlockGroup>();
+		/**
+		 * The time to simply recover this node if it's the only failing node.
+		 * Used to speed up simulation.
+		 */
+		double simpleRecoveryTime = Double.POSITIVE_INFINITY;
 		
 		void finalizeBlockGroups() {
 			blockGroups = tmpBlockGroupsList.toArray(new BlockGroup[tmpBlockGroupsList.size()]);
 			tmpBlockGroupsList = null;
+			simpleRecoveryTime = 0;
+			double singleRecoveryRate = config.getCombinedRate(config.getNetworkRate(1));
 			for (BlockGroup bg : blockGroups) {
 				bg.finalizePartitions();
+				if (policy.replicaSchemes[bg.group] == 1 || !policy.buddyExclusion) {
+					simpleRecoveryTime = Double.POSITIVE_INFINITY; // then can't simply calculate.
+				} else if (simpleRecoveryTime != Double.POSITIVE_INFINITY) {
+					simpleRecoveryTime += bg.partitions.length * PARTITION_SIZE / singleRecoveryRate;
+				}
 			}
 		}
 		void resetStatus() {
@@ -96,11 +121,13 @@ public class LvfsSimulator extends Simulator {
 	}
 	private static class BlockGroup {
 		BlockGroup (int table, int fracture, int group, int nodeId) {
+			this.id = NEXT_BLOCK_GROUP_ID++;
 			this.table = table;
 			this.fracture = fracture;
 			this.group = group;
 			this.nodeId = nodeId;
 		}
+		final int id;
 		final int table;
 		final int fracture;
 		final int group;
@@ -120,6 +147,10 @@ public class LvfsSimulator extends Simulator {
 			beingActivelyRecovered = false;
 			remainingGigabytes = 0;
 		}
+		@Override
+		public int hashCode() {
+			return id;
+		}
 
 		// properties for recovery
 		boolean beingRecovered = false;
@@ -130,16 +161,18 @@ public class LvfsSimulator extends Simulator {
 	
 	private class ReplicaGroupFractureStatus {
 		ReplicaGroupFractureStatus (int table, int fracture, int group, int[] assignedRacks) {
+			this.id = NEXT_STATUS_ID++;
 			this.table = table;
 			this.fracture = fracture;
 			this.group = group;
 			this.buddySchemes = policy.replicaSchemes[group];
 			this.redundancies = new byte[partitions];
 			this.redundancyStats = new int[128];
-			this.totalGigabytes = partitions * COLUMN_FILE_SIZE * COLUMNS_PER_TABLE;
+			this.totalGigabytes = partitions * PARTITION_SIZE;
 			this.totalRepartitionRate = config.localRepartition * assignedRacks.length * config.nodesPerRack;
 			resetStatus();
 		}
+		final int id;
 		final int table;
 		final int fracture;
 		final int group;
@@ -156,6 +189,10 @@ public class LvfsSimulator extends Simulator {
 		/** total (all nodes involved) combined (disk read/write, partition) throughput of re-partitioning.*/
 		final double totalRepartitionRate;
 		
+		@Override
+		public int hashCode() {
+			return id;
+		}
 		void resetStatus () {
 			Arrays.fill(redundancies, (byte) buddySchemes);
 			Arrays.fill(redundancyStats, 0);
@@ -208,6 +245,7 @@ public class LvfsSimulator extends Simulator {
 		 * Repartitioned blocks are kept for a while, and then deleted on this time.
 		 */
 		double repartitionedBlocksAvailableUntil = 0;
+
 	}
 	
 	private void addRepartitionTask (ReplicaGroupFractureStatus target) {
@@ -262,6 +300,18 @@ public class LvfsSimulator extends Simulator {
 					int[] assignedNodes = new int[config.nodesPerRack * policy.racksPerGroup];
 					for (int i = 0; i < policy.racksPerGroup; ++i) {
 						int firstNodeId = config.firstNodeIdFromRackId(currentRack);
+						/*
+						// randomly shuffle in each rack.
+						// this shuffling increases the number of possible couples among different table/fracture/group.
+						// not quite ideal, so commented out.
+						ArrayList<Integer> remaining = new ArrayList<Integer>();
+						for (int j = 0; j < config.nodesPerRack; ++j) {
+							remaining.add(firstNodeId + j);
+						}
+						for (int j = 0; j < config.nodesPerRack; ++j) {
+							assignedNodes[i * config.nodesPerRack + j] = remaining.remove(random.nextInt(remaining.size()));
+						}
+						*/
 						for (int j = 0; j < config.nodesPerRack; ++j) {
 							assignedNodes[i * config.nodesPerRack + j] = firstNodeId + j;
 						}
@@ -290,7 +340,7 @@ public class LvfsSimulator extends Simulator {
 						for (int partition = 0; partition < partitions; ++partition) {
 							generateRandomSet(random, buddySchemes, 0, assignedNodes.length, buffer);
 							for (int scheme = 0; scheme < buddySchemes; ++scheme) {
-								assignBlock(buffer[scheme], table, fracture, group, scheme, partition);
+								assignBlock(assignedNodes[buffer[scheme]], table, fracture, group, scheme, partition);
 							}
 						}
 					} else {
@@ -298,6 +348,10 @@ public class LvfsSimulator extends Simulator {
 						int couples = assignedNodes.length / buddySchemes;
 						int placedPartitions = 0;
 						int swaps = 0; // for buddy swapping
+						assert (partitions >= couples);
+						// when partitions < couples, the following algorithm might not assign any
+						// partitions to some nodes (e.g., 30 couples, 10 partitions=partitions only in 3rd, 6th, 9th... node)
+						// this's why we reduce the size of partition in constructor.
 						for (int couple = 0; couple < couples; ++couple) {
 							int partitionsEnd = (int) (partitions * (couple + 1) / couples);
 							assert (couple != couples - 1 || partitionsEnd == partitions);
@@ -546,7 +600,7 @@ public class LvfsSimulator extends Simulator {
 					status.waitingForRepartition.put(nodeId, bg);
 				}
 			}
-			bg.remainingGigabytes = bg.partitions.length * COLUMN_FILE_SIZE * COLUMNS_PER_TABLE;
+			bg.remainingGigabytes = bg.partitions.length * PARTITION_SIZE;
 		}
 		assert (nodeStatus.blockGroupsBeingRecovered > 0);
 	}
@@ -591,11 +645,12 @@ public class LvfsSimulator extends Simulator {
 	protected double simulateTimeToFail(FailureSchedule schedule) {
 		LOG.debug("running one schedule...");
 		resetStatus ();
+		int skippedEvents = 0;
 		assert (schedule.getNow() == 0.0d);
 		try {
 			while (true) {
 				double prevNow = schedule.getNow();
-				FailureEvent event = schedule.generateNextEvent();
+				FailureEvent event = schedule.getNextEvent();
 				if (event == null) {
 					break;
 				}
@@ -603,11 +658,17 @@ public class LvfsSimulator extends Simulator {
 				doRecoveries(prevNow, event.interval);
 
 				if (!event.rackFailure) {
-					/*
-					if (event.failedNode == 0) {
-						LOG.info(schedule.getNow() + ": node-" + event.failedNode);
+					if (copyTasks.isEmpty() && repartitionTasks.isEmpty()) {
+						FailureEvent nextEvent = schedule.peekNextEvent();
+						if (nextEvent.interval >= nodeStatuses[event.failedNode].simpleRecoveryTime) {
+							// all blocks will be recovered by the next event.
+							// then we can ignore this event.
+							// hey, but this tuning gave almost nothing because the situation is rare (about one failure per 20 minutes, simpleRecoverytime is like 100 min)..
+							// still, this might be useful for some experiments. (e.g., fewer machines=less failures)
+							++skippedEvents;
+							continue;
+						}
 					}
-					*/
 					addNodeFailure (schedule.getNow(), event.failedNode);
 				} else {
 					// LOG.info(schedule.getNow() + ": rack-" + event.failedNode);
@@ -615,13 +676,17 @@ public class LvfsSimulator extends Simulator {
 				}
 			}
 		} catch (DataLostException ex) {
-			LOG.debug("Simulated a data loss! now=" + schedule.getNow() + ". " + ex.getMessage());
+			LOG.debug("Simulated a data loss! now=" + schedule.getNow() + ". " + ex.getMessage() + ". #events:#skipped_events=" + schedule.getEventCount() + ":" + skippedEvents);
 			assert(validateAll());
 			return schedule.getNow();
 		}
 		
 		assert(validateAll());
-		LOG.debug("ran schedule without data loss.");
+		LOG.debug("ran schedule without data loss. #events:#skipped_events=" + schedule.getEventCount() + ":" + skippedEvents);
 		return Double.POSITIVE_INFINITY;
+	}
+	@Override
+	protected String summarizeParameters() {
+		return "LVFS:" + policy;
 	}
 }

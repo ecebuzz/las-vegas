@@ -30,18 +30,22 @@ public abstract class Simulator {
 				loggedPrevious = System.currentTimeMillis();
 				LOG.info(i + "/" + iterations + "... (" + ((loggedPrevious - start)/1000.0d) + " sec elapsed)");
 			}
-			FailureSchedule schedule = new FailureSchedule(config, seedGenerator.nextLong());
+			long seed = seedGenerator.nextLong();
+			// LOG.info("seed=" + seed);
+			FailureSchedule schedule = new FailureSchedule(config, seed);
 			results.add(simulateTimeToFail(schedule));
 		}
 		SimulationResult result = new SimulationResult(results);
-		LOG.info("Done iterations: result=" + result);
+		LOG.info("Done iterations:config={" + config + "}, param={" + summarizeParameters() + "}, result=" + result);
 		return result;
 	}
+	protected abstract String summarizeParameters();
+	
 	public class SimulationResult {
 		public SimulationResult(ArrayList<Double> list) {
 			final int n = list.size();
 			results = new double[n];
-			double sum = 0, sqsum = 0;
+			double sum = 0, sqsum = 0, log10Sum = 0, log10Sqsum = 0;
 			noFailureCount = 0;
 			max = 0;
 			min = Double.MAX_VALUE;
@@ -60,14 +64,18 @@ public abstract class Simulator {
 				}
 				sum += time;
 				sqsum += time * time;
+				log10Sum += Math.log10(time);
+				log10Sqsum += Math.log10(time) * Math.log10(time);
 			}
 			mean = sum / n;
+			log10Mean = log10Sum / n;
 			// this is an estimation from samples, so use N-1 to be unbiased.
 			stdev = Math.sqrt((sqsum + mean * mean * n - 2.0d * n * mean * mean) / (n - 1));
+			log10Stdev = Math.sqrt((log10Sqsum + log10Mean * log10Mean * n - 2.0d * n * log10Mean * log10Mean) / (n - 1));
 		}
 		private double[] results;
-		private double mean;
-		private double stdev;
+		private double mean, log10Mean;
+		private double stdev, log10Stdev;
 		private double max;
 		private double min;
 		private int noFailureCount;
@@ -81,7 +89,21 @@ public abstract class Simulator {
 			}
 			return mean;
 		}
+		public double getLog10Mean() {
+			if (noFailureCount > 0) {
+				LOG.warn("One of the schedules had no failure! the mean assumes"
+						+ config.maxSimulationPeriod + " minutes as the failure time, but this is not accurate!!!");
+			}
+			return log10Mean;
+		}
 		public double getStdev() {
+			if (noFailureCount > 0) {
+				LOG.warn("One of the schedules had no failure! the stdev assumes"
+						+ config.maxSimulationPeriod + " minutes as the failure time, but this is not accurate!!!");
+			}
+			return log10Stdev;
+		}
+		public double getLog10Stdev() {
 			if (noFailureCount > 0) {
 				LOG.warn("One of the schedules had no failure! the stdev assumes"
 						+ config.maxSimulationPeriod + " minutes as the failure time, but this is not accurate!!!");
@@ -111,7 +133,7 @@ public abstract class Simulator {
 				str += results[i];
 			}
 			str += "]";
-			str += ", mean=" + mean + ", stdev=" + stdev + ", max=" + max + ", min=" + min + ", noFailureCount=" + noFailureCount;
+			str += ", mean=" + mean + ", log10Mean=" + log10Mean + ", stdev=" + stdev + ", log10Stdev=" + log10Stdev + ", max=" + max + ", min=" + min + ", noFailureCount=" + noFailureCount;
 			return str;
 		}
 	}
