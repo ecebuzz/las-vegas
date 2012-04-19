@@ -208,4 +208,13 @@ public final class SmallintValueTraits implements FixLenValueTraits<Short, short
         System.arraycopy(tmpDictionary, 0, finalDictionary, 0, curCount);
         return finalDictionary;
     }
+    
+    @Override
+    public Short minValue() {
+    	return Short.MIN_VALUE;
+    }
+    @Override
+    public Short maxValue() {
+    	return Short.MAX_VALUE;
+    }
 }

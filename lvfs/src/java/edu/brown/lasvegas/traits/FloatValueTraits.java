@@ -209,4 +209,13 @@ public final class FloatValueTraits implements FixLenValueTraits<Float, float[]>
         System.arraycopy(tmpDictionary, 0, finalDictionary, 0, curCount);
         return finalDictionary;
     }
+    
+    @Override
+    public Float minValue() {
+    	return Float.MIN_VALUE;
+    }
+    @Override
+    public Float maxValue() {
+    	return Float.MAX_VALUE;
+    }
 }

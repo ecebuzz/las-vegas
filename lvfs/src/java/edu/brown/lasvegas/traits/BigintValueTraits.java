@@ -208,4 +208,13 @@ public final class BigintValueTraits implements FixLenValueTraits<Long, long[]> 
         System.arraycopy(tmpDictionary, 0, finalDictionary, 0, curCount);
         return finalDictionary;
     }
+
+    @Override
+    public Long minValue() {
+    	return Long.MIN_VALUE;
+    }
+    @Override
+    public Long maxValue() {
+    	return Long.MAX_VALUE;
+    }
 }

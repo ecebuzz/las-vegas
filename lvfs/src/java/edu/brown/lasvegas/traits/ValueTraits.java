@@ -163,4 +163,14 @@ public interface ValueTraits<T extends Comparable<T>, AT> {
      * @return merged array
      */
     AT mergeDictionary (AT[] arrays, int[][] conversions);
+    
+    /**
+     * Returns the minimal possible value for this value type.
+     */
+    T minValue();
+    /**
+     * Returns the maximum possible value for this value type.
+     * null if there is no maximum value representation (e.g., VARCHAR/VARBINARY).
+     */
+    T maxValue();
 }

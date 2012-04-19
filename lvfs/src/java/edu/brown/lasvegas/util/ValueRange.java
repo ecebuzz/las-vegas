@@ -3,12 +3,15 @@ package edu.brown.lasvegas.util;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.ArrayList;
 
 import org.apache.hadoop.io.Writable;
 
 import com.sleepycat.persist.model.Persistent;
 
 import edu.brown.lasvegas.ColumnType;
+import edu.brown.lasvegas.traits.ValueTraits;
+import edu.brown.lasvegas.traits.ValueTraitsFactory;
 
 /**
  * Pair of beginning (inclusive) and ending (exclusive) keys.
@@ -173,6 +176,7 @@ public class ValueRange implements Writable {
         case BOOLEAN:
         case TINYINT: out.writeByte((Byte) val); break;
         case VARCHAR: out.writeUTF((String) val); break;
+        case VARBINARY: ((ByteArray) val).write(out); break;
         default: throw new IllegalArgumentException("Cannot serialize this type:" + type);
         }
     }
@@ -193,7 +197,7 @@ public class ValueRange implements Writable {
         obj.readFields(in);
         return obj;
     }
-
+    
     private Comparable<?> readValue(DataInput in) throws IOException {
         if (in.readBoolean()) {
             return null;
@@ -210,7 +214,55 @@ public class ValueRange implements Writable {
         case BOOLEAN:
         case TINYINT: return Byte.valueOf(in.readByte());
         case VARCHAR: return in.readUTF();
+        case VARBINARY: return ByteArray.read(in);
         default: throw new IllegalArgumentException("Cannot deserialize this type:" + type);
         }
+    }
+    
+    public static Object extractStartKeys (ValueRange[] ranges) {
+        switch (ranges[0].type) {
+        case DATE:
+        case TIME:
+        case TIMESTAMP:
+    	case BIGINT: return extractStartKeys(ValueTraitsFactory.BIGINT_TRAITS, ranges);
+        case DOUBLE: return extractStartKeys(ValueTraitsFactory.DOUBLE_TRAITS, ranges);
+        case FLOAT: return extractStartKeys(ValueTraitsFactory.FLOAT_TRAITS, ranges);
+        case INTEGER: return extractStartKeys(ValueTraitsFactory.INTEGER_TRAITS, ranges);
+        case SMALLINT: return extractStartKeys(ValueTraitsFactory.SMALLINT_TRAITS, ranges);
+        case BOOLEAN:
+        case TINYINT: return extractStartKeys(ValueTraitsFactory.TINYINT_TRAITS, ranges);
+        case VARCHAR: return extractStartKeys(ValueTraitsFactory.VARCHAR_TRAITS, ranges);
+        case VARBINARY: return extractStartKeys(ValueTraitsFactory.VARBIN_TRAITS, ranges);
+        }
+        assert (false);
+    	return null;
+    }
+    @SuppressWarnings("unchecked")
+	public static <T extends Comparable<T>, AT> AT extractStartKeys(ValueTraits<T, AT> traits, ValueRange[] ranges) {
+    	ArrayList<T> out = new ArrayList<T>();
+    	out.add(traits.minValue());
+        for (int i = 1; i < ranges.length; ++i) {
+        	out.add((T) ranges[i].startKey);
+        }
+    	return traits.toArray(out);
+    }
+
+    public static <T extends Comparable<T>, AT> int findPartition (ValueTraits<T, AT> traits, T partitionValue, AT startKeys) {
+        int arrayPos = traits.binarySearch(startKeys, partitionValue);
+        if (arrayPos < 0) {
+            // non-exact match. start from previous one
+            arrayPos = (-arrayPos) - 1; // this "-1" is binarySearch's design
+            arrayPos -= 1; // this -1 means "previous one"
+            if (arrayPos == -1) {
+                arrayPos = 0;
+            }
+        }
+        int len = traits.length(startKeys);
+        if (arrayPos >= len) {
+            arrayPos = len - 1;
+        }
+        assert (partitionValue.compareTo(traits.get(startKeys, arrayPos)) >= 0);
+        assert (arrayPos > len - 2 || partitionValue.compareTo(traits.get(startKeys, arrayPos + 1)) < 0);
+        return arrayPos;
     }
 }

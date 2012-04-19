@@ -44,7 +44,8 @@ public class TpchQ17SingleNodeBenchmark {
         database = masterRepository.getDatabase("db1");
         
         partTable = masterRepository.getTable(database.getDatabaseId(), "part");
-        lineitemTable = masterRepository.getTable(database.getDatabaseId(), "lineitem");
+        // see DataImportSingleNodeTpchBenchmark for why there are two lineitem tables
+    	lineitemTable = masterRepository.getTable(database.getDatabaseId(), fastQueryPlan ? "lineitem_p" : "lineitem_o");
         // get the data folder by checking one file
         {
             LVFracture fracture = masterRepository.getAllFractures(lineitemTable.getTableId())[0];
@@ -77,6 +78,7 @@ public class TpchQ17SingleNodeBenchmark {
 
     private static final String brand = "Brand#34";
     private static final String container = "MED DRUM";
+    private static final boolean fastQueryPlan = true;
     public double exec () throws Exception {
         BenchmarkTpchQ17JobParameters params = new BenchmarkTpchQ17JobParameters();
         params.setBrand(brand);

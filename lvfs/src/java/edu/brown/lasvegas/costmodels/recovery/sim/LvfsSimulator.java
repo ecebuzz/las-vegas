@@ -45,7 +45,7 @@ public class LvfsSimulator extends Simulator {
 		if (policy.racksPerGroup * config.nodesPerRack / minSchemes > partitionsIdeal) {
 			LOG.warn("WARNING!: racksPerGroup=" + policy.racksPerGroup + " is too large to assign at least one partition for each node. reducing the size of partition."
 					+ "Consider using smaller racksPerGroup (unless you're testing it on purpose).");
-			PARTITION_SIZE = (fractureSize / (policy.racksPerGroup * config.nodesPerRack / minSchemes)) + 0.00001d;
+			PARTITION_SIZE = (fractureSize / (policy.racksPerGroup * config.nodesPerRack / minSchemes)) - 0.00001d;
 			partitionsIdeal = fractureSize / PARTITION_SIZE;
 			assert (policy.racksPerGroup * config.nodesPerRack / minSchemes <= partitionsIdeal);
 		} else {

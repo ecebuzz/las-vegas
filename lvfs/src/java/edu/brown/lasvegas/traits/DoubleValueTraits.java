@@ -209,4 +209,13 @@ public final class DoubleValueTraits implements FixLenValueTraits<Double, double
         System.arraycopy(tmpDictionary, 0, finalDictionary, 0, curCount);
         return finalDictionary;
     }
+    
+    @Override
+    public Double minValue() {
+    	return Double.MIN_VALUE;
+    }
+    @Override
+    public Double maxValue() {
+    	return Double.MAX_VALUE;
+    }
 }

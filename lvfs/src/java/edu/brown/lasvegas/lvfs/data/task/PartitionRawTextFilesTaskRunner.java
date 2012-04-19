@@ -84,6 +84,7 @@ public final class PartitionRawTextFilesTaskRunner extends DataTaskRunner<Partit
             int partitions = ranges.length;
             LVColumn partitioningColumn = context.metaRepo.getColumn(group.getPartitioningColumnId());
             LOG.info("partitioning files for replica group:" + group);
+            // TODO this code should be refactored to use ValueRange#extractStartKeys
             switch (partitioningColumn.getType()) {
             case BIGINT:
             case DATE:

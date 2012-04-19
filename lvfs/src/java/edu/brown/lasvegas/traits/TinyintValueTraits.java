@@ -206,4 +206,13 @@ public final class TinyintValueTraits implements FixLenValueTraits<Byte, byte[]>
         System.arraycopy(tmpDictionary, 0, finalDictionary, 0, curCount);
         return finalDictionary;
     }
+    
+    @Override
+    public Byte minValue() {
+    	return Byte.MIN_VALUE;
+    }
+    @Override
+    public Byte maxValue() {
+    	return Byte.MAX_VALUE;
+    }
 }

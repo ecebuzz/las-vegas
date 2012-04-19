@@ -47,6 +47,7 @@ public final class MergePartitionSameSchemeTaskRunner extends DataTaskRunner<Mer
     private CompressionType[] compressions;
 
     private LVReplicaScheme scheme;
+    private Integer sortColumnIndex;
 
     private LVFracture newFracture;
     private LVReplica newReplica;
@@ -95,7 +96,7 @@ public final class MergePartitionSameSchemeTaskRunner extends DataTaskRunner<Mer
                 }
             }
 
-            PartitionMergerForSameScheme merger = new PartitionMergerForSameScheme(tmpOutputFolder, baseFiles, newFileTemporaryNames, columnTypes, compressions, scheme.getSortColumnId());
+            PartitionMergerForSameScheme merger = new PartitionMergerForSameScheme(tmpOutputFolder, baseFiles, newFileTemporaryNames, columnTypes, compressions, sortColumnIndex);
             newFiles = merger.execute();
         } finally {
             for (LVDataClient client : dataClients.values()) {
@@ -131,6 +132,21 @@ public final class MergePartitionSameSchemeTaskRunner extends DataTaskRunner<Mer
         for (int i = 0; i < columns.length; ++i) {
             columnTypes[i] = columns[i].getType();
             compressions[i] = scheme.getColumnCompressionScheme(columns[i].getColumnId());
+        }
+        
+        // get the index of sorting column in the array. note that it's not the ID of LVColumn!
+        sortColumnIndex = null;
+        if (scheme.getSortColumnId() != null) {
+            for (int i = 0; i < columns.length; ++i) {
+            	if (columns[i].getColumnId() == scheme.getSortColumnId()) {
+            		sortColumnIndex = i;
+            		break;
+            	}
+            }
+            if (sortColumnIndex == null) {
+                throw new IOException ("the sorting column " + scheme.getSortColumnId() + " wasn't found in this table");
+            }
+            assert (sortColumnIndex >=0 && sortColumnIndex < columns.length);
         }
         
         basePartitions = new LVReplicaPartition[parameters.getBasePartitionIds().length];

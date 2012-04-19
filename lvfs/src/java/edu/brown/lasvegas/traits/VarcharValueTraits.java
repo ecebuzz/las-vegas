@@ -244,4 +244,14 @@ public final class VarcharValueTraits implements VarLenValueTraits<String> {
         System.arraycopy(tmpDictionary, 0, finalDictionary, 0, curCount);
         return finalDictionary;
     }
+    
+    @Override
+    public String minValue() {
+    	return "";
+    }
+    @Override
+    public String maxValue() {
+    	// no way to represent 'max' value
+    	return null;
+    }
 }

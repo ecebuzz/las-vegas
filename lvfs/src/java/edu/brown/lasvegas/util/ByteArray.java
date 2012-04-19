@@ -76,6 +76,11 @@ public final class ByteArray implements Comparable<ByteArray>, Writable, Cloneab
             in.readFully(bytes);
         }
     }
+    public static ByteArray read (DataInput in) throws IOException {
+    	ByteArray ret = new ByteArray();
+    	ret.readFields(in);
+    	return ret;
+    }
     @Override
     public void write(DataOutput out) throws IOException {
         out.writeInt(bytes == null ? -1 : bytes.length);

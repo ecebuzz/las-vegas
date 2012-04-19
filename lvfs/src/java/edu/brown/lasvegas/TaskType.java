@@ -78,6 +78,13 @@ public enum TaskType {
      * Physically delete files in specified partitions in the node.
      */
     DELETE_PARTITION_FILES,
+    
+    /**
+     * Sub task of a few jobs, including recovery and query processing.
+     * Output partitioned columnar files for the given partitioning column and range (which
+     * is probably different from the current partitioning column/range).
+     */
+    REPARTITION,
 
     /**
      * Sub task of {@link JobType#QUERY} (maybe other use?).

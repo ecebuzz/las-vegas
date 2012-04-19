@@ -209,4 +209,12 @@ public final class IntegerValueTraits implements FixLenValueTraits<Integer, int[
         System.arraycopy(tmpDictionary, 0, finalDictionary, 0, curCount);
         return finalDictionary;
     }
+    @Override
+    public Integer minValue() {
+    	return Integer.MIN_VALUE;
+    }
+    @Override
+    public Integer maxValue() {
+    	return Integer.MAX_VALUE;
+    }
 }

@@ -234,4 +234,14 @@ public final class VarbinValueTraits implements VarLenValueTraits<ByteArray> {
         System.arraycopy(tmpDictionary, 0, finalDictionary, 0, curCount);
         return finalDictionary;
     }
+    
+    @Override
+    public ByteArray minValue() {
+    	return new ByteArray(new byte[0]);
+    }
+    @Override
+    public ByteArray maxValue() {
+    	// no way to represent 'max' value
+    	return null;
+    }
 }

@@ -14,42 +14,34 @@ import edu.brown.lasvegas.lvfs.data.task.BenchmarkTpchQ17TaskParameters;
 import edu.brown.lasvegas.protocol.LVMetadataProtocol;
 
 /**
- * This job runs TPC-H's Q17, assuming a single fracture,
- * and a co-partitioned part and lineitem table.
- * <pre>
- * SELECT SUM(L_EXTENDEDPRICE) / 7 FROM LINEITEM JOIN PART (P_PARTKEY=L_PARTKEY)
- * WHERE P_BRAND=[BRAND] AND P_CONTAINER=[CONTAINER] AND L_QUANTITY<
- * (
- *   SELECT 0.2*AVG(L_QUANTITY) FROM LINEITEM WHERE L_PARTKEY=P_PARTKEY
- * )
- * </pre>
+ * This job is a slower query plan for TPC-H's Q17.
+ * This doesn't assume co-partitioned part/lineitem table.
+ * Thus, this job requires multiple steps as follows.
+ * 
+ * 1. Access lineitem table in each node, re-partition l_partkey/l_quantity/l_extprice by partkey and save the result
+ * in each node.
+ * 2. Again at each node, for each part partition in the node,
+ * collect the re-partitioned results from all other nodes, create the
+ * co-partitioned lineitem table. (equivalent to Shuffle in Hadoop)
+ * 3. Then do the same as {@link BenchmarkTpchQ17JobController}.
+ * 
+ * I believe this is a _reasonable_ (*) query plan without partkey partitioning on lineitem.
+ * And yet we will see much worse performance than partkey partitioning, which is the whole point of this experiment.
+ * 
+ * (*) Of course a more query-specific tuning is possible. But, shuffle-then-run is the most versatile
+ * and prevalent option which will be most likely used in the real setting. So, let's compare with it.
  * @see JobType#BENCHMARK_TPCH_Q17
  */
-public class BenchmarkTpchQ17JobController extends BenchmarkTpchQ17JobControllerBase {
-    public BenchmarkTpchQ17JobController (LVMetadataProtocol metaRepo) throws IOException {
+public class BenchmarkTpchQ17PlanBJobController extends BenchmarkTpchQ17JobControllerBase {
+    public BenchmarkTpchQ17PlanBJobController (LVMetadataProtocol metaRepo) throws IOException {
         super (metaRepo);
     }
-    public BenchmarkTpchQ17JobController (LVMetadataProtocol metaRepo, long stopMaxWaitMilliseconds, long taskJoinIntervalMilliseconds, long taskJoinIntervalOnErrorMilliseconds) throws IOException {
+    public BenchmarkTpchQ17PlanBJobController (LVMetadataProtocol metaRepo, long stopMaxWaitMilliseconds, long taskJoinIntervalMilliseconds, long taskJoinIntervalOnErrorMilliseconds) throws IOException {
         super(metaRepo, stopMaxWaitMilliseconds, taskJoinIntervalMilliseconds, taskJoinIntervalOnErrorMilliseconds);
     }
 
     @Override
     protected void initDerivedPartitioning() throws IOException {
-        if (lineitemPartitions.length != partPartitions.length) {
-            throw new IOException ("partition count doesn't match");
-        }
-        
-        for (int i = 0; i < lineitemPartitions.length; ++i) {
-            if (lineitemPartitions[i].getNodeId() == null) {
-                throw new IOException ("this lineitem partition doesn't have nodeId:" + lineitemPartitions[i]);
-            }
-            if (partPartitions[i].getNodeId() == null) {
-                throw new IOException ("this part partition doesn't have nodeId:" + partPartitions[i]);
-            }
-            if (lineitemPartitions[i].getNodeId().intValue() != partPartitions[i].getNodeId().intValue()) {
-                throw new IOException ("this lineitem and part partitions are not collocated. lineitem:" + lineitemPartitions[i] + ", part:" + partPartitions[i]);
-            }
-        }
     }
 
     private static class NodeParam {
@@ -58,7 +50,7 @@ public class BenchmarkTpchQ17JobController extends BenchmarkTpchQ17JobController
     }
     @Override
     protected void runDerived() throws IOException {
-        LOG.info("going to run TPCH Q17. brand=" + param.getBrand() + ", container=" + param.getContainer());
+        LOG.info("going to run TPCH Q17 with repartitioning. brand=" + param.getBrand() + ", container=" + param.getContainer());
         SortedMap<Integer, NodeParam> nodeMap = new TreeMap<Integer, NodeParam>(); // key=nodeId
         for (int i = 0; i < lineitemPartitions.length; ++i) {
             if (lineitemPartitions[i].getStatus() == ReplicaPartitionStatus.EMPTY || partPartitions[i].getStatus() == ReplicaPartitionStatus.EMPTY) {
@@ -83,8 +75,6 @@ public class BenchmarkTpchQ17JobController extends BenchmarkTpchQ17JobController
         for (Integer nodeId : nodeMap.keySet()) {
             NodeParam node = nodeMap.get(nodeId);
             
-            // whether to parallelize the tasks at each node? it has tradeoffs...
-            //this code runs only one task at each node
             BenchmarkTpchQ17TaskParameters taskParam = new BenchmarkTpchQ17TaskParameters();
             taskParam.setBrand(param.getBrand());
             taskParam.setContainer(param.getContainer());
@@ -100,24 +90,6 @@ public class BenchmarkTpchQ17JobController extends BenchmarkTpchQ17JobController
             LOG.info("launched new task to run TPCH Q17: " + task);
             assert (!taskMap.containsKey(taskId));
             taskMap.put(taskId, task);
-            /*
-            // this code runs one task for one partition
-            for (int j = 0; j < node.lineitemPartitionIds.size(); ++j) {
-                BenchmarkTpchQ17TaskParameters taskParam = new BenchmarkTpchQ17TaskParameters();
-                taskParam.setBrand(param.getBrand());
-                taskParam.setContainer(param.getContainer());
-                taskParam.setLineitemTableId(lineitemTable.getTableId());
-                taskParam.setPartTableId(partTable.getTableId());
-                taskParam.setLineitemPartitionIds(new int[]{node.lineitemPartitionIds.get(j)});
-                taskParam.setPartPartitionIds(new int[]{node.partPartitionIds.get(j)});
-    
-                int taskId = metaRepo.createNewTaskIdOnlyReturn(jobId, nodeId, TaskType.BENCHMARK_TPCH_Q17, taskParam.writeToBytes());
-                LVTask task = metaRepo.updateTask(taskId, TaskStatus.START_REQUESTED, null, null, null);
-                LOG.info("launched new task to run TPCH Q17: " + task);
-                assert (!taskMap.containsKey(taskId));
-                taskMap.put(taskId, task);
-            }
-            */
         }
         LOG.info("waiting for task completion...");
         joinTasks(taskMap, 0.0d, 1.0d);
