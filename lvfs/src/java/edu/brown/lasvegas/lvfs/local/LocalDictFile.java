@@ -217,36 +217,51 @@ public final class LocalDictFile<T extends Comparable<T>, AT> implements Ordered
     }
     
     @Override
-    public void decompressBatch(byte[] src, int srcOff, AT dest, int destOff, int len) {
+    public int decompressBatch(byte[] src, int srcOff, AT dest, int destOff, int len) {
         assert (bytesPerEntry == 1);
         assert (traits.length(dest) >= destOff + len);
         assert (src.length >= srcOff + len);
+        int lenMax = traits.length(dest) - destOff;
+        if (len > lenMax) {
+        	len = lenMax;
+        }
         for (int i = 0; i < len; ++i) {
             T value = traits.get(dict, src[srcOff + i] + (1 << 7));
             traits.set(dest, destOff + i, value);
         }
+        return len;
     }
 
     @Override
-    public void decompressBatch(short[] src, int srcOff, AT dest, int destOff, int len) {
+    public int decompressBatch(short[] src, int srcOff, AT dest, int destOff, int len) {
         assert (bytesPerEntry == 2);
         assert (traits.length(dest) >= destOff + len);
         assert (src.length >= srcOff + len);
+        int lenMax = traits.length(dest) - destOff;
+        if (len > lenMax) {
+        	len = lenMax;
+        }
         for (int i = 0; i < len; ++i) {
             T value = traits.get(dict, src[srcOff + i] + (1 << 15));
             traits.set(dest, destOff + i, value);
         }
+        return len;
     }
 
     @Override
-    public void decompressBatch(int[] src, int srcOff, AT dest, int destOff, int len) {
+    public int decompressBatch(int[] src, int srcOff, AT dest, int destOff, int len) {
         assert (bytesPerEntry == 4);
         assert (traits.length(dest) >= destOff + len);
         assert (src.length >= srcOff + len);
+        int lenMax = traits.length(dest) - destOff;
+        if (len > lenMax) {
+        	len = lenMax;
+        }
         for (int i = 0; i < len; ++i) {
             T value = traits.get(dict, src[srcOff + i] ^ 0x80000000);
             traits.set(dest, destOff + i, value);
         }
+        return len;
     }
 
     @Override

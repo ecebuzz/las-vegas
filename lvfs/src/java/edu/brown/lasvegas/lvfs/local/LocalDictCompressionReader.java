@@ -132,14 +132,17 @@ public class LocalDictCompressionReader<T extends Comparable<T>, AT, CT extends 
         if (read <= 0) {
             return read;
         }
-        if (catBuffer instanceof byte[]) {
-            dict.decompressBatch((byte[]) catBuffer, 0, buffer, off, len);
-        } else if (catBuffer instanceof short[]) {
-            dict.decompressBatch((short[]) catBuffer, 0, buffer, off, len);
-        } else {
-            dict.decompressBatch((int[]) catBuffer, 0, buffer, off, len);
+        if (read < len) {
+        	len = read;
         }
-        return read;
+        
+        if (catBuffer instanceof byte[]) {
+            return dict.decompressBatch((byte[]) catBuffer, 0, buffer, off, len);
+        } else if (catBuffer instanceof short[]) {
+        	return dict.decompressBatch((short[]) catBuffer, 0, buffer, off, len);
+        } else {
+        	return dict.decompressBatch((int[]) catBuffer, 0, buffer, off, len);
+        }
     }
 
     @Override

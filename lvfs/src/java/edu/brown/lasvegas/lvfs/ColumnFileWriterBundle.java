@@ -48,6 +48,9 @@ public final class ColumnFileWriterBundle implements Closeable {
     /** file size without gzip/snappy compression in KB.  Set only when the column file is GZIP/SNAPPY-compressed (otherwise 0). */
     private int uncompressedSizeKB;
 
+    /** Total number of tuples in this file. */
+    private int tupleCount = 0;
+
     public ColumnFileWriterBundle (VirtualFile outputFolder, String fileNameSeed,
                     ColumnType columnType, CompressionType compressionType, boolean calculateChecksum) throws IOException {
         this.outputFolder = outputFolder;
@@ -93,6 +96,7 @@ public final class ColumnFileWriterBundle implements Closeable {
     public void finish() throws IOException {
         dataFileChecksum = dataWriter.writeFileFooter();
         dataWriter.flush();
+        tupleCount = dataWriter.getTupleCount();
         if (positionFile != null) {
             dataWriter.writePositionFile(positionFile);
         }
@@ -180,6 +184,10 @@ public final class ColumnFileWriterBundle implements Closeable {
 
     public int getRunCount() {
         return runCount;
+    }
+
+    public int getTupleCount () {
+    	return tupleCount;
     }
 
     public int getUncompressedSizeKB() {

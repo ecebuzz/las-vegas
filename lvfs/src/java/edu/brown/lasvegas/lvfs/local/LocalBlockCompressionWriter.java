@@ -46,7 +46,6 @@ public abstract class LocalBlockCompressionWriter<T extends Comparable<T>, AT> e
     private byte[] currentBlock;
     /** how many bytes of currentBlock are filled out. */
     protected int currentBlockUsed = 0;
-    protected int curTuple = 0;
     private byte[] compressionBuffer;
     private int currentBlockStartTuple = 0;
     private long totalUncompressedSize = 0L;

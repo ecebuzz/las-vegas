@@ -13,9 +13,11 @@ import edu.brown.lasvegas.traits.ValueTraits;
 public abstract class LocalTypedWriterBase<T extends Comparable<T>, AT> implements TypedWriter<T, AT> {
     private final LocalRawFileWriter rawWriter;
     private final ValueTraits<T, AT> traits;
+    protected int curTuple;
     protected LocalTypedWriterBase (VirtualFile file, ValueTraits<T, AT> traits, int streamBufferSize) throws IOException {
         this.rawWriter = new LocalRawFileWriter(file, streamBufferSize);
         this.traits = traits;
+        this.curTuple = 0;
     }
     
     @Override
@@ -60,5 +62,9 @@ public abstract class LocalTypedWriterBase<T extends Comparable<T>, AT> implemen
     public final void close() throws IOException {
         beforeClose();
         rawWriter.close();
+    }
+    @Override
+    public final int getTupleCount() {
+    	return curTuple;
     }
 }

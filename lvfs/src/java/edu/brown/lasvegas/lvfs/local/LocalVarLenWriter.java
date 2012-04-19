@@ -31,7 +31,6 @@ public final class LocalVarLenWriter<T extends Comparable<T>> extends LocalTyped
 
     private final int collectPerBytes;
     private int prevCollectPosition = -1; // to always collect at the first value
-    private int curTuple = 0;
     private ArrayList<Integer> collectedTuples = new ArrayList<Integer>();
     private ArrayList<Integer> collectedPositions = new ArrayList<Integer>();
     public LocalVarLenWriter(VirtualFile file, VarLenValueTraits<T> traits) throws IOException {

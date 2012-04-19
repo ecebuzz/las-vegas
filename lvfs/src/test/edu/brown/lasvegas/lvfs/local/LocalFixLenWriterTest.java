@@ -43,6 +43,7 @@ public class LocalFixLenWriterTest {
         long correctCrc32 = ChecksumUtil.getFileCheckSum(file);
         assertEquals (correctCrc32, crc32);
         assertEquals ((25 << 14) * 4, file.length());
+        assertEquals (25 << 14, writer.getTupleCount());
 
         LocalFixLenReader<Integer, int[]> reader = LocalFixLenReader.getInstanceInteger(file);
         buf = new int[1 << 12]; // uses different buffering

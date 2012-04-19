@@ -1,9 +1,9 @@
 package edu.brown.lasvegas.lvfs.data.task;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Random;
-import java.util.Set;
 
 import org.apache.log4j.Logger;
 
@@ -15,6 +15,8 @@ import edu.brown.lasvegas.LVReplicaPartition;
 import edu.brown.lasvegas.TaskType;
 import edu.brown.lasvegas.lvfs.ColumnFileBundle;
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.lvfs.VirtualFileInputStream;
+import edu.brown.lasvegas.lvfs.VirtualFileOutputStream;
 import edu.brown.lasvegas.lvfs.data.DataTaskRunner;
 import edu.brown.lasvegas.lvfs.data.Repartitioner;
 import edu.brown.lasvegas.lvfs.local.LocalVirtualFile;
@@ -45,15 +47,44 @@ public final class RepartitionTaskRunner extends DataTaskRunner<RepartitionTaskP
         Repartitioner repartitioner = new Repartitioner(tmpOutputFolder, baseFiles, columnTypes, compressions,
         		partitioningColumnIndex, parameters.getPartitionRanges(),
         		parameters.getReadCacheSize(), parameters.getOutputCacheSize());
-        Set<Integer> partitions = repartitioner.execute();
+        LVColumnFile[][] result = repartitioner.execute();
         LOG.info("done!");
-        
-        // the result is a list of partition folders
-        ArrayList<String> ret = new ArrayList<String>();
-        for (Integer partition : partitions) {
-        	ret.add(tmpOutputFolder.getAbsolutePath() + "/" + partition);
-        }
-        return ret.toArray(new String[0]);
+        String summaryFilePath = createSummaryFile(result);
+        return new String[]{summaryFilePath};
+    }
+    private String createSummaryFile(LVColumnFile[][] result) throws Exception {
+    	VirtualFile summaryFile = tmpOutputFolder.getChildFile("summary.bin");
+    	VirtualFileOutputStream out = summaryFile.getOutputStream();
+    	DataOutputStream dataOut = new DataOutputStream(out);
+    	dataOut.writeInt(result.length);
+    	for (int i = 0; i < result.length; ++i) {
+        	dataOut.writeInt(result[i] == null ? -1 : result[i].length);
+    		if (result[i] != null) {
+    	    	for (int j = 0; j < result[i].length; ++j) {
+    	    		result[i][j].write(dataOut);
+    	    	}
+    		}
+    	}
+    	dataOut.flush();
+    	dataOut.close();
+    	return summaryFile.getAbsolutePath();
+    }
+    public static LVColumnFile[][] readSummaryFile (VirtualFile summaryFile) throws Exception {
+    	VirtualFileInputStream in = summaryFile.getInputStream();
+    	DataInputStream dataIn = new DataInputStream(in);
+    	LVColumnFile[][] result = new LVColumnFile[dataIn.readInt()][];
+    	for (int i = 0; i < result.length; ++i) {
+    		int len = dataIn.readInt();
+    		assert (len >= -1);
+    		if (len >= 0) {
+    			result[i] = new LVColumnFile[len]; 
+    			for (int j = 0; j < len; ++j) {
+    				result[i][j] = LVColumnFile.read(dataIn);
+    			}
+    		}
+    	}
+    	dataIn.close();
+    	return result;
     }
 
     private void prepareInputs () throws Exception {

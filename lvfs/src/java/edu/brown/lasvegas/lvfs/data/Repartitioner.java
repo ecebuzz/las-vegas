@@ -1,13 +1,12 @@
 package edu.brown.lasvegas.lvfs.data;
 
 import java.io.IOException;
-import java.util.Set;
-import java.util.TreeSet;
 
 import org.apache.log4j.Logger;
 
 import edu.brown.lasvegas.ColumnType;
 import edu.brown.lasvegas.CompressionType;
+import edu.brown.lasvegas.LVColumnFile;
 import edu.brown.lasvegas.lvfs.ColumnFileBundle;
 import edu.brown.lasvegas.lvfs.ColumnFileWriterBundle;
 import edu.brown.lasvegas.lvfs.TypedWriter;
@@ -104,12 +103,13 @@ public final class Repartitioner {
 
     /**
      * Repartitions 
-     * @return the ordinals of output partitions (indexes in partition ranges).
+     * @return descriptors of the repartitioned columnar files.
+     * These LVColumnFile objects are temporary objects that are not registered to the repository (thus no ID assigned).
      * All columnar files are named <outputFolder>/<partition>/<column> + extensions.
      */
-    public Set<Integer> execute () throws IOException {
+    public LVColumnFile[][] execute () throws IOException {
         LOG.info("started");
-        Set<Integer> outputPartitions = new TreeSet<Integer>();
+        LVColumnFile[][] ret = new LVColumnFile[partitionRanges.length][];
         try {
             /** reader object for existing columnar files. */
         	for (ColumnFileBundle[] files : baseFiles) {
@@ -126,16 +126,34 @@ public final class Repartitioner {
         		if (writers[i] == null) {
         			continue;
         		}
+        		ret[i] = new LVColumnFile[columnCount];
             	for (int j = 0; j < columnCount; ++j) {
-            		writers[i][j].finish();
-            		writers[i][j].close();
+            		ColumnFileWriterBundle writer = writers[i][j];
+            		writer.finish();
+            		writer.close();
+            		LVColumnFile result = new LVColumnFile();
+            		result.setChecksum(writer.getDataFileChecksum());
+            		result.setColumnType(columnTypes[j]);
+            		result.setCompressionType(compressions[j]);
+            		result.setDictionaryBytesPerEntry(writer.getDictionaryBytesPerEntry());
+            		result.setDistinctValues(writer.getDistinctValues());
+            		result.setFileSize((int) writer.getDataFile().length());
+            		result.setLocalFilePath(outputFolder.getAbsolutePath() + "/" + i + "/" + j);
+            		result.setRunCount(writer.getRunCount());
+            		result.setSorted(false);
+            		result.setTupleCount(writer.getTupleCount());
+            		if (writer.getTupleCount() == 0) {
+                		result.setTupleCount(writer.getTupleCount());
+            		}
+            		result.setUncompressedSizeKB(writer.getUncompressedSizeKB());
+            		ret[i][j] = result;
             		writers[i][j] = null;
             	}
         		writers[i] = null;
         	}
         }
-        LOG.info("done. output " + outputPartitions.size() + " partitions");
-        return outputPartitions;
+        LOG.info("done.");
+        return ret;
     }
 	@SuppressWarnings({ "unchecked", "rawtypes" })
     private void consumeReaders (ColumnFileTupleReader reader) throws IOException {
@@ -170,8 +188,8 @@ public final class Repartitioner {
 		}
 		// this partition is first found, so let's create a new writer.
 		VirtualFile folder = outputFolder.getChildFile(String.valueOf(partition));
-		boolean created = folder.mkdirs();
-		if (!created) {
+		folder.mkdirs();
+		if (!folder.exists()) {
 			throw new IOException ("failed to create a temporary folder to store repartitioned files. " + folder.getAbsolutePath());
 		}
 
@@ -180,5 +198,10 @@ public final class Repartitioner {
 			writers[partition][i] = new ColumnFileWriterBundle(folder, String.valueOf(i), columnTypes[i], compressions[i], true);
 		}
 	}
+	
+	
+	//public static ColumnFileTupleReader openRepartitionedFiles (VirtualFile outputFolder) throws IOException {
+		
+	//}
  }
 

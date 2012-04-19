@@ -66,6 +66,7 @@ public abstract class LocalBlockCompressionFixLenTestBase<T extends Number & Com
         writer.close();
         long correctCrc32 = ChecksumUtil.getFileCheckSum(file);
         assertEquals (correctCrc32, crc32);
+        assertEquals (VALUE_COUNT, writer.getTupleCount());
     }
     @AfterClass
     public static void tearDownAfterClass() throws Exception {

@@ -56,6 +56,12 @@ public interface TypedWriter<T extends Comparable<T>, AT> extends Closeable {
      * @throws IOException
      */
     long writeFileFooter () throws IOException;
+    
+    /**
+     * Returns the number of tuples written.
+     * @return the number of tuples written
+     */
+    int getTupleCount();
 
     /**
      * Writes out the collected positions to a position file.

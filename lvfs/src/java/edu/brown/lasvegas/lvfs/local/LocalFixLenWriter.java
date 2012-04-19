@@ -59,10 +59,12 @@ public final class LocalFixLenWriter<T extends Number & Comparable<T>, AT> exten
     @Override
     public void writeValues (AT values, int off, int len) throws IOException {
         traits.writeValues(getRawValueWriter(), values, off, len);
+        curTuple += len;
     }
     @Override
     public void writeValue(T value) throws IOException {
         traits.writeValue(getRawValueWriter(), value);
+        ++curTuple;
     }
     
     @Override

@@ -288,6 +288,7 @@ public class LocalDictCompressionWriter<T extends Comparable<T>, AT> implements 
         }
         tentativeIntBuffer[tentativeIntBufferUsed] = compressedInt;
         ++tentativeIntBufferUsed;
+        ++curTuple;
     }
     @Override
     public void writeValues(AT values, int off, int len) throws IOException {
@@ -303,5 +304,10 @@ public class LocalDictCompressionWriter<T extends Comparable<T>, AT> implements 
     public void setCRC32Enabled(boolean enabled) {
         crc32Enabled = enabled; // just keep the setting because the final writer will be constructed later
     }
+    @Override
+    public int getTupleCount() {
+    	return curTuple;
+    }
     private boolean crc32Enabled = false;
+    private int curTuple = 0;
 }

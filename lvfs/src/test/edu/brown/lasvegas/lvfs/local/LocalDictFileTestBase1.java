@@ -67,6 +67,7 @@ public abstract class LocalDictFileTestBase1<T extends Comparable<T>, AT> {
         writer.close();
         long correctCrc32 = ChecksumUtil.getFileCheckSum(dataFile);
         assertEquals (correctCrc32, crc32);
+        assertEquals (count, writer.getTupleCount());
     }
 
     @Test

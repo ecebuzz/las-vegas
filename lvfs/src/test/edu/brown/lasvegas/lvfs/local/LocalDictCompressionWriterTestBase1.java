@@ -50,6 +50,7 @@ public abstract class LocalDictCompressionWriterTestBase1<T extends Comparable<T
         writer.close();
         long correctCrc32 = ChecksumUtil.getFileCheckSum(dataFile);
         assertEquals (correctCrc32, crc32);
+        assertEquals (COUNT, writer.getTupleCount());
     }
     protected static Random getDeterministicRandom () {
         return new Random (22331L); // fixed seed;

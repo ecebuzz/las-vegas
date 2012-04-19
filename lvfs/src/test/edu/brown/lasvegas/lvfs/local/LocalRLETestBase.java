@@ -71,6 +71,7 @@ public abstract class LocalRLETestBase<T extends Comparable<T>, AT> {
         assertEquals (correctCrc32, crc32);
         writer.writePositionFile(pos);
         runCount = writer.getRunCount();
+        assertEquals (VALUE_COUNT, writer.getTupleCount());
     }
     protected int runCount;
     @AfterClass

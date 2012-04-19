@@ -60,6 +60,7 @@ public class LocalVarLenWriterTest {
             writer.close();
             long correctCrc32 = ChecksumUtil.getFileCheckSum(dataFile);
             assertEquals (correctCrc32, crc32);
+            assertEquals (COUNT, writer.getTupleCount());
         }        
         
         // test sequential scan
@@ -121,6 +122,7 @@ public class LocalVarLenWriterTest {
             writer.close();
             long correctCrc32 = ChecksumUtil.getFileCheckSum(dataFile);
             assertEquals (correctCrc32, crc32);
+            assertEquals (COUNT, writer.getTupleCount());
         }        
         
         // test sequential scan

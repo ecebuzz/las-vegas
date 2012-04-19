@@ -70,7 +70,6 @@ public final class LocalRLEWriter<T extends Comparable<T>, AT> extends LocalType
 
     private final int collectPerBytes;
     private int prevCollectPosition = -1; // to always collect at the first value
-    private int curTuple = 0;
     private ArrayList<Integer> collectedTuples = new ArrayList<Integer>();
     private ArrayList<Integer> collectedPositions = new ArrayList<Integer>();
     /** just a statistics. */

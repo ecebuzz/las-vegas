@@ -82,8 +82,9 @@ public interface OrderedDictionary<T extends Comparable<T>, AT> {
      * @param dest array to receive values after de-compression
      * @param destOff index from which we store de-compressed values
      * @param len number of values to de-compress
+     * @return actual number of values de-compressed
      */
-    public void decompressBatch (byte[] src, int srcOff, AT dest, int destOff, int len);
+    public int decompressBatch (byte[] src, int srcOff, AT dest, int destOff, int len);
 
     /**
      * Decompresses the given array of values altogether (2-byte entry version). This is much more efficient than non-batched version.
@@ -92,8 +93,9 @@ public interface OrderedDictionary<T extends Comparable<T>, AT> {
      * @param dest array to receive values after de-compression
      * @param destOff index from which we store de-compressed values
      * @param len number of values to de-compress
+     * @return actual number of values de-compressed
      */
-    public void decompressBatch (short[] src, int srcOff, AT dest, int destOff, int len);
+    public int decompressBatch (short[] src, int srcOff, AT dest, int destOff, int len);
 
     /**
      * Decompresses the given array of values altogether (4-byte entry version). This is much more efficient than non-batched version.
@@ -102,8 +104,9 @@ public interface OrderedDictionary<T extends Comparable<T>, AT> {
      * @param dest array to receive values after de-compression
      * @param destOff index from which we store de-compressed values
      * @param len number of values to de-compress
+     * @return actual number of values de-compressed
      */
-    public void decompressBatch (int[] src, int srcOff, AT dest, int destOff, int len);
+    public int decompressBatch (int[] src, int srcOff, AT dest, int destOff, int len);
     
     /**
      * Given a compressed value in signed integer, returns the
