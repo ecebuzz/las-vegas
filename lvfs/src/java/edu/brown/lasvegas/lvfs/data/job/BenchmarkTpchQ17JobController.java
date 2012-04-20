@@ -34,7 +34,7 @@ public class BenchmarkTpchQ17JobController extends BenchmarkTpchQ17JobController
     }
 
     @Override
-    protected void initDerivedPartitioning() throws IOException {
+    protected void initDerivedTpchQ17() throws IOException {
         if (lineitemPartitions.length != partPartitions.length) {
             throw new IOException ("partition count doesn't match");
         }

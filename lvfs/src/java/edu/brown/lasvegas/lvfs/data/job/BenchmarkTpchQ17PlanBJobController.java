@@ -2,15 +2,19 @@ package edu.brown.lasvegas.lvfs.data.job;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import edu.brown.lasvegas.CompressionType;
+import edu.brown.lasvegas.LVColumn;
+import edu.brown.lasvegas.LVReplicaGroup;
+import edu.brown.lasvegas.LVReplicaPartition;
 import edu.brown.lasvegas.LVTask;
 import edu.brown.lasvegas.ReplicaPartitionStatus;
 import edu.brown.lasvegas.TaskStatus;
 import edu.brown.lasvegas.TaskType;
 import edu.brown.lasvegas.lvfs.data.task.BenchmarkTpchQ17TaskParameters;
+import edu.brown.lasvegas.lvfs.data.task.RepartitionTaskParameters;
 import edu.brown.lasvegas.protocol.LVMetadataProtocol;
 
 /**
@@ -18,7 +22,7 @@ import edu.brown.lasvegas.protocol.LVMetadataProtocol;
  * This doesn't assume co-partitioned part/lineitem table.
  * Thus, this job requires multiple steps as follows.
  * 
- * 1. Access lineitem table in each node, re-partition l_partkey/l_quantity/l_extprice by partkey and save the result
+ * 1. Access lineitem table in each node, re-partition l_partkey/l_extendedprice/l_quantity by partkey and save the result
  * in each node.
  * 2. Again at each node, for each part partition in the node,
  * collect the re-partitioned results from all other nodes, create the
@@ -40,71 +44,120 @@ public class BenchmarkTpchQ17PlanBJobController extends BenchmarkTpchQ17JobContr
         super(metaRepo, stopMaxWaitMilliseconds, taskJoinIntervalMilliseconds, taskJoinIntervalOnErrorMilliseconds);
     }
 
+    private LVReplicaGroup partGroup;
+    private LVColumn l_partkey, l_extendedprice, l_quantity;
+    private SortedMap<Integer, ArrayList<Integer>> lineitemNodeMap;
+    private SortedMap<Integer, ArrayList<Integer>> partNodeMap;
     @Override
-    protected void initDerivedPartitioning() throws IOException {
+    protected void initDerivedTpchQ17() throws IOException {
+        // lineitem and part are not co-partitioned, so create node map individually
+        lineitemNodeMap = createNodeMap (lineitemPartitions, "lineitem");
+        partNodeMap = createNodeMap (partPartitions, "part");
+        partGroup = metaRepo.getReplicaGroup(partScheme.getGroupId());
+        assert (partGroup != null);
+        l_partkey = metaRepo.getColumnByName(lineitemTable.getTableId(), "l_partkey");
+        assert (l_partkey != null);
+        l_extendedprice = metaRepo.getColumnByName(lineitemTable.getTableId(), "l_extendedprice");
+        assert (l_extendedprice != null);
+        l_quantity = metaRepo.getColumnByName(lineitemTable.getTableId(), "l_quantity");
+        assert (l_quantity != null);
     }
 
-    private static class NodeParam {
-        List<Integer> lineitemPartitionIds = new ArrayList<Integer>();
-        List<Integer> partPartitionIds = new ArrayList<Integer>();
+    private SortedMap<Integer, ArrayList<Integer>> createNodeMap (LVReplicaPartition[] partitions, String label) {
+        SortedMap<Integer, ArrayList<Integer>> nodeMap = new TreeMap<Integer, ArrayList<Integer>>(); // key=nodeId
+        for (LVReplicaPartition partition : partitions) {
+            if (partition.getStatus() == ReplicaPartitionStatus.EMPTY) {
+                LOG.info("this " + label + " partition will produce no result. skipped:" + partition);
+                continue;
+            }
+            LOG.info("existing " + label + " partition: " + partition);
+            ArrayList<Integer> partitionIds = nodeMap.get(partition.getNodeId());
+            if (partitionIds == null) {
+            	partitionIds = new ArrayList<Integer>();
+            	nodeMap.put (partition.getNodeId(), partitionIds);
+            }
+            partitionIds.add(partition.getPartitionId());
+        }
+        return nodeMap;
     }
+    
     @Override
     protected void runDerived() throws IOException {
         LOG.info("going to run TPCH Q17 with repartitioning. brand=" + param.getBrand() + ", container=" + param.getContainer());
-        SortedMap<Integer, NodeParam> nodeMap = new TreeMap<Integer, NodeParam>(); // key=nodeId
-        for (int i = 0; i < lineitemPartitions.length; ++i) {
-            if (lineitemPartitions[i].getStatus() == ReplicaPartitionStatus.EMPTY || partPartitions[i].getStatus() == ReplicaPartitionStatus.EMPTY) {
-                LOG.info("this partition will produce no result. skipped:" + lineitemPartitions[i] + "," + partPartitions[i]);
-                continue;
-            }
-            LOG.info("existing lineitem partition: " + lineitemPartitions[i]);
-            LOG.info("existing part partition: " + partPartitions[i]);
-            if (lineitemPartitions[i].getNodeId().intValue() != partPartitions[i].getNodeId().intValue()) {
-                throw new IOException ("not co-partitioned! lineitem partition:" + lineitemPartitions[i] + ". part partition:" + partPartitions[i]);
-            }
-            NodeParam param = nodeMap.get(lineitemPartitions[i].getNodeId());
-            if (param == null) {
-                param = new NodeParam();
-                nodeMap.put (lineitemPartitions[i].getNodeId(), param);
-            }
-            param.lineitemPartitionIds.add(lineitemPartitions[i].getPartitionId());
-            param.partPartitionIds.add(partPartitions[i].getPartitionId());
-        }
 
+        // 1. repartition lineitem at each node.
+        SortedMap<Integer, String> summaryFileMap = repartitionLineitem(0.0d, 0.5d);
+        
+        // 2. at each node for each part partition, collect the repartitioned lineitem files
+        // and then run Q17.
+        queryResult = collectAndRunQuery (summaryFileMap, 0.5d, 1.0d);
+        LOG.info("all tasks including repartitioning seem done! query result=" + queryResult);
+    }
+    
+    private SortedMap<Integer, String> repartitionLineitem (double baseProgress, double completedProgress) throws IOException {
         SortedMap<Integer, LVTask> taskMap = new TreeMap<Integer, LVTask>();
-        for (Integer nodeId : nodeMap.keySet()) {
-            NodeParam node = nodeMap.get(nodeId);
+        for (Integer nodeId : lineitemNodeMap.keySet()) {
+            ArrayList<Integer> lineitemPartitionIds = lineitemNodeMap.get(nodeId);
+        	RepartitionTaskParameters taskParam = new RepartitionTaskParameters();
+        	taskParam.setBasePartitionIds(asIntArray(lineitemPartitionIds));
+        	taskParam.setOutputCacheSize(1 << 12); // doesn't matter. so far.
+        	taskParam.setOutputColumnIds(new int[]{l_partkey.getColumnId(), l_extendedprice.getColumnId(), l_quantity.getColumnId()});
+        	taskParam.setOutputCompressions(new CompressionType[]{CompressionType.NONE, CompressionType.NONE, CompressionType.NONE});
+        	taskParam.setPartitioningColumnId(l_partkey.getColumnId());
+        	taskParam.setPartitionRanges(partGroup.getRanges());
+        	taskParam.setReadCacheSize(1 << 16); // this is important. maybe 1 << 20?
+
+            int taskId = metaRepo.createNewTaskIdOnlyReturn(jobId, nodeId, TaskType.REPARTITION, taskParam.writeToBytes());
+            LVTask task = metaRepo.updateTask(taskId, TaskStatus.START_REQUESTED, null, null, null);
+            LOG.info("launched new task to repartition for TPCH Q17: " + task);
+            assert (!taskMap.containsKey(taskId));
+            taskMap.put(taskId, task);
+        }
+        joinTasks(taskMap, baseProgress, completedProgress);
+
+        SortedMap<Integer, String> summaryFileMap = new TreeMap<Integer, String>();
+        for (LVTask task : taskMap.values()) {
+        	int nodeId = task.getNodeId();
+        	assert (!summaryFileMap.containsKey(nodeId));
+        	assert (task.getOutputFilePaths() != null);
+        	assert (task.getOutputFilePaths().length == 1);
+        	String summaryFilePath = task.getOutputFilePaths()[0];
+        	summaryFileMap.put(nodeId, summaryFilePath);
+        }
+        return summaryFileMap;
+    }
+    
+    private double collectAndRunQuery (SortedMap<Integer, String> summaryFileMap, double baseProgress, double completedProgress) throws IOException {
+        SortedMap<Integer, LVTask> taskMap = new TreeMap<Integer, LVTask>();
+        for (Integer nodeId : partNodeMap.keySet()) {
+            ArrayList<Integer> partPartitionIds = partNodeMap.get(nodeId);
             
             BenchmarkTpchQ17TaskParameters taskParam = new BenchmarkTpchQ17TaskParameters();
             taskParam.setBrand(param.getBrand());
             taskParam.setContainer(param.getContainer());
             taskParam.setLineitemTableId(lineitemTable.getTableId());
             taskParam.setPartTableId(partTable.getTableId());
-            int[] lineitemPartitionIds = asIntArray(node.lineitemPartitionIds);
-            int[] partPartitionIds = asIntArray(node.partPartitionIds);
-            taskParam.setLineitemPartitionIds(lineitemPartitionIds);
-            taskParam.setPartPartitionIds(partPartitionIds);
+            taskParam.setLineitemPartitionIds(new int[0]);
+            taskParam.setPartPartitionIds(asIntArray(partPartitionIds));
+            taskParam.setRepartitionSummaryFileMap(summaryFileMap);
 
-            int taskId = metaRepo.createNewTaskIdOnlyReturn(jobId, nodeId, TaskType.BENCHMARK_TPCH_Q17, taskParam.writeToBytes());
+            int taskId = metaRepo.createNewTaskIdOnlyReturn(jobId, nodeId, TaskType.BENCHMARK_TPCH_Q17_PLANB, taskParam.writeToBytes());
             LVTask task = metaRepo.updateTask(taskId, TaskStatus.START_REQUESTED, null, null, null);
             LOG.info("launched new task to run TPCH Q17: " + task);
             assert (!taskMap.containsKey(taskId));
             taskMap.put(taskId, task);
         }
-        LOG.info("waiting for task completion...");
-        joinTasks(taskMap, 0.0d, 1.0d);
+        joinTasks(taskMap, baseProgress, completedProgress);
         
-        LOG.info("all tasks seem done!");
-        queryResult = 0;
+        double result = 0;
         for (LVTask task : metaRepo.getAllTasksByJob(jobId)) {
-            // a hack. see BenchmarkTpchQ17TaskRunner. this property is used to store the subtotal from the node. 
             String[] results = task.getOutputFilePaths();
             if (results.length != 1 && task.getStatus() == TaskStatus.DONE) {
                 LOG.error("This task should be successfully done, but didn't return the result:" + task);
                 continue;
             }
-            queryResult += Double.parseDouble(results[0]);
+            result += Double.parseDouble(results[0]);
         }
-        LOG.info("query result=" + queryResult);
+    	return result;
     }
 }

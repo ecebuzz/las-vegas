@@ -91,7 +91,7 @@ public abstract class BenchmarkTpchQ17JobControllerBase extends AbstractJobContr
         lineitemPartitions = metaRepo.getAllReplicaPartitionsByReplicaId(lineitemReplica.getReplicaId());
         partPartitions = metaRepo.getAllReplicaPartitionsByReplicaId(partReplica.getReplicaId());
         
-        initDerivedPartitioning ();
+        initDerivedTpchQ17 ();
         /*
         if (lineitemPartitions.length != partPartitions.length) {
             throw new IOException ("partition count doesn't match");
@@ -111,7 +111,7 @@ public abstract class BenchmarkTpchQ17JobControllerBase extends AbstractJobContr
         */
         this.jobId = metaRepo.createNewJobIdOnlyReturn("Q17", JobType.BENCHMARK_TPCH_Q17, null);
     }
-    protected abstract void initDerivedPartitioning() throws IOException;
+    protected abstract void initDerivedTpchQ17() throws IOException;
     
     protected double queryResult = 0;
     public final double getQueryResult () {

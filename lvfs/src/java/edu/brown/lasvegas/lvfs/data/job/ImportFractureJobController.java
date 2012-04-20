@@ -159,7 +159,15 @@ public class ImportFractureJobController extends AbstractJobController<ImportFra
             
             int taskId = metaRepo.createNewTaskIdOnlyReturn(jobId, nodeId, TaskType.PARTITION_RAW_TEXT_FILES, taskParam.writeToBytes());
             LVTask task = metaRepo.updateTask(taskId, TaskStatus.START_REQUESTED, null, null, null);
-            LOG.info("launched new local partitioning task: " + task);
+            StringBuffer filepaths = new StringBuffer();
+            filepaths.append("[");
+            if (taskParam.getFilePaths() != null) {
+            	for (String filepath : taskParam.getFilePaths()) {
+            		filepaths.append(filepath + ",");
+            	}
+            }
+            filepaths.append("]");
+            LOG.info("launched new local partitioning task: " + task + ". files to read=" + new String(filepaths));
             assert (!taskMap.containsKey(taskId));
             taskMap.put(taskId, task);
         }

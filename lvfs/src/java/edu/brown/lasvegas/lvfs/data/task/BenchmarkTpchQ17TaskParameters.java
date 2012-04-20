@@ -3,12 +3,16 @@ package edu.brown.lasvegas.lvfs.data.task;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import edu.brown.lasvegas.LVTask;
 import edu.brown.lasvegas.TaskType;
 import edu.brown.lasvegas.lvfs.data.DataTaskParameters;
 
 /**
+ * The Class BenchmarkTpchQ17TaskParameters.
+ *
  * @see TaskType#BENCHMARK_TPCH_Q17
  */
 public final class BenchmarkTpchQ17TaskParameters extends DataTaskParameters {
@@ -56,6 +60,15 @@ public final class BenchmarkTpchQ17TaskParameters extends DataTaskParameters {
     private String container;
     
     /**
+     * Used only for query plan with repartitioning. key=nodeId, value=path of summary file.
+     */
+    private SortedMap<Integer, String> repartitionSummaryFileMap;
+    
+    /**
+     * Read fields.
+     *
+     * @param in the in
+     * @throws IOException Signals that an I/O exception has occurred.
      * @see org.apache.hadoop.io.Writable#readFields(java.io.DataInput)
      */
     @Override
@@ -66,9 +79,25 @@ public final class BenchmarkTpchQ17TaskParameters extends DataTaskParameters {
         lineitemPartitionIds = readIntArray(in);
         brand = in.readUTF();
         container = in.readUTF();
+        int len = in.readInt();
+        assert (len >= -1);
+        if (len == -1) {
+        	repartitionSummaryFileMap = null;
+        } else {
+        	repartitionSummaryFileMap = new TreeMap<Integer, String>();
+        	for (int i = 0; i < len; ++i) {
+        		int nodeId = in.readInt();
+        		String summaryFilePath = in.readUTF();
+        		repartitionSummaryFileMap.put(nodeId, summaryFilePath);
+        	}
+        }
     }
     
     /**
+     * Write.
+     *
+     * @param out the out
+     * @throws IOException Signals that an I/O exception has occurred.
      * @see org.apache.hadoop.io.Writable#write(java.io.DataOutput)
      */
     @Override
@@ -79,6 +108,18 @@ public final class BenchmarkTpchQ17TaskParameters extends DataTaskParameters {
         writeIntArray(out, lineitemPartitionIds);
         out.writeUTF(brand);
         out.writeUTF(container);
+        if (repartitionSummaryFileMap == null) {
+        	out.writeInt(-1);
+        } else {
+        	out.writeInt(repartitionSummaryFileMap.size());
+        	int cnt = 0;
+        	for (Integer nodeId : repartitionSummaryFileMap.keySet()) {
+            	out.writeInt(nodeId);
+            	out.writeUTF(repartitionSummaryFileMap.get(nodeId));
+        		++cnt;
+        	}
+        	assert (cnt == repartitionSummaryFileMap.size());
+        }
     }
     
     /**
@@ -188,4 +229,24 @@ public final class BenchmarkTpchQ17TaskParameters extends DataTaskParameters {
     public void setContainer(String container) {
         this.container = container;
     }
+
+	/**
+	 * Gets the repartition summary file map.
+	 *
+	 * @return the repartition summary file map
+	 */
+	public SortedMap<Integer, String> getRepartitionSummaryFileMap() {
+		return repartitionSummaryFileMap;
+	}
+
+	/**
+	 * Sets the repartition summary file map.
+	 *
+	 * @param repartitionSummaryFileMap the repartition summary file map
+	 */
+	public void setRepartitionSummaryFileMap(
+			SortedMap<Integer, String> repartitionSummaryFileMap) {
+		this.repartitionSummaryFileMap = repartitionSummaryFileMap;
+	}
+    
 }
