@@ -16,9 +16,8 @@ import edu.brown.lasvegas.lvfs.VirtualFile;
 import edu.brown.lasvegas.lvfs.local.LocalVirtualFile;
 import edu.brown.lasvegas.tuple.BufferedTupleWriter;
 import edu.brown.lasvegas.tuple.ColumnFileTupleReader;
-import edu.brown.lasvegas.tuple.DefaultTupleReader;
+import edu.brown.lasvegas.tuple.FilteredTupleReader;
 import edu.brown.lasvegas.tuple.TextFileTupleReader;
-import edu.brown.lasvegas.tuple.TupleReader;
 import edu.brown.lasvegas.util.ValueRange;
 
 /**
@@ -48,43 +47,6 @@ public class RepartitionerTest {
         compressions = dataSource.getDefaultCompressions();
         createColumnFiles();
     }
-    private static abstract class FilteredTupleReader extends DefaultTupleReader {
-    	FilteredTupleReader (TupleReader reader) {
-    		super (reader.getColumnTypes());
-    		this.reader = reader;
-    	}
-    	
-    	@Override
-		public boolean next() throws IOException {
-    		while (true) {
-    			boolean read = reader.next();
-    			if (!read) {
-    				return false;
-    			}
-    			for (int i = 0; i < columnCount; ++i) {
-    				currentData[i] = reader.getObject(i);
-    			}
-    			if (isFiltered()) {
-    				continue;
-    			}
-    			return true;
-    		}
-		}
-    	protected abstract boolean isFiltered ();
-
-		@Override
-		public String getCurrentTupleAsString() {
-			return reader.getCurrentTupleAsString();
-		}
-
-		@Override
-		public void close() throws IOException {
-			reader.close();
-		}
-
-		private final TupleReader reader;
-    }
-    
     private void createColumnFiles () throws Exception {
         columnFiles = new ColumnFileBundle[PARTITIONS][];
         // partition by orderkey (<10 and >=10)
@@ -98,9 +60,6 @@ public class RepartitionerTest {
             FilteredTupleReader wrapped = new FilteredTupleReader(reader) {
             	@Override
             	protected boolean isFiltered() {
-            		if (super.currentData[ORDERKEY_COLUMN] == null) {
-            			LOG.info("gfd");
-            		}
             		if (firstRep) {
             			return ((Integer) currentData[ORDERKEY_COLUMN]) >= BOUNDARY;
             		} else {

@@ -17,12 +17,12 @@ import edu.brown.lasvegas.protocol.LVMetadataProtocol;
  * This job runs TPC-H's Q17, assuming a single fracture,
  * and a co-partitioned part and lineitem table.
  * <pre>
- * SELECT SUM(L_EXTENDEDPRICE) / 7 FROM LINEITEM JOIN PART (P_PARTKEY=L_PARTKEY)
- * WHERE P_BRAND=[BRAND] AND P_CONTAINER=[CONTAINER] AND L_QUANTITY<
- * (
- *   SELECT 0.2*AVG(L_QUANTITY) FROM LINEITEM WHERE L_PARTKEY=P_PARTKEY
- * )
- * </pre>
+ SELECT SUM(L_EXTENDEDPRICE) / 7 FROM LINEITEM JOIN PART ON (P_PARTKEY=L_PARTKEY)
+ WHERE P_BRAND=[BRAND] AND P_CONTAINER=[CONTAINER] AND L_QUANTITY<
+ (
+   SELECT 0.2*AVG(L_QUANTITY) FROM LINEITEM WHERE L_PARTKEY=P_PARTKEY
+ )
+ </pre>
  * @see JobType#BENCHMARK_TPCH_Q17
  */
 public class BenchmarkTpchQ17JobController extends BenchmarkTpchQ17JobControllerBase {

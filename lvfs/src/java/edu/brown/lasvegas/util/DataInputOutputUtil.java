@@ -44,7 +44,7 @@ public final class DataInputOutputUtil {
      */
     public static abstract class ArraySerializer<T extends Writable> {
     	public abstract T[] allocateArray (int size);
-    	public abstract T read(DataInput in);
+    	public abstract T read(DataInput in) throws IOException;
     	/**
     	 * Serializes an array of Writable.
     	 */

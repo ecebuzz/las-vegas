@@ -45,9 +45,9 @@ public final class MiniTPCHOrders extends MiniDataSource {
             /*"3: o_totalprice",*/ CompressionType.NONE,
             /*"4: o_orderdate",*/ CompressionType.NONE,
             /*"5: o_orderpriority",*/ CompressionType.DICTIONARY,
-            /*"6: o_clerk",*/ CompressionType.DICTIONARY,
+            /*"6: o_clerk",*/ CompressionType.SNAPPY,
             /*"7: o_shippriority",*/ CompressionType.NONE,
-            /*"8: o_comment",*/ CompressionType.DICTIONARY,
+            /*"8: o_comment",*/ CompressionType.SNAPPY,
         };
     }
     @Override

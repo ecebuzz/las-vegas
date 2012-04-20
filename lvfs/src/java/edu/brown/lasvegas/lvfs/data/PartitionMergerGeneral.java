@@ -113,7 +113,9 @@ public final class PartitionMergerGeneral {
 	            	reader.close();
             	}
             }
+            copiedTupleCount += subTotalTupleCount;
         }
+        assert (copiedTupleCount == tupleCount);
         LOG.info("merged data");
 
         if (sortColumn != null) {
@@ -145,7 +147,7 @@ public final class PartitionMergerGeneral {
         	if (i == sortColumn) {
         		continue;
         	}
-        	traits[i].reorder(mergedData[i], oldPos);
+        	mergedData[i] = traits[i].reorder(mergedData[i], oldPos);
         }
         long end2 = System.currentTimeMillis();
         LOG.info("organized other columns! " + (end2 - end) + "ms");
@@ -172,6 +174,8 @@ public final class PartitionMergerGeneral {
             if (compressions[i] == CompressionType.DICTIONARY) {
                 newFile.setDictionaryFile(outputFolder.getChildFile(LVFSFileType.DICTIONARY_FILE.appendExtension(filename)));
                 assert (newFile.getDictionaryFile() != null);
+                newFile.setTmpFile(outputFolder.getChildFile(LVFSFileType.TMP_DATA_FILE.appendExtension(filename)));
+                assert (newFile.getTmpFile() != null);
             }
             if (compressions[i] == CompressionType.RLE
                     || (compressions[i] == CompressionType.NONE && (columnTypes[i] == ColumnType.VARBINARY || columnTypes[i] == ColumnType.VARCHAR))) {
@@ -238,7 +242,6 @@ public final class PartitionMergerGeneral {
         }
         dataWriter.flush();
         // collect statistics
-        assert (!(dataWriter instanceof TypedDictWriter));
         if (dataWriter instanceof TypedDictWriter) {
         	TypedDictWriter dictWriter = (TypedDictWriter) dataWriter;
         	newFile.setDistinctValues(dictWriter.getFinalDict().getDictionarySize());

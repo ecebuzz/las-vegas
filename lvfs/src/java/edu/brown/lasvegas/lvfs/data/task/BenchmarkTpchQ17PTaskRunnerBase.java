@@ -22,22 +22,22 @@ public abstract class BenchmarkTpchQ17PTaskRunnerBase extends DataTaskRunner<Ben
     protected LVTable lineitem, part;
     protected LVColumn l_partkey, l_extendedprice, l_quantity, p_partkey, p_brand, p_container;
     /** num of partitions to be processed in this node. */
-    protected int partitionCount;
+    protected int partPartitionCount;
     protected LVReplicaPartition partPartitions[];
     
     @Override
     protected final String[] runDataTask() throws Exception {
         prepareInputs ();
         double totalSum = 0;
-        for (int i = 0; i < partitionCount; ++i) {
-            LOG.info("processing.. " + i + "/" + partitionCount);
+        for (int i = 0; i < partPartitionCount; ++i) {
+            LOG.info("processing.. " + i + "/" + partPartitionCount);
             totalSum += processPartition (i);
         }
         // a hack to make it easy. this return value should be a file path, but let's just return the query result as the string.
         return new String[]{String.valueOf (totalSum)};
     }
     
-    protected abstract double processPartition (int partition) throws IOException;
+    protected abstract double processPartition (int partPartition) throws IOException;
     
     
     protected final ColumnFileReaderBundle getReader (LVReplicaPartition partition, LVColumn column) throws IOException {
@@ -68,13 +68,13 @@ public abstract class BenchmarkTpchQ17PTaskRunnerBase extends DataTaskRunner<Ben
         this.p_container = context.metaRepo.getColumnByName(part.getTableId(), "p_container");
         assert (p_container != null);
 
-        this.partitionCount = parameters.getLineitemPartitionIds().length;
-        assert (partitionCount == parameters.getPartPartitionIds().length);
-        assert (partitionCount > 0);
-        this.partPartitions = new LVReplicaPartition[partitionCount];
-        for (int i = 0; i < partitionCount; ++i) {
+        this.partPartitionCount = parameters.getPartPartitionIds().length;
+        assert (partPartitionCount > 0);
+        this.partPartitions = new LVReplicaPartition[partPartitionCount];
+        for (int i = 0; i < partPartitionCount; ++i) {
             partPartitions[i] = context.metaRepo.getReplicaPartition(parameters.getPartPartitionIds()[i]);
         }
+        prepareInputsQ17();
     }
     protected abstract void prepareInputsQ17 () throws Exception;
 

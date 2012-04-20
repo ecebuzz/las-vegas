@@ -1,6 +1,7 @@
 package edu.brown.lasvegas.util;
 
 import java.io.DataInput;
+import java.io.IOException;
 
 import edu.brown.lasvegas.util.DataInputOutputUtil.ArraySerializer;
 
@@ -13,7 +14,7 @@ public class ValueRangeArraySerializer extends ArraySerializer<ValueRange> {
 		return new ValueRange[size];
 	}
 	@Override
-	public ValueRange read(DataInput in) {
-		return read (in);
+	public ValueRange read(DataInput in) throws IOException {
+		return ValueRange.read (in);
 	}
 }

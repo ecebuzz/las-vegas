@@ -16,7 +16,9 @@ import edu.brown.lasvegas.LVTask;
 import edu.brown.lasvegas.lvfs.LVFSFilePath;
 import edu.brown.lasvegas.lvfs.LVFSFileType;
 import edu.brown.lasvegas.lvfs.data.job.BenchmarkTpchQ17JobController;
+import edu.brown.lasvegas.lvfs.data.job.BenchmarkTpchQ17JobControllerBase;
 import edu.brown.lasvegas.lvfs.data.job.BenchmarkTpchQ17JobParameters;
+import edu.brown.lasvegas.lvfs.data.job.BenchmarkTpchQ17PlanBJobController;
 import edu.brown.lasvegas.lvfs.meta.MasterMetadataRepository;
 import edu.brown.lasvegas.server.LVDataNode;
 
@@ -78,17 +80,22 @@ public class TpchQ17SingleNodeBenchmark {
 
     private static final String brand = "Brand#34";
     private static final String container = "MED DRUM";
-    private static final boolean fastQueryPlan = true;
+    private static final boolean fastQueryPlan = false;
     public double exec () throws Exception {
         BenchmarkTpchQ17JobParameters params = new BenchmarkTpchQ17JobParameters();
         params.setBrand(brand);
         params.setContainer(container);
         params.setLineitemTableId(lineitemTable.getTableId());
         params.setPartTableId(partTable.getTableId());
-        BenchmarkTpchQ17JobController controller = new BenchmarkTpchQ17JobController(masterRepository, 1000L, 100L, 100L);
-        LOG.info("started Q17...");
+        BenchmarkTpchQ17JobControllerBase controller;
+        if (fastQueryPlan) {
+        	controller = new BenchmarkTpchQ17JobController(masterRepository, 1000L, 100L, 100L);
+        } else {
+        	controller = new BenchmarkTpchQ17PlanBJobController(masterRepository, 1000L, 100L, 100L);
+        }
+        LOG.info("started Q17(" + (fastQueryPlan ? "assume co-partitioning" : "slower query plan") + ")...");
         LVJob job = controller.startSync(params);
-        LOG.info("finished Q17:" + job);
+        LOG.info("finished Q17(" + (fastQueryPlan ? "assume co-partitioning" : "slower query plan") + "):" + job);
         for (LVTask task : masterRepository.getAllTasksByJob(job.getJobId())) {
             LOG.info("Sub-Task finished in " + (task.getFinishedTime().getTime() - task.getStartedTime().getTime()) + "ms:" + task);
         }
@@ -104,7 +111,7 @@ public class TpchQ17SingleNodeBenchmark {
             long start = System.currentTimeMillis();
             double result = program.exec();
             long end = System.currentTimeMillis();
-            LOG.info("ended: result=" + result + ". elapsed time=" + (end - start) + "ms");
+            LOG.info("ended(" + (fastQueryPlan ? "assume co-partitioning" : "slower query plan") + "): result=" + result + ". elapsed time=" + (end - start) + "ms");
         } catch (Exception ex) {
             LOG.error("unexpected exception:" + ex.getMessage(), ex);
         } finally {

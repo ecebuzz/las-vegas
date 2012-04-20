@@ -150,7 +150,7 @@ public class BenchmarkTpchQ17PlanBJobController extends BenchmarkTpchQ17JobContr
         joinTasks(taskMap, baseProgress, completedProgress);
         
         double result = 0;
-        for (LVTask task : metaRepo.getAllTasksByJob(jobId)) {
+        for (LVTask task : taskMap.values()) {
             String[] results = task.getOutputFilePaths();
             if (results.length != 1 && task.getStatus() == TaskStatus.DONE) {
                 LOG.error("This task should be successfully done, but didn't return the result:" + task);

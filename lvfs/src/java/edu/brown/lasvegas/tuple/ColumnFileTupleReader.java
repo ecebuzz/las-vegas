@@ -80,7 +80,9 @@ public final class ColumnFileTupleReader implements TupleReader {
     }
     @Override
     public int nextBatch(TupleBuffer buffer) throws IOException {
-        return buffer.appendTuples(dataReaders);
+        int read = buffer.appendTuples(dataReaders);
+        nextTuplePos += read;
+        return read;
     }
     @Override
     public String getCurrentTupleAsString() {

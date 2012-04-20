@@ -15,8 +15,9 @@ public final class BenchmarkTpchQ17TaskRunner extends BenchmarkTpchQ17PTaskRunne
     private LVReplicaPartition lineitemPartitions[];
     @Override
     protected void prepareInputsQ17() throws Exception {
-        this.lineitemPartitions = new LVReplicaPartition[partitionCount];
-        for (int i = 0; i < partitionCount; ++i) {
+        assert (partPartitionCount == parameters.getLineitemPartitionIds().length);
+        this.lineitemPartitions = new LVReplicaPartition[partPartitionCount];
+        for (int i = 0; i < partPartitionCount; ++i) {
             lineitemPartitions[i] = context.metaRepo.getReplicaPartition(parameters.getLineitemPartitionIds()[i]);
         }
     }

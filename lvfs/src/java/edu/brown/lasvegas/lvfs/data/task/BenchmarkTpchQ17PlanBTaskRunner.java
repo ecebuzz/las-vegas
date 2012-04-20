@@ -132,6 +132,7 @@ public final class BenchmarkTpchQ17PlanBTaskRunner extends BenchmarkTpchQ17PTask
     	}
     }
 
+    @Override
     @SuppressWarnings("unchecked")
     protected double processPartition (int partition) throws IOException {
 		Runtime.getRuntime().gc();

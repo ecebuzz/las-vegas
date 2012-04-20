@@ -71,6 +71,18 @@ public class LocalBlockCompressionVarLenTest {
             reader.close();
         }
 
+        // test sequential scan with readValues
+        {
+            LocalBlockCompressionVarLenReader<String> reader = LocalBlockCompressionVarLenReader.getInstanceVarchar(file, getType());
+            String[] buffer = new String[COUNT];
+            int read = reader.readValues(buffer, 0, buffer.length);
+            assertEquals(buffer.length, read);
+            for (int i = 0; i < COUNT; ++i) {
+                assertEquals (generateValue(i), buffer[i]);
+            }
+            reader.close();
+        }
+
         // test seeking
         {
             LocalBlockCompressionVarLenReader<String> reader = LocalBlockCompressionVarLenReader.getInstanceVarchar(file, getType());
@@ -115,6 +127,17 @@ public class LocalBlockCompressionVarLenTest {
                 } else {
                     reader.skipValue();
                 }
+            }
+            reader.close();
+        }
+        // test sequential scan with readValues
+        {
+            LocalBlockCompressionVarLenReader<ByteArray> reader = LocalBlockCompressionVarLenReader.getInstanceVarbin(file, getType());
+            ByteArray[] buffer = new ByteArray[COUNT];
+            int read = reader.readValues(buffer, 0, buffer.length);
+            assertEquals(buffer.length, read);
+            for (int i = 0; i < COUNT; ++i) {
+                assertEquals (new ByteArray(generateValue(i).getBytes("UTF-8")), buffer[i]);
             }
             reader.close();
         }

@@ -13,6 +13,8 @@ import edu.brown.lasvegas.lvfs.data.task.PartitionRawTextFilesTaskParameters;
 import edu.brown.lasvegas.lvfs.data.task.PartitionRawTextFilesTaskRunner;
 import edu.brown.lasvegas.lvfs.data.task.RecoverPartitionFromBuddyTaskParameters;
 import edu.brown.lasvegas.lvfs.data.task.RecoverPartitionFromBuddyTaskRunner;
+import edu.brown.lasvegas.lvfs.data.task.RepartitionTaskParameters;
+import edu.brown.lasvegas.lvfs.data.task.RepartitionTaskRunner;
 
 /**
  * Defines types of local Tasks ({@link TaskJob}).
@@ -132,6 +134,8 @@ public enum TaskType {
             return new MergePartitionSameSchemeTaskParameters();
         case DELETE_PARTITION_FILES:
             return new DeletePartitionFilesTaskParameters();
+        case REPARTITION:
+        	return new RepartitionTaskParameters();
         case BENCHMARK_TPCH_Q17:
         case BENCHMARK_TPCH_Q17_PLANB:
             return new BenchmarkTpchQ17TaskParameters();
@@ -156,6 +160,8 @@ public enum TaskType {
             return new MergePartitionSameSchemeTaskRunner();
         case DELETE_PARTITION_FILES:
             return new DeletePartitionFilesTaskRunner();
+        case REPARTITION:
+        	return new RepartitionTaskRunner();
         case BENCHMARK_TPCH_Q17:
             return new BenchmarkTpchQ17TaskRunner();
         case BENCHMARK_TPCH_Q17_PLANB:

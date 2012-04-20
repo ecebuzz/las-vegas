@@ -104,7 +104,7 @@ public abstract class LocalBlockCompressionReader<T extends Comparable<T>, AT> e
     }
     protected abstract int getCurrentBlockFooterByteSize ();
     /**
-     * Proxy reader to reader from currentBlock.
+     * Proxy reader to read from currentBlock.
      */
     protected class ProxyValueReader extends RawValueReader {
         @Override

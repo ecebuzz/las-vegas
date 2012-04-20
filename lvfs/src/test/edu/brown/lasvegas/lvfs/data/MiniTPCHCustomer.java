@@ -40,10 +40,10 @@ public final class MiniTPCHCustomer extends MiniDataSource {
             /*"1: c_name", */CompressionType.NONE,
             /*"2: c_address",*/ CompressionType.NONE,
             /*"3: c_nationkey",*/ CompressionType.NONE,
-            /*"4: c_phone",*/ CompressionType.NONE,
+            /*"4: c_phone",*/ CompressionType.SNAPPY,
             /*"5: c_acctbal",*/ CompressionType.NONE,
             /*"6: c_mktsegment",*/ CompressionType.DICTIONARY,
-            /*"7: c_comment",*/ CompressionType.NONE,
+            /*"7: c_comment",*/ CompressionType.SNAPPY,
         };
     }
     @Override
