@@ -10,8 +10,8 @@ import edu.brown.lasvegas.LVJob;
 import edu.brown.lasvegas.LVTable;
 import edu.brown.lasvegas.LVTask;
 import edu.brown.lasvegas.client.LVMetadataClient;
+import edu.brown.lasvegas.lvfs.data.job.BenchmarkTpchQ17PlanAJobController;
 import edu.brown.lasvegas.lvfs.data.job.BenchmarkTpchQ17JobController;
-import edu.brown.lasvegas.lvfs.data.job.BenchmarkTpchQ17JobControllerBase;
 import edu.brown.lasvegas.lvfs.data.job.BenchmarkTpchQ17JobParameters;
 import edu.brown.lasvegas.lvfs.data.job.BenchmarkTpchQ17PlanBJobController;
 import edu.brown.lasvegas.protocol.LVMetadataProtocol;
@@ -62,9 +62,9 @@ public class TpchQ17MultinodeBenchmark {
         params.setContainer(container);
         params.setLineitemTableId(lineitemTable.getTableId());
         params.setPartTableId(partTable.getTableId());
-        BenchmarkTpchQ17JobControllerBase controller;
+        BenchmarkTpchQ17JobController controller;
         if (fastQueryPlan) {
-        	controller = new BenchmarkTpchQ17JobController(metaRepo, 1000L, 100L, 100L);
+        	controller = new BenchmarkTpchQ17PlanAJobController(metaRepo, 1000L, 100L, 100L);
         } else {
         	controller = new BenchmarkTpchQ17PlanBJobController(metaRepo, 1000L, 100L, 100L);
         }

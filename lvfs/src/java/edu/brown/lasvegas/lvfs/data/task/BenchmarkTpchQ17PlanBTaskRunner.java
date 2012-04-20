@@ -28,7 +28,7 @@ import edu.brown.lasvegas.traits.ValueTraitsFactory;
  * This one collects repartitioned files and then runs the query.
  * @see TaskType#BENCHMARK_TPCH_Q17_PLANB
  */
-public final class BenchmarkTpchQ17PlanBTaskRunner extends BenchmarkTpchQ17PTaskRunnerBase {
+public final class BenchmarkTpchQ17PlanBTaskRunner extends BenchmarkTpchQ17TaskRunner {
 	private Map<Integer, LVColumnFile[][]> repartitionedFiles;//key=nodeId
 	private Map<Integer, LVRackNode> nodeMap;//key=nodeId
 

@@ -2,7 +2,10 @@ package edu.brown.lasvegas;
 
 import edu.brown.lasvegas.lvfs.data.task.BenchmarkTpchQ17PlanBTaskRunner;
 import edu.brown.lasvegas.lvfs.data.task.BenchmarkTpchQ17TaskParameters;
-import edu.brown.lasvegas.lvfs.data.task.BenchmarkTpchQ17TaskRunner;
+import edu.brown.lasvegas.lvfs.data.task.BenchmarkTpchQ17PlanATaskRunner;
+import edu.brown.lasvegas.lvfs.data.task.BenchmarkTpchQ18PlanATaskRunner;
+import edu.brown.lasvegas.lvfs.data.task.BenchmarkTpchQ18PlanBTaskRunner;
+import edu.brown.lasvegas.lvfs.data.task.BenchmarkTpchQ18TaskParameters;
 import edu.brown.lasvegas.lvfs.data.task.DeletePartitionFilesTaskParameters;
 import edu.brown.lasvegas.lvfs.data.task.DeletePartitionFilesTaskRunner;
 import edu.brown.lasvegas.lvfs.data.task.LoadPartitionedTextFilesTaskParameters;
@@ -106,11 +109,19 @@ public enum TaskType {
     /**
      * @see JobType#BENCHMARK_TPCH_Q17
      */
-    BENCHMARK_TPCH_Q17,
+    BENCHMARK_TPCH_Q17_PLANA,
     /**
      * @see JobType#BENCHMARK_TPCH_Q17
      */
     BENCHMARK_TPCH_Q17_PLANB,
+    /**
+     * @see JobType#BENCHMARK_TPCH_Q18
+     */
+    BENCHMARK_TPCH_Q18_PLANA,
+    /**
+     * @see JobType#BENCHMARK_TPCH_Q18
+     */
+    BENCHMARK_TPCH_Q18_PLANB,
 
     /** kind of null. */
     INVALID,
@@ -136,9 +147,12 @@ public enum TaskType {
             return new DeletePartitionFilesTaskParameters();
         case REPARTITION:
         	return new RepartitionTaskParameters();
-        case BENCHMARK_TPCH_Q17:
+        case BENCHMARK_TPCH_Q17_PLANA:
         case BENCHMARK_TPCH_Q17_PLANB:
             return new BenchmarkTpchQ17TaskParameters();
+        case BENCHMARK_TPCH_Q18_PLANA:
+        case BENCHMARK_TPCH_Q18_PLANB:
+            return new BenchmarkTpchQ18TaskParameters();
         default:
             return null;
         }
@@ -162,10 +176,14 @@ public enum TaskType {
             return new DeletePartitionFilesTaskRunner();
         case REPARTITION:
         	return new RepartitionTaskRunner();
-        case BENCHMARK_TPCH_Q17:
-            return new BenchmarkTpchQ17TaskRunner();
+        case BENCHMARK_TPCH_Q17_PLANA:
+            return new BenchmarkTpchQ17PlanATaskRunner();
         case BENCHMARK_TPCH_Q17_PLANB:
             return new BenchmarkTpchQ17PlanBTaskRunner();
+        case BENCHMARK_TPCH_Q18_PLANA:
+            return new BenchmarkTpchQ18PlanATaskRunner();
+        case BENCHMARK_TPCH_Q18_PLANB:
+            return new BenchmarkTpchQ18PlanBTaskRunner();
         default:
             return null;
         }

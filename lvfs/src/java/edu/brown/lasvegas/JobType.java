@@ -1,6 +1,5 @@
 package edu.brown.lasvegas;
 
-import edu.brown.lasvegas.lvfs.data.job.BenchmarkTpchQ17JobController;
 import edu.brown.lasvegas.lvfs.data.job.ImportFractureJobController;
 import edu.brown.lasvegas.lvfs.data.job.MergeFractureJobController;
 
@@ -28,11 +27,19 @@ public enum JobType {
     // jobs below are for benchmarks or testing.
     
     /**
-     * This job runs TPC-H's Q17, assuming a single fracture,
-     * and a co-partitioned part and lineitem table.
+     * This job runs TPC-H's Q17, assuming a single fracture.
+     * This query has two query plans, one using a co-partitioned part and lineitem table,
+     * another using non-copartitioned files.
      * @see BenchmarkTpchQ17JobController
      */
     BENCHMARK_TPCH_Q17,
+    /**
+     * This job runs TPC-H's Q18, assuming a single fracture.
+     * This query also has two plans, plan A (fast one using a co-partitioned orders and lineitem table)
+     * and plan B (slow one not using that).
+     * @see BenchmarkTpchQ18JobController
+     */
+    BENCHMARK_TPCH_Q18,
     
     /** kind of null. */
     INVALID,

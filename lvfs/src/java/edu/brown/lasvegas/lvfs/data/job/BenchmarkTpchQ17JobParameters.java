@@ -7,7 +7,7 @@ import java.io.IOException;
 import edu.brown.lasvegas.JobParameters;
 
 /**
- * Parameters for {@link BenchmarkTpchQ17JobController}.
+ * Parameters for {@link BenchmarkTpchQ17PlanAJobController}.
  */
 public final class BenchmarkTpchQ17JobParameters extends JobParameters {
     /** ID of lineitem table. */

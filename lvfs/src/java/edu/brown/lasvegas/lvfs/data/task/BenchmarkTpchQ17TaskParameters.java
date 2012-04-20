@@ -13,7 +13,7 @@ import edu.brown.lasvegas.lvfs.data.DataTaskParameters;
 /**
  * The Class BenchmarkTpchQ17TaskParameters.
  *
- * @see TaskType#BENCHMARK_TPCH_Q17
+ * @see TaskType#BENCHMARK_TPCH_Q17_PLANA
  */
 public final class BenchmarkTpchQ17TaskParameters extends DataTaskParameters {
     
