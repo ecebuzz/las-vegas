@@ -80,7 +80,7 @@ public class TpchQ17SingleNodeBenchmark {
 
     private static final String brand = "Brand#34";
     private static final String container = "MED DRUM";
-    private static final boolean fastQueryPlan = false;
+    private static final boolean fastQueryPlan = true;
     public double exec () throws Exception {
         BenchmarkTpchQ17JobParameters params = new BenchmarkTpchQ17JobParameters();
         params.setBrand(brand);

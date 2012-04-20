@@ -34,11 +34,16 @@ public class DataImportMultiNodeTpchBenchmark {
 
     private LVDatabase database;
 
-    private LVTable lineitemTable, partTable;
-    private LVReplicaGroup lineitemGroup, partGroup;
+    /**
+     * A hack for experiments. see DataImportSingleNodeTpchBenchmark.
+     */
+    private LVTable lineitemTablePart, partTable, lineitemTableOrders, ordersTable, customerTable;
+    private LVReplicaGroup lineitemGroupPart, partGroup, lineitemGroupOrders, ordersGroup, customerGroup;
 
     private final MiniDataSource lineitemSource = new MiniTPCHLineitem();
     private final MiniDataSource partSource = new MiniTPCHPart();
+    private final MiniDataSource ordersSource = new MiniTPCHOrders();
+    private final MiniDataSource customerSource = new MiniTPCHCustomer();
     
     private int[] getColumnIds (LVTable table) throws IOException {
         LVColumn[] columns = metaRepo.getAllColumnsExceptEpochColumn(table.getTableId());
@@ -64,29 +69,56 @@ public class DataImportMultiNodeTpchBenchmark {
 
         database = metaRepo.createNewDatabase(dbname);
 
-        ValueRange[] ranges = new ValueRange[partitionCount];
+        ValueRange[] partRanges = new ValueRange[partitionCount];
         for (int i = 0; i < partitionCount; ++i) {
-            ranges[i] = new ValueRange ();
-            ranges[i].setType(ColumnType.INTEGER);
+            partRanges[i] = new ValueRange ();
+            partRanges[i].setType(ColumnType.INTEGER);
             if (i == 0) {
-                ranges[i].setStartKey(null);
+                partRanges[i].setStartKey(null);
             } else {
-                ranges[i].setStartKey(200000 * i + 1);
+                partRanges[i].setStartKey(200000 * i + 1);
             }
             if (i == partitionCount - 1) {
-                ranges[i].setEndKey(null);
+                partRanges[i].setEndKey(null);
             } else {
-                ranges[i].setEndKey(200000 * (i + 1) + 1);
+                partRanges[i].setEndKey(200000 * (i + 1) + 1);
+            }
+        }
+        ValueRange[] ordersRanges = new ValueRange[partitionCount];
+        for (int i = 0; i < partitionCount; ++i) {
+        	ordersRanges[i] = new ValueRange ();
+        	ordersRanges[i].setType(ColumnType.BIGINT);
+            if (i == 0) {
+            	ordersRanges[i].setStartKey(null);
+            } else {
+            	ordersRanges[i].setStartKey(6000000L * i + 1L);
+            }
+            if (i == partitionCount - 1) {
+            	ordersRanges[i].setEndKey(null);
+            } else {
+            	ordersRanges[i].setEndKey(6000000L * (i + 1) + 1L);
             }
         }
 
+        customerTable = metaRepo.createNewTable(database.getDatabaseId(), "customer", customerSource.getColumnNames(), customerSource.getScheme());
+        customerGroup = metaRepo.createNewReplicaGroup(customerTable, metaRepo.getColumnByName(customerTable.getTableId(), "c_custkey"), new ValueRange[]{new ValueRange(ColumnType.INTEGER, null, null)});
+        metaRepo.createNewReplicaScheme(customerGroup, metaRepo.getColumnByName(customerTable.getTableId(), "c_custkey"), getColumnIds(customerTable), customerSource.getDefaultCompressions());
+
         partTable = metaRepo.createNewTable(database.getDatabaseId(), "part", partSource.getColumnNames(), partSource.getScheme());
-        partGroup = metaRepo.createNewReplicaGroup(partTable, metaRepo.getColumnByName(partTable.getTableId(), "p_partkey"), ranges);
+        partGroup = metaRepo.createNewReplicaGroup(partTable, metaRepo.getColumnByName(partTable.getTableId(), "p_partkey"), partRanges);
         metaRepo.createNewReplicaScheme(partGroup, metaRepo.getColumnByName(partTable.getTableId(), "p_partkey"), getColumnIds(partTable), partSource.getDefaultCompressions());
         
-        lineitemTable = metaRepo.createNewTable(database.getDatabaseId(), "lineitem", lineitemSource.getColumnNames(), lineitemSource.getScheme());
-        lineitemGroup = metaRepo.createNewReplicaGroup(lineitemTable, metaRepo.getColumnByName(lineitemTable.getTableId(), "l_partkey"), partGroup);
-        metaRepo.createNewReplicaScheme(lineitemGroup, metaRepo.getColumnByName(lineitemTable.getTableId(), "l_partkey"), getColumnIds(lineitemTable), lineitemSource.getDefaultCompressions());
+        ordersTable = metaRepo.createNewTable(database.getDatabaseId(), "orders", ordersSource.getColumnNames(), ordersSource.getScheme());
+        ordersGroup = metaRepo.createNewReplicaGroup(ordersTable, metaRepo.getColumnByName(ordersTable.getTableId(), "o_orderkey"), ordersRanges);
+        metaRepo.createNewReplicaScheme(ordersGroup, metaRepo.getColumnByName(ordersTable.getTableId(), "o_orderkey"), getColumnIds(ordersTable), ordersSource.getDefaultCompressions());
+
+        lineitemTablePart = metaRepo.createNewTable(database.getDatabaseId(), "lineitem_p", lineitemSource.getColumnNames(), lineitemSource.getScheme());
+        lineitemGroupPart = metaRepo.createNewReplicaGroup(lineitemTablePart, metaRepo.getColumnByName(lineitemTablePart.getTableId(), "l_partkey"), partGroup); // link to partGroup
+        metaRepo.createNewReplicaScheme(lineitemGroupPart, metaRepo.getColumnByName(lineitemTablePart.getTableId(), "l_partkey"), getColumnIds(lineitemTablePart), lineitemSource.getDefaultCompressions());
+
+        lineitemTableOrders = metaRepo.createNewTable(database.getDatabaseId(), "lineitem_o", lineitemSource.getColumnNames(), lineitemSource.getScheme());
+        lineitemGroupOrders = metaRepo.createNewReplicaGroup(lineitemTableOrders, metaRepo.getColumnByName(lineitemTableOrders.getTableId(), "l_orderkey"), ordersGroup); // link to ordersGroup
+        metaRepo.createNewReplicaScheme(lineitemGroupOrders, metaRepo.getColumnByName(lineitemTableOrders.getTableId(), "l_orderkey"), getColumnIds(lineitemTableOrders), lineitemSource.getDefaultCompressions());
     }
     private void tearDown () throws IOException {
         if (client != null) {
@@ -94,10 +126,10 @@ public class DataImportMultiNodeTpchBenchmark {
             client = null;
         }
     }
-    public void exec (String lineitemInputFileName, String partInputFileName) throws Exception {
-        LVTable[] tables = new LVTable[]{partTable, lineitemTable};
-        String[] inputFileNames = new String[]{partInputFileName, lineitemInputFileName};
-        for (int i = 0; i < 2; ++i) {
+    public void exec (String lineitemInputFileName, String partInputFileName, String customerInputFileName, String ordersInputFileName) throws Exception {
+        LVTable[] tables = new LVTable[]{partTable, customerTable, lineitemTablePart, lineitemTableOrders, ordersTable};
+        String[] inputFileNames = new String[]{partInputFileName, lineitemInputFileName, lineitemInputFileName, customerInputFileName, ordersInputFileName};
+        for (int i = 0; i < tables.length; ++i) {
             ImportFractureJobParameters params = DataImportMultiNodeBenchmark.parseInputFile(metaRepo, tables[i], inputFileNames[i]);
             ImportFractureJobController controller = new ImportFractureJobController(metaRepo, 1000L, 1000L, 100L);
             LOG.info("started the import job...");
@@ -110,9 +142,9 @@ public class DataImportMultiNodeTpchBenchmark {
     }
     public static void main (String[] args) throws Exception {
         LOG.info("running a multi node experiment..");
-        if (args.length < 4) {
-            System.err.println("usage: java " + DataImportMultiNodeTpchBenchmark.class.getName() + " <partitionCount> <metadata repository address> <name of the file that lists input files for lineitem table> <name of the file that lists input files for part table>");
-            System.err.println("ex: java " + DataImportMultiNodeTpchBenchmark.class.getName() + " 2 poseidon:28710 inputs_lineitem.txt inputs_part.txt");
+        if (args.length < 6) {
+            System.err.println("usage: java " + DataImportMultiNodeTpchBenchmark.class.getName() + " <partitionCount> <metadata repository address> <name of the file that lists input files for lineitem table> <name of the file that lists input files for part table> <name of the file that lists input files for customer table> <name of the file that lists input files for orders table>");
+            System.err.println("ex: java " + DataImportMultiNodeTpchBenchmark.class.getName() + " 2 poseidon:28710 inputs_lineitem.txt inputs_part.txt inputs_customer.txt inputs_orders.txt");
             // It should be a partitioned tbl (see TPCH's dbgen manual. eg: ./dbgen -T L -s 4 -S 1 -C 2; ./dbgen -T P -s 4 -S 1 -C 2 ).
             return;
         }
@@ -125,13 +157,15 @@ public class DataImportMultiNodeTpchBenchmark {
         LOG.info("metaRepoAddress=" + metaRepoAddress);
         String lineitemInputFileName = args[2];
         String partInputFileName = args[3];
+        String customerInputFileName = args[4];
+        String ordersInputFileName = args[5];
         
         DataImportMultiNodeTpchBenchmark program = new DataImportMultiNodeTpchBenchmark();
         program.setUp(metaRepoAddress);
         try {
             LOG.info("started: " + partitionCount + " partitions)");
             long start = System.currentTimeMillis();
-            program.exec(lineitemInputFileName, partInputFileName);
+            program.exec(lineitemInputFileName, partInputFileName, customerInputFileName, ordersInputFileName);
             long end = System.currentTimeMillis();
             LOG.info("ended: " + partitionCount + " partitions). elapsed time=" + (end - start) + "ms");
         } catch (Exception ex) {
