@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
 
 import org.apache.hadoop.conf.Configuration;
@@ -40,6 +41,8 @@ import edu.brown.lasvegas.lvfs.ValueIndex;
 import edu.brown.lasvegas.lvfs.VirtualFile;
 import edu.brown.lasvegas.lvfs.VirtualFileInputStream;
 import edu.brown.lasvegas.protocol.LVMetadataProtocol;
+import edu.brown.lasvegas.traits.ValueTraitsFactory;
+import edu.brown.lasvegas.util.ValueRange;
 
 /**
  * Base class for TPC-H Q18 implementation.
@@ -73,8 +76,9 @@ public abstract class BenchmarkTpchQ18JobController extends AbstractJobControlle
     protected LVReplicaScheme lineitemScheme, ordersScheme, customerScheme;
     protected LVFracture lineitemFracture, ordersFracture, customerFracture;
     protected LVReplica lineitemReplica, ordersReplica, customerReplica;
-    protected LVReplicaPartition lineitemPartitions[], ordersPartitions[], customerPartition;
-	private LVColumnFile c_custkeyFile, c_nameFile;
+    protected LVReplicaPartition lineitemPartitions[], ordersPartitions[], customerPartitions[];
+    private ValueRange[] customerRanges;
+    private int[] customerStartKeys;
 
 	@Override
     protected final void initDerived() throws IOException {
@@ -148,7 +152,9 @@ public abstract class BenchmarkTpchQ18JobController extends AbstractJobControlle
             LVReplicaGroup group = groups[0];
             LVReplicaScheme[] schemes = metaRepo.getAllReplicaSchemes(group.getGroupId());
             assert (schemes.length == 1);
+            customerRanges = group.getRanges();
             customerScheme = schemes[0];
+            customerStartKeys = (int[]) ValueRange.extractStartKeys(customerRanges);
         }
         
         lineitemReplica = metaRepo.getReplicaFromSchemeAndFracture(lineitemScheme.getSchemeId(), lineitemFracture.getFractureId());
@@ -160,15 +166,8 @@ public abstract class BenchmarkTpchQ18JobController extends AbstractJobControlle
         
         lineitemPartitions = metaRepo.getAllReplicaPartitionsByReplicaId(lineitemReplica.getReplicaId());
         ordersPartitions = metaRepo.getAllReplicaPartitionsByReplicaId(ordersReplica.getReplicaId());
-        LVReplicaPartition[] customerPartitions = metaRepo.getAllReplicaPartitionsByReplicaId(customerReplica.getReplicaId());
-        assert (customerPartitions.length == 1);
-        customerPartition = customerPartitions[0];
+        customerPartitions = metaRepo.getAllReplicaPartitionsByReplicaId(customerReplica.getReplicaId());
         
-		c_custkeyFile = metaRepo.getColumnFileByReplicaPartitionAndColumn(customerPartition.getPartitionId(), c_custkey.getColumnId());
-		assert (c_custkeyFile != null);
-		c_nameFile = metaRepo.getColumnFileByReplicaPartitionAndColumn(customerPartition.getPartitionId(), c_name.getColumnId());
-		assert (c_nameFile != null);
-
 		initDerivedTpchQ18 ();
         this.jobId = metaRepo.createNewJobIdOnlyReturn("Q18", JobType.BENCHMARK_TPCH_Q18, null);
     }
@@ -414,8 +413,8 @@ public abstract class BenchmarkTpchQ18JobController extends AbstractJobControlle
 		assert (queryResult.validate());
 		fillCustomerNames ();
     }
+
     /** join the result with customer to fill C_CUSTNAME. */
-    @SuppressWarnings("unchecked")
 	private void fillCustomerNames () throws IOException {
     	if (queryResult.count == 0) {
     		return;
@@ -425,67 +424,169 @@ public abstract class BenchmarkTpchQ18JobController extends AbstractJobControlle
 			Q18Result tuple = queryResult.tuples[i];
 			custkeys.add(tuple.C_CUSTKEY);
 		}
-
-		LOG.info("reading customer names for " + custkeys.size() + " customers.");
-		Map<Integer, String> custnames = new HashMap<Integer, String>();
-        LVRackNode node = metaRepo.getRackNode(customerPartition.getNodeId());
-        if (node == null) {
-            throw new IOException ("the node ID (" + customerPartition.getNodeId() + ") doesn't exist");
-        }
-		LVDataClient client = new LVDataClient(new Configuration(), node.getAddress());
-		try  {
-			ColumnFileBundle custkeyBundle = new ColumnFileBundle(c_custkeyFile, client.getChannel());
-			ColumnFileBundle nameBundle = new ColumnFileBundle(c_nameFile, client.getChannel());
-			ColumnFileReaderBundle custkeyReader = new ColumnFileReaderBundle(custkeyBundle);
-			ColumnFileReaderBundle nameReader = new ColumnFileReaderBundle(nameBundle);
-			ValueIndex<Integer> custkeyValueIndex = (ValueIndex<Integer>) custkeyReader.getValueIndex();
-			TypedReader<String, String[]> nameDataReader = (TypedReader<String, String[]>) nameReader.getDataReader();
-			nameReader.getPositionIndex(); // this loads position file for c_name
-			TypedReader<Integer, int[]> custkeyDataReader = (TypedReader<Integer, int[]>) custkeyReader.getDataReader();
-			// custkeys is a sorted map to speed this up. we should only seek forward
-			LOG.info("reading from 2 files...");
-			int[] custkeyValueBuffer = new int[1 << 8];
-			for (Integer custkey : custkeys) {
-				int custkeyInt = custkey;
-				// use value index to jump to the custkey.
-				// however, the index is sparse. we need to sequentially search from this position
-				int tuplePos = custkeyValueIndex.searchValues(custkey);
-				custkeyDataReader.seekToTupleAbsolute(tuplePos);
-				
-				boolean found = false;
-				while (!found) {
-					int read = custkeyDataReader.readValues(custkeyValueBuffer, 0, custkeyValueBuffer.length);
-					if (read <= 0) {
-						throw new IOException("no more tuples in customer table. couldn't find customer key: " + custkeyInt);
-					}
-					for (int i = 0; i < read; ++i) {
-						if (custkeyValueBuffer[i] == custkeyInt) {
-							found = true;
-							break;
-						}
-						if (custkeyValueBuffer[i] > custkeyInt) {
-							throw new IOException("this customer key wasn't found in customer table. foreign key violation: " + custkeyInt);
-						}
-						++tuplePos;
-					}
-				}
-				
-				nameDataReader.seekToTupleAbsolute(tuplePos);
-				custnames.put(custkey, nameDataReader.readValue());
+		// group them by customer partition
+		SortedMap<Integer, ArrayList<Integer>> custRanges = new TreeMap<Integer, ArrayList<Integer>>();
+		for (Integer custkey : custkeys) {
+			int custRange = ValueRange.findPartition(ValueTraitsFactory.INTEGER_TRAITS, custkey, customerStartKeys);
+			assert (custRange >= 0 && custRange < customerPartitions.length);
+			ArrayList<Integer> keys = custRanges.get(custRange);
+			if (keys == null) {
+				keys = new ArrayList<Integer>();
+				custRanges.put(custRange, keys);
 			}
-			custkeyReader.close();
-			nameReader.close();
-		} finally {
-			client.release();
+			keys.add(custkey);
 		}
-		LOG.info("read customer names.");
+		
+		// retrieve these customer names with multi threads.
+		int threadCount;
+		if (custRanges.size() < 2) {
+			threadCount = 1;
+		} else if (custRanges.size() < 10) {
+			threadCount = 2;
+		} else if (custRanges.size() < 50) {
+			threadCount = 3;
+		} else {
+			threadCount = 4;
+		}
+		LOG.info("reading customer names for " + custkeys.size() + " customers from " + custRanges.size() + " partitions with " + threadCount + " threads.");
+		ArrayList<CustomerNameRetrievalThread> threads = new ArrayList<CustomerNameRetrievalThread>();
+		for (int i = 0; i < threadCount; ++i) {
+			threads.add(new CustomerNameRetrievalThread());
+		}
+		allCustnames = new HashMap<Integer, String>();
+	    remainingCustRetrievals = new ArrayList<CustRetrieval>();
+		for (Integer custRange : custRanges.keySet()) {
+			ArrayList<Integer> keysInThisRange = custRanges.get(custRange);
+			assert (keysInThisRange.size() > 0);
+			LVReplicaPartition customerPartition = customerPartitions[custRange];
+			remainingCustRetrievals.add(new CustRetrieval(customerPartition, keysInThisRange));
+		}
+		// okay, ready. start!
+		for (CustomerNameRetrievalThread thread : threads) {
+			thread.start();
+		}
+		LOG.info("waiting for customer retrieval threads...");
+		for (CustomerNameRetrievalThread thread : threads) {
+			try {
+				thread.join();
+			} catch (InterruptedException ex) {
+				LOG.info("waits for customer retrieval threads interrupted.", ex);
+			}
+		}
+		LOG.info("all customer retrieval threads finished");
 		for (int i = 0; i < queryResult.count; ++i) {
 			Q18Result tuple = queryResult.tuples[i];
-			tuple.C_NAME = custnames.get(tuple.C_CUSTKEY);
+			tuple.C_NAME = allCustnames.get(tuple.C_CUSTKEY);
 			assert (tuple.C_NAME != null);
 		}
     }
     
+    private class CustomerNameRetrievalThread extends Thread {
+		Map<Integer, String> subCustnames;
+    	@Override
+    	public void run() {
+    		try {
+	    		LOG.info("customer retrieval thread " + this + " started");
+	    		subCustnames = new HashMap<Integer, String>();
+	    		while (true) {
+	    			CustRetrieval task = getCustRetrievalTask();
+	    			if (task == null) {
+	    				break;
+	    			}
+	    			runTask(task);
+	    		}
+	    		addCustnames (subCustnames);
+	    		LOG.info("customer retrieval thread " + this + " ended. read " + subCustnames.size() + " customers");
+    		} catch (Exception ex) {
+    			LOG.error("error in customer retrieval thread " + this + "!", ex);
+    		}
+    	}
+    	@SuppressWarnings("unchecked")
+		private void runTask(CustRetrieval task) throws IOException {
+			ArrayList<Integer> keysInThisRange = task.customerKeys;
+			assert (keysInThisRange.size() > 0);
+			LVReplicaPartition customerPartition = task.customerPartition;
+	    	LVColumnFile c_custkeyFile = metaRepo.getColumnFileByReplicaPartitionAndColumn(customerPartition.getPartitionId(), c_custkey.getColumnId());
+			assert (c_custkeyFile != null);
+			LVColumnFile c_nameFile = metaRepo.getColumnFileByReplicaPartitionAndColumn(customerPartition.getPartitionId(), c_name.getColumnId());
+			assert (c_nameFile != null);
+	
+	        LVRackNode node = metaRepo.getRackNode(customerPartition.getNodeId());
+	        if (node == null) {
+	            throw new IOException ("the node ID (" + customerPartition.getNodeId() + ") doesn't exist");
+	        }
+			LVDataClient client = new LVDataClient(new Configuration(), node.getAddress());
+			try  {
+				ColumnFileBundle custkeyBundle = new ColumnFileBundle(c_custkeyFile, client.getChannel());
+				ColumnFileBundle nameBundle = new ColumnFileBundle(c_nameFile, client.getChannel());
+				ColumnFileReaderBundle custkeyReader = new ColumnFileReaderBundle(custkeyBundle);
+				ColumnFileReaderBundle nameReader = new ColumnFileReaderBundle(nameBundle);
+				ValueIndex<Integer> custkeyValueIndex = (ValueIndex<Integer>) custkeyReader.getValueIndex();
+				TypedReader<String, String[]> nameDataReader = (TypedReader<String, String[]>) nameReader.getDataReader();
+				nameReader.getPositionIndex(); // this loads position file for c_name
+				TypedReader<Integer, int[]> custkeyDataReader = (TypedReader<Integer, int[]>) custkeyReader.getDataReader();
+				// custkeys is a sorted map to speed this up. we should only seek forward
+				int[] custkeyValueBuffer = new int[1 << 8];
+				for (Integer custkey : keysInThisRange) {
+					int custkeyInt = custkey;
+					// use value index to jump to the custkey.
+					// however, the index is sparse. we need to sequentially search from this position
+					int tuplePos = custkeyValueIndex.searchValues(custkey);
+					custkeyDataReader.seekToTupleAbsolute(tuplePos);
+					
+					boolean found = false;
+					while (!found) {
+						int read = custkeyDataReader.readValues(custkeyValueBuffer, 0, custkeyValueBuffer.length);
+						if (read <= 0) {
+							throw new IOException("no more tuples in customer table. couldn't find customer key: " + custkeyInt);
+						}
+						for (int i = 0; i < read; ++i) {
+							if (custkeyValueBuffer[i] == custkeyInt) {
+								found = true;
+								break;
+							}
+							if (custkeyValueBuffer[i] > custkeyInt) {
+								throw new IOException("this customer key wasn't found in customer table. foreign key violation: " + custkeyInt);
+							}
+							++tuplePos;
+						}
+					}
+					
+					nameDataReader.seekToTupleAbsolute(tuplePos);
+					subCustnames.put(custkey, nameDataReader.readValue());
+				}
+				custkeyReader.close();
+				nameReader.close();
+			} finally {
+				client.release();
+			}
+    	}
+    }
+    private ArrayList<CustRetrieval> remainingCustRetrievals;
+    private Map<Integer, String> allCustnames;
+    private static class CustRetrieval {
+    	CustRetrieval (LVReplicaPartition customerPartition, ArrayList<Integer> customerKeys) {
+    		this.customerPartition = customerPartition;
+    		this.customerKeys = customerKeys;
+    	}
+    	LVReplicaPartition customerPartition;
+    	ArrayList<Integer> customerKeys;
+    }
+    private CustRetrieval getCustRetrievalTask () {
+    	synchronized (remainingCustRetrievals) {
+    		if (remainingCustRetrievals.isEmpty()) {
+    			return null;
+    		}
+    		return remainingCustRetrievals.remove(remainingCustRetrievals.size() - 1);
+    	}
+    }
+    private void addCustnames (Map<Integer, String> subCustnames) {
+    	synchronized (allCustnames) {
+    		allCustnames.putAll(subCustnames);
+		}
+    }
+    
+
     protected abstract void initDerivedTpchQ18() throws IOException;
 
     // TODO this function should be somewhere in shared place

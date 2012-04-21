@@ -13,6 +13,7 @@ import edu.brown.lasvegas.LVTask;
 import edu.brown.lasvegas.ReplicaPartitionStatus;
 import edu.brown.lasvegas.TaskStatus;
 import edu.brown.lasvegas.TaskType;
+import edu.brown.lasvegas.lvfs.data.RepartitionSummary;
 import edu.brown.lasvegas.lvfs.data.task.BenchmarkTpchQ18TaskParameters;
 import edu.brown.lasvegas.lvfs.data.task.RepartitionTaskParameters;
 import edu.brown.lasvegas.protocol.LVMetadataProtocol;
@@ -92,6 +93,8 @@ public class BenchmarkTpchQ18PlanBJobController extends BenchmarkTpchQ18JobContr
         // 3. create the final ranking and join the top 100 with customer.
         collectResultRanking(taskMap);
         LOG.info("all tasks including repartitioning seem done!");
+
+        RepartitionSummary.deleteRepartitionedFiles(metaRepo, summaryFileMap);
     }
     
     private SortedMap<Integer, String> repartitionLineitem (double baseProgress, double completedProgress) throws IOException {

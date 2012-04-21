@@ -69,6 +69,21 @@ public class DataImportMultiNodeTpchBenchmark {
 
         database = metaRepo.createNewDatabase(dbname);
 
+        ValueRange[] customerRanges = new ValueRange[partitionCount];
+        for (int i = 0; i < partitionCount; ++i) {
+        	customerRanges[i] = new ValueRange ();
+        	customerRanges[i].setType(ColumnType.INTEGER);
+            if (i == 0) {
+            	customerRanges[i].setStartKey(null);
+            } else {
+            	customerRanges[i].setStartKey(150000 * i + 1);
+            }
+            if (i == partitionCount - 1) {
+            	customerRanges[i].setEndKey(null);
+            } else {
+            	customerRanges[i].setEndKey(150000 * (i + 1) + 1);
+            }
+        }
         ValueRange[] partRanges = new ValueRange[partitionCount];
         for (int i = 0; i < partitionCount; ++i) {
             partRanges[i] = new ValueRange ();
@@ -101,7 +116,7 @@ public class DataImportMultiNodeTpchBenchmark {
         }
 
         customerTable = metaRepo.createNewTable(database.getDatabaseId(), "customer", customerSource.getColumnNames(), customerSource.getScheme());
-        customerGroup = metaRepo.createNewReplicaGroup(customerTable, metaRepo.getColumnByName(customerTable.getTableId(), "c_custkey"), new ValueRange[]{new ValueRange(ColumnType.INTEGER, null, null)});
+        customerGroup = metaRepo.createNewReplicaGroup(customerTable, metaRepo.getColumnByName(customerTable.getTableId(), "c_custkey"), customerRanges);
         metaRepo.createNewReplicaScheme(customerGroup, metaRepo.getColumnByName(customerTable.getTableId(), "c_custkey"), getColumnIds(customerTable), customerSource.getDefaultCompressions());
 
         partTable = metaRepo.createNewTable(database.getDatabaseId(), "part", partSource.getColumnNames(), partSource.getScheme());

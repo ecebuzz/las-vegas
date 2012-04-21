@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.SortedMap;
 
+import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.Logger;
 
 import edu.brown.lasvegas.ColumnType;
@@ -23,6 +24,7 @@ import edu.brown.lasvegas.lvfs.VirtualFile;
 import edu.brown.lasvegas.lvfs.VirtualFileInputStream;
 import edu.brown.lasvegas.lvfs.VirtualFileOutputStream;
 import edu.brown.lasvegas.lvfs.local.LocalVirtualFile;
+import edu.brown.lasvegas.protocol.LVMetadataProtocol;
 
 /**
  * Some static protocol about the summary files for {@link Repartitioner}.
@@ -113,6 +115,35 @@ public final class RepartitionSummary {
     		}
     	}
     	return results;
+	}
+
+	/**
+	 * Delete all repartitioned files and summary file.
+	 * This method assumes that the repartitioned files are under
+	 * the same folder as the summary file.
+	 */
+	public static void deleteRepartitionedFiles (LVMetadataProtocol metaRepo,
+			SortedMap<Integer, String> summaryFileMap) throws IOException {
+    	for (Integer nodeId : summaryFileMap.keySet()) {
+    		LVDataClient client = null;
+    		try {
+        		String summaryFilePath = summaryFileMap.get(nodeId);
+        		
+                LVRackNode node = metaRepo.getRackNode(nodeId);
+                if (node == null) {
+                    throw new IOException ("the node ID (" + nodeId + ") doesn't exist");
+                }
+                client = new LVDataClient(new Configuration(), node.getAddress());
+                VirtualFile summaryFile = new DataNodeFile(client.getChannel(), summaryFilePath);
+                VirtualFile folder = summaryFile.getParentFile();
+        		LOG.info("deleting repartitioned files in Node-" + nodeId + " under " + folder.getAbsolutePath());
+        		folder.delete(true);
+    		} finally {
+    			if (client != null) {
+    				client.release();
+    			}
+    		}
+    	}
 	}
 
 	/**

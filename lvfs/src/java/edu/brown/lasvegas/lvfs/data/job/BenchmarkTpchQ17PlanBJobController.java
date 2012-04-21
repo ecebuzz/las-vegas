@@ -13,6 +13,7 @@ import edu.brown.lasvegas.LVTask;
 import edu.brown.lasvegas.ReplicaPartitionStatus;
 import edu.brown.lasvegas.TaskStatus;
 import edu.brown.lasvegas.TaskType;
+import edu.brown.lasvegas.lvfs.data.RepartitionSummary;
 import edu.brown.lasvegas.lvfs.data.task.BenchmarkTpchQ17TaskParameters;
 import edu.brown.lasvegas.lvfs.data.task.RepartitionTaskParameters;
 import edu.brown.lasvegas.protocol.LVMetadataProtocol;
@@ -92,6 +93,8 @@ public class BenchmarkTpchQ17PlanBJobController extends BenchmarkTpchQ17JobContr
         // and then run Q17.
         queryResult = collectAndRunQuery (summaryFileMap, 0.5d, 1.0d);
         LOG.info("all tasks including repartitioning seem done! query result=" + queryResult);
+        
+        RepartitionSummary.deleteRepartitionedFiles(metaRepo, summaryFileMap);
     }
     
     private SortedMap<Integer, String> repartitionLineitem (double baseProgress, double completedProgress) throws IOException {
