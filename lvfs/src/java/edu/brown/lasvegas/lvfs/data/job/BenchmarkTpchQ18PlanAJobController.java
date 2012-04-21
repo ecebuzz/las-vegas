@@ -90,22 +90,8 @@ public class BenchmarkTpchQ18PlanAJobController extends BenchmarkTpchQ18JobContr
             taskMap.put(taskId, task);
         }
         LOG.info("waiting for task completion...");
-        joinTasks(taskMap, 0.0d, 1.0d);
-        
-        LOG.info("all tasks seem done!");
-        /*
-        queryResult = 0;
-        for (LVTask task : metaRepo.getAllTasksByJob(jobId)) {
-            // a hack. see BenchmarkTpchQ17TaskRunner. this property is used to store the subtotal from the node. 
-            String[] results = task.getOutputFilePaths();
-            if (results.length != 1 && task.getStatus() == TaskStatus.DONE) {
-                LOG.error("This task should be successfully done, but didn't return the result:" + task);
-                continue;
-            }
-            queryResult += Double.parseDouble(results[0]);
-        }
-        LOG.info("query result=" + queryResult);
-        */
-        //TODO
+        joinTasks(taskMap, 0.0d, 0.9d);
+
+        collectResultRanking(taskMap);
 	}
 }

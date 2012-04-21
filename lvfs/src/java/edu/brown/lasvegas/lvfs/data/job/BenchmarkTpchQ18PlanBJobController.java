@@ -87,10 +87,10 @@ public class BenchmarkTpchQ18PlanBJobController extends BenchmarkTpchQ18JobContr
         
         // 2. at each node for each part partition, collect the repartitioned lineitem files
         // and then run Q18.
-        collectAndRunQuery (summaryFileMap, 0.45d, 0.9d);
+        SortedMap<Integer, LVTask> taskMap = collectAndRunQuery (summaryFileMap, 0.45d, 0.9d);
         
         // 3. create the final ranking and join the top 100 with customer.
-        // TODO
+        collectResultRanking(taskMap);
         LOG.info("all tasks including repartitioning seem done!");
     }
     
@@ -127,7 +127,7 @@ public class BenchmarkTpchQ18PlanBJobController extends BenchmarkTpchQ18JobContr
         return summaryFileMap;
     }
     
-    private double collectAndRunQuery (SortedMap<Integer, String> summaryFileMap, double baseProgress, double completedProgress) throws IOException {
+    private SortedMap<Integer, LVTask> collectAndRunQuery (SortedMap<Integer, String> summaryFileMap, double baseProgress, double completedProgress) throws IOException {
         SortedMap<Integer, LVTask> taskMap = new TreeMap<Integer, LVTask>();
         for (Integer nodeId : ordersNodeMap.keySet()) {
             ArrayList<Integer> ordersPartitionIds = ordersNodeMap.get(nodeId);
@@ -147,18 +147,6 @@ public class BenchmarkTpchQ18PlanBJobController extends BenchmarkTpchQ18JobContr
             taskMap.put(taskId, task);
         }
         joinTasks(taskMap, baseProgress, completedProgress);
-        /*
-        double result = 0;
-        for (LVTask task : taskMap.values()) {
-            String[] results = task.getOutputFilePaths();
-            if (results.length != 1 && task.getStatus() == TaskStatus.DONE) {
-                LOG.error("This task should be successfully done, but didn't return the result:" + task);
-                continue;
-            }
-            result += Double.parseDouble(results[0]);
-        }
-    	return result;*/
-        // TODO
-        return 0;
+        return taskMap;
     }
 }

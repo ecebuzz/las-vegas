@@ -4,12 +4,9 @@ import java.io.IOException;
 
 import edu.brown.lasvegas.LVReplicaPartition;
 import edu.brown.lasvegas.TaskType;
-import edu.brown.lasvegas.lvfs.ColumnFileReaderBundle;
-import edu.brown.lasvegas.lvfs.OrderedDictionary;
-import edu.brown.lasvegas.lvfs.TypedReader;
 
 /**
- * @see TaskType#BENCHMARK_TPCH_Q18
+ * @see TaskType#BENCHMARK_TPCH_Q18_PLANA
  */
 public final class BenchmarkTpchQ18PlanATaskRunner extends BenchmarkTpchQ18TaskRunner {
     private LVReplicaPartition lineitemPartitions[];
@@ -22,11 +19,12 @@ public final class BenchmarkTpchQ18PlanATaskRunner extends BenchmarkTpchQ18TaskR
         }
     }
 
-    @SuppressWarnings("unchecked")
-    protected double processPartition (int partition) throws IOException {
+    protected void processPartition (int partition) throws IOException {
     	LVReplicaPartition lineitemPartition = lineitemPartitions[partition];
+    	long[] lordkeys = (long[]) readAtOnce(lineitemPartition, l_orderkey);
+    	float[] quantities = (float[]) readAtOnce(lineitemPartition, l_quantity);
+
     	LVReplicaPartition ordersPartition = ordersPartitions[partition];
-    	//TODO
-    	return 0;
+    	processPartitionCore(ordersPartition, lordkeys, quantities);
     }
 }
