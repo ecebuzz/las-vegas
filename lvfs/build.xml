@@ -170,8 +170,8 @@
 		</java>
 	</target>
 
-	<target name="tpch-bench-q17" depends="compile"
-		description="Run TPCH's Q17. Specify the address of metadata repository, brand name, and container. : ant -Daddress=poseidon.smn.cs.brown.edu:28710 -Dbrand=Brand#34 -Dcontainer='MED DRUM' tpch-bench-q17">
+	<target name="tpch-bench-q17-plana" depends="compile"
+		description="Run TPCH's Q17. Specify the address of metadata repository, brand name, and container. : ant -Daddress=poseidon.smn.cs.brown.edu:28710 -Dbrand=Brand#34 -Dcontainer='MED DRUM' tpch-bench-q17-plana">
 		<java fork="true" classname="edu.brown.lasvegas.lvfs.data.TpchQ17MultinodeBenchmark">
 			<jvmarg value="-Xmx256m"/>
 			<jvmarg value="-server"/>
@@ -197,6 +197,32 @@
         </java>
     </target>
 
+    <target name="tpch-bench-q18-plana" depends="compile"
+        description="Run TPCH's Q18. Specify the address of metadata repository, and quantity threshold(312 to 315). : ant -Daddress=poseidon.smn.cs.brown.edu:28710 -Dquantity=312 tpch-bench-q18-plana">
+        <java fork="true" classname="edu.brown.lasvegas.lvfs.data.TpchQ18MultinodeBenchmark">
+            <jvmarg value="-Xmx256m"/>
+            <jvmarg value="-server"/>
+            <jvmarg value="-da"/>
+            <arg value="${address}" />
+            <arg value="${quantity}" />
+            <arg value="true" />
+            <classpath refid="lvfs.classpath"/>
+        </java>
+    </target>
+
+    <target name="tpch-bench-q18-planb" depends="compile"
+        description="Run TPCH's Q18 with Plan B (slower query plan using non-copartitioned file). Specify the address of metadata repository, and quantity threshold(312 to 315). : ant -Daddress=poseidon.smn.cs.brown.edu:28710 -Dquantity=312 tpch-bench-q18-planb">
+        <java fork="true" classname="edu.brown.lasvegas.lvfs.data.TpchQ18MultinodeBenchmark">
+            <jvmarg value="-Xmx256m"/>
+            <jvmarg value="-server"/>
+            <jvmarg value="-da"/>
+            <arg value="${address}" />
+            <arg value="${quantity}" />
+            <arg value="false" />
+            <classpath refid="lvfs.classpath"/>
+        </java>
+    </target>
+	
 	<target name="hdfs-multi-import" depends="compile"
 		description="A utility program to upload a file to HDFS from partitioned files. Specify the address of metadata repository, input file that lists files to import(same format as import-bench-tpch), HDFS path to be created, and HDFS replication factor.: ant -Daddress=poseidon.smn.cs.brown.edu:28710 -Dinputfile=inputs_lineitem.txt -Dhdfspath=hdfs://poseidon:9000/tpch/lineitem.tbl -Dreplicationfactor=3 hdfs-multi-import">
 		<java fork="true" classname="edu.brown.lasvegas.lvfs.data.HdfsMultiFileImporter">

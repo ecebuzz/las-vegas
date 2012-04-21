@@ -40,6 +40,7 @@ import edu.brown.lasvegas.lvfs.TypedReader;
 import edu.brown.lasvegas.lvfs.ValueIndex;
 import edu.brown.lasvegas.lvfs.VirtualFile;
 import edu.brown.lasvegas.lvfs.VirtualFileInputStream;
+import edu.brown.lasvegas.lvfs.data.task.BenchmarkTpchQ18PlanATaskRunner;
 import edu.brown.lasvegas.protocol.LVMetadataProtocol;
 import edu.brown.lasvegas.traits.ValueTraitsFactory;
 import edu.brown.lasvegas.util.ValueRange;
@@ -371,21 +372,29 @@ public abstract class BenchmarkTpchQ18JobController extends AbstractJobControlle
     public final Q18ResultRanking getQueryResult () {
         return queryResult;
     }
-    
     /**
-     * Read the result files from each node and calculate the final ranking from them.
-     * Also, fill
-     * @param completedTasks tasks that produced sub-ranking
-     * @throws Exception
+     * use this to wait for {@link BenchmarkTpchQ18PlanATaskRunner} or {@link BenchmarkTpchQ18PlanBTaskRunner}.
+     * We use a callback interface to merge sub-result _as soon as each task finishes_.
+     * If we were to wait till all tasks are done and then merge all sub-results, we will most likely waste the idle CPU in the controller node.
      */
-    protected final void collectResultRanking (SortedMap<Integer, LVTask> completedTasks) throws IOException {
+    protected final void joinQ18Tasks (SortedMap<Integer, LVTask> tasks, double baseProgress, double completedProgress) throws IOException {
     	this.queryResult = new Q18ResultRanking();
-    	for (LVTask task : completedTasks.values()) {
+    	joinTasks(tasks, baseProgress, completedProgress, new ResultRankingMergeCallback());
+    }
+    /**
+     * Called when the {@link BenchmarkTpchQ18PlanATaskRunner} or {@link BenchmarkTpchQ18PlanBTaskRunner}
+     * returns the result. Reads the ranking file from.
+     */
+    private class ResultRankingMergeCallback implements JoinTasksCallback {
+    	@Override
+    	public void onTaskError(LVTask task) throws IOException {}
+    	@Override
+    	public void onTaskFinish(LVTask task) throws IOException {
     		int nodeId = task.getNodeId();
             String[] results = task.getOutputFilePaths();
             if (results.length != 1 && task.getStatus() == TaskStatus.DONE) {
                 LOG.error("This task should be successfully done, but didn't return the result:" + task);
-                continue;
+                return;
             }
             String resultFile = results[0];
             
@@ -408,14 +417,15 @@ public abstract class BenchmarkTpchQ18JobController extends AbstractJobControlle
     		} finally {
 				client.release();
     		}
+    		assert (queryResult.validate());
+    		LOG.info("merged one ranking result");
     	}
+    }
+    
+    /** join the result with customer to fill C_CUSTNAME. */
+    protected final void fillCustomerNames () throws IOException {
 		LOG.info("merged all sub-rankings. total ranking count=" + queryResult.getCount());
 		assert (queryResult.validate());
-		fillCustomerNames ();
-    }
-
-    /** join the result with customer to fill C_CUSTNAME. */
-	private void fillCustomerNames () throws IOException {
     	if (queryResult.count == 0) {
     		return;
     	}

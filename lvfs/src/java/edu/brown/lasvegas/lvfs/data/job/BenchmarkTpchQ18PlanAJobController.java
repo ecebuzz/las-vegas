@@ -90,8 +90,8 @@ public class BenchmarkTpchQ18PlanAJobController extends BenchmarkTpchQ18JobContr
             taskMap.put(taskId, task);
         }
         LOG.info("waiting for task completion...");
-        joinTasks(taskMap, 0.0d, 0.9d);
+        joinQ18Tasks(taskMap, 0.0d, 0.9d); // this merges the sub-ranking for each finished task
 
-        collectResultRanking(taskMap);
+        fillCustomerNames();
 	}
 }

@@ -148,11 +148,23 @@ public abstract class AbstractJobController<Param extends JobParameters>
 
     private final static long CANCEL_REQUEST_GIVEUP_AFTER = 20000L;
     
+    /** callback interface for each task finish and error while #joinTasks(). */
+    public static interface JoinTasksCallback {
+    	void onTaskFinish (LVTask task) throws IOException;
+    	void onTaskError (LVTask task) throws IOException;
+    }
+    
     /**
      * wait until all tasks are completed.
      * if any task threw an error, we stop the entire job (as this is a raw local drive, there is no back-up node to recover from a crash)
      */
     protected final void joinTasks (SortedMap<Integer, LVTask> taskMap, double baseProgress, double completedProgress) throws IOException {
+    	joinTasks(taskMap, baseProgress, completedProgress, null);
+    }
+    /**
+     * overload to receive callback interface for each task finish or error. 
+     */
+    protected final void joinTasks (SortedMap<Integer, LVTask> taskMap, double baseProgress, double completedProgress, JoinTasksCallback callback) throws IOException {
         int finishedCount = 0;
         boolean cancelRequested = false;
         long cancelRequestedAt = 0;
@@ -183,11 +195,17 @@ public abstract class AbstractJobController<Param extends JobParameters>
                 taskMap.put(updated.getTaskId(), updated);
                 if (TaskStatus.isFinished(updated.getStatus())) {
                     ++finishedCount;
+                    if (callback != null) {
+                    	callback.onTaskFinish(updated);
+                    }
                     double jobProgress = baseProgress + (completedProgress - baseProgress) * finishedCount / taskMap.size();
                     metaRepo.updateJobNoReturn(jobId, null, new DoubleWritable(jobProgress), null);
                 }
                 if (updated.getStatus() == TaskStatus.ERROR) {
                     LOG.error("A task reported an error! : " + updated);
+                    if (callback != null) {
+                    	callback.onTaskError(updated);
+                    }
                     errorEncountered = true;
                     errorMessages = updated.getErrorMessages();
                     break;

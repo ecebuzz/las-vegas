@@ -17,9 +17,11 @@ Suppose you have 60 nodes, and generate 17GB each (=30*17=1020GB),
 In 4th node (for example), you should run
   ./dbgen -T L -s 1020 -S 4 -C 60
   ./dbgen -T P -s 1020 -S 4 -C 60
-(Notice L and P are capital.)
+  ./dbgen -T c -s 1020 -S 4 -C 60
+  ./dbgen -T O -s 1020 -S 4 -C 60
+(Notice L/P/O are capital.)
 Run "./dbgen -h" for more details.
-The result is lineitem.tbl.xxx and part.tbl.xxx
+The result is lineitem.tbl.xxx, part.tbl.xxx, orders.tbl.xxx, and customer.tbl.xxx.
 
 4. Prepare a config xml.
 Configure an xml file. Examples are in src/test/lvfs_conf_xxx.xml.
@@ -58,11 +60,22 @@ Each line should be:
 See lvfs/inputs.txt as an example.
 
 8. Load the data.
-  ant -Dpartitions=1020 -Daddress=poseidon.smn.cs.brown.edu:28710 -Dinputfile_lineitem=inputs_lineitem.txt -Dinputfile_part=inputs_part.txt import-bench-tpch
+  ant -Dpartitions=1020 -Daddress=poseidon.smn.cs.brown.edu:28710 -Dinputfile_lineitem=inputs_lineitem.txt -Dinputfile_part=inputs_part.txt -Dinputfile_customer=inputs_customer.txt -Dinputfile_orders=inputs_orders.txt import-bench-tpch
 
 
-9. Run the query Q17.
-  ant -Daddress=poseidon.smn.cs.brown.edu:28710 -Dbrand=Brand#34 -Dcontainer='MED DRUM' tpch-bench-q17
+9. Run the queries Q17/Q18.
+NOTE: Between each run, clear the file system cache for fair benchmark.
+  I know you don't have sudo permission in the departmental machines, so
+  read a BIG file, bigger than the RAM. lineitem.tbl.xxx in each node should be appropriate. 
+  ex) dd if=/your/big/file.tbl of=/dev/null
+
+Faster query plans (Plan A):
+  ant -Daddress=poseidon.smn.cs.brown.edu:28710 -Dbrand=Brand#34 -Dcontainer='MED DRUM' tpch-bench-q17-plana
+  ant -Daddress=poseidon.smn.cs.brown.edu:28710 -Dquantity=312 tpch-bench-q18-plana
+Slower query plans (Plan B):
+  ant -Daddress=poseidon.smn.cs.brown.edu:28710 -Dbrand=Brand#34 -Dcontainer='MED DRUM' tpch-bench-q17-planb
+  ant -Daddress=poseidon.smn.cs.brown.edu:28710 -Dquantity=312 tpch-bench-q18-planb
+
 
 When it's successfully done, please send me lvfs.log in the node.
 

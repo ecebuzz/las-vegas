@@ -87,11 +87,11 @@ public class BenchmarkTpchQ18PlanBJobController extends BenchmarkTpchQ18JobContr
         SortedMap<Integer, String> summaryFileMap = repartitionLineitem(0.0d, 0.45d);
         
         // 2. at each node for each part partition, collect the repartitioned lineitem files
-        // and then run Q18.
-        SortedMap<Integer, LVTask> taskMap = collectAndRunQuery (summaryFileMap, 0.45d, 0.9d);
+        // and then run Q18. This merges each sub-ranking to create the final ranking.
+        collectAndRunQuery (summaryFileMap, 0.45d, 0.9d);
         
-        // 3. create the final ranking and join the top 100 with customer.
-        collectResultRanking(taskMap);
+        // 3. join the top 100 with customer.
+        fillCustomerNames();
         LOG.info("all tasks including repartitioning seem done!");
 
         RepartitionSummary.deleteRepartitionedFiles(metaRepo, summaryFileMap);
@@ -130,7 +130,7 @@ public class BenchmarkTpchQ18PlanBJobController extends BenchmarkTpchQ18JobContr
         return summaryFileMap;
     }
     
-    private SortedMap<Integer, LVTask> collectAndRunQuery (SortedMap<Integer, String> summaryFileMap, double baseProgress, double completedProgress) throws IOException {
+    private void collectAndRunQuery (SortedMap<Integer, String> summaryFileMap, double baseProgress, double completedProgress) throws IOException {
         SortedMap<Integer, LVTask> taskMap = new TreeMap<Integer, LVTask>();
         for (Integer nodeId : ordersNodeMap.keySet()) {
             ArrayList<Integer> ordersPartitionIds = ordersNodeMap.get(nodeId);
@@ -149,7 +149,6 @@ public class BenchmarkTpchQ18PlanBJobController extends BenchmarkTpchQ18JobContr
             assert (!taskMap.containsKey(taskId));
             taskMap.put(taskId, task);
         }
-        joinTasks(taskMap, baseProgress, completedProgress);
-        return taskMap;
+        joinQ18Tasks(taskMap, baseProgress, completedProgress); // this merges the sub-ranking for each finished task
     }
 }
