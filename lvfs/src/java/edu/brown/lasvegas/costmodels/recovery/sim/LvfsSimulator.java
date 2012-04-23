@@ -296,7 +296,7 @@ public class LvfsSimulator extends Simulator {
 			for (int fracture = 0; fracture < policy.fracturesPerTable; ++fracture) {
 				for (int group = 0; group < policy.replicaSchemes.length; ++group) {
 					// listup nodes assigned to this group
-					int[] assignedRacks = new int[config.nodesPerRack];
+					int[] assignedRacks = new int[config.racks];
 					int[] assignedNodes = new int[config.nodesPerRack * policy.racksPerGroup];
 					for (int i = 0; i < policy.racksPerGroup; ++i) {
 						int firstNodeId = config.firstNodeIdFromRackId(currentRack);
