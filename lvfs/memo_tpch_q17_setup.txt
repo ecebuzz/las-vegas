@@ -68,6 +68,8 @@ NOTE: Between each run, clear the file system cache for fair benchmark.
   I know you don't have sudo permission in the departmental machines, so
   read a BIG file, bigger than the RAM. lineitem.tbl.xxx in each node should be appropriate. 
   ex) dd if=/your/big/file.tbl of=/dev/null
+NOTE2: I've added a command to do it- from the central node. Run 'cache-flush' like this:
+  ant -Daddress=poseidon.smn.cs.brown.edu:28710 -Dinputfile=inputs_lineitem.txt cache-flush
 
 Faster query plans (Plan A):
   ant -Daddress=poseidon.smn.cs.brown.edu:28710 -Dbrand=Brand#34 -Dcontainer='MED DRUM' tpch-bench-q17-plana

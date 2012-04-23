@@ -41,6 +41,12 @@ public enum JobType {
      */
     BENCHMARK_TPCH_Q18,
     
+    /**
+     * Flush the OS's disk cache at each data node. Used while benchmarks.
+     * This might internally use /proc/sys/vm/drop_caches (which requires root permission) or just read large files.
+     */
+    DISK_CACHE_FLUSH,
+    
     /** kind of null. */
     INVALID,
 }

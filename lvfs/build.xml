@@ -237,4 +237,13 @@
 		</java>
 	</target>
 	
+
+    <target name="cache-flush" depends="compile"
+        description="Read a large file in each node to flush disk caches. If you have root permission, just use /proc/sys/vm/drop_caches. This task is for the case you are a normal user. Specify the address of metadata repository and any input file that lists files to read in each node (e.g., the same input file as lineitem import). : ant -Daddress=poseidon.smn.cs.brown.edu:28710 -Dinputfile=inputs_lineitem.txt cache-flush">
+        <java fork="true" classname="edu.brown.lasvegas.lvfs.data.CacheFlusher">
+            <arg value="${address}" />
+            <arg value="${inputfile}" />
+            <classpath refid="lvfs.classpath"/>
+        </java>
+    </target>
 </project>

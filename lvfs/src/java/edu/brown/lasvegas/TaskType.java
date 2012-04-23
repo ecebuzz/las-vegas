@@ -8,6 +8,8 @@ import edu.brown.lasvegas.lvfs.data.task.BenchmarkTpchQ18PlanBTaskRunner;
 import edu.brown.lasvegas.lvfs.data.task.BenchmarkTpchQ18TaskParameters;
 import edu.brown.lasvegas.lvfs.data.task.DeletePartitionFilesTaskParameters;
 import edu.brown.lasvegas.lvfs.data.task.DeletePartitionFilesTaskRunner;
+import edu.brown.lasvegas.lvfs.data.task.DiskCacheFlushTaskParameters;
+import edu.brown.lasvegas.lvfs.data.task.DiskCacheFlushTaskRunner;
 import edu.brown.lasvegas.lvfs.data.task.LoadPartitionedTextFilesTaskParameters;
 import edu.brown.lasvegas.lvfs.data.task.LoadPartitionedTextFilesTaskRunner;
 import edu.brown.lasvegas.lvfs.data.task.MergePartitionSameSchemeTaskParameters;
@@ -123,6 +125,12 @@ public enum TaskType {
      */
     BENCHMARK_TPCH_Q18_PLANB,
 
+    /**
+     * Flush the OS's disk cache at each data node. Used while benchmarks.
+     * This might internally use /proc/sys/vm/drop_caches (which requires root permission) or just read large files.
+     */
+    DISK_CACHE_FLUSH,
+
     /** kind of null. */
     INVALID,
     ;
@@ -153,6 +161,8 @@ public enum TaskType {
         case BENCHMARK_TPCH_Q18_PLANA:
         case BENCHMARK_TPCH_Q18_PLANB:
             return new BenchmarkTpchQ18TaskParameters();
+        case DISK_CACHE_FLUSH:
+        	return new DiskCacheFlushTaskParameters();
         default:
             return null;
         }
@@ -184,6 +194,8 @@ public enum TaskType {
             return new BenchmarkTpchQ18PlanATaskRunner();
         case BENCHMARK_TPCH_Q18_PLANB:
             return new BenchmarkTpchQ18PlanBTaskRunner();
+        case DISK_CACHE_FLUSH:
+        	return new DiskCacheFlushTaskRunner();
         default:
             return null;
         }
