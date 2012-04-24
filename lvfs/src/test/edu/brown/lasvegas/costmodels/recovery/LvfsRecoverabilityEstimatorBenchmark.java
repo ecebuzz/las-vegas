@@ -1,10 +1,14 @@
-package edu.brown.lasvegas.costmodels.recovery.sim;
+package edu.brown.lasvegas.costmodels.recovery;
 
-/**
- * Experiments with LvfsSimulator.
- * This is NOT a testcase.
- */
-public class LvfsSimulatorBenchmark {
+import org.apache.log4j.Logger;
+
+import edu.brown.lasvegas.costmodels.recovery.sim.ExperimentalConfiguration;
+import edu.brown.lasvegas.costmodels.recovery.sim.LvfsPlacementParameters;
+import edu.brown.lasvegas.costmodels.recovery.sim.LvfsSimulatorBenchmark;
+
+
+public class LvfsRecoverabilityEstimatorBenchmark {
+    private static Logger LOG = Logger.getLogger(LvfsRecoverabilityEstimatorBenchmark.class);
 	public static void main (String[] args) {
 		run (new LvfsPlacementParameters(1, new int[]{1, 1}, 20, true, true, true));
 		run (new LvfsPlacementParameters(5, new int[]{1, 1}, 10, true, true, true));
@@ -14,9 +18,6 @@ public class LvfsSimulatorBenchmark {
 		run (new LvfsPlacementParameters(5, new int[]{2}, 8, true, true, true));
 		run (new LvfsPlacementParameters(10, new int[]{2}, 4, true, true, true));
 		run (new LvfsPlacementParameters(20, new int[]{2}, 2, true, true, true));
-		run (new LvfsPlacementParameters(10, new int[]{2}, 4, true, true, false));
-		run (new LvfsPlacementParameters(10, new int[]{2}, 4, true, false, false));
-		run (new LvfsPlacementParameters(10, new int[]{2}, 4, false, false, false));
 		run (new LvfsPlacementParameters(1, new int[]{1, 1, 1}, 20, true, true, true));
 		run (new LvfsPlacementParameters(5, new int[]{1, 1, 1}, 4, true, true, true));
 		run (new LvfsPlacementParameters(10, new int[]{1, 1, 1}, 2, true, true, true));
@@ -26,25 +27,19 @@ public class LvfsSimulatorBenchmark {
 		run (new LvfsPlacementParameters(5, new int[]{3}, 12, true, true, true));
 		run (new LvfsPlacementParameters(10, new int[]{3}, 6, true, true, true));
 		run (new LvfsPlacementParameters(20, new int[]{3}, 3, true, true, true));
-		run (new LvfsPlacementParameters(10, new int[]{3}, 6, true, true, false));
-		run (new LvfsPlacementParameters(10, new int[]{3}, 6, true, false, false));
-		run (new LvfsPlacementParameters(10, new int[]{3}, 6, false, false, false));
 		run (new LvfsPlacementParameters(10, new int[]{2, 2}, 4, true, true, true));
 		run (new LvfsPlacementParameters(10, new int[]{1, 1, 2}, 4, true, true, true));
 		run (new LvfsPlacementParameters(10, new int[]{1, 3}, 6, true, true, true));
 		run (new LvfsPlacementParameters(10, new int[]{1, 1, 1, 1}, 2, true, true, true));
 	}
 	
-	public static ExperimentalConfiguration createConfig() {
-		return new ExperimentalConfiguration(250,40,100,100,
-			4.3d * 30 * 24 * 60, 10.2d * 365 * 24 * 60,
-			0.05d * 60, 0.02d * 60, 3.0d * 60, 0.1d * 60,
-			3650.0d * 24 * 60);
-	}
-	
 	private static void run (LvfsPlacementParameters parameters) {
-		LvfsSimulator simulator = new LvfsSimulator(createConfig(), parameters, 3311);
-		simulator.decidePlacement();
-		simulator.simulateMeanTimeToFail(100);
+		ExperimentalConfiguration config = LvfsSimulatorBenchmark.createConfig();
+		LvfsRecoverabilityEstimator estimator = new LvfsRecoverabilityEstimator(config, parameters);
+		double count = estimator.estimateFailureCount();
+		double mttf = config.maxSimulationPeriod / count;
+		double log10Mttf = Math.log10(mttf);
+		LOG.info("param={" + parameters + "}, count=" + count + ", mean=" + mttf + ", log10mean=" + log10Mttf);
 	}
+
 }

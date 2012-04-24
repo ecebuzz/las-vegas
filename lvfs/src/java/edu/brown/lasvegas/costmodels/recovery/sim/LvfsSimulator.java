@@ -278,6 +278,19 @@ public class LvfsSimulator extends Simulator {
 		blockGroup.tmpPartitionsList.add(partition);
 	}
 
+	private int randomlyAssignRack (ArrayList<Integer> remainingList, Random random) {
+		if (remainingList.isEmpty()) {
+			ArrayList<Integer> src = new ArrayList<Integer>();
+			for (int i = 0; i < config.racks; ++i) {
+				src.add(i);
+			}
+			while (!src.isEmpty()) {
+				remainingList.add(src.remove(random.nextInt(src.size())));
+			}
+		}
+		return remainingList.remove(remainingList.size() - 1);
+	}
+	
 	@Override
 	public void decidePlacement() {
 		LOG.info("deciding data placement in LVFS... parameters=" + policy);
@@ -291,7 +304,7 @@ public class LvfsSimulator extends Simulator {
 		}
 		groupStatuses = new ReplicaGroupFractureStatus[config.tables][policy.fracturesPerTable][policy.replicaSchemes.length];
 		
-		int currentRack = 0; // to assign racks in RR fashion
+		ArrayList<Integer> remainingList = new ArrayList<Integer>(); // to assign racks in random fashion
 		for (int table = 0; table < config.tables; ++table) {
 			for (int fracture = 0; fracture < policy.fracturesPerTable; ++fracture) {
 				for (int group = 0; group < policy.replicaSchemes.length; ++group) {
@@ -299,7 +312,8 @@ public class LvfsSimulator extends Simulator {
 					int[] assignedRacks = new int[config.racks];
 					int[] assignedNodes = new int[config.nodesPerRack * policy.racksPerGroup];
 					for (int i = 0; i < policy.racksPerGroup; ++i) {
-						int firstNodeId = config.firstNodeIdFromRackId(currentRack);
+						assignedRacks[i] = randomlyAssignRack(remainingList, random);
+						int firstNodeId = config.firstNodeIdFromRackId(assignedRacks[i]);
 						/*
 						// randomly shuffle in each rack.
 						// this shuffling increases the number of possible couples among different table/fracture/group.
@@ -314,11 +328,6 @@ public class LvfsSimulator extends Simulator {
 						*/
 						for (int j = 0; j < config.nodesPerRack; ++j) {
 							assignedNodes[i * config.nodesPerRack + j] = firstNodeId + j;
-						}
-						assignedRacks[i] = currentRack;
-						++currentRack;
-						if (currentRack == config.racks) {
-							currentRack = 0;
 						}
 					}
 					int buddySchemes = policy.replicaSchemes[group];
