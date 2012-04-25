@@ -142,8 +142,8 @@ public class DataImportMultiNodeTpchBenchmark {
         }
     }
     public void exec (String lineitemInputFileName, String partInputFileName, String customerInputFileName, String ordersInputFileName) throws Exception {
-        LVTable[] tables = new LVTable[]{partTable, customerTable, lineitemTablePart, lineitemTableOrders, ordersTable};
-        String[] inputFileNames = new String[]{partInputFileName, lineitemInputFileName, lineitemInputFileName, customerInputFileName, ordersInputFileName};
+        LVTable[] tables = new LVTable[]{partTable, customerTable, ordersTable, lineitemTablePart, lineitemTableOrders};
+        String[] inputFileNames = new String[]{partInputFileName, customerInputFileName, ordersInputFileName, lineitemInputFileName, lineitemInputFileName};
         for (int i = 0; i < tables.length; ++i) {
             ImportFractureJobParameters params = DataImportMultiNodeBenchmark.parseInputFile(metaRepo, tables[i], inputFileNames[i]);
             ImportFractureJobController controller = new ImportFractureJobController(metaRepo, 1000L, 1000L, 100L);

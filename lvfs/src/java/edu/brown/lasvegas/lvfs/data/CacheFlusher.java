@@ -75,7 +75,7 @@ public class CacheFlusher {
     }
     public static void main (String[] args) throws Exception {
         LOG.info("running a multi node experiment..");
-        if (args.length < 6) {
+        if (args.length < 2) {
             System.err.println("usage: java " + CacheFlusher.class.getName() + " <metadata repository address> <name of the file that lists files to read>");
             System.err.println("ex: java " + CacheFlusher.class.getName() + " poseidon:28710 inputs_lineitem.txt");
             return;

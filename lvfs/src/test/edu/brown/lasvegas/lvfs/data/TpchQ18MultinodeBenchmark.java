@@ -94,7 +94,7 @@ public class TpchQ18MultinodeBenchmark {
         LOG.info("metaRepoAddress=" + metaRepoAddress);
         double quantityThreshold = Double.parseDouble(args[1]);
         LOG.info("quantityThreshold=" + quantityThreshold);
-        boolean fastQueryPlan = new Boolean(args[3]);
+        boolean fastQueryPlan = new Boolean(args[2]);
         LOG.info("fastQueryPlan=" + fastQueryPlan);
         
         TpchQ18MultinodeBenchmark program = new TpchQ18MultinodeBenchmark(fastQueryPlan);
