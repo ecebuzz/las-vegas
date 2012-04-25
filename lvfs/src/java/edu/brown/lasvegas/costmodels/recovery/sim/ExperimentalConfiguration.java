@@ -11,9 +11,9 @@ public class ExperimentalConfiguration {
 	 * Instantiates a new experimental configuration.
 	 */
 	public ExperimentalConfiguration() {
-		this (250, 40, 100, 100,
+		this (60, 40, 420, 100,
 				4.3d * 30 * 24 * 60, 10.2d * 365 * 24 * 60,
-				0.05d * 60, 0.02d * 60, 3.0d * 60, 0.1d * 60,
+				0.2d * 60, 0.1d * 60, 3.0d * 60, 0.1d * 60,
 				3650.0d * 24 * 60);
 		// numbers are from: http://www.cs.cornell.edu/projects/ladis2009/talks/dean-keynote-ladis2009.pdf
 		// and OSDI'10
