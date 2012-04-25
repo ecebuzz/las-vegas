@@ -34,6 +34,9 @@ public class LvfsSimulatorBenchmark {
 		run (new LvfsPlacementParameters(10, new int[]{1, 1, 2}, 2, true, true, true));
 		run (new LvfsPlacementParameters(10, new int[]{1, 3}, 3, true, true, true));
 		run (new LvfsPlacementParameters(10, new int[]{1, 1, 1, 1}, 1, true, true, true));
+		run (new LvfsPlacementParameters(10, new int[]{4}, 4, true, true, false));
+		run (new LvfsPlacementParameters(10, new int[]{4}, 4, true, false, false));
+		run (new LvfsPlacementParameters(10, new int[]{4}, 4, false, false, false));
 	}
 	
 	public static ExperimentalConfiguration createConfig() {
