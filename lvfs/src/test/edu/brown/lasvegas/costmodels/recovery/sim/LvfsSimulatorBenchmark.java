@@ -39,7 +39,7 @@ public class LvfsSimulatorBenchmark {
 	public static ExperimentalConfiguration createConfig() {
 		return new ExperimentalConfiguration(60,40,420,100,
 			4.3d * 30 * 24 * 60, 10.2d * 365 * 24 * 60,
-			0.2d * 60, 0.1d * 60, 3.0d * 60, 0.1d * 60,
+			0.2d * 60, 0.01d * 60, 3.0d * 60, 0.1d * 60,
 			3650.0d * 24 * 60);
 	}
 	

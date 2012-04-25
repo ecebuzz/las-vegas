@@ -75,7 +75,7 @@ public class LvfsSimulatorTest {
 	@Test
 	public void testRepFac12All () {
 		LvfsSimulator simulator = new LvfsSimulator(config,
-				new LvfsPlacementParameters(10, new int[]{1, 2}, 4, true, true, true),
+				new LvfsPlacementParameters(10, new int[]{1, 2}, 2, true, true, true),
 				3311);
 		simulator.decidePlacement();
 		simulator.simulateMeanTimeToFail(10);
@@ -83,7 +83,7 @@ public class LvfsSimulatorTest {
 	@Test
 	public void testRepFac111All () {
 		LvfsSimulator simulator = new LvfsSimulator(config,
-				new LvfsPlacementParameters(10, new int[]{1, 1, 1}, 4, true, true, true),
+				new LvfsPlacementParameters(10, new int[]{1, 1, 1}, 2, true, true, true),
 				3311);
 		simulator.decidePlacement();
 		simulator.simulateMeanTimeToFail(10);
@@ -91,7 +91,7 @@ public class LvfsSimulatorTest {
 	@Test
 	public void testRepFac22All () {
 		LvfsSimulator simulator = new LvfsSimulator(config,
-				new LvfsPlacementParameters(10, new int[]{2, 2}, 4, true, true, true),
+				new LvfsPlacementParameters(10, new int[]{2, 2}, 2, true, true, true),
 				3311);
 		simulator.decidePlacement();
 		simulator.simulateMeanTimeToFail(10);

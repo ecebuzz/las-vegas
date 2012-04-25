@@ -41,7 +41,6 @@ public class FailureSchedule {
 			this.rackFailure = rackFailure;
 			this.failedNode = failedNode;
 			this.interval = interval;
-			// LOG.info("rackFailure=" + rackFailure + ", node=" + failedNode + ", interval=" + interval);
 		}
 		/** whether the event is a rack failure or not (=node failure).*/
 		public final boolean rackFailure;
@@ -59,6 +58,9 @@ public class FailureSchedule {
 			debugOut();
 			nextEvent = null;
 			return null;
+		}
+		if (LOG.isTraceEnabled()) {
+			LOG.trace("rackFailure=" + currentEvent.rackFailure + ", node=" + currentEvent.failedNode + ", interval=" + currentEvent.interval);
 		}
 		nextEvent = generateNextEvent ();
 		return currentEvent;

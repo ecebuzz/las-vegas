@@ -62,21 +62,31 @@ public class LvfsRecoverabilityEstimator {
 	 * Estimate the number of permanent data loss events during maxSimulationPeriod. 
 	 */
 	public double estimateFailureCount () {
-		// how many times the first replica group in some fracture will fail?
-		double replicaGroupFailures = calculateGroupFailureCountPerFracture (policy.replicaSchemes[0]);
+		// how many times the replica group in some fracture will fail?
+		double[] replicaGroupFailures = new double[policy.replicaSchemes.length];
+		for (int group = 0; group < policy.replicaSchemes.length; ++group) {
+			replicaGroupFailures[group] = calculateGroupFailureCountPerFracture (policy.replicaSchemes[group]);
+		}
 
-		// consider the event where all other replica groups also fail during repartitioning
 		double fractureSize = config.gigabytesTotal / config.tables / policy.fracturesPerTable;
 		double repartitioningRate = config.localRepartition * policy.racksPerGroup * config.nodesPerRack;
 		double repartitioningTime = fractureSize / repartitioningRate;
 		LOG.debug("fractureSize=" + fractureSize + " GB, repartitioningTime=" + repartitioningTime + " minutes");
-		
-		for (int other = 1; other < policy.replicaSchemes.length; ++other) {
-			double otherReplicaGroupFailures = calculateGroupFailureCountPerFracture (policy.replicaSchemes[other]);
-			double groupFailureMttf = config.maxSimulationPeriod / otherReplicaGroupFailures;
-			replicaGroupFailures *= integrateExponentialDistribution(repartitioningTime, groupFailureMttf);
+
+		// consider the event where the replica group fails, then all other replica groups also fail during repartitioning
+		double failuresPerFracture = 0;
+		for (int group = 0; group < policy.replicaSchemes.length; ++group) {
+			double failures = replicaGroupFailures[group];
+			for (int other = 0; other < policy.replicaSchemes.length; ++other) {
+				if (group == other) {
+					continue;
+				}
+				double groupFailureMttf = config.maxSimulationPeriod / replicaGroupFailures[other];
+				failures *= integrateExponentialDistribution(repartitioningTime, groupFailureMttf);
+			}
+			failuresPerFracture += failures;
 		}
-		return replicaGroupFailures * config.tables * policy.fracturesPerTable;
+		return failuresPerFracture * config.tables * policy.fracturesPerTable;
 	}
 	
 	private double calculateGroupFailureCountPerFracture (int buddySchemes) {

@@ -1,15 +1,20 @@
 package edu.brown.lasvegas.costmodels.recovery;
 
 import org.apache.log4j.Logger;
+import org.junit.Test;
 
 import edu.brown.lasvegas.costmodels.recovery.sim.ExperimentalConfiguration;
 import edu.brown.lasvegas.costmodels.recovery.sim.LvfsPlacementParameters;
 import edu.brown.lasvegas.costmodels.recovery.sim.LvfsSimulatorBenchmark;
 
-
-public class LvfsRecoverabilityEstimatorBenchmark {
-    private static Logger LOG = Logger.getLogger(LvfsRecoverabilityEstimatorBenchmark.class);
-	public static void main (String[] args) {
+/**
+ * Testcase and also experiments for {@link LvfsRecoverabilityEstimator}.
+ * It's fast, so why not make it a testcase too.
+ */
+public class LvfsRecoverabilityEstimatorTest {
+    private static Logger LOG = Logger.getLogger(LvfsRecoverabilityEstimatorTest.class);
+    @Test
+	public void test() {
 		run (new LvfsPlacementParameters(1, new int[]{1, 1}, 10, true, true, true));
 		run (new LvfsPlacementParameters(2, new int[]{1, 1}, 5, true, true, true));
 		run (new LvfsPlacementParameters(5, new int[]{1, 1}, 2, true, true, true));

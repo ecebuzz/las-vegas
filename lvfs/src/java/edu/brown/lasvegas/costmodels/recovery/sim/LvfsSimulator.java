@@ -4,7 +4,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 import org.apache.log4j.Logger;
 
@@ -29,8 +33,8 @@ public class LvfsSimulator extends Simulator {
 	private static final double DEFAULT_PARTITION_SIZE = 1.0d;
 	/** this might not be the default value if racksPerGroup is too large. */
 	private final double PARTITION_SIZE;
-	/** keep the repartitioned files in stable storage for 5 hours. */
-	private static final double REPARTITIONED_FILES_HOLD = 5 * 60;
+	/** keep the repartitioned files in stable storage for 3 hours (about nodeMeanTimeToRecover s.t. we hold it until all waiting nodes get recovered). */
+	private static final double REPARTITIONED_FILES_HOLD = 3 * 60;
     private static Logger LOG = Logger.getLogger(LvfsSimulator.class);
 	private final LvfsPlacementParameters policy;
 	public LvfsSimulator(ExperimentalConfiguration config, LvfsPlacementParameters policy, long firstRandomSeed) {
@@ -57,8 +61,8 @@ public class LvfsSimulator extends Simulator {
 	/** number of partitions in each fracture. */
 	private final int partitions;
 
-	private static int NEXT_BLOCK_GROUP_ID = 0; 
-	private static int NEXT_STATUS_ID = 0; 
+	private int NEXT_BLOCK_GROUP_ID = 0; 
+	private int NEXT_STATUS_ID = 0; 
 
 	private class NodeStatus {
 		BlockGroup[] blockGroups;
@@ -117,9 +121,9 @@ public class LvfsSimulator extends Simulator {
 		/**
 		 * BlockGroup that are being recovered without pending (due to wait for repartitioning) at this node.
 		 */
-		HashSet<BlockGroup> blockGroupsActivelyBeingRecovered = new HashSet<BlockGroup>();
+		Set<BlockGroup> blockGroupsActivelyBeingRecovered = new HashSet<BlockGroup>();
 	}
-	private static class BlockGroup {
+	private class BlockGroup implements Comparable<BlockGroup> {
 		BlockGroup (int table, int fracture, int group, int nodeId) {
 			this.id = NEXT_BLOCK_GROUP_ID++;
 			this.table = table;
@@ -151,6 +155,14 @@ public class LvfsSimulator extends Simulator {
 		public int hashCode() {
 			return id;
 		}
+		@Override
+		public int compareTo(BlockGroup o) {
+			return id - o.id;
+		}
+		@Override
+		public boolean equals(Object obj) {
+			return id == ((BlockGroup) obj).id;
+		}
 
 		// properties for recovery
 		boolean beingRecovered = false;
@@ -159,7 +171,7 @@ public class LvfsSimulator extends Simulator {
 	}
 	
 	
-	private class ReplicaGroupFractureStatus {
+	private class ReplicaGroupFractureStatus implements Comparable<ReplicaGroupFractureStatus> {
 		ReplicaGroupFractureStatus (int table, int fracture, int group, int[] assignedRacks) {
 			this.id = NEXT_STATUS_ID++;
 			this.table = table;
@@ -192,6 +204,14 @@ public class LvfsSimulator extends Simulator {
 		@Override
 		public int hashCode() {
 			return id;
+		}
+		@Override
+		public int compareTo(ReplicaGroupFractureStatus o) {
+			return id - o.id;
+		}
+		@Override
+		public boolean equals(Object obj) {
+			return id == ((ReplicaGroupFractureStatus) obj).id;
 		}
 		void resetStatus () {
 			Arrays.fill(redundancies, (byte) buddySchemes);
@@ -233,7 +253,7 @@ public class LvfsSimulator extends Simulator {
 		 * Block groups that are being recovered, but pending because of this repartitioning.
 		 * key=nodeId.
 		 */
-		HashMap<Integer, BlockGroup> waitingForRepartition = new HashMap<Integer, BlockGroup>();
+		Map<Integer, BlockGroup> waitingForRepartition = new HashMap<Integer, BlockGroup>();
 
 		/** until the completion of repartitioning. */
 		double remainingGigabytes = 0;
@@ -258,9 +278,9 @@ public class LvfsSimulator extends Simulator {
 	/** status of each replica group in each fracture. [table][fracture][group].*/
 	private ReplicaGroupFractureStatus[][][] groupStatuses;
 	/** ongoing copy tasks (nodeID to recover). */
-	private HashSet<Integer> copyTasks;
+	private Set<Integer> copyTasks = new HashSet<Integer>();
 	/** ongoing repartition tasks (the replica group _to be recovered_ (not the source)). */
-	private HashSet<ReplicaGroupFractureStatus> repartitionTasks;
+	private Set<ReplicaGroupFractureStatus> repartitionTasks = new HashSet<ReplicaGroupFractureStatus>();
 
 	private void assignBlock (int nodeId, int table, int fracture, int group, int scheme, int partition) {
 		ArrayList<BlockGroup> blocks = nodeStatuses[nodeId].tmpBlockGroupsList;
@@ -278,19 +298,35 @@ public class LvfsSimulator extends Simulator {
 		blockGroup.tmpPartitionsList.add(partition);
 	}
 
-	private int randomlyAssignRack (ArrayList<Integer> remainingList, Random random) {
-		if (remainingList.isEmpty()) {
-			ArrayList<Integer> src = new ArrayList<Integer>();
-			for (int i = 0; i < config.racks; ++i) {
+	private LinkedList<Integer> getRandomRackPermutation (Random random) {
+		ArrayList<Integer> src = new ArrayList<Integer>();
+		for (int i = 0; i < config.racks; ++i) {
+			src.add(i);
+		}
+		LinkedList<Integer> dest = new LinkedList<Integer>();
+		while (!src.isEmpty()) {
+			dest.add(src.remove(random.nextInt(src.size())));
+		}
+		return dest;
+	}
+	private LinkedList<Integer> getRandomRackPermutation (Random random, List<Integer> taboos) {
+		boolean[] prohibited = new boolean[config.racks];
+		Arrays.fill(prohibited, false);
+		for (Integer taboo : taboos) {
+			prohibited[taboo] = true;
+		}
+		ArrayList<Integer> src = new ArrayList<Integer>();
+		for (int i = 0; i < config.racks; ++i) {
+			if (!prohibited[i]) {
 				src.add(i);
 			}
-			while (!src.isEmpty()) {
-				remainingList.add(src.remove(random.nextInt(src.size())));
-			}
 		}
-		return remainingList.remove(remainingList.size() - 1);
+		LinkedList<Integer> dest = new LinkedList<Integer>();
+		while (!src.isEmpty()) {
+			dest.add(src.remove(random.nextInt(src.size())));
+		}
+		return dest;
 	}
-	
 	@Override
 	public void decidePlacement() {
 		LOG.info("deciding data placement in LVFS... parameters=" + policy);
@@ -304,15 +340,41 @@ public class LvfsSimulator extends Simulator {
 		}
 		groupStatuses = new ReplicaGroupFractureStatus[config.tables][policy.fracturesPerTable][policy.replicaSchemes.length];
 		
-		ArrayList<Integer> remainingList = new ArrayList<Integer>(); // to assign racks in random fashion
+		// assign racks in random fashion. but,
+		// 1. we shouldn't assign the same rack to more than one replica group in the same fracture.
+		// 2. we should balance the number of assignments per racks
+		// 3. it should be random. pure round-robin will result in an unrealistic assignment. 
+		// thus does following
+		LinkedList<Integer> remainingList = getRandomRackPermutation(random);
 		for (int table = 0; table < config.tables; ++table) {
 			for (int fracture = 0; fracture < policy.fracturesPerTable; ++fracture) {
+				int assignmentSize = policy.replicaSchemes.length * policy.racksPerGroup;
+				if (assignmentSize > config.racks) {
+					throw new RuntimeException("can't assign " + config.racks + " racks to " + policy.replicaSchemes.length + "replica groups. racksPerGroup=" + policy.racksPerGroup);
+				}
+				LinkedList<Integer> assignedPool = new LinkedList<Integer>();
+				if (assignmentSize <= remainingList.size()) {
+					// then just grab the number of racks required
+					while (assignedPool.size() < assignmentSize) {
+						assignedPool.add(remainingList.pop());
+					}
+				} else {
+					// then, first add all of the remaining
+					assignedPool.addAll(remainingList);
+					// re-generate the random permutation _without the racks we've just consumed_ (to avoid inbalance)
+					remainingList = getRandomRackPermutation (random, remainingList);
+					// then, assign the remaining
+					while (assignedPool.size() < assignmentSize) {
+						assignedPool.add(remainingList.pop());
+					}
+					assert (assignedPool.size() == new HashSet<Integer>(assignedPool).size()); // no duplicates, right?
+				}
 				for (int group = 0; group < policy.replicaSchemes.length; ++group) {
 					// listup nodes assigned to this group
 					int[] assignedRacks = new int[config.racks];
 					int[] assignedNodes = new int[config.nodesPerRack * policy.racksPerGroup];
 					for (int i = 0; i < policy.racksPerGroup; ++i) {
-						assignedRacks[i] = randomlyAssignRack(remainingList, random);
+						assignedRacks[i] = assignedPool.pop();
 						int firstNodeId = config.firstNodeIdFromRackId(assignedRacks[i]);
 						/*
 						// randomly shuffle in each rack.
@@ -477,7 +539,7 @@ public class LvfsSimulator extends Simulator {
 				for (BlockGroup bg : nodeStatus.blockGroupsActivelyBeingRecovered.toArray(new BlockGroup[0])) {// copy to avoid 'deletion in loop'
 					assert (bg.beingActivelyRecovered);
 					double required = bg.remainingGigabytes / combinedNodeRecoveryRate;
-					if (budget >= required) {
+					if (budget >= required * 0.99999d) {
 						onBlockGroupRecovered(nodeStatus, bg);
 						budget -= required;
 					} else {
@@ -493,7 +555,7 @@ public class LvfsSimulator extends Simulator {
 			for (ReplicaGroupFractureStatus status : repartitionTasks.toArray(new ReplicaGroupFractureStatus[0])) { // copy to avoid 'deletion in loop'
 				assert (status.remainingGigabytes > 0);
 				double progressedGigabytes = status.totalRepartitionRate * spent;
-				if (progressedGigabytes < status.remainingGigabytes) {
+				if (progressedGigabytes < status.remainingGigabytes * 0.99999d) {
 					status.remainingGigabytes -= progressedGigabytes;
 				} else {
 					onRepartitionCompleted(now, status);
@@ -572,6 +634,7 @@ public class LvfsSimulator extends Simulator {
 				ReplicaGroupFractureStatus status = groupStatuses[bg.table][bg.fracture][bg.group];
 				boolean recoverableFromRepartitionedFiles = status.isRepartitionedBlocksAvailable(now);
 
+				//boolean lostsome = false;
 				for (int partition : bg.partitions) {
 					assert (status.redundancies[partition] > 0);
 					--status.redundancyStats[status.redundancies[partition]];
@@ -579,6 +642,7 @@ public class LvfsSimulator extends Simulator {
 					--status.redundancies[partition];
 					assert (status.redundancies[partition] >= 0);
 					if (status.redundancies[partition] == 0) {
+						//lostsome = true;
 						// we have lost this partition! no recovery possible in this group
 						if (recoverableFromRepartitionedFiles) {
 							continue; // okay, we can recover from the repartitioned files
@@ -596,6 +660,15 @@ public class LvfsSimulator extends Simulator {
 						}
 					}
 				}
+				/*
+				if (lostsome) {
+					if (LOG.isInfoEnabled() && bg.table == 86) {
+						LOG.info("lost some partition "
+								+ " in table " + bg.table + ", fracture " + bg.fracture
+								+ ", group=" + bg.group + ". triggered by a failure in node " + nodeId);
+					}
+				}
+				*/
 				assert (!bg.beingActivelyRecovered);
 				bg.beingRecovered = true;
 				++nodeStatus.blockGroupsBeingRecovered;
@@ -632,8 +705,8 @@ public class LvfsSimulator extends Simulator {
 				}
 			}
 		}
-		copyTasks = new HashSet<Integer>();
-		repartitionTasks = new HashSet<ReplicaGroupFractureStatus>();
+		copyTasks.clear();
+		repartitionTasks.clear();
 		Runtime.getRuntime().gc();
 	}
 	/** for debugging. */

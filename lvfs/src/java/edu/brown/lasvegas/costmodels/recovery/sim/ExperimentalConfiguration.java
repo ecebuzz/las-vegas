@@ -13,7 +13,7 @@ public class ExperimentalConfiguration {
 	public ExperimentalConfiguration() {
 		this (60, 40, 420, 100,
 				4.3d * 30 * 24 * 60, 10.2d * 365 * 24 * 60,
-				0.2d * 60, 0.1d * 60, 3.0d * 60, 0.1d * 60,
+				0.2d * 60, 0.01d * 60, 3.0d * 60, 0.1d * 60,
 				3650.0d * 24 * 60);
 		// numbers are from: http://www.cs.cornell.edu/projects/ladis2009/talks/dean-keynote-ladis2009.pdf
 		// and OSDI'10
@@ -79,7 +79,16 @@ public class ExperimentalConfiguration {
 	/** local network throughput GB/min. */
 	public final double localNetwork;
 
-	/** repartition throughput at a node GB/min. usually slower than localDisk because of partitioning. */
+	/**
+	 * repartition throughput at a node GB/min.
+	 * This rate should reflect everything about repartitioning.
+	 * Reading the original files, partitioning and writing to many other files (with lots of seeks),
+	 * and also transferring the files to some other storage (doesn't have to be the failed node,
+	 * but we need to duplicate it. otherwise the failure of _this_ node will invalidate the files
+	 * and also the original files!). 
+	 * Thus, this is _much_ slower than localDisk. This parameter is pretty important in
+	 * simulation and prediction of recoverability.
+	 */
 	public final double localRepartition;
 	
 	/** maximum length of simulation in minutes. */
