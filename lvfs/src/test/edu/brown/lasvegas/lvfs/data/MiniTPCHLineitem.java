@@ -45,12 +45,12 @@ public final class MiniTPCHLineitem extends MiniDataSource {
             /*"7: l_tax",*/ CompressionType.NONE,
             /*"8: l_returnflag",*/ CompressionType.DICTIONARY,
             /*"9: l_linestatus",*/ CompressionType.DICTIONARY,
-            /*"10: l_shipdate",*/ CompressionType.NONE,
-            /*"11: l_commitdate",*/ CompressionType.NONE,
-            /*"12: l_receiptdate",*/ CompressionType.NONE,
+            /*"10: l_shipdate",*/ CompressionType.DICTIONARY, /*CompressionType.NONE*/
+            /*"11: l_commitdate",*/ CompressionType.DICTIONARY,/*CompressionType.NONE*/
+            /*"12: l_receiptdate",*/ CompressionType.DICTIONARY,/*CompressionType.NONE*/
             /*"13: l_shipinstruct",*/ CompressionType.DICTIONARY,
             /*"14: l_shipmode",*/ CompressionType.DICTIONARY,
-            /*"15: l_comment",*/ CompressionType.NONE,
+            /*"15: l_comment",*/ CompressionType.GZIP_BEST_COMPRESSION,/*CompressionType.NONE*/
         };
     }
     @Override
