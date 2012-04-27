@@ -1,0 +1,2 @@
+cslab0a	/ltmp/adf-lasvegas/customer.tbl.1
+cslab1a	/ltmp/adf-lasvegas/customer.tbl.2
