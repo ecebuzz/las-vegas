@@ -39,10 +39,13 @@ public abstract class BenchmarkTpchQ18TaskRunner extends DataTaskRunner<Benchmar
     protected final String[] runDataTask() throws Exception {
         prepareInputs ();
         result = new Q18ResultRanking();
+        long startTime = System.currentTimeMillis();
         for (int i = 0; i < ordersPartitionCount; ++i) {
             LOG.info("processing.. " + i + "/" + ordersPartitionCount);
             processPartition (i);
         }
+        long endTime = System.currentTimeMillis();
+        LOG.info("total processPartition() time: " + (endTime - startTime) + "ms");
         LOG.info("sub-ranking:" + result);
         
         // serialize the sub-ranking to a file

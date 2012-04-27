@@ -189,6 +189,7 @@ public final class RepartitionSummary {
 			int range, ColumnType[] columnTypes, Integer sortColumn, boolean onMemory,
 			VirtualFile outputFolder, String[] newFileNames, CompressionType[] compressions) throws IOException {
 		LOG.info("merging repartitioned files for range-" + range + ", on-memory=" + onMemory + "...");
+		long startTime = System.currentTimeMillis();
 		ArrayList<LVDataClient> clients = new ArrayList<LVDataClient>();
 		try {
 			ArrayList<ColumnFileBundle[]> bundles = new ArrayList<ColumnFileBundle[]>();
@@ -235,7 +236,8 @@ public final class RepartitionSummary {
 	    		return merger.executeOnDisk(outputFolder, newFileNames, compressions);
 	    	}
 		} finally {
-			LOG.info("merged.");
+			long endTime = System.currentTimeMillis();
+			LOG.info("merged. elapsed time for merging repartitioned files:" + (endTime - startTime) + "ms");
 			for (LVDataClient client : clients) {
 				client.release();
 			}

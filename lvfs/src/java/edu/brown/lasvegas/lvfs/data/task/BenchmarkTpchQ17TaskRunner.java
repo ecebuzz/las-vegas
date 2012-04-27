@@ -29,10 +29,13 @@ public abstract class BenchmarkTpchQ17TaskRunner extends DataTaskRunner<Benchmar
     protected final String[] runDataTask() throws Exception {
         prepareInputs ();
         double totalSum = 0;
+        long startTime = System.currentTimeMillis();
         for (int i = 0; i < partPartitionCount; ++i) {
             LOG.info("processing.. " + i + "/" + partPartitionCount);
             totalSum += processPartition (i);
         }
+        long endTime = System.currentTimeMillis();
+        LOG.info("total processPartition() time: " + (endTime - startTime) + "ms");
         // a hack to make it easy. this return value should be a file path, but let's just return the query result as the string.
         return new String[]{String.valueOf (totalSum)};
     }
