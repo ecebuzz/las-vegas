@@ -38,8 +38,12 @@ cd ../tpch-dbgen/
 make >> $STDOUT_LOG 2>&1
 ./dbgen -T L -s $SCALE_SIZE -S $HOST_INDEX -C $NUM_PARTS >> $STDOUT_LOG 2>&1  # $HOST_INDEX is 1-based
 ./dbgen -T P -s $SCALE_SIZE -S $HOST_INDEX -C $NUM_PARTS >> $STDOUT_LOG 2>&1  # $HOST_INDEX is 1-based
+./dbgen -T O -s $SCALE_SIZE -S $HOST_INDEX -C $NUM_PARTS >> $STDOUT_LOG 2>&1  # $HOST_INDEX is 1-based
+./dbgen -T c -s $SCALE_SIZE -S $HOST_INDEX -C $NUM_PARTS >> $STDOUT_LOG 2>&1  # $HOST_INDEX is 1-based
 mv lineitem.tbl.$HOST_INDEX $INSTALL_DIR
 mv part.tbl.$HOST_INDEX $INSTALL_DIR
+mv orders.tbl.$HOST_INDEX $INSTALL_DIR
+mv customer.tbl.$HOST_INDEX $INSTALL_DIR
 
 # Can have a race condition. Keep a hard-coded file for now.
 # echo -e "$HOSTNAME\t$INSTALL_DIR/lineorder.tbl.$HOST_INDEX" >> $RESOURCE_DIR/inputs-sunlab.txt
