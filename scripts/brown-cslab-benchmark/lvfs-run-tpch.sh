@@ -6,6 +6,7 @@ DATE_FORMAT="%Y-%m-%d-%H.%M.%S-%Z"
 
 SCALE_SIZE=$1
 NUM_PARTS=$2
+NUM_REPEATS=$3
 
 LINEITEM_INPUT_FILE=lineitem-$NUM_PARTS.txt
 PART_INPUT_FILE=part-$NUM_PARTS.txt
@@ -75,61 +76,57 @@ pusher --hosts=central.txt "cd $LVFS_DIR; ant -Dpartitions=$SCALE_SIZE -Daddress
 
 sleep 10
 
+#
+# We're now finished generating and importing data.
+#
+
+# First, a utility function:
+
+function sleep_and_flush {
+	sleep 5
+	pusher --hosts=central.txt "cd $LVFS_DIR; ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dinputfile=$LINEITEM_INPUT_FILE cache-flush > /dev/null"
+	sleep 5
+}
+
+#
+# Finally time to start the benchmarks!
+#
+
 #Q17 plan A
-sleep 5
-pusher --hosts=central.txt "cd $LVFS_DIR; ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dinputfile=$LINEITEM_INPUT_FILE cache-flush > /dev/null"
-sleep 5
-pusher --hosts=central.txt "cd $LVFS_DIR; ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dbrand=Brand#34 -Dcontainer='MED DRUM' tpch-bench-q17-plana > /dev/null"
-sleep 5
-pusher --hosts=central.txt "cd $LVFS_DIR; ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dinputfile=$LINEITEM_INPUT_FILE cache-flush > /dev/null"
-sleep 5
-pusher --hosts=central.txt "cd $LVFS_DIR; ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dbrand=Brand#34 -Dcontainer='MED DRUM' tpch-bench-q17-plana > /dev/null"
-sleep 5
-pusher --hosts=central.txt "cd $LVFS_DIR; ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dinputfile=$LINEITEM_INPUT_FILE cache-flush > /dev/null"
-sleep 5
-pusher --hosts=central.txt "cd $LVFS_DIR; ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dbrand=Brand#34 -Dcontainer='MED DRUM' tpch-bench-q17-plana > /dev/null"
+
+i=0; while [ $i -lt $NUM_REPEATS ]; do
+	sleep_and_flush
+	pusher --hosts=central.txt "cd $LVFS_DIR; ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dbrand=Brand#34 -Dcontainer='MED DRUM' tpch-bench-q17-plana > /dev/null"
+	i=$((i+1))
+done
 
 #Q17 plan B
-sleep 5
-pusher --hosts=central.txt "cd $LVFS_DIR; ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dinputfile=$LINEITEM_INPUT_FILE cache-flush > /dev/null"
-sleep 5
-pusher --hosts=central.txt "cd $LVFS_DIR; ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dbrand=Brand#34 -Dcontainer='MED DRUM' tpch-bench-q17-planb > /dev/null"
-sleep 5
-pusher --hosts=central.txt "cd $LVFS_DIR; ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dinputfile=$LINEITEM_INPUT_FILE cache-flush > /dev/null"
-sleep 5
-pusher --hosts=central.txt "cd $LVFS_DIR; ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dbrand=Brand#34 -Dcontainer='MED DRUM' tpch-bench-q17-planb > /dev/null"
-sleep 5
-pusher --hosts=central.txt "cd $LVFS_DIR; ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dinputfile=$LINEITEM_INPUT_FILE cache-flush > /dev/null"
-sleep 5
-pusher --hosts=central.txt "cd $LVFS_DIR; ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dbrand=Brand#34 -Dcontainer='MED DRUM' tpch-bench-q17-planb > /dev/null"
+
+i=0; while [ $i -lt $NUM_REPEATS ]; do
+	sleep_and_flush
+	pusher --hosts=central.txt "cd $LVFS_DIR; ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dbrand=Brand#34 -Dcontainer='MED DRUM' tpch-bench-q17-planb > /dev/null"
+	i=$((i+1))
+done
 
 #Q18 plan A
-sleep 5
-pusher --hosts=central.txt "cd $LVFS_DIR; ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dinputfile=$LINEITEM_INPUT_FILE cache-flush > /dev/null"
-sleep 5
-pusher --hosts=central.txt "cd $LVFS_DIR; ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dquantity=312 tpch-bench-q18-plana > /dev/null"
-sleep 5
-pusher --hosts=central.txt "cd $LVFS_DIR; ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dinputfile=$LINEITEM_INPUT_FILE cache-flush > /dev/null"
-sleep 5
-pusher --hosts=central.txt "cd $LVFS_DIR; ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dquantity=312 tpch-bench-q18-plana > /dev/null"
-sleep 5
-pusher --hosts=central.txt "cd $LVFS_DIR; ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dinputfile=$LINEITEM_INPUT_FILE cache-flush > /dev/null"
-sleep 5
-pusher --hosts=central.txt "cd $LVFS_DIR; ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dquantity=312 tpch-bench-q18-plana > /dev/null"
+
+i=0; while [ $i -lt $NUM_REPEATS ]; do
+	sleep_and_flush
+	pusher --hosts=central.txt "cd $LVFS_DIR; ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dquantity=312 tpch-bench-q18-plana > /dev/null"
+	i=$((i+1))
+done
 
 #Q18 plan B
-sleep 5
-pusher --hosts=central.txt "cd $LVFS_DIR; ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dinputfile=$LINEITEM_INPUT_FILE cache-flush > /dev/null"
-sleep 5
-pusher --hosts=central.txt "cd $LVFS_DIR; ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dquantity=312 tpch-bench-q18-planb > /dev/null"
-sleep 5
-pusher --hosts=central.txt "cd $LVFS_DIR; ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dinputfile=$LINEITEM_INPUT_FILE cache-flush > /dev/null"
-sleep 5
-pusher --hosts=central.txt "cd $LVFS_DIR; ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dquantity=312 tpch-bench-q18-planb > /dev/null"
-sleep 5
-pusher --hosts=central.txt "cd $LVFS_DIR; ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dinputfile=$LINEITEM_INPUT_FILE cache-flush > /dev/null"
-sleep 5
-pusher --hosts=central.txt "cd $LVFS_DIR; ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dquantity=312 tpch-bench-q18-planb > /dev/null"
+
+i=0; while [ $i -lt $NUM_REPEATS ]; do
+	sleep_and_flush
+	pusher --hosts=central.txt "cd $LVFS_DIR; ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dquantity=312 tpch-bench-q18-planb > /dev/null"
+	i=$((i+1))
+done
+
+#
+# And we're done!
+#
 
 # Collect all the logs
 
