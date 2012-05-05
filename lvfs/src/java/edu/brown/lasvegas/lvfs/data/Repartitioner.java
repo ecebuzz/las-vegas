@@ -121,6 +121,9 @@ public final class Repartitioner {
 	        		reader.close();
 	            }
         	}
+        } catch (IOException e) {
+        	LOG.error("observed an exception in Repartitioner. re-throwing", e);
+        	throw e;
         } finally {
         	for (int i = 0; i < partitionRanges.length; ++i) {
         		if (writers[i] == null) {
@@ -129,6 +132,10 @@ public final class Repartitioner {
         		ret[i] = new LVColumnFile[columnCount];
             	for (int j = 0; j < columnCount; ++j) {
             		ColumnFileWriterBundle writer = writers[i][j];
+            		if (writer == null) {
+            			LOG.warn("writer[" + i + "][" + j + "] hasn't been initialized. wtf? probably some other exception occurred?");
+            			continue;
+            		}
             		writer.finish();
             		writer.close();
             		LVColumnFile result = new LVColumnFile();
