@@ -16,6 +16,7 @@ import edu.brown.lasvegas.traits.ValueTraits;
 import edu.brown.lasvegas.traits.ValueTraitsFactory;
 import edu.brown.lasvegas.tuple.ColumnFileTupleReader;
 import edu.brown.lasvegas.tuple.TupleBuffer;
+import edu.brown.lasvegas.util.MemoryUtil;
 import edu.brown.lasvegas.util.ValueRange;
 
 /**
@@ -108,7 +109,8 @@ public final class Repartitioner {
      * All columnar files are named <outputFolder>/<partition>/<column> + extensions.
      */
     public LVColumnFile[][] execute () throws IOException {
-        LOG.info("started");
+        LOG.info("started. outputting available memory...");
+        MemoryUtil.outputMemory();
         LVColumnFile[][] ret = new LVColumnFile[partitionRanges.length][];
         try {
             /** reader object for existing columnar files. */
@@ -202,7 +204,13 @@ public final class Repartitioner {
 
 		writers[partition] = new ColumnFileWriterBundle[columnCount];
 		for (int i = 0; i < columnCount; ++i) {
-			writers[partition][i] = new ColumnFileWriterBundle(folder, String.valueOf(i), columnTypes[i], compressions[i], true);
+			writers[partition][i] = new ColumnFileWriterBundle(folder, String.valueOf(i), columnTypes[i], compressions[i], true,
+					1 << 13); // to avoid OutofMemory, uses only 8kb buffer.
+		}
+		
+		if (partition % 20 == 0) {
+	        LOG.info("checking available memory...");
+	        MemoryUtil.outputMemory();
 		}
 	}
 	

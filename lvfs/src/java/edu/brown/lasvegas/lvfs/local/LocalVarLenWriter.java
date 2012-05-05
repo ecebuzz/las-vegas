@@ -37,7 +37,10 @@ public final class LocalVarLenWriter<T extends Comparable<T>> extends LocalTyped
         this (file, traits, 1 << 13);
     }
     public LocalVarLenWriter(VirtualFile file, VarLenValueTraits<T> traits, int collectPerBytes) throws IOException {
-        super(file, traits, 1 << 18);
+    	this(file, traits, collectPerBytes, 1 << 18);
+    }
+    public LocalVarLenWriter(VirtualFile file, VarLenValueTraits<T> traits, int collectPerBytes, int streamBufferSize) throws IOException {
+        super(file, traits, streamBufferSize);
         this.traits = traits;
         this.collectPerBytes = collectPerBytes;
     }

@@ -114,7 +114,7 @@
 	<target name="sa-data" depends="compile"
 		description="Launch standalone data node. Specify the path of configuration xml (must be in classpath). eg: ant -Dconfxml=lvfs_conf_poseidon.xml -Dformat=true sa-data">
 		<java fork="true" classname="edu.brown.lasvegas.server.StandaloneDataNode">
-			<jvmarg value="-Xmx2048m"/>
+			<jvmarg value="-Xmx3072m"/> <!-- make sure RAM is 4GB or larger. leave at least 1GB to OS and others -->
 			<jvmarg value="-Xms1524m"/>
 			<jvmarg value="-server"/>
 			<jvmarg value="-da"/>

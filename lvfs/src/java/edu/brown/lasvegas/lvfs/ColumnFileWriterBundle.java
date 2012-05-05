@@ -52,20 +52,24 @@ public final class ColumnFileWriterBundle implements Closeable {
     private int tupleCount = 0;
 
     public ColumnFileWriterBundle (VirtualFile outputFolder, String fileNameSeed,
-                    ColumnType columnType, CompressionType compressionType, boolean calculateChecksum) throws IOException {
+            ColumnType columnType, CompressionType compressionType, boolean calculateChecksum) throws IOException {
+    	this(outputFolder, fileNameSeed, columnType, compressionType, calculateChecksum, 1 << 16);
+    }
+    public ColumnFileWriterBundle (VirtualFile outputFolder, String fileNameSeed,
+                    ColumnType columnType, CompressionType compressionType, boolean calculateChecksum, int streamBufferSize) throws IOException {
         this.outputFolder = outputFolder;
         this.fileNameSeed = fileNameSeed;
         this.columnType = columnType;
         this.compressionType = compressionType;
         this.traits = ValueTraitsFactory.getInstance(columnType);
-        this.dataWriter = instantiateWriter();
+        this.dataWriter = instantiateWriter(streamBufferSize);
         if (calculateChecksum) {
             dataWriter.setCRC32Enabled(true);
         }
     }
     
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    private TypedWriter<?, ?> instantiateWriter () throws IOException {
+    private TypedWriter<?, ?> instantiateWriter (int streamBufferSize) throws IOException {
         dataFile = outputFolder.getChildFile(LVFSFileType.DATA_FILE.appendExtension(fileNameSeed));
         switch (compressionType) {
         case DICTIONARY:
@@ -74,7 +78,7 @@ public final class ColumnFileWriterBundle implements Closeable {
                 outputFolder.getChildFile(LVFSFileType.TMP_DATA_FILE.appendExtension(fileNameSeed)), traits);
         case RLE:
             positionFile = outputFolder.getChildFile(LVFSFileType.POSITION_FILE.appendExtension(fileNameSeed));
-            return new LocalRLEWriter(dataFile, traits);
+            return new LocalRLEWriter(dataFile, traits, 1 << 10, streamBufferSize);
         case GZIP_BEST_COMPRESSION:
         case SNAPPY:
             if (traits instanceof VarLenValueTraits<?>) {
@@ -84,9 +88,9 @@ public final class ColumnFileWriterBundle implements Closeable {
             }
         case NONE:
             if (traits instanceof VarLenValueTraits<?>) {
-                return new LocalVarLenWriter(dataFile, (VarLenValueTraits<?>) traits);
+                return new LocalVarLenWriter(dataFile, (VarLenValueTraits<?>) traits, 1 << 13, streamBufferSize);
             } else {
-                return new LocalFixLenWriter(dataFile, (FixLenValueTraits<?, ?>) traits);
+                return new LocalFixLenWriter(dataFile, (FixLenValueTraits<?, ?>) traits, streamBufferSize);
             }
         default:
             throw new IllegalArgumentException("unexpected compression type:" + compressionType);
