@@ -2,10 +2,13 @@ package edu.brown.lasvegas.lvfs.data;
 
 import java.io.IOException;
 
+import javax.print.attribute.standard.JobState;
+
 import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.Logger;
 
 import edu.brown.lasvegas.ColumnType;
+import edu.brown.lasvegas.JobStatus;
 import edu.brown.lasvegas.LVColumn;
 import edu.brown.lasvegas.LVDatabase;
 import edu.brown.lasvegas.LVJob;
@@ -152,6 +155,10 @@ public class DataImportMultiNodeTpchBenchmark {
             LOG.info("finished the import job...:" + job);
             for (LVTask task : metaRepo.getAllTasksByJob(job.getJobId())) {
                 LOG.info("Sub-Task finished in " + (task.getFinishedTime().getTime() - task.getStartedTime().getTime()) + "ms:" + task);
+            }
+            if (job.getStatus() != JobStatus.DONE) {
+                LOG.error("the import was incomplete! cancelling all subsequent jobs");
+            	break;
             }
         }
     }
