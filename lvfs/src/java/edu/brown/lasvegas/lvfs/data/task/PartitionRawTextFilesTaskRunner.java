@@ -48,7 +48,7 @@ public final class PartitionRawTextFilesTaskRunner extends DataTaskRunner<Partit
      * the input file more than once. Notice that we will consume write_buffer_size * write_partitions_max memory.
      */
     public static final String WRITE_PARTITIONS_MAX_KEY = "lasvegas.server.data.task.partition_raw_text.write_partitions_max";
-    public static final int WRITE_PARTITIONS_MAX_DEFAULT = 1 << 8;
+    public static final int WRITE_PARTITIONS_MAX_DEFAULT = 1 << 10; // 1 << 8;
 
     private int readBufferSize;
     private int writeBufferSize;

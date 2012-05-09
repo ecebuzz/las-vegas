@@ -2,8 +2,6 @@ package edu.brown.lasvegas.lvfs.data;
 
 import java.io.IOException;
 
-import javax.print.attribute.standard.JobState;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.Logger;
 
