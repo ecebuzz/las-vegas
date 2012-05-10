@@ -1,0 +1,19 @@
+#!/bin/bash
+HOSTSARG=$1
+COMMANDARG=$2
+HOSTSFILE=${HOSTSARG:8}
+declare -a HOSTSLINES
+let HOSTSCOUNT=0
+while read HOSTLINE
+do
+	HOSTSLINES[$HOSTSCOUNT]=$HOSTLINE
+	((HOSTSCOUNT++))
+done < $HOSTSFILE
+
+
+echo 'running ssh '$COMMANDARG' on '$HOSTSCOUNT' machines...'
+for LINE in ${HOSTSLINES[@]}
+do
+	ssh $LINE "$COMMANDARG" &
+done
+
