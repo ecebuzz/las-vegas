@@ -20,8 +20,8 @@ public class PartitionedTextFileWritersTest {
     private static final int nodeId = 22;
     private static final int groupId = 44;
     private static final int fractureId = 66;
-    private static final int writeBufferSize = 256;
-    private static final int writePartitionsMax = 10;
+    private static final int writeBufferSize = 64;
+    private static final int maxFragments = 5;
     private static final int LINES = 10000;
 
     @Before
@@ -62,35 +62,15 @@ public class PartitionedTextFileWritersTest {
     private void testWritersInternal (int partitionCount, CompressionType compression) throws IOException {
         boolean[] partitionCompleted = new boolean[partitionCount];
         Arrays.fill(partitionCompleted, false);
-        PartitionedTextFileWriters writers = new PartitionedTextFileWriters(outputDir, nodeId, groupId, fractureId, partitionCount, partitionCompleted, "UTF-8", writeBufferSize, writePartitionsMax, compression);
+        PartitionedTextFileWriters writers = new PartitionedTextFileWriters(outputDir, maxFragments, nodeId, groupId, fractureId, partitionCount, "UTF-8", writeBufferSize * maxFragments, compression);
         for (int i = 0; i < LINES; ++i) {
             writers.write(i % partitionCount, "lineline" + i);
         }
         String[] files = writers.complete();
-        assertEquals (partitionCount <= writePartitionsMax ? partitionCount : writePartitionsMax, files.length);
+        assertEquals (partitionCount, files.length);
         for (int i = 0; i < files.length; ++i) {
+            assertNotNull(files[i]);
             validateWrittenFile(files[i], partitionCount, i, compression);
-        }
-        if (partitionCount <= writePartitionsMax) {
-            assertFalse(writers.isPartitionRemaining());
-            return;
-        }
-        assertTrue(writers.isPartitionRemaining());
-        // do it once again for another partitions set of partitions
-        Arrays.fill(partitionCompleted, 0, writePartitionsMax, true);
-        writers = new PartitionedTextFileWriters(outputDir, nodeId, groupId, fractureId, partitionCount, partitionCompleted, "UTF-8", writeBufferSize, writePartitionsMax, compression);
-        for (int i = 0; i < LINES; ++i) {
-            writers.write(i % partitionCount, "lineline" + i);
-        }
-        files = writers.complete();
-        assertEquals (partitionCount - writePartitionsMax <= writePartitionsMax ? partitionCount - writePartitionsMax : writePartitionsMax, files.length);
-        for (int i = 0; i < files.length; ++i) {
-            validateWrittenFile(files[i], partitionCount, i + writePartitionsMax, compression);
-        }
-        if (partitionCount - writePartitionsMax <= writePartitionsMax) {
-            assertFalse(writers.isPartitionRemaining());
-        } else {
-            assertTrue(writers.isPartitionRemaining());
         }
     }
     private void validateWrittenFile (String file, int partitionCount, int partititon, CompressionType compression) throws IOException {

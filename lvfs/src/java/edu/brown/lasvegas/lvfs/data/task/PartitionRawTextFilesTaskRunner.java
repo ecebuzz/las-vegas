@@ -39,20 +39,19 @@ public final class PartitionRawTextFilesTaskRunner extends DataTaskRunner<Partit
     public static final String READ_BUFFER_KEY = "lasvegas.server.data.task.partition_raw_text.read_buffer_size";
     public static final int READ_BUFFER_DEFAULT = 1 << 20;
 
-    /** Buffer size to write _each_ partitioned file. */
-    public static final String WRITE_BUFFER_KEY = "lasvegas.server.data.task.partition_raw_text.write_buffer_size";
-    public static final int WRITE_BUFFER_DEFAULT = 1 << 18;
+    /** _Total_ buffer size to write partitioned files. */
+    public static final String WRITE_BUFFER_TOTAL_KEY = "lasvegas.server.data.task.partition_raw_text.write_buffer_size_total";
+    public static final long WRITE_BUFFER_TOTAL_DEFAULT = 1 << 29;
 
     /**
-     * max number of partitioned files to write at once. When num of partitions is larger than this number, we scan
-     * the input file more than once. Notice that we will consume write_buffer_size * write_partitions_max memory.
+     * max fragments in each level. see RecursiveTextFilePartitioner
      */
-    public static final String WRITE_PARTITIONS_MAX_KEY = "lasvegas.server.data.task.partition_raw_text.write_partitions_max";
-    public static final int WRITE_PARTITIONS_MAX_DEFAULT = 1 << 10; // 1 << 8;
+    public static final String WRITE_MAX_FRAGMENTS_KEY = "lasvegas.server.data.task.partition_raw_text.write_max_fragments";
+    public static final int WRITE_MAX_FRAGMENTS_DEFAULT = 1 << 7;
 
     private int readBufferSize;
-    private int writeBufferSize;
-    private int writePartitionsMax;
+    private long writeBufferSizeTotal;
+    private int writeMaxFragments;
     private CompressionType compression;
     
     private List<String> outputFilePaths;
@@ -162,43 +161,39 @@ public final class PartitionRawTextFilesTaskRunner extends DataTaskRunner<Partit
         // we only need partitioning in this task. also, we ignore columns after the partitioning column
         ColumnType[] dummyColumnTypes = new ColumnType[partitioningColumnIndex + 1];
         dummyColumnTypes[partitioningColumnIndex] = allColumns[partitioningColumnIndex].getType();
-        while (true) {
-            PartitionedTextFileWriters writers = new PartitionedTextFileWriters(context.localLvfsTmpDir, context.nodeId, group.getGroupId(), fracture.getFractureId(), partitions,
-                            partitionsCompleted, parameters.getEncoding(), writeBufferSize, writePartitionsMax, compression);
+        PartitionedTextFileWriters writers = new PartitionedTextFileWriters(context.localLvfsTmpDir, writeMaxFragments,
+                        context.nodeId, group.getGroupId(), fracture.getFractureId(), partitions,
+                        parameters.getEncoding(), writeBufferSizeTotal, compression);
+        try {
+            // scan all input files
+            TextFileTupleReader reader = new TextFileTupleReader(inputFiles, CompressionType.NONE, dummyColumnTypes, 
+                            parameters.getDelimiter(), readBufferSize, Charset.forName(parameters.getEncoding()),
+                            new SimpleDateFormat(parameters.getDateFormat()),
+                            new SimpleDateFormat(parameters.getTimeFormat()),
+                            new SimpleDateFormat(parameters.getTimestampFormat()));
             try {
-                // scan all input files
-                TextFileTupleReader reader = new TextFileTupleReader(inputFiles, CompressionType.NONE, dummyColumnTypes, 
-                                parameters.getDelimiter(), readBufferSize, Charset.forName(parameters.getEncoding()),
-                                new SimpleDateFormat(parameters.getDateFormat()),
-                                new SimpleDateFormat(parameters.getTimeFormat()),
-                                new SimpleDateFormat(parameters.getTimestampFormat()));
-                try {
-                    int checkCounter = 0;
-                    while (reader.next()) {
-                        @SuppressWarnings("unchecked")
-                        T partitionValue = (T) reader.getObject(partitioningColumnIndex);
-                        int partition = findPartition (partitionValue, startKeys);
-                        assert (partition >= 0 && partition < partitions);
-                        writers.write(partition, reader.getCurrentTupleAsString());
-                        if (++checkCounter % 100000 == 0) {
-                            checkTaskCanceled ();
-                        }
+                int checkCounter = 0;
+                while (reader.next()) {
+                    @SuppressWarnings("unchecked")
+                    T partitionValue = (T) reader.getObject(partitioningColumnIndex);
+                    int partition = findPartition (partitionValue, startKeys);
+                    assert (partition >= 0 && partition < partitions);
+                    writers.write(partition, reader.getCurrentTupleAsString());
+                    if (++checkCounter % 100000 == 0) {
+                        checkTaskCanceled ();
                     }
-                } finally {
-                    reader.close();
-                }
-                String[] paths = writers.complete();
-                for (String path : paths) {
-                    outputFilePaths.add(path);
-                }
-                partitionsCompleted = writers.getPartitionCompleted();
-                if (!writers.isPartitionRemaining()) {
-                    // some partition was skipped to save memory. scan the file again.
-                    break;
                 }
             } finally {
-                writers.close();
+                reader.close();
             }
+            String[] paths = writers.complete();
+            for (int i = 0; i < paths.length; ++i) {
+                if (paths[i] != null) {
+                    outputFilePaths.add(paths[i]);
+                }
+            }
+        } finally {
+            writers.close();
         }
     }
     private static <T extends Comparable<T>> int findPartition (T partitionValue, T[] startKeys) {
@@ -221,11 +216,11 @@ public final class PartitionRawTextFilesTaskRunner extends DataTaskRunner<Partit
 
     private void readConf () throws Exception {
         readBufferSize = context.conf.getInt(READ_BUFFER_KEY, READ_BUFFER_DEFAULT);
-        writeBufferSize = context.conf.getInt(WRITE_BUFFER_KEY, WRITE_BUFFER_DEFAULT);
-        writePartitionsMax = context.conf.getInt(WRITE_PARTITIONS_MAX_KEY, WRITE_PARTITIONS_MAX_DEFAULT);
+        writeBufferSizeTotal = context.conf.getLong(WRITE_BUFFER_TOTAL_KEY, WRITE_BUFFER_TOTAL_DEFAULT);
+        writeMaxFragments = context.conf.getInt(WRITE_MAX_FRAGMENTS_KEY, WRITE_MAX_FRAGMENTS_DEFAULT);
         compression = parameters.getTemporaryCompression();
         LOG.info("partitioning " + parameters.getFilePaths().length + " files. readBufferSize=" + readBufferSize
-                        + ", writeBufferSize=" + writeBufferSize + ", writePartitionsMax=" + writePartitionsMax
+                        + ", writeBufferSizeTotal=" + writeBufferSizeTotal + ", writeMaxFragments=" + writeMaxFragments
                         + ", compression=" + compression);
     }
 }
