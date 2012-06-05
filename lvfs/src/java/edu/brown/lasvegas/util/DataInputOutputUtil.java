@@ -13,7 +13,7 @@ public final class DataInputOutputUtil {
     /**
      * Serializes an array of primitive int.
      */
-    public static void writeArray(DataOutput out, int[] array) throws IOException {
+    public static void writeIntArray(DataOutput out, int[] array) throws IOException {
         out.writeInt(array == null ? -1 : array.length);
         if (array != null) {
             for (int i = 0; i < array.length; ++i) {

@@ -91,9 +91,9 @@ public final class RepartitionTaskParameters extends DataTaskParameters {
     public void write(DataOutput out) throws IOException {
         out.writeInt(partitioningColumnId);
         new ValueRangeArraySerializer().writeArray(out, partitionRanges);
-        DataInputOutputUtil.writeArray(out, outputColumnIds);
+        DataInputOutputUtil.writeIntArray(out, outputColumnIds);
         new CompressionTypeArraySerializer().writeArray(out, outputCompressions);
-        DataInputOutputUtil.writeArray(out, basePartitionIds);
+        DataInputOutputUtil.writeIntArray(out, basePartitionIds);
         out.writeInt(readCacheSize);
         out.writeInt(outputCacheSize);
     }

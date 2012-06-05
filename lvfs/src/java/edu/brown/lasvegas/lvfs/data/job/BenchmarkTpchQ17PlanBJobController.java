@@ -91,10 +91,13 @@ public class BenchmarkTpchQ17PlanBJobController extends BenchmarkTpchQ17JobContr
         
         // 2. at each node for each part partition, collect the repartitioned lineitem files
         // and then run Q17.
-        queryResult = collectAndRunQuery (summaryFileMap, 0.5d, 1.0d);
+        queryResult = collectAndRunQuery (summaryFileMap, 0.5d, 0.99d);
         LOG.info("all tasks including repartitioning seem done! query result=" + queryResult);
         
-        RepartitionSummary.deleteRepartitionedFiles(metaRepo, summaryFileMap);
+        // 3. delete the summary files and repartitioned files.
+        SortedMap<Integer, LVTask> deleteTmpFilesTasks = RepartitionSummary.deleteRepartitionedFiles(jobId, metaRepo, summaryFileMap);
+        joinTasks(deleteTmpFilesTasks, 0.99d, 1.0d);
+        LOG.info("deleted temporary files");
     }
     
     private SortedMap<Integer, String> repartitionLineitem (double baseProgress, double completedProgress) throws IOException {

@@ -8,6 +8,8 @@ import edu.brown.lasvegas.lvfs.data.task.BenchmarkTpchQ18PlanBTaskRunner;
 import edu.brown.lasvegas.lvfs.data.task.BenchmarkTpchQ18TaskParameters;
 import edu.brown.lasvegas.lvfs.data.task.DeletePartitionFilesTaskParameters;
 import edu.brown.lasvegas.lvfs.data.task.DeletePartitionFilesTaskRunner;
+import edu.brown.lasvegas.lvfs.data.task.DeleteTmpFilesTaskParameters;
+import edu.brown.lasvegas.lvfs.data.task.DeleteTmpFilesTaskRunner;
 import edu.brown.lasvegas.lvfs.data.task.DiskCacheFlushTaskParameters;
 import edu.brown.lasvegas.lvfs.data.task.DiskCacheFlushTaskRunner;
 import edu.brown.lasvegas.lvfs.data.task.LoadPartitionedTextFilesTaskParameters;
@@ -88,6 +90,12 @@ public enum TaskType {
     DELETE_PARTITION_FILES,
     
     /**
+     * Sub task of a few jobs.
+     * Physically delete temporary files/folders in the node.
+     */
+    DELETE_TMP_FILES,
+    
+    /**
      * Sub task of a few jobs, including recovery and query processing.
      * Output partitioned columnar files for the given partitioning column and range (which
      * is probably different from the current partitioning column/range).
@@ -153,6 +161,8 @@ public enum TaskType {
             return new MergePartitionSameSchemeTaskParameters();
         case DELETE_PARTITION_FILES:
             return new DeletePartitionFilesTaskParameters();
+        case DELETE_TMP_FILES:
+            return new DeleteTmpFilesTaskParameters();
         case REPARTITION:
         	return new RepartitionTaskParameters();
         case BENCHMARK_TPCH_Q17_PLANA:
@@ -184,6 +194,8 @@ public enum TaskType {
             return new MergePartitionSameSchemeTaskRunner();
         case DELETE_PARTITION_FILES:
             return new DeletePartitionFilesTaskRunner();
+        case DELETE_TMP_FILES:
+            return new DeleteTmpFilesTaskRunner();
         case REPARTITION:
         	return new RepartitionTaskRunner();
         case BENCHMARK_TPCH_Q17_PLANA:

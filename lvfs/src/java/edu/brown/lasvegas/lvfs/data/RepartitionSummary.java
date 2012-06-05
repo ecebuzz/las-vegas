@@ -8,8 +8,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.SortedMap;
+import java.util.TreeMap;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.Logger;
 
 import edu.brown.lasvegas.ColumnType;
@@ -17,12 +17,16 @@ import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.LVColumnFile;
 import edu.brown.lasvegas.LVRackNode;
 import edu.brown.lasvegas.LVReplicaPartition;
+import edu.brown.lasvegas.LVTask;
+import edu.brown.lasvegas.TaskStatus;
+import edu.brown.lasvegas.TaskType;
 import edu.brown.lasvegas.client.DataNodeFile;
 import edu.brown.lasvegas.client.LVDataClient;
 import edu.brown.lasvegas.lvfs.ColumnFileBundle;
 import edu.brown.lasvegas.lvfs.VirtualFile;
 import edu.brown.lasvegas.lvfs.VirtualFileInputStream;
 import edu.brown.lasvegas.lvfs.VirtualFileOutputStream;
+import edu.brown.lasvegas.lvfs.data.task.DeleteTmpFilesTaskParameters;
 import edu.brown.lasvegas.lvfs.local.LocalVirtualFile;
 import edu.brown.lasvegas.protocol.LVMetadataProtocol;
 
@@ -118,32 +122,25 @@ public final class RepartitionSummary {
 	}
 
 	/**
-	 * Delete all repartitioned files and summary file.
+	 * Run tasks to delete all repartitioned files and summary file.
 	 * This method assumes that the repartitioned files are under
 	 * the same folder as the summary file.
 	 */
-	public static void deleteRepartitionedFiles (LVMetadataProtocol metaRepo,
+	public static SortedMap<Integer, LVTask> deleteRepartitionedFiles (int jobId, LVMetadataProtocol metaRepo,
 			SortedMap<Integer, String> summaryFileMap) throws IOException {
-    	for (Integer nodeId : summaryFileMap.keySet()) {
-    		LVDataClient client = null;
-    		try {
-        		String summaryFilePath = summaryFileMap.get(nodeId);
-        		
-                LVRackNode node = metaRepo.getRackNode(nodeId);
-                if (node == null) {
-                    throw new IOException ("the node ID (" + nodeId + ") doesn't exist");
-                }
-                client = new LVDataClient(new Configuration(), node.getAddress());
-                VirtualFile summaryFile = new DataNodeFile(client.getChannel(), summaryFilePath);
-                VirtualFile folder = summaryFile.getParentFile();
-        		LOG.info("deleting repartitioned files in Node-" + nodeId + " under " + folder.getAbsolutePath());
-        		folder.delete(true);
-    		} finally {
-    			if (client != null) {
-    				client.release();
-    			}
-    		}
-    	}
+        SortedMap<Integer, LVTask> taskMap = new TreeMap<Integer, LVTask>();
+        for (Integer nodeId : summaryFileMap.keySet()) {
+            String summaryFilePath = summaryFileMap.get(nodeId);
+            DeleteTmpFilesTaskParameters taskParam = new DeleteTmpFilesTaskParameters();
+            String folder = new File(summaryFilePath).getParent();
+            taskParam.setPaths(new String[]{folder});
+
+            int taskId = metaRepo.createNewTaskIdOnlyReturn(jobId, nodeId, TaskType.DELETE_TMP_FILES, taskParam.writeToBytes());
+            LVTask task = metaRepo.updateTask(taskId, TaskStatus.START_REQUESTED, null, null, null);
+            assert (!taskMap.containsKey(taskId));
+            taskMap.put(taskId, task);
+        }
+        return taskMap;
 	}
 
 	/**

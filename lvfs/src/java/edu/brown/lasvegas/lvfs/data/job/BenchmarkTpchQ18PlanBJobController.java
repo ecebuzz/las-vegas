@@ -94,7 +94,10 @@ public class BenchmarkTpchQ18PlanBJobController extends BenchmarkTpchQ18JobContr
         fillCustomerNames();
         LOG.info("all tasks including repartitioning seem done!");
 
-        RepartitionSummary.deleteRepartitionedFiles(metaRepo, summaryFileMap);
+        // 4. delete the summary files and repartitioned files.
+        SortedMap<Integer, LVTask> deleteTmpFilesTasks = RepartitionSummary.deleteRepartitionedFiles(jobId, metaRepo, summaryFileMap);
+        joinTasks(deleteTmpFilesTasks, 0.99d, 1.0d);
+        LOG.info("deleted temporary files");
     }
     
     private SortedMap<Integer, String> repartitionLineitem (double baseProgress, double completedProgress) throws IOException {
