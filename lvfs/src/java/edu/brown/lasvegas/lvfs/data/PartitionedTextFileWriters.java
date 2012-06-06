@@ -161,7 +161,9 @@ public final class PartitionedTextFileWriters implements Closeable {
         partitioner.close();
         if (recusriveTmpFolder.exists()) {
             boolean deleted = recusriveTmpFolder.delete();
-            assert (deleted);
+            if (!deleted) {
+                LOG.warn("couldn't delete temporary folder:" + recusriveTmpFolder.getAbsolutePath());
+            }
         }
     }
 }

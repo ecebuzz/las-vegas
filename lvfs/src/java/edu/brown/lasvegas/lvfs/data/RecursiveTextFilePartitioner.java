@@ -54,7 +54,12 @@ public final class RecursiveTextFilePartitioner implements Closeable {
         
         this.charset = charset;
         this.writeBufferSizeTotal = writeBufferSizeTotal;
-        this.writeBufferSize = (int) (writeBufferSizeTotal / fragments);
+        final int MAX_WRITE_BUFFER_SIZE = 1 << 24;
+        if ((int) (writeBufferSizeTotal / fragments) > MAX_WRITE_BUFFER_SIZE) {
+            this.writeBufferSize = MAX_WRITE_BUFFER_SIZE;
+        } else {
+            this.writeBufferSize = (int) (writeBufferSizeTotal / fragments);
+        }
         this.crlfBytes = "\r\n".getBytes(charset);
     }
     /** parent folder to place the output file(s). */
