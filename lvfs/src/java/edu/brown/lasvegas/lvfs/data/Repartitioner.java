@@ -25,6 +25,10 @@ import edu.brown.lasvegas.util.ValueRange;
  * Repartition is a very costly operation at its best, so this class doesn't
  * pay too much effort to reduce CPU overhead. Anyway massive read/write disk I/O
  * is the killer.
+ * 
+ * TODO: this should be recursive repartitioning like in RecursiveTextFilePartitioner
+ * to avoid OutofMemory. However, because we use a smaller write cache size,
+ * it's okay for now... unless num of partitions is like 10000.
  */
 public final class Repartitioner {
     private static Logger LOG = Logger.getLogger(Repartitioner.class);
@@ -205,7 +209,7 @@ public final class Repartitioner {
 		writers[partition] = new ColumnFileWriterBundle[columnCount];
 		for (int i = 0; i < columnCount; ++i) {
 			writers[partition][i] = new ColumnFileWriterBundle(folder, String.valueOf(i), columnTypes[i], compressions[i], true,
-					1 << 13); // to avoid OutofMemory, uses only 8kb buffer.
+					1 << 16); // to avoid OutofMemory, uses only 64kb buffer.
 		}
 		
 		if (partition % 20 == 0) {

@@ -90,6 +90,12 @@ public final class LoadPartitionedTextFilesTaskRunner extends DataTaskRunner<Loa
             progress = completedProgress;
             checkTaskCanceled();
         }
+        if (tmpOutputFolder.exists()) {
+            boolean deleted = tmpOutputFolder.delete();
+            if (!deleted) {
+                LOG.warn("failed to delete the temporary folder: " + tmpOutputFolder.getAbsolutePath());
+            }
+        }
         LOG.info("done!");
         return new String[0];
     }

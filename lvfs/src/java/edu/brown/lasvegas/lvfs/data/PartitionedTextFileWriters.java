@@ -35,7 +35,7 @@ public final class PartitionedTextFileWriters implements Closeable {
         this.fractureId = fractureId;
         this.partitions = partitions;
         this.charset = Charset.forName(encoding);
-        this.recusriveTmpFolder = new File(outputDir, "recursive_tmp");
+        this.recusriveTmpFolder = new File(outputDir, "recursive_tmp_" + Math.abs( new Random (System.nanoTime()).nextInt()));
         this.partitioner = new RecursiveTextFilePartitioner(recusriveTmpFolder, maxFragments, 0, partitions, charset, writeBufferSizeTotal);
         
         this.compression = compression;

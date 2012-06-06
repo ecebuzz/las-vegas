@@ -8,13 +8,11 @@ import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.Logger;
 
 import edu.brown.lasvegas.AbstractJobController;
 import edu.brown.lasvegas.JobType;
 import edu.brown.lasvegas.LVFracture;
-import edu.brown.lasvegas.LVRackNode;
 import edu.brown.lasvegas.LVReplica;
 import edu.brown.lasvegas.LVReplicaGroup;
 import edu.brown.lasvegas.LVReplicaPartition;
@@ -24,10 +22,8 @@ import edu.brown.lasvegas.LVTask;
 import edu.brown.lasvegas.ReplicaPartitionStatus;
 import edu.brown.lasvegas.TaskStatus;
 import edu.brown.lasvegas.TaskType;
-import edu.brown.lasvegas.client.DataNodeFile;
-import edu.brown.lasvegas.client.LVDataClient;
-import edu.brown.lasvegas.lvfs.VirtualFile;
 import edu.brown.lasvegas.lvfs.data.TemporaryFilePath;
+import edu.brown.lasvegas.lvfs.data.task.DeleteTmpFilesTaskParameters;
 import edu.brown.lasvegas.lvfs.data.task.LoadPartitionedTextFilesTaskParameters;
 import edu.brown.lasvegas.lvfs.data.task.PartitionRawTextFilesTaskParameters;
 import edu.brown.lasvegas.lvfs.data.task.RecoverPartitionFromBuddyTaskParameters;
@@ -132,13 +128,15 @@ public class ImportFractureJobController extends AbstractJobController<ImportFra
         // loads other replica schemes in each replica group
         // this is supposed to be efficient because of the buddy files which are loaded in the previous tasks.
         if (!stopRequested && !errorEncountered) {
-            copyFromBuddyFiles (2.0d / 3.0d, 1.0d); // 66%-100% progress
+            copyFromBuddyFiles (2.0d / 3.0d, 0.99d); // 66%-99% progress
         }
 
         // after all, delete the temporary partitioned files
         if (!stopRequested && !errorEncountered) {
-        	deleteTemporaryFiles (allPartitionedFiles);
+        	deleteTemporaryFiles (allPartitionedFiles, 0.99d, 1.0d);
         }
+        
+        metaRepo.sync(); // to make sure the central server can be shutdown 
     }
     
     private TemporaryFilePath[] partitionRawFiles (double baseProgress, double completedProgress) throws IOException {
@@ -339,37 +337,31 @@ public class ImportFractureJobController extends AbstractJobController<ImportFra
         joinTasks(taskMap, baseProgress, completedProgress);
     }
     
-    private void deleteTemporaryFiles (TemporaryFilePath[] allPartitionedFiles) throws IOException {
+    private void deleteTemporaryFiles (TemporaryFilePath[] allPartitionedFiles, double baseProgress, double completedProgress) throws IOException {
     	LOG.info("deleting " + allPartitionedFiles.length + " temporary partitioned files...");
-        HashMap<Integer, LVDataClient> dataClients = new HashMap<Integer, LVDataClient>(); // key= nodeID. keep this until we disconnect from data nodes
-        try {
-	    	for (TemporaryFilePath path : allPartitionedFiles) {
-	            VirtualFile file;
-	            LVDataClient client = dataClients.get(path.nodeId);
-	            if (client == null) {
-	                LVRackNode node = metaRepo.getRackNode(path.nodeId);
-	                if (node == null) {
-	                    throw new IOException ("the node ID (" + path.nodeId + ") contained in the temporary file path " + path.getFilePath() + " isn't found");
-	                }
-	                client = new LVDataClient(new Configuration(), node.getAddress());
-	                dataClients.put(path.nodeId, client);
-	            }
-	            file = new DataNodeFile(client.getChannel(), path.getFilePath());
-	            if (!file.exists()) {
-	                throw new IOException ("the temporary file " + file.getAbsolutePath() + " doesn't exist on node-" + path.nodeId);
-	            }
-	            boolean deleted = file.delete();
-	            if (!deleted) {
-	            	LOG.warn("the temporary file " + file.getAbsolutePath() + " couldn't be deleted on node-" + path.nodeId);
-	            }
-	    	}
-	    } finally {
-	        // now we can disconnect from the data node
-	        for (LVDataClient client : dataClients.values()) {
-	            client.release();
-	        }
-	        dataClients.clear();
-	    }
+    	
+        Map<Integer, ArrayList<String>> filesMap = new HashMap<Integer, ArrayList<String>>(); // key=nodeId, value=paths to delete
+        for (TemporaryFilePath path : allPartitionedFiles) {
+            Integer nodeId = path.nodeId;
+            ArrayList<String> paths = filesMap.get(nodeId);
+            if (paths == null) {
+                paths = new ArrayList<String>();
+                filesMap.put(nodeId, paths);
+            }
+            paths.add(path.getFilePath());
+        }
+        SortedMap<Integer, LVTask> taskMap = new TreeMap<Integer, LVTask>();
+        for (Integer nodeId : filesMap.keySet()) {
+            ArrayList<String> paths = filesMap.get(nodeId);
+            DeleteTmpFilesTaskParameters taskParam = new DeleteTmpFilesTaskParameters();
+            taskParam.setPaths(paths.toArray(new String[0]));
+
+            int taskId = metaRepo.createNewTaskIdOnlyReturn(jobId, nodeId, TaskType.DELETE_TMP_FILES, taskParam.writeToBytes());
+            LVTask task = metaRepo.updateTask(taskId, TaskStatus.START_REQUESTED, null, null, null);
+            assert (!taskMap.containsKey(taskId));
+            taskMap.put(taskId, task);
+        }
+        joinTasks(taskMap, baseProgress, completedProgress);
     	LOG.info("deleted.");
     }
 }
