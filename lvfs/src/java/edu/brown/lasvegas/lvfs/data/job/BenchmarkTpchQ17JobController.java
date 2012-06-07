@@ -1,7 +1,6 @@
 package edu.brown.lasvegas.lvfs.data.job;
 
 import java.io.IOException;
-import java.util.List;
 
 import org.apache.log4j.Logger;
 
@@ -99,13 +98,5 @@ public abstract class BenchmarkTpchQ17JobController extends AbstractJobControlle
     protected double queryResult = 0;
     public final double getQueryResult () {
         return queryResult;
-    }
-
-    protected static int[] asIntArray (List<Integer> list) {
-        int[] array = new int[list.size()];
-        for (int i = 0; i < array.length; ++i) {
-            array[i] = list.get(i);
-        }
-        return array;
     }
 }

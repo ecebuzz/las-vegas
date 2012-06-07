@@ -120,17 +120,7 @@ public class BenchmarkTpchQ18PlanBJobController extends BenchmarkTpchQ18JobContr
             taskMap.put(taskId, task);
         }
         joinTasks(taskMap, baseProgress, completedProgress);
-
-        SortedMap<Integer, String> summaryFileMap = new TreeMap<Integer, String>();
-        for (LVTask task : taskMap.values()) {
-        	int nodeId = task.getNodeId();
-        	assert (!summaryFileMap.containsKey(nodeId));
-        	assert (task.getOutputFilePaths() != null);
-        	assert (task.getOutputFilePaths().length == 1);
-        	String summaryFilePath = task.getOutputFilePaths()[0];
-        	summaryFileMap.put(nodeId, summaryFilePath);
-        }
-        return summaryFileMap;
+        return RepartitionSummary.extractSummaryFileMap(taskMap);
     }
     
     private void collectAndRunQuery (SortedMap<Integer, String> summaryFileMap, double baseProgress, double completedProgress) throws IOException {

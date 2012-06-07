@@ -8,6 +8,7 @@ import edu.brown.lasvegas.LVReplica;
 import edu.brown.lasvegas.LVReplicaPartition;
 import edu.brown.lasvegas.LVTask;
 import edu.brown.lasvegas.lvfs.data.DataTaskParameters;
+import edu.brown.lasvegas.util.DataInputOutputUtil;
 
 /**
  * Parameters for {@link RecoverPartitionFromBuddyTaskRunner}.
@@ -45,11 +46,7 @@ public final class RecoverPartitionFromBuddyTaskParameters extends DataTaskParam
     public void write(DataOutput out) throws IOException {
         out.writeInt(replicaId);
         out.writeInt(buddyReplicaId);
-        out.writeInt(partitionIds == null ? -1 : partitionIds.length);
-        if (partitionIds != null)
-        for (int partitionId : partitionIds) {
-            out.writeInt(partitionId);
-        }
+        DataInputOutputUtil.writeIntArray(out, partitionIds);
     }
 
     /**
@@ -59,16 +56,7 @@ public final class RecoverPartitionFromBuddyTaskParameters extends DataTaskParam
     public void readFields(DataInput in) throws IOException {
         replicaId = in.readInt();
         buddyReplicaId = in.readInt();
-        int len = in.readInt();
-        assert (len >= -1);
-        if (len == -1) {
-            partitionIds = null;
-        } else {
-            partitionIds = new int[len];
-            for (int i = 0; i < len; ++i) {
-                partitionIds[i] = in.readInt();
-            }
-        }
+        partitionIds = DataInputOutputUtil.readIntArray(in);
     }
     
 // auto-generated getters/setters (comments by JAutodoc)    

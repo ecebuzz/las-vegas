@@ -12,6 +12,7 @@ import edu.brown.lasvegas.TaskStatus;
 import edu.brown.lasvegas.TaskType;
 import edu.brown.lasvegas.lvfs.data.task.BenchmarkTpchQ17TaskParameters;
 import edu.brown.lasvegas.protocol.LVMetadataProtocol;
+import edu.brown.lasvegas.traits.ValueTraitsFactory;
 
 /**
  * This job runs TPC-H's Q17, assuming a single fracture,
@@ -90,8 +91,8 @@ public class BenchmarkTpchQ17PlanAJobController extends BenchmarkTpchQ17JobContr
             taskParam.setContainer(param.getContainer());
             taskParam.setLineitemTableId(lineitemTable.getTableId());
             taskParam.setPartTableId(partTable.getTableId());
-            int[] lineitemPartitionIds = asIntArray(node.lineitemPartitionIds);
-            int[] partPartitionIds = asIntArray(node.partPartitionIds);
+            int[] lineitemPartitionIds = ValueTraitsFactory.INTEGER_TRAITS.toArray(node.lineitemPartitionIds);
+            int[] partPartitionIds = ValueTraitsFactory.INTEGER_TRAITS.toArray(node.partPartitionIds);
             taskParam.setLineitemPartitionIds(lineitemPartitionIds);
             taskParam.setPartPartitionIds(partPartitionIds);
 

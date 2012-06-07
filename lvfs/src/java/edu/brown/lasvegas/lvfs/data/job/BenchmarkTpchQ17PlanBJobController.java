@@ -17,6 +17,7 @@ import edu.brown.lasvegas.lvfs.data.RepartitionSummary;
 import edu.brown.lasvegas.lvfs.data.task.BenchmarkTpchQ17TaskParameters;
 import edu.brown.lasvegas.lvfs.data.task.RepartitionTaskParameters;
 import edu.brown.lasvegas.protocol.LVMetadataProtocol;
+import edu.brown.lasvegas.traits.ValueTraitsFactory;
 
 /**
  * This job is a slower query plan for TPC-H's Q17.
@@ -105,7 +106,7 @@ public class BenchmarkTpchQ17PlanBJobController extends BenchmarkTpchQ17JobContr
         for (Integer nodeId : lineitemNodeMap.keySet()) {
             ArrayList<Integer> lineitemPartitionIds = lineitemNodeMap.get(nodeId);
         	RepartitionTaskParameters taskParam = new RepartitionTaskParameters();
-        	taskParam.setBasePartitionIds(asIntArray(lineitemPartitionIds));
+        	taskParam.setBasePartitionIds(ValueTraitsFactory.INTEGER_TRAITS.toArray(lineitemPartitionIds));
         	taskParam.setOutputCacheSize(1 << 12); // doesn't matter. so far.
         	taskParam.setOutputColumnIds(new int[]{l_partkey.getColumnId(), l_extendedprice.getColumnId(), l_quantity.getColumnId()});
         	taskParam.setOutputCompressions(new CompressionType[]{CompressionType.NONE, CompressionType.NONE, CompressionType.NONE});
@@ -120,17 +121,7 @@ public class BenchmarkTpchQ17PlanBJobController extends BenchmarkTpchQ17JobContr
             taskMap.put(taskId, task);
         }
         joinTasks(taskMap, baseProgress, completedProgress);
-
-        SortedMap<Integer, String> summaryFileMap = new TreeMap<Integer, String>();
-        for (LVTask task : taskMap.values()) {
-        	int nodeId = task.getNodeId();
-        	assert (!summaryFileMap.containsKey(nodeId));
-        	assert (task.getOutputFilePaths() != null);
-        	assert (task.getOutputFilePaths().length == 1);
-        	String summaryFilePath = task.getOutputFilePaths()[0];
-        	summaryFileMap.put(nodeId, summaryFilePath);
-        }
-        return summaryFileMap;
+        return RepartitionSummary.extractSummaryFileMap(taskMap);
     }
     
     private double collectAndRunQuery (SortedMap<Integer, String> summaryFileMap, double baseProgress, double completedProgress) throws IOException {
@@ -144,7 +135,7 @@ public class BenchmarkTpchQ17PlanBJobController extends BenchmarkTpchQ17JobContr
             taskParam.setLineitemTableId(lineitemTable.getTableId());
             taskParam.setPartTableId(partTable.getTableId());
             taskParam.setLineitemPartitionIds(new int[0]);
-            taskParam.setPartPartitionIds(asIntArray(partPartitionIds));
+            taskParam.setPartPartitionIds(ValueTraitsFactory.INTEGER_TRAITS.toArray(partPartitionIds));
             taskParam.setRepartitionSummaryFileMap(summaryFileMap);
 
             int taskId = metaRepo.createNewTaskIdOnlyReturn(jobId, nodeId, TaskType.BENCHMARK_TPCH_Q17_PLANB, taskParam.writeToBytes());

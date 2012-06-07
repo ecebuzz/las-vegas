@@ -8,6 +8,7 @@ import edu.brown.lasvegas.LVColumnFile;
 import edu.brown.lasvegas.client.DataNodeFile;
 import edu.brown.lasvegas.lvfs.local.LocalVirtualFile;
 import edu.brown.lasvegas.protocol.LVDataProtocol;
+import edu.brown.lasvegas.util.VirtualFileUtil;
 
 /**
  * Represents a set of files which logically constitute a column file.
@@ -125,6 +126,43 @@ public final class ColumnFileBundle {
         if (!file.delete()) {
             throw new IOException ("failed to delete this file:" + file);
         }
+    }
+    /** copy the files to the given _local_ folder. */
+    public ColumnFileBundle copyFiles (LocalVirtualFile destinationFolder) throws IOException {
+        if (!destinationFolder.exists()) {
+            boolean created = destinationFolder.mkdirs();
+            if (!created) {
+                throw new IOException ("couldn't create this folder: " + destinationFolder);
+            }
+        }
+        if (!destinationFolder.isDirectory()) {
+            throw new IOException ("this isn't a folder: " + destinationFolder);
+        }
+        ColumnFileBundle copied = new ColumnFileBundle();
+        copied.columnType = this.columnType;
+        copied.compressionType = this.compressionType;
+        copied.dataFile = copyToLocal(destinationFolder, this.dataFile);
+        copied.dataFileChecksum = this.dataFileChecksum;
+        copied.dictionaryBytesPerEntry = this.dictionaryBytesPerEntry;
+        copied.dictionaryFile = this.dictionaryFile;
+        copied.distinctValues = this.distinctValues;
+        copied.positionFile = copyToLocal(destinationFolder, this.positionFile);
+        copied.runCount = this.runCount;
+        copied.sorted = this.sorted;
+        copied.tmpFile = copyToLocal(destinationFolder, this.tmpFile);
+        copied.tupleCount = this.tupleCount;
+        copied.uncompressedSizeKB = this.uncompressedSizeKB;
+        copied.valueFile = copyToLocal(destinationFolder, this.valueFile);
+        return copied;
+    }
+    private VirtualFile copyToLocal (LocalVirtualFile destinationFolder, VirtualFile file) throws IOException {
+        if (file == null || !file.exists()) {
+            return null;
+        }
+        VirtualFile copiedFile = destinationFolder.getChildFile(file.getName());
+        assert (!copiedFile.exists());
+        VirtualFileUtil.copyFile(file, copiedFile);
+        return copiedFile;
     }
 
 // auto-generated getters/setters (comments by JAutodoc)

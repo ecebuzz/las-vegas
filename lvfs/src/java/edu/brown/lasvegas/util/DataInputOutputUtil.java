@@ -3,6 +3,8 @@ package edu.brown.lasvegas.util;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
 import org.apache.hadoop.io.Writable;
 
@@ -106,6 +108,39 @@ public final class DataInputOutputUtil {
                 }
                 return ret;
             }
+        }
+    }
+
+    /** readFields() implementation for SortedMap<Integer, String>. */
+    public static SortedMap<Integer, String> readIntegerStringSortedMap(DataInput in) throws IOException {
+        int len = in.readInt();
+        assert (len >= -1);
+        if (len == -1) {
+            return null;
+        } else {
+            SortedMap<Integer, String> map = new TreeMap<Integer, String>();
+            for (int i = 0; i < len; ++i) {
+                int nodeId = in.readInt();
+                String summaryFilePath = in.readUTF();
+                map.put(nodeId, summaryFilePath);
+            }
+            return map;
+        }
+    }
+    
+    /** write() implementation for SortedMap<Integer, String>. */
+    public static void writeIntegerStringSortedMap(DataOutput out, SortedMap<Integer, String> map) throws IOException {
+        if (map == null) {
+            out.writeInt(-1);
+        } else {
+            out.writeInt(map.size());
+            int cnt = 0;
+            for (Integer nodeId : map.keySet()) {
+                out.writeInt(nodeId);
+                out.writeUTF(map.get(nodeId));
+                ++cnt;
+            }
+            assert (cnt == map.size());
         }
     }
 }

@@ -84,6 +84,29 @@ public final class RepartitionSummary {
     }
 
     /**
+     * Receiving a set of completed repartitioning tasks, constructs a map of summary files
+     * returned by those tasks.  
+     * @param taskMap completed repartitioning tasks. the task type is probably REPARTITION,
+     * but other task type is also okay as far as its output file is a summary file. 
+     * @return collection of summary files
+     */
+    public static SortedMap<Integer, String> extractSummaryFileMap(Map<Integer, LVTask> taskMap) {
+        SortedMap<Integer, String> summaryFileMap = new TreeMap<Integer, String>();
+        for (LVTask task : taskMap.values()) {
+            if (task.getStatus() != TaskStatus.DONE) {
+                LOG.warn("this repartitioning task was not yet done. couldn't extract summary file:" + task);
+                continue;
+            }
+            int nodeId = task.getNodeId();
+            assert (!summaryFileMap.containsKey(nodeId));
+            assert (task.getOutputFilePaths() != null);
+            assert (task.getOutputFilePaths().length == 1);
+            String summaryFilePath = task.getOutputFilePaths()[0];
+            summaryFileMap.put(nodeId, summaryFilePath);
+        }
+        return summaryFileMap;
+    }
+    /**
 	 * Read a set of repartitioning summary files and return the descriptors of repartitioned files.
 	 */
 	public static Map<Integer, LVColumnFile[][]> parseSummaryFiles (

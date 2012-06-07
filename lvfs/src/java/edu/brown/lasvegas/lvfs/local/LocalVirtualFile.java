@@ -73,7 +73,7 @@ public final class LocalVirtualFile implements VirtualFile {
         return new LocalVirtualFile(parentFile);
     }
     @Override
-    public VirtualFile getChildFile(String filename) {
+    public LocalVirtualFile getChildFile(String filename) {
         return new LocalVirtualFile(new File(file, filename));
     }
     @Override

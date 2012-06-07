@@ -20,6 +20,8 @@ import edu.brown.lasvegas.lvfs.data.task.PartitionRawTextFilesTaskParameters;
 import edu.brown.lasvegas.lvfs.data.task.PartitionRawTextFilesTaskRunner;
 import edu.brown.lasvegas.lvfs.data.task.RecoverPartitionFromBuddyTaskParameters;
 import edu.brown.lasvegas.lvfs.data.task.RecoverPartitionFromBuddyTaskRunner;
+import edu.brown.lasvegas.lvfs.data.task.RecoverPartitionFromRepartitionedFilesTaskParameters;
+import edu.brown.lasvegas.lvfs.data.task.RecoverPartitionFromRepartitionedFilesTaskRunner;
 import edu.brown.lasvegas.lvfs.data.task.RepartitionTaskParameters;
 import edu.brown.lasvegas.lvfs.data.task.RepartitionTaskRunner;
 
@@ -68,6 +70,15 @@ public enum TaskType {
      * @see RecoverPartitionFromBuddyTaskRunner
      */
     RECOVER_PARTITION_FROM_BUDDY,
+    
+    /**
+     * Sub task of {@link JobType#RECOVER_FRACTURE_FOREIGN}.
+     * In order to recover a replica from another replica that is in a different replica group,
+     * a 'foreign' recovery must repartition the replica. This sub task receives the repartitioned files
+     * and reconstructs the damaged partitions from them.
+     * @see RecoverPartitionFromRepartitionedFilesTaskRunner
+     */
+    RECOVER_PARTITION_FROM_REPARTITIONED_FILES,
     
     /**
      * Sub task of {@link JobType#MERGE_FRACTURE}.
@@ -157,6 +168,8 @@ public enum TaskType {
             return new LoadPartitionedTextFilesTaskParameters();
         case RECOVER_PARTITION_FROM_BUDDY:
             return new RecoverPartitionFromBuddyTaskParameters();
+        case RECOVER_PARTITION_FROM_REPARTITIONED_FILES:
+            return new RecoverPartitionFromRepartitionedFilesTaskParameters();
         case MERGE_PARTITION_SAME_SCHEME:
             return new MergePartitionSameSchemeTaskParameters();
         case DELETE_PARTITION_FILES:
@@ -190,6 +203,8 @@ public enum TaskType {
             return new LoadPartitionedTextFilesTaskRunner();
         case RECOVER_PARTITION_FROM_BUDDY:
             return new RecoverPartitionFromBuddyTaskRunner();
+        case RECOVER_PARTITION_FROM_REPARTITIONED_FILES:
+            return new RecoverPartitionFromRepartitionedFilesTaskRunner();
         case MERGE_PARTITION_SAME_SCHEME:
             return new MergePartitionSameSchemeTaskRunner();
         case DELETE_PARTITION_FILES:

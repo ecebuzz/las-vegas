@@ -4,11 +4,11 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
 import java.util.SortedMap;
-import java.util.TreeMap;
 
 import edu.brown.lasvegas.LVTask;
 import edu.brown.lasvegas.TaskType;
 import edu.brown.lasvegas.lvfs.data.DataTaskParameters;
+import edu.brown.lasvegas.util.DataInputOutputUtil;
 
 /**
  * The Class BenchmarkTpchQ17TaskParameters.
@@ -79,18 +79,7 @@ public final class BenchmarkTpchQ17TaskParameters extends DataTaskParameters {
         lineitemPartitionIds = readIntArray(in);
         brand = in.readUTF();
         container = in.readUTF();
-        int len = in.readInt();
-        assert (len >= -1);
-        if (len == -1) {
-        	repartitionSummaryFileMap = null;
-        } else {
-        	repartitionSummaryFileMap = new TreeMap<Integer, String>();
-        	for (int i = 0; i < len; ++i) {
-        		int nodeId = in.readInt();
-        		String summaryFilePath = in.readUTF();
-        		repartitionSummaryFileMap.put(nodeId, summaryFilePath);
-        	}
-        }
+        repartitionSummaryFileMap = DataInputOutputUtil.readIntegerStringSortedMap(in);
     }
     
     /**
@@ -108,18 +97,7 @@ public final class BenchmarkTpchQ17TaskParameters extends DataTaskParameters {
         writeIntArray(out, lineitemPartitionIds);
         out.writeUTF(brand);
         out.writeUTF(container);
-        if (repartitionSummaryFileMap == null) {
-        	out.writeInt(-1);
-        } else {
-        	out.writeInt(repartitionSummaryFileMap.size());
-        	int cnt = 0;
-        	for (Integer nodeId : repartitionSummaryFileMap.keySet()) {
-            	out.writeInt(nodeId);
-            	out.writeUTF(repartitionSummaryFileMap.get(nodeId));
-        		++cnt;
-        	}
-        	assert (cnt == repartitionSummaryFileMap.size());
-        }
+        DataInputOutputUtil.writeIntegerStringSortedMap(out, repartitionSummaryFileMap);
     }
     
     /**
