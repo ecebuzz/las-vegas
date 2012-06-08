@@ -203,7 +203,18 @@ public class ForeignRecoveryTest {
                 totalTuples += tup;
 
                 for (int i = 0; i < tup; ++i) {
-                    assertTrue (range.contains(dataReader.readValue()));
+                    // I just want to do:
+                    //   assertTrue (range.contains(dataReader.readValue()));
+                    // but this type inference doesn't compile on some version of Java.
+                    // so, let's do it explicitly.
+                    if (partitioningColumn.getType() == ColumnType.INTEGER) {
+                        Integer val = (Integer) dataReader.readValue();
+                        assertTrue (range.contains(val));
+                    } else {
+                        assertEquals (ColumnType.BIGINT, partitioningColumn.getType());
+                        Long val = (Long) dataReader.readValue();
+                        assertTrue (range.contains(val));
+                    }
                 }
                 reader.close();
             }
