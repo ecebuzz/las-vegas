@@ -12,7 +12,6 @@ import edu.brown.lasvegas.LVColumnFile;
 import edu.brown.lasvegas.LVReplicaPartition;
 import edu.brown.lasvegas.TaskType;
 import edu.brown.lasvegas.lvfs.ColumnFileBundle;
-import edu.brown.lasvegas.lvfs.VirtualFile;
 import edu.brown.lasvegas.lvfs.data.DataTaskRunner;
 import edu.brown.lasvegas.lvfs.data.RepartitionSummary;
 import edu.brown.lasvegas.lvfs.data.Repartitioner;
@@ -32,8 +31,8 @@ public final class RepartitionTaskRunner extends DataTaskRunner<RepartitionTaskP
     private CompressionType[] compressions;
     private LVReplicaPartition[] basePartitions;
     private ColumnFileBundle[][] baseFiles;
-    private VirtualFile tmpFolder;
-    private VirtualFile tmpOutputFolder;
+    private LocalVirtualFile tmpFolder;
+    private LocalVirtualFile tmpOutputFolder;
     
     @Override
     protected String[] runDataTask() throws Exception {
@@ -43,7 +42,7 @@ public final class RepartitionTaskRunner extends DataTaskRunner<RepartitionTaskP
         
         Repartitioner repartitioner = new Repartitioner(tmpOutputFolder, baseFiles, columnTypes, compressions,
         		partitioningColumnIndex, parameters.getPartitionRanges(),
-        		parameters.getReadCacheSize(), parameters.getOutputCacheSize());
+        		parameters.getMaxFragments(), parameters.getReadCacheTuples(), parameters.getWriteBufferSizeTotal());
         LVColumnFile[][] result = repartitioner.execute();
         LOG.info("done!");
         String summaryFilePath = RepartitionSummary.createSummaryFile(tmpOutputFolder, result);

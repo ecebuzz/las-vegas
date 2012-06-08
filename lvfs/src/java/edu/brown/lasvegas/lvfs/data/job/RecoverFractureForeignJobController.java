@@ -157,12 +157,13 @@ public class RecoverFractureForeignJobController extends AbstractJobController<R
             ArrayList<Integer> partitionIds = nodeMap.get(nodeId);
             RepartitionTaskParameters taskParam = new RepartitionTaskParameters();
             taskParam.setBasePartitionIds(ValueTraitsFactory.INTEGER_TRAITS.toArray(partitionIds));
-            taskParam.setOutputCacheSize(1 << 12); // doesn't matter. so far.
             taskParam.setOutputColumnIds(columnIds);
             taskParam.setOutputCompressions(outputCompressions);
             taskParam.setPartitioningColumnId(damagedGroup.getPartitioningColumnId());
             taskParam.setPartitionRanges(damagedGroup.getRanges());
-            taskParam.setReadCacheSize(1 << 16); // this is important. maybe 1 << 20?
+            taskParam.setMaxFragments(1 << 7); // at most 128 * #columns to open at once (avoid linux's no_file limit error)
+            taskParam.setWriteBufferSizeTotal(1 << 27); // not too large to avoid OutofMemory.
+            taskParam.setReadCacheTuples(1 << 16);
 
             int taskId = metaRepo.createNewTaskIdOnlyReturn(jobId, nodeId, TaskType.REPARTITION, taskParam.writeToBytes());
             LVTask task = metaRepo.updateTask(taskId, TaskStatus.START_REQUESTED, null, null, null);

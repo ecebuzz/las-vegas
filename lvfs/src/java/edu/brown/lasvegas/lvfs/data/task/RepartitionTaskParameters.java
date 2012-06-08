@@ -71,14 +71,18 @@ public final class RepartitionTaskParameters extends DataTaskParameters {
     private int[] basePartitionIds;
     
     /**
-     * The number of tuples to read at once.
-     */
-    private int readCacheSize;
+     * the maximum number of fragments to write out at each level. if num of partitions is larger than this, we recursively repartition
+     * to limit the number of open files and memory consumption.
+     */ 
+    private int maxFragments = 1 << 7;
 
     /**
-     * The number of tuples to write at once for each output partition.
+     * The number of tuples to read at once.
      */
-    private int outputCacheSize;
+    private int readCacheTuples = 1 << 16;
+
+    /** the byte size of buffer for _all_ column file writers at each level. */
+    private long writeBufferSizeTotal = 1 << 22;
     
     /**
      * Write.
@@ -94,8 +98,9 @@ public final class RepartitionTaskParameters extends DataTaskParameters {
         DataInputOutputUtil.writeIntArray(out, outputColumnIds);
         new CompressionTypeArraySerializer().writeArray(out, outputCompressions);
         DataInputOutputUtil.writeIntArray(out, basePartitionIds);
-        out.writeInt(readCacheSize);
-        out.writeInt(outputCacheSize);
+        out.writeInt(maxFragments);
+        out.writeInt(readCacheTuples);
+        out.writeLong(writeBufferSizeTotal);
     }
 
     /**
@@ -112,8 +117,9 @@ public final class RepartitionTaskParameters extends DataTaskParameters {
     	outputColumnIds = DataInputOutputUtil.readIntArray(in);
     	outputCompressions = new CompressionTypeArraySerializer().readArray(in);
     	basePartitionIds = DataInputOutputUtil.readIntArray(in);
-    	readCacheSize = in.readInt();
-    	outputCacheSize = in.readInt();
+    	maxFragments = in.readInt();
+    	readCacheTuples = in.readInt();
+    	writeBufferSizeTotal = in.readLong();
     }
 
     // auto-generated getters/setters (comments by JAutodoc)    
@@ -207,40 +213,57 @@ public final class RepartitionTaskParameters extends DataTaskParameters {
 		this.basePartitionIds = basePartitionIds;
 	}
 
-	/**
-	 * Gets the read cache size.
-	 *
-	 * @return the read cache size
-	 */
-	public int getReadCacheSize() {
-		return readCacheSize;
-	}
+    /**
+     * Gets the maximum number of fragments to write out at each level.
+     *
+     * @return the maximum number of fragments to write out at each level
+     */
+    public int getMaxFragments() {
+        return maxFragments;
+    }
 
-	/**
-	 * Sets the read cache size.
-	 *
-	 * @param readCacheSize the new read cache size
-	 */
-	public void setReadCacheSize(int readCacheSize) {
-		this.readCacheSize = readCacheSize;
-	}
+    /**
+     * Sets the maximum number of fragments to write out at each level.
+     *
+     * @param maxFragments the new maximum number of fragments to write out at each level
+     */
+    public void setMaxFragments(int maxFragments) {
+        this.maxFragments = maxFragments;
+    }
 
-	/**
-	 * Gets the output cache size.
-	 *
-	 * @return the output cache size
-	 */
-	public int getOutputCacheSize() {
-		return outputCacheSize;
-	}
+    /**
+     * Gets the number of tuples to read at once.
+     *
+     * @return the number of tuples to read at once
+     */
+    public int getReadCacheTuples() {
+        return readCacheTuples;
+    }
 
-	/**
-	 * Sets the output cache size.
-	 *
-	 * @param outputCacheSize the new output cache size
-	 */
-	public void setOutputCacheSize(int outputCacheSize) {
-		this.outputCacheSize = outputCacheSize;
-	}
+    /**
+     * Sets the number of tuples to read at once.
+     *
+     * @param readCacheTuples the new number of tuples to read at once
+     */
+    public void setReadCacheTuples(int readCacheTuples) {
+        this.readCacheTuples = readCacheTuples;
+    }
 
+    /**
+     * Gets the byte size of buffer for _all_ column file writers at each level.
+     *
+     * @return the byte size of buffer for _all_ column file writers at each level
+     */
+    public long getWriteBufferSizeTotal() {
+        return writeBufferSizeTotal;
+    }
+
+    /**
+     * Sets the byte size of buffer for _all_ column file writers at each level.
+     *
+     * @param writeBufferSizeTotal the new byte size of buffer for _all_ column file writers at each level
+     */
+    public void setWriteBufferSizeTotal(long writeBufferSizeTotal) {
+        this.writeBufferSizeTotal = writeBufferSizeTotal;
+    }
 }

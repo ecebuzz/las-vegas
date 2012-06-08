@@ -53,9 +53,26 @@ public final class LocalVirtualFile implements VirtualFile {
     }
     @Override
     public boolean delete(boolean recursive) throws IOException {
-        // TODO implement recursive delete. but, I'd be very hesitant to implement it. let's do this last.
-        return file.delete();
+        if (!file.exists()) {
+            return true;
+        }
+        if (!recursive || !file.isDirectory()) {
+            return file.delete();
+        }
+        return deleteFileRecursive (file);
     }
+    private boolean deleteFileRecursive (File dir) throws IOException {
+        if (!dir.isDirectory()) {
+            return dir.delete();
+        }
+        for (File child : dir.listFiles()) {
+            if (!deleteFileRecursive(child)) {
+                return false;
+            }
+        }
+        return dir.delete();
+    }
+
     @Override
     public boolean exists() {
         return file.exists();

@@ -3,6 +3,7 @@ package edu.brown.lasvegas.lvfs.data;
 import static org.junit.Assert.*;
 
 import java.io.IOException;
+import java.util.ArrayList;
 
 import org.apache.log4j.Logger;
 import org.junit.Before;
@@ -12,7 +13,6 @@ import edu.brown.lasvegas.ColumnType;
 import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.LVColumnFile;
 import edu.brown.lasvegas.lvfs.ColumnFileBundle;
-import edu.brown.lasvegas.lvfs.VirtualFile;
 import edu.brown.lasvegas.lvfs.local.LocalVirtualFile;
 import edu.brown.lasvegas.tuple.BufferedTupleWriter;
 import edu.brown.lasvegas.tuple.ColumnFileTupleReader;
@@ -25,7 +25,7 @@ import edu.brown.lasvegas.util.ValueRange;
  */
 public class RepartitionerTest {
     private static final Logger LOG = Logger.getLogger(RepartitionerTest.class);
-    private VirtualFile tmpFolder;
+    private LocalVirtualFile tmpFolder;
     private final static int PARTITIONS = 2;
     private ColumnFileBundle[][] columnFiles;
     private ColumnType[] columnTypes;
@@ -82,7 +82,27 @@ public class RepartitionerTest {
     	ValueRange[] ranges = new ValueRange[]{new ValueRange(ColumnType.TINYINT, null, (byte)4), new ValueRange(ColumnType.TINYINT, (byte) 4, null)};
         Repartitioner repartiotioner = new Repartitioner(tmpFolder, columnFiles, columnTypes, compressions,
         		partitioningColumn, ranges,
-        		1 << 10, 1 << 10);
+        		1 << 7, 1 << 10, 1 << 22);
+        LVColumnFile[][] result = repartiotioner.execute();
+        checkRepartitionedFiles (result, partitioningColumn, ranges, "linenumber");
+    }
+
+    @Test
+    public void testRepartitionByLinenumberMultiLevels () throws Exception {
+        int partitioningColumn = 1;
+        ValueRange[] ranges = new ValueRange[]{
+            new ValueRange(ColumnType.TINYINT, null, (byte)1),
+            new ValueRange(ColumnType.TINYINT, (byte) 1, (byte)2),
+            new ValueRange(ColumnType.TINYINT, (byte) 2, (byte)3),
+            new ValueRange(ColumnType.TINYINT, (byte) 3, (byte)4),
+            new ValueRange(ColumnType.TINYINT, (byte) 4, (byte)5),
+            new ValueRange(ColumnType.TINYINT, (byte) 5, (byte)6),
+            new ValueRange(ColumnType.TINYINT, (byte) 6, (byte)7),
+            new ValueRange(ColumnType.TINYINT, (byte) 7, null)
+        };
+        Repartitioner repartiotioner = new Repartitioner(tmpFolder, columnFiles, columnTypes, compressions,
+                partitioningColumn, ranges,
+                2, 1 << 10, 1 << 22);
         LVColumnFile[][] result = repartiotioner.execute();
         checkRepartitionedFiles (result, partitioningColumn, ranges, "linenumber");
     }
@@ -93,7 +113,23 @@ public class RepartitionerTest {
     	ValueRange[] ranges = new ValueRange[]{new ValueRange(ColumnType.INTEGER, null, 34), new ValueRange(ColumnType.INTEGER, 34, null)};
         Repartitioner repartiotioner = new Repartitioner(tmpFolder, columnFiles, columnTypes, compressions,
         		partitioningColumn, ranges,
-        		1 << 10, 1 << 10);
+        		1 << 7, 1 << 10, 1 << 22);
+        LVColumnFile[][] result = repartiotioner.execute();
+        checkRepartitionedFiles (result, partitioningColumn, ranges, "orderkey");
+    }
+    @Test
+    public void testRepartitionByOrderkeyMultiLevels () throws Exception {
+        int partitioningColumn = 0;
+        ArrayList<ValueRange> rangeList = new ArrayList<ValueRange>();
+        rangeList.add (new ValueRange(ColumnType.INTEGER, null, 2));
+        for (int i = 2; i < 60; i += 2) {
+            rangeList.add (new ValueRange(ColumnType.INTEGER, i, i + 2));
+        }
+        rangeList.add (new ValueRange(ColumnType.INTEGER, 60, null));
+        ValueRange[] ranges = rangeList.toArray(new ValueRange[0]);
+        Repartitioner repartiotioner = new Repartitioner(tmpFolder, columnFiles, columnTypes, compressions,
+                partitioningColumn, ranges,
+                3, 1 << 10, 1 << 22);
         LVColumnFile[][] result = repartiotioner.execute();
         checkRepartitionedFiles (result, partitioningColumn, ranges, "orderkey");
     }
@@ -110,7 +146,23 @@ public class RepartitionerTest {
     			};
         Repartitioner repartiotioner = new Repartitioner(tmpFolder, columnFiles, columnTypes, compressions,
         		partitioningColumn, ranges,
-        		1 << 10, 1 << 10);
+        		1 << 7, 1 << 10, 1 << 22);
+        LVColumnFile[][] result = repartiotioner.execute();
+        checkRepartitionedFiles (result, partitioningColumn, ranges, "orderpriority");
+    }
+    @Test
+    public void testRepartitionByOrderpriorityMultiLevels () throws Exception {
+        int partitioningColumn = 6;
+        ValueRange[] ranges = new ValueRange[]{
+                new ValueRange(ColumnType.VARCHAR, null, "1"),
+                new ValueRange(ColumnType.VARCHAR, "1", "2"),
+                new ValueRange(ColumnType.VARCHAR, "2", "3"),
+                new ValueRange(ColumnType.VARCHAR, "3", "5"),
+                new ValueRange(ColumnType.VARCHAR, "5", null),
+                };
+        Repartitioner repartiotioner = new Repartitioner(tmpFolder, columnFiles, columnTypes, compressions,
+                partitioningColumn, ranges,
+                2, 1 << 10, 1 << 22);
         LVColumnFile[][] result = repartiotioner.execute();
         checkRepartitionedFiles (result, partitioningColumn, ranges, "orderpriority");
     }

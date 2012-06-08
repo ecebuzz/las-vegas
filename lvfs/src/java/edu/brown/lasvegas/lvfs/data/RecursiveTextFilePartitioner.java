@@ -68,7 +68,7 @@ public final class RecursiveTextFilePartitioner implements Closeable {
 
     /** the range of partitions this partitioner will receive. */
     private final int partitionsBegin, partitionsEnd;
-    /** total number of partitions. */
+    /** total number of partitions (before fragmenting) _in this range _. */
     private final int partitions;
     /** number of fragments of this level. */
     private final int fragments;

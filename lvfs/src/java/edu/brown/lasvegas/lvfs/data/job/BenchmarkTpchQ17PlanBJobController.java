@@ -107,12 +107,13 @@ public class BenchmarkTpchQ17PlanBJobController extends BenchmarkTpchQ17JobContr
             ArrayList<Integer> lineitemPartitionIds = lineitemNodeMap.get(nodeId);
         	RepartitionTaskParameters taskParam = new RepartitionTaskParameters();
         	taskParam.setBasePartitionIds(ValueTraitsFactory.INTEGER_TRAITS.toArray(lineitemPartitionIds));
-        	taskParam.setOutputCacheSize(1 << 12); // doesn't matter. so far.
         	taskParam.setOutputColumnIds(new int[]{l_partkey.getColumnId(), l_extendedprice.getColumnId(), l_quantity.getColumnId()});
         	taskParam.setOutputCompressions(new CompressionType[]{CompressionType.NONE, CompressionType.NONE, CompressionType.NONE});
         	taskParam.setPartitioningColumnId(l_partkey.getColumnId());
         	taskParam.setPartitionRanges(partGroup.getRanges());
-        	taskParam.setReadCacheSize(1 << 16); // this is important. maybe 1 << 20?
+        	taskParam.setMaxFragments(1 << 7); // at most 128 * #columns to open at once (avoid linux's no_file limit error)
+            taskParam.setWriteBufferSizeTotal(1 << 27); // not too large to avoid OutofMemory.
+        	taskParam.setReadCacheTuples(1 << 16);
 
             int taskId = metaRepo.createNewTaskIdOnlyReturn(jobId, nodeId, TaskType.REPARTITION, taskParam.writeToBytes());
             LVTask task = metaRepo.updateTask(taskId, TaskStatus.START_REQUESTED, null, null, null);

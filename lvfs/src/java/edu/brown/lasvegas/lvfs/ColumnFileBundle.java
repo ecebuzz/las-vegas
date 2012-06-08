@@ -59,6 +59,24 @@ public final class ColumnFileBundle {
             this.valueFile = parentFolder.getChildFile(LVFSFileType.VALUE_FILE.appendExtension(filename));
         }
     }
+    /** this constructor extracts the written files from the given writer. */
+    public ColumnFileBundle (ColumnFileWriterBundle writer, boolean sorted) throws IOException {
+        this.columnType = writer.getColumnType();
+        this.compressionType = writer.getCompressionType();
+        this.dataFileChecksum = writer.getDataFileChecksum();
+        this.dictionaryBytesPerEntry = writer.getDictionaryBytesPerEntry();
+        this.distinctValues = writer.getDistinctValues();
+        this.runCount = writer.getRunCount();
+        this.sorted = sorted; // only this value must be provided as a parameter (writer is agnostic to the sortedness of the values written)
+        this.tupleCount = writer.getTupleCount();
+        this.uncompressedSizeKB = writer.getUncompressedSizeKB();
+        
+        this.dataFile = writer.getDataFile();
+        this.dictionaryFile = writer.getDictionaryFile();
+        this.positionFile = writer.getPositionFile();
+        this.tmpFile = null;
+        this.valueFile = writer.getValueFile();
+    }
     
     /** main data file. always exists. */
     private VirtualFile dataFile;
@@ -127,11 +145,41 @@ public final class ColumnFileBundle {
             throw new IOException ("failed to delete this file:" + file);
         }
     }
+    /** move/rename the files to the given _local_ folder. */
+    public void moveFiles (LocalVirtualFile destinationFolder, String newName) throws IOException {
+        if (!destinationFolder.exists()) {
+            destinationFolder.mkdirs();
+            if (!destinationFolder.exists()) {
+                throw new IOException ("couldn't create this folder: " + destinationFolder);
+            }
+        }
+        if (!destinationFolder.isDirectory()) {
+            throw new IOException ("this isn't a folder: " + destinationFolder);
+        }
+        dataFile = moveFile(destinationFolder, dataFile, newName, LVFSFileType.DATA_FILE.getExtension());
+        dictionaryFile = moveFile(destinationFolder, dictionaryFile, newName, LVFSFileType.DICTIONARY_FILE.getExtension());
+        positionFile = moveFile(destinationFolder, positionFile, newName, LVFSFileType.POSITION_FILE.getExtension());
+        tmpFile = moveFile(destinationFolder, tmpFile, newName, LVFSFileType.TMP_DATA_FILE.getExtension());
+        valueFile = moveFile(destinationFolder, valueFile, newName, LVFSFileType.VALUE_FILE.getExtension());
+    }
+    private VirtualFile moveFile (LocalVirtualFile destinationFolder, VirtualFile file, String newName, String extension) throws IOException {
+        if (file == null || !file.exists()) {
+            return null;
+        }
+        LocalVirtualFile newFile = destinationFolder.getChildFile(newName + "." + extension);
+        if (newFile.exists()) {
+            throw new IOException("the renamed filepath already exists: " + newFile);
+        }
+        boolean moved = file.renameTo(newFile);
+        assert (moved);
+        return newFile;
+    }
+    
     /** copy the files to the given _local_ folder. */
     public ColumnFileBundle copyFiles (LocalVirtualFile destinationFolder) throws IOException {
         if (!destinationFolder.exists()) {
-            boolean created = destinationFolder.mkdirs();
-            if (!created) {
+            destinationFolder.mkdirs();
+            if (!destinationFolder.exists()) {
                 throw new IOException ("couldn't create this folder: " + destinationFolder);
             }
         }
@@ -163,6 +211,26 @@ public final class ColumnFileBundle {
         assert (!copiedFile.exists());
         VirtualFileUtil.copyFile(file, copiedFile);
         return copiedFile;
+    }
+    
+    /** converts this object into an LVColumnFile object. */
+    public LVColumnFile toLVColumnFile () throws IOException {
+        LVColumnFile result = new LVColumnFile();
+        result.setChecksum(getDataFileChecksum());
+        result.setColumnType(columnType);
+        result.setCompressionType(compressionType);
+        result.setDictionaryBytesPerEntry(getDictionaryBytesPerEntry());
+        result.setDistinctValues(getDistinctValues());
+        result.setFileSize((int) getDataFile().length());
+        String dataFilePath = getDataFile().getAbsolutePath();
+        assert (dataFilePath.lastIndexOf('.') >= 0);
+        result.setLocalFilePath(dataFilePath.substring(0, dataFilePath.lastIndexOf('.')));
+        result.setRunCount(getRunCount());
+        result.setSorted(isSorted());
+        result.setTupleCount(getTupleCount());
+        result.setTupleCount(getTupleCount());
+        result.setUncompressedSizeKB(getUncompressedSizeKB());
+        return result;
     }
 
 // auto-generated getters/setters (comments by JAutodoc)
