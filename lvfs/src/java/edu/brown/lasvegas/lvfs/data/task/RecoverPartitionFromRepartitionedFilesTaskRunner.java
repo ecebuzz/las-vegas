@@ -111,20 +111,8 @@ public class RecoverPartitionFromRepartitionedFilesTaskRunner extends DataTaskRu
         }
 
         LOG.info("all done! deleting temporary files...");
-        // delete the temporary merged files
-        for (ArrayList<ColumnFileBundle[]> files : copiedRepartitionedFiles) {
-            if (files == null) {
-                continue;
-            }
-            for (ColumnFileBundle[] bundles : files) {
-                for (ColumnFileBundle bundle : bundles) {
-                    bundle.deleteFiles();                    
-                }
-            }
-        }
+        tmpOutputFolder.delete(true); // delete all the temporary files
         LOG.info("deleted temporary files");
-
-
         return new String[0];
     }
     private ArrayList<ColumnFileBundle[]> copyRepartitionedFile (LVReplicaPartition partition, HashMap<Integer, LVDataClient> dataClients, double completedProgress) throws IOException {
@@ -157,7 +145,12 @@ public class RecoverPartitionFromRepartitionedFilesTaskRunner extends DataTaskRu
                 assert (client != null);
                 for (int i = 0; i < columnFiles.length; ++i) {
                     ColumnFileBundle remoteFile = new ColumnFileBundle(columnFiles[i], client.getChannel());
-                    bundles[i] = remoteFile.copyFiles(tmpOutputFolder);
+                    LocalVirtualFile partitionTmpFolder = tmpOutputFolder.getChildFile("partition_" + partition.getPartitionId());
+                    partitionTmpFolder.mkdirs();
+                    if (!partitionTmpFolder.exists()) {
+                        throw new IOException ("couldn't create a temporary folder:" + partitionTmpFolder);
+                    }
+                    bundles[i] = remoteFile.copyFiles(partitionTmpFolder);
                 }
                 
             }
@@ -169,7 +162,7 @@ public class RecoverPartitionFromRepartitionedFilesTaskRunner extends DataTaskRu
 
     private ColumnFileBundle[] mergeFiles (LVReplicaPartition partition, ArrayList<ColumnFileBundle[]> copiedFiles) throws IOException {
         LOG.info("merging/sorting the merged files for " + partition.getRange() + "th partition");
-        PartitionMergerGeneral merger = new PartitionMergerGeneral((ColumnFileBundle[][]) copiedFiles.toArray(), columnTypes, sortColumnIndex);
+        PartitionMergerGeneral merger = new PartitionMergerGeneral(copiedFiles.toArray(new ColumnFileBundle[0][]), columnTypes, sortColumnIndex);
         ColumnFileBundle[] merged = merger.executeOnDisk(tmpOutputFolder, fileTemporaryNames, compressionTypes);
         LOG.info("merged and sorted!");
         return merged;

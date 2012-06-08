@@ -20,6 +20,7 @@ import edu.brown.lasvegas.LVReplicaScheme;
 import edu.brown.lasvegas.LVTable;
 import edu.brown.lasvegas.LVTask;
 import edu.brown.lasvegas.ReplicaPartitionStatus;
+import edu.brown.lasvegas.ReplicaStatus;
 import edu.brown.lasvegas.TaskStatus;
 import edu.brown.lasvegas.TaskType;
 import edu.brown.lasvegas.lvfs.data.TemporaryFilePath;
@@ -123,12 +124,24 @@ public class ImportFractureJobController extends AbstractJobController<ImportFra
         if (!stopRequested && !errorEncountered) {
             assert (allPartitionedFiles != null);
             loadPartitionedFiles (allPartitionedFiles, 1.0d / 3.0d, 2.0d / 3.0d); // 33%-66% progress
+            // okay, now replicas in default replica schemes are successfully loaded
+            for (LVReplicaScheme scheme : defaultReplicaSchemes.values()) {
+                LVReplica replica = metaRepo.getReplicaFromSchemeAndFracture(scheme.getSchemeId(), fracture.getFractureId());
+                metaRepo.updateReplicaStatus(replica, ReplicaStatus.OK);
+            }
         }
         
         // loads other replica schemes in each replica group
         // this is supposed to be efficient because of the buddy files which are loaded in the previous tasks.
         if (!stopRequested && !errorEncountered) {
             copyFromBuddyFiles (2.0d / 3.0d, 0.99d); // 66%-99% progress
+            // okay, now replicas in other replica schemes are successfully loaded
+            for (LVReplicaScheme[] schemes : otherReplicaSchemes.values()) {
+                for (LVReplicaScheme scheme : schemes) {
+                    LVReplica replica = metaRepo.getReplicaFromSchemeAndFracture(scheme.getSchemeId(), fracture.getFractureId());
+                    metaRepo.updateReplicaStatus(replica, ReplicaStatus.OK);
+                }
+            }
         }
 
         // after all, delete the temporary partitioned files

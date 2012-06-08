@@ -62,7 +62,7 @@ public class RecoverFractureForeignJobController extends AbstractJobController<R
     private LVReplicaGroup sourceGroup;
     /** the concerned replicas (=fracture x scheme). */
     private LVReplica damagedReplica, sourceReplica;
-    private LVReplicaPartition[] damagedPartitions, sourcePartitions;
+    private LVReplicaPartition[] sourcePartitions;
     
     public RecoverFractureForeignJobController(LVMetadataProtocol metaRepo) throws IOException {
         super(metaRepo);
@@ -111,7 +111,7 @@ public class RecoverFractureForeignJobController extends AbstractJobController<R
         }
 
         sourcePartitions = metaRepo.getAllReplicaPartitionsByReplicaId(sourceReplica.getReplicaId());
-        assert (damagedPartitions.length == damagedGroup.getRanges().length);
+        assert (sourcePartitions.length == sourceGroup.getRanges().length);
 
         this.jobId = metaRepo.createNewJobIdOnlyReturn("recover Fracture:" + fracture + " in Table:" + table + " from foreign replica group", JobType.RECOVER_FRACTURE_FOREIGN, null);
     }
@@ -124,6 +124,7 @@ public class RecoverFractureForeignJobController extends AbstractJobController<R
         
         // 2. copy the repartitioned files and sort/merge them into damaged partitions.
         restoreDamagedReplica(summaryFileMap, 0.33d, 0.99d);
+        metaRepo.updateReplicaStatus(damagedReplica, ReplicaStatus.OK); // now it's recovered!
 
         // 3. delete the summary files and repartitioned files.
         SortedMap<Integer, LVTask> deleteTmpFilesTasks = RepartitionSummary.deleteRepartitionedFiles(jobId, metaRepo, summaryFileMap);
