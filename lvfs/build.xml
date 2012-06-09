@@ -125,6 +125,16 @@
 		</java>
 	</target>
 
+	<target name="preregister-datanodes" depends="compile"
+		description="Pre-register a list of data nodes so that their IDs are ordered by the pre-set list. For more details, see the comments in edu.brown.lasvegas.server.PreregisterDataNodes.
+		Specify the path of configuration xml (must be in classpath) and data node list file. eg: ant -Dconfxml=lvfs_conf_poseidon.xml -Dlistfile=datanodes_example.txt preregister-datanodes">
+		<java fork="true" classname="edu.brown.lasvegas.server.PreregisterDataNodes">
+			<arg value="${confxml}" />
+			<arg value="${listfile}" />
+        	<classpath refid="lvfs.classpath"/>
+		</java>
+	</target>
+
 	<target name="sa-central-stop" depends="compile"
 		description="Stop central node. Specify the path of configuration xml (must be in classpath). eg: ant -Dconfxml=lvfs_conf_poseidon.xml sa-central-stop">
 		<java fork="true" classname="edu.brown.lasvegas.server.StopCentralNode">

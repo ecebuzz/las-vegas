@@ -1,0 +1,2 @@
+poseidon	rack1
+artemis	rack1

@@ -185,7 +185,7 @@ public final class LVDataNode implements ServicePlugin {
             LOG.info("updating the status of the node");
             metaRepo.updateRackNodeStatusNoReturn(node.getNodeId(), RackNodeStatus.OK);
         }
-        if (node.getAddress().equals(address)) {
+        if (!node.getAddress().equals(address)) {
             LOG.info("updating the address of the node");
             metaRepo.updateRackNodeAddressNoReturn(node.getNodeId(), address);
         }
