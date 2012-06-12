@@ -166,7 +166,7 @@
 	</target>
 
 	<target name="import-bench-tpch" depends="compile"
-		description="Start a distributed data import benchmark for TPCH. Specify the number of partitions, the address of metadata repository, and input file for lineitem, part, customer and orders table. : ant -Dpartitions=2 -Daddress=poseidon.smn.cs.brown.edu:28710 -Dinputfile_lineitem=inputs_lineitem.txt -Dinputfile_part=inputs_part.txt -Dinputfile_customer=inputs_customer.txt -Dinputfile_orders=inputs_orders.txt import-bench-tpch">
+		description="Start a distributed data import benchmark for TPCH. Specify the number of partitions, the address of metadata repository, and input file for lineitem, part, customer and orders table. : ant -Dpartitions=2 -Daddress=poseidon.smn.cs.brown.edu:28710 -Dinputfile_lineitem=inputs_lineitem.txt -Dinputfile_part=inputs_part.txt -Dinputfile_customer=inputs_customer.txt -Dinputfile_orders=inputs_orders.txt -Dfractures=2 import-bench-tpch">
 		<java fork="true" classname="edu.brown.lasvegas.lvfs.data.DataImportMultiNodeTpchBenchmark">
 			<jvmarg value="-Xmx256m"/>
 			<jvmarg value="-server"/>
@@ -177,9 +177,36 @@
 			<arg value="${inputfile_part}" />
             <arg value="${inputfile_customer}" />
             <arg value="${inputfile_orders}" />
+            <arg value="${fractures}" />
         	<classpath refid="lvfs.classpath"/>
 		</java>
 	</target>
+
+	<target name="tpch-bench-q1-plana" depends="compile"
+		description="Run TPCH's Q1. Specify the address of metadata repository, DELTA days. : ant -Daddress=poseidon.smn.cs.brown.edu:28710 -Ddelta=90 tpch-bench-q1-plana">
+		<java fork="true" classname="edu.brown.lasvegas.lvfs.data.TpchQ1MultinodeBenchmark">
+			<jvmarg value="-Xmx256m"/>
+			<jvmarg value="-server"/>
+			<jvmarg value="-da"/>
+			<arg value="${address}" />
+			<arg value="${delta}" />
+            <arg value="true" />
+        	<classpath refid="lvfs.classpath"/>
+		</java>
+	</target>
+	<target name="tpch-bench-q1-planb" depends="compile"
+		description="Run TPCH's Q1. Specify the address of metadata repository, DELTA days. : ant -Daddress=poseidon.smn.cs.brown.edu:28710 -Ddelta=90 tpch-bench-q1-planb">
+		<java fork="true" classname="edu.brown.lasvegas.lvfs.data.TpchQ1MultinodeBenchmark">
+			<jvmarg value="-Xmx256m"/>
+			<jvmarg value="-server"/>
+			<jvmarg value="-da"/>
+			<arg value="${address}" />
+			<arg value="${delta}" />
+            <arg value="false" />
+        	<classpath refid="lvfs.classpath"/>
+		</java>
+	</target>
+	<!-- plan A/B will have no performance difference in Q1.-->
 
 	<target name="tpch-bench-q17-plana" depends="compile"
 		description="Run TPCH's Q17. Specify the address of metadata repository, brand name, and container. : ant -Daddress=poseidon.smn.cs.brown.edu:28710 -Dbrand=Brand#34 -Dcontainer='MED DRUM' tpch-bench-q17-plana">

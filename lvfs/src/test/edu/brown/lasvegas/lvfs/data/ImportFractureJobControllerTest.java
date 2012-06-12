@@ -74,8 +74,8 @@ public class ImportFractureJobControllerTest {
         conf1 = new Configuration();
         rootDir1 = "test/node1_lvfs_" + Math.abs(new Random(System.nanoTime()).nextInt());
         tmpDir1 = rootDir1 + "/tmp";
-        conf1.set(DataEngine.LOCA_LVFS_ROOTDIR_KEY, rootDir1);
-        conf1.set(DataEngine.LOCA_LVFS_TMPDIR_KEY, tmpDir1);
+        conf1.set(DataEngine.LOCAL_LVFS_ROOTDIR_KEY, rootDir1);
+        conf1.set(DataEngine.LOCAL_LVFS_TMPDIR_KEY, tmpDir1);
         conf1.set(LVFSFilePath.LVFS_CONF_ROOT_KEY, rootDir1);
         conf1.setLong(DataTaskPollingThread.POLLING_INTERVAL_KEY, 100L);
         conf1.set(LVDataNode.DATA_ADDRESS_KEY, DATANODE1_ADDRESS);
@@ -86,8 +86,8 @@ public class ImportFractureJobControllerTest {
         conf2 = new Configuration();
         rootDir2 = "test/node2_lvfs_" + Math.abs(new Random(System.nanoTime()).nextInt());
         tmpDir2 = rootDir2 + "/tmp";
-        conf2.set(DataEngine.LOCA_LVFS_ROOTDIR_KEY, rootDir2);
-        conf2.set(DataEngine.LOCA_LVFS_TMPDIR_KEY, tmpDir2);
+        conf2.set(DataEngine.LOCAL_LVFS_ROOTDIR_KEY, rootDir2);
+        conf2.set(DataEngine.LOCAL_LVFS_TMPDIR_KEY, tmpDir2);
         conf2.set(LVFSFilePath.LVFS_CONF_ROOT_KEY, rootDir2);
         conf2.setLong(DataTaskPollingThread.POLLING_INTERVAL_KEY, 100L);
         conf2.set(LVDataNode.DATA_ADDRESS_KEY, DATANODE2_ADDRESS);

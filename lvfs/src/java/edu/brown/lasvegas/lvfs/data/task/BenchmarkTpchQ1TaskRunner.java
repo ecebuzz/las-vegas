@@ -128,6 +128,6 @@ public class BenchmarkTpchQ1TaskRunner extends DataTaskRunner<BenchmarkTpchQ1Tas
         }
         
         this.buffer = new TupleBuffer(types, 1 << 18); // quite big buffer
-        this.thresholdShipdate = new GregorianCalendar(1998, 12 - 1, 1).getTimeInMillis() - (long) parameters.getDeltaDays() * 1000 * 60 * 24;
+        this.thresholdShipdate = new GregorianCalendar(1998, 12 - 1, 1).getTimeInMillis() - (long) parameters.getDeltaDays() * 1000 * 60 * 60 * 24;
     }
 }

@@ -117,8 +117,8 @@ public class DataImportSingleNodeBenchmark {
         conf = new Configuration();
         rootDir = lvfsRoot + "/node_lvfs_" + Math.abs(new Random(System.nanoTime()).nextInt());
         tmpDir = rootDir + "/tmp";
-        conf.set(DataEngine.LOCA_LVFS_ROOTDIR_KEY, rootDir);
-        conf.set(DataEngine.LOCA_LVFS_TMPDIR_KEY, tmpDir);
+        conf.set(DataEngine.LOCAL_LVFS_ROOTDIR_KEY, rootDir);
+        conf.set(DataEngine.LOCAL_LVFS_TMPDIR_KEY, tmpDir);
         conf.set(LVFSFilePath.LVFS_CONF_ROOT_KEY, rootDir);
         conf.setLong(DataTaskPollingThread.POLLING_INTERVAL_KEY, 1000L);
         conf.set(LVDataNode.DATA_ADDRESS_KEY, DATANODE_ADDRESS);

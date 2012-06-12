@@ -26,8 +26,8 @@ public class LocalDataEngineTest extends DataEngineTestBase {
         Configuration conf = new Configuration();
         String rootDir = "test/node1_lvfs_" + new Random(System.nanoTime()).nextInt();
         String tmpDir = rootDir + "/tmp";
-        conf.set(DataEngine.LOCA_LVFS_ROOTDIR_KEY, rootDir);
-        conf.set(DataEngine.LOCA_LVFS_TMPDIR_KEY, tmpDir);
+        conf.set(DataEngine.LOCAL_LVFS_ROOTDIR_KEY, rootDir);
+        conf.set(DataEngine.LOCAL_LVFS_TMPDIR_KEY, tmpDir);
         dataEngine = new DataEngine(masterRepository, node.getNodeId(), conf);
         dataProtocol = dataEngine;
         setDataNodeDirs(rootDir, tmpDir);

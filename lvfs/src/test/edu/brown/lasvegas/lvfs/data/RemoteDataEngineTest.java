@@ -54,8 +54,8 @@ public class RemoteDataEngineTest extends DataEngineTestBase {
         conf.setInt(DFSConfigKeys.DFS_NAMENODE_NAME_CACHE_THRESHOLD_KEY, 10000); // to speed-up testing
         String rootDir = "test/node2_lvfs_" + new Random(System.nanoTime()).nextInt();
         String tmpDir = rootDir + "/tmp";
-        conf.set(DataEngine.LOCA_LVFS_ROOTDIR_KEY, rootDir);
-        conf.set(DataEngine.LOCA_LVFS_TMPDIR_KEY, tmpDir);
+        conf.set(DataEngine.LOCAL_LVFS_ROOTDIR_KEY, rootDir);
+        conf.set(DataEngine.LOCAL_LVFS_TMPDIR_KEY, tmpDir);
         final String NODE_NAME = "node2";
         final String RACK_NAME = "rack1";
         conf.set(LVDataNode.DATA_NODE_NAME_KEY, NODE_NAME);

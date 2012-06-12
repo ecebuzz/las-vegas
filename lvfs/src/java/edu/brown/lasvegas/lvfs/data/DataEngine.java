@@ -25,11 +25,11 @@ import edu.brown.lasvegas.protocol.LVMetadataProtocol;
 public final class DataEngine implements LVDataProtocol, Closeable {
     private static Logger LOG = Logger.getLogger(DataEngine.class);
 
-    public static final String LOCA_LVFS_ROOTDIR_KEY = "lasvegas.server.data.local.rootdir";
-    public static final String LOCA_LVFS_ROOTDIR_DEFAULT= "lvfs_localdir";
+    public static final String LOCAL_LVFS_ROOTDIR_KEY = "lasvegas.server.data.local.rootdir";
+    public static final String LOCAL_LVFS_ROOTDIR_DEFAULT= "lvfs_localdir";
 
-    public static final String LOCA_LVFS_TMPDIR_KEY = "lasvegas.server.data.local.tmpdir";
-    public static final String LOCA_LVFS_TMPDIR_DEFAULT= "lvfs_localdir/tmp";
+    public static final String LOCAL_LVFS_TMPDIR_KEY = "lasvegas.server.data.local.tmpdir";
+    public static final String LOCAL_LVFS_TMPDIR_DEFAULT= "lvfs_localdir/tmp";
 
     private DataEngineContext context;
     /** The thread to continuously pull new tasks for the node. */
@@ -47,8 +47,8 @@ public final class DataEngine implements LVDataProtocol, Closeable {
         assert (metaRepo != null);
         assert (conf != null);
         this.context = new DataEngineContext(nodeId, conf, metaRepo,
-                getLvfsDir (conf.get(LOCA_LVFS_ROOTDIR_KEY, LOCA_LVFS_ROOTDIR_DEFAULT)),
-                getLvfsDir (conf.get(LOCA_LVFS_TMPDIR_KEY, LOCA_LVFS_TMPDIR_DEFAULT)));
+                getLvfsDir (conf.get(LOCAL_LVFS_ROOTDIR_KEY, LOCAL_LVFS_ROOTDIR_DEFAULT)),
+                getLvfsDir (conf.get(LOCAL_LVFS_TMPDIR_KEY, LOCAL_LVFS_TMPDIR_DEFAULT)));
         if (format) {
             formatDataDir ();
         }

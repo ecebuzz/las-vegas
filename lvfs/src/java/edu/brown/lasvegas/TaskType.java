@@ -6,6 +6,7 @@ import edu.brown.lasvegas.lvfs.data.task.BenchmarkTpchQ17PlanATaskRunner;
 import edu.brown.lasvegas.lvfs.data.task.BenchmarkTpchQ18PlanATaskRunner;
 import edu.brown.lasvegas.lvfs.data.task.BenchmarkTpchQ18PlanBTaskRunner;
 import edu.brown.lasvegas.lvfs.data.task.BenchmarkTpchQ18TaskParameters;
+import edu.brown.lasvegas.lvfs.data.task.BenchmarkTpchQ1TaskParameters;
 import edu.brown.lasvegas.lvfs.data.task.BenchmarkTpchQ1TaskRunner;
 import edu.brown.lasvegas.lvfs.data.task.DeletePartitionFilesTaskParameters;
 import edu.brown.lasvegas.lvfs.data.task.DeletePartitionFilesTaskRunner;
@@ -184,7 +185,7 @@ public enum TaskType {
         case REPARTITION:
         	return new RepartitionTaskParameters();
         case BENCHMARK_TPCH_Q1:
-            return new BenchmarkTpchQ17TaskParameters();
+            return new BenchmarkTpchQ1TaskParameters();
         case BENCHMARK_TPCH_Q17_PLANA:
         case BENCHMARK_TPCH_Q17_PLANB:
             return new BenchmarkTpchQ17TaskParameters();

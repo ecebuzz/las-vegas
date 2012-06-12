@@ -7,18 +7,18 @@ import org.apache.log4j.Logger;
 
 import edu.brown.lasvegas.LVColumnFile;
 import edu.brown.lasvegas.LVDatabase;
-import edu.brown.lasvegas.LVFracture;
 import edu.brown.lasvegas.LVJob;
 import edu.brown.lasvegas.LVReplica;
+import edu.brown.lasvegas.LVReplicaGroup;
 import edu.brown.lasvegas.LVReplicaPartition;
+import edu.brown.lasvegas.LVReplicaScheme;
 import edu.brown.lasvegas.LVTable;
 import edu.brown.lasvegas.LVTask;
 import edu.brown.lasvegas.lvfs.LVFSFilePath;
 import edu.brown.lasvegas.lvfs.LVFSFileType;
-import edu.brown.lasvegas.lvfs.data.job.BenchmarkTpchQ17PlanAJobController;
-import edu.brown.lasvegas.lvfs.data.job.BenchmarkTpchQ17JobController;
-import edu.brown.lasvegas.lvfs.data.job.BenchmarkTpchQ17JobParameters;
-import edu.brown.lasvegas.lvfs.data.job.BenchmarkTpchQ17PlanBJobController;
+import edu.brown.lasvegas.lvfs.data.job.BenchmarkTpchQ1JobController;
+import edu.brown.lasvegas.lvfs.data.job.BenchmarkTpchQ1JobParameters;
+import edu.brown.lasvegas.lvfs.data.job.BenchmarkTpchQ1JobController.Q1ResultSet;
 import edu.brown.lasvegas.lvfs.meta.MasterMetadataRepository;
 import edu.brown.lasvegas.server.LVDataNode;
 
@@ -26,11 +26,11 @@ import edu.brown.lasvegas.server.LVDataNode;
  * Run this after {@link DataImportSingleNodeTpchBenchmark}.
  * This is NOT a test case.
  */
-public class TpchQ17SingleNodeBenchmark {
+public class TpchQ1SingleNodeBenchmark {
     private static final String TEST_BDB_HOME = "test/bdb_data";
     private static final String DATANODE_ADDRESS = "localhost:12345";
     private static final String DATANODE_NAME = "node";
-    private static final Logger LOG = Logger.getLogger(TpchQ17SingleNodeBenchmark.class);
+    private static final Logger LOG = Logger.getLogger(TpchQ1SingleNodeBenchmark.class);
 
     private MasterMetadataRepository masterRepository;
     private String rootDir;
@@ -39,19 +39,21 @@ public class TpchQ17SingleNodeBenchmark {
     private Configuration conf;
 
     private LVDatabase database;
-    private LVTable lineitemTable, partTable;
+    private LVTable table;
+    private LVReplicaScheme scheme;
 
     private void setUp () throws IOException {
         masterRepository = new MasterMetadataRepository(false, TEST_BDB_HOME); // keep the existing BDB
         database = masterRepository.getDatabase("db1");
         
-        partTable = masterRepository.getTable(database.getDatabaseId(), "part");
         // see DataImportSingleNodeTpchBenchmark for why there are two lineitem tables
-    	lineitemTable = masterRepository.getTable(database.getDatabaseId(), fastQueryPlan ? "lineitem_p" : "lineitem_o");
+    	table = masterRepository.getTable(database.getDatabaseId(), partQueryPlan ? "lineitem_p" : "lineitem_o");
         // get the data folder by checking one file
         {
-            LVFracture fracture = masterRepository.getAllFractures(lineitemTable.getTableId())[0];
-            LVReplica replica = masterRepository.getAllReplicasByFractureId(fracture.getFractureId())[0];
+            LVReplicaGroup[] groups = masterRepository.getAllReplicaGroups(table.getTableId());
+            LVReplicaScheme[] schemes = masterRepository.getAllReplicaSchemes(groups[0].getGroupId());
+            scheme = schemes[0];
+            LVReplica replica = masterRepository.getAllReplicasBySchemeId(scheme.getSchemeId())[0];
             LVReplicaPartition partition = masterRepository.getAllReplicaPartitionsByReplicaId(replica.getReplicaId())[0];
             LVColumnFile file = masterRepository.getAllColumnFilesByReplicaPartitionId(partition.getPartitionId())[0];
             LOG.info("a path looks like: " + file.getLocalFilePath());
@@ -78,24 +80,18 @@ public class TpchQ17SingleNodeBenchmark {
         masterRepository.shutdown();
     }
 
-    private static final String brand = "Brand#34";
-    private static final String container = "MED DRUM";
-    private static final boolean fastQueryPlan = true;
-    public double exec () throws Exception {
-        BenchmarkTpchQ17JobParameters params = new BenchmarkTpchQ17JobParameters();
-        params.setBrand(brand);
-        params.setContainer(container);
-        params.setLineitemTableId(lineitemTable.getTableId());
-        params.setPartTableId(partTable.getTableId());
-        BenchmarkTpchQ17JobController controller;
-        if (fastQueryPlan) {
-        	controller = new BenchmarkTpchQ17PlanAJobController(masterRepository, 1000L, 100L, 100L);
-        } else {
-        	controller = new BenchmarkTpchQ17PlanBJobController(masterRepository, 1000L, 100L, 100L);
-        }
-        LOG.info("started Q17(" + (fastQueryPlan ? "assume co-partitioning" : "slower query plan") + ")...");
+    private static final int deltaDays = 90;
+    /** both query plans perform the same, but let's confirm that. */
+    private static final boolean partQueryPlan = true;
+    public Q1ResultSet exec () throws Exception {
+        BenchmarkTpchQ1JobParameters params = new BenchmarkTpchQ1JobParameters();
+        params.setDeltaDays(deltaDays);
+        params.setSchemeId(scheme.getSchemeId());
+        params.setTableId(table.getTableId());
+        BenchmarkTpchQ1JobController controller = new BenchmarkTpchQ1JobController(masterRepository, 1000L, 100L, 100L);
+        LOG.info("started Q1(" + table.getName() + ")...");
         LVJob job = controller.startSync(params);
-        LOG.info("finished Q17(" + (fastQueryPlan ? "assume co-partitioning" : "slower query plan") + "):" + job);
+        LOG.info("finished Q1(" + table.getName() + "):" + job);
         for (LVTask task : masterRepository.getAllTasksByJob(job.getJobId())) {
             LOG.info("Sub-Task finished in " + (task.getFinishedTime().getTime() - task.getStartedTime().getTime()) + "ms:" + task);
         }
@@ -104,14 +100,16 @@ public class TpchQ17SingleNodeBenchmark {
     
     public static void main (String[] args) throws Exception {
         LOG.info("running a single node experiment..");
-        TpchQ17SingleNodeBenchmark program = new TpchQ17SingleNodeBenchmark();
+        TpchQ1SingleNodeBenchmark program = new TpchQ1SingleNodeBenchmark();
         program.setUp();
         try {
             LOG.info("started");
             long start = System.currentTimeMillis();
-            double result = program.exec();
+            Q1ResultSet result = program.exec();
             long end = System.currentTimeMillis();
-            LOG.info("ended(" + (fastQueryPlan ? "assume co-partitioning" : "slower query plan") + "): result=" + result + ". elapsed time=" + (end - start) + "ms");
+            LOG.info("ended(partQueryPlan=" + partQueryPlan + "): elapsed time=" + (end - start) + "ms");
+            LOG.info("\r\n" + result.toString());
+            
         } catch (Exception ex) {
             LOG.error("unexpected exception:" + ex.getMessage(), ex);
         } finally {
