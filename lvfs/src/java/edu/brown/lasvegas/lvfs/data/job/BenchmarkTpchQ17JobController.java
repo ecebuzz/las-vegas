@@ -17,6 +17,15 @@ import edu.brown.lasvegas.protocol.LVMetadataProtocol;
 /**
  * Base class for the two implementations (fast query plan and slower query plan)
  * of TPC-H Q17.
+ * Part table must have only one fracture while lineitem table can have
+ * an arbitrary number of fractures.
+ * <pre>
+ SELECT SUM(L_EXTENDEDPRICE) / 7 FROM LINEITEM JOIN PART ON (P_PARTKEY=L_PARTKEY)
+ WHERE P_BRAND=[BRAND] AND P_CONTAINER=[CONTAINER] AND L_QUANTITY<
+ (
+   SELECT 0.2*AVG(L_QUANTITY) FROM LINEITEM WHERE L_PARTKEY=P_PARTKEY
+ )
+ </pre>
  */
 public abstract class BenchmarkTpchQ17JobController extends AbstractJobController<BenchmarkTpchQ17JobParameters> {
     protected static Logger LOG = Logger.getLogger(BenchmarkTpchQ17JobController.class);
@@ -30,9 +39,10 @@ public abstract class BenchmarkTpchQ17JobController extends AbstractJobControlle
 
     protected LVTable lineitemTable, partTable;
     protected LVReplicaScheme lineitemScheme, partScheme;
-    protected LVFracture lineitemFracture, partFracture;
-    protected LVReplica lineitemReplica, partReplica;
-    protected LVReplicaPartition lineitemPartitions[], partPartitions[];
+    protected LVFracture partFracture;
+    protected LVReplicaPartition[] partPartitions;
+    protected LVFracture[] lineitemFractures;
+    protected LVReplicaPartition[][] lineitemPartitionLists; // first array index shared with lineitemFractures
 
     @Override
     protected final void initDerived() throws IOException {
@@ -48,14 +58,7 @@ public abstract class BenchmarkTpchQ17JobController extends AbstractJobControlle
             throw new IOException ("is this table really part table? :" + partTable);
         }
 
-        {
-            LVFracture[] fractures = metaRepo.getAllFractures(lineitemTable.getTableId());
-            if (fractures.length != 1) {
-                throw new IOException ("the number of fractures of lineitem table was unexpected:" + fractures.length);
-            }
-            lineitemFracture = fractures[0];
-        }
-
+        lineitemFractures = metaRepo.getAllFractures(lineitemTable.getTableId());
         {
             LVFracture[] fractures = metaRepo.getAllFractures(partTable.getTableId());
             if (fractures.length != 1) {
@@ -64,6 +67,9 @@ public abstract class BenchmarkTpchQ17JobController extends AbstractJobControlle
             partFracture = fractures[0];
         }
         
+        // TODO: so far this job assumes only one replica group and scheme in the table.
+        // this should be a parameter of the job so that the caller can specify which replica scheme to use.
+        // trivial to implement and so far not needed, so just a todo...
         {
             LVReplicaGroup[] groups = metaRepo.getAllReplicaGroups(lineitemTable.getTableId());
             assert (groups.length == 1);
@@ -82,13 +88,17 @@ public abstract class BenchmarkTpchQ17JobController extends AbstractJobControlle
             partScheme = schemes[0];
         }
         
-        lineitemReplica = metaRepo.getReplicaFromSchemeAndFracture(lineitemScheme.getSchemeId(), lineitemFracture.getFractureId());
-        assert (lineitemReplica != null);
-        partReplica = metaRepo.getReplicaFromSchemeAndFracture(partScheme.getSchemeId(), partFracture.getFractureId());
+        LVReplica partReplica = metaRepo.getReplicaFromSchemeAndFracture(partScheme.getSchemeId(), partFracture.getFractureId());
         assert (partReplica != null);
-        
-        lineitemPartitions = metaRepo.getAllReplicaPartitionsByReplicaId(lineitemReplica.getReplicaId());
         partPartitions = metaRepo.getAllReplicaPartitionsByReplicaId(partReplica.getReplicaId());
+
+        lineitemPartitionLists = new LVReplicaPartition[lineitemFractures.length][];
+        for (int i = 0; i < lineitemFractures.length; ++i) {
+            LVFracture fracture = lineitemFractures[i];
+            LVReplica replica = metaRepo.getReplicaFromSchemeAndFracture(lineitemScheme.getSchemeId(), fracture.getFractureId());
+            assert (replica != null);
+            lineitemPartitionLists[i] = metaRepo.getAllReplicaPartitionsByReplicaId(replica.getReplicaId());
+        }
         
         initDerivedTpchQ17 ();
         this.jobId = metaRepo.createNewJobIdOnlyReturn("Q17", JobType.BENCHMARK_TPCH_Q17, null);

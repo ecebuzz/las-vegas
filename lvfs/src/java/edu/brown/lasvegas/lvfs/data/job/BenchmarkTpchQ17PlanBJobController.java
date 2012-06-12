@@ -21,6 +21,9 @@ import edu.brown.lasvegas.traits.ValueTraitsFactory;
 
 /**
  * This job is a slower query plan for TPC-H's Q17.
+ * Part table must have only one fracture while lineitem table can have
+ * an arbitrary number of fractures.
+ * 
  * This doesn't assume co-partitioned part/lineitem table.
  * Thus, this job requires multiple steps as follows.
  * 
@@ -53,7 +56,15 @@ public class BenchmarkTpchQ17PlanBJobController extends BenchmarkTpchQ17JobContr
     @Override
     protected void initDerivedTpchQ17() throws IOException {
         // lineitem and part are not co-partitioned, so create node map individually
-        lineitemNodeMap = createNodeMap (lineitemPartitions, "lineitem");
+
+        // because we anyway do repartitioning, fractures are not an issue!
+        ArrayList<LVReplicaPartition> concatenated = new ArrayList<LVReplicaPartition>();
+        for (LVReplicaPartition[] partitions : lineitemPartitionLists) {
+            for (LVReplicaPartition partition : partitions) {
+                concatenated.add(partition);
+            }
+        }
+        lineitemNodeMap = createNodeMap (concatenated.toArray(new LVReplicaPartition[0]), "lineitem");
         partNodeMap = createNodeMap (partPartitions, "part");
         partGroup = metaRepo.getReplicaGroup(partScheme.getGroupId());
         assert (partGroup != null);

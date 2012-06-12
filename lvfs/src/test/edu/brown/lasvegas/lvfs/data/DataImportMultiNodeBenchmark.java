@@ -194,7 +194,7 @@ public class DataImportMultiNodeBenchmark {
         int filesPerFracture = lines.size() / totalFractures;
         int filesBegin = (int) (filesPerFracture * currentFracture);
         int filesEnd = (int) (filesPerFracture * (currentFracture + 1));
-        assert (filesEnd == lines.size());
+        assert (currentFracture + 1 < totalFractures || filesEnd == lines.size());
         LOG.info("total " + lines.size() + " input files. loading from " + filesBegin + "th (inclusive) file to " + filesEnd + "th (exclusive) file");
         for (int i = filesBegin; i < filesEnd; ++i) {
             String line = lines.get(i);
