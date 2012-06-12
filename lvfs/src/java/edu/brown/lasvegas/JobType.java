@@ -30,6 +30,14 @@ public enum JobType {
     // jobs below are for benchmarks or testing.
     
     /**
+     * This job runs TPC-H's Q1, no assumption.
+     * The query is so simple.
+     * So this implementation works for arbitrary partitioning, sorting, and number of fractures. 
+     * @see BenchmarkTpchQ1JobController
+     */
+    BENCHMARK_TPCH_Q1,
+
+    /**
      * This job runs TPC-H's Q17, assuming a single fracture.
      * This query has two query plans, one using a co-partitioned part and lineitem table,
      * another using non-copartitioned files.
