@@ -174,25 +174,41 @@ public class DataImportMultiNodeBenchmark {
         }
     }
     public static ImportFractureJobParameters parseInputFile (LVMetadataProtocol metaRepo, LVTable table, String inputFileName) throws IOException {
+        return parseInputFile(metaRepo, table, inputFileName, 1, 0);
+    }
+    public static ImportFractureJobParameters parseInputFile (LVMetadataProtocol metaRepo, LVTable table, String inputFileName, int totalFractures, int currentFracture) throws IOException {
         BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(inputFileName), "UTF-8"));
         ImportFractureJobParameters params = new ImportFractureJobParameters(table.getTableId());
+        ArrayList<String> lines = new ArrayList<String>();
         for (String line = reader.readLine(); line != null; line = reader.readLine()) {
+            lines.add(line);
+        }
+        reader.close();
+        
+        if (totalFractures > lines.size()) {
+            throw new IllegalArgumentException("cannot create " + totalFractures + " fractures from " + lines.size() + " input files.");
+        }
+        if (lines.size() % totalFractures != 0) {
+            throw new IllegalArgumentException("cannot evenly create " + totalFractures + " fractures from " + lines.size() + " input files. mod=" + (lines.size() % totalFractures));
+        }
+        int filesPerFracture = lines.size() / totalFractures;
+        int filesBegin = (int) (filesPerFracture * currentFracture);
+        int filesEnd = (int) (filesPerFracture * (currentFracture + 1));
+        assert (filesEnd == lines.size());
+        LOG.info("total " + lines.size() + " input files. loading from " + filesBegin + "th (inclusive) file to " + filesEnd + "th (exclusive) file");
+        for (int i = filesBegin; i < filesEnd; ++i) {
+            String line = lines.get(i);
             LOG.info("input line:" + line);
             StringTokenizer tokenizer = new StringTokenizer(line, "\t");
             String nodeName = tokenizer.nextToken();
+            String path = tokenizer.nextToken().trim();
             LVRackNode node = metaRepo.getRackNode(nodeName);
             if (node == null) {
                 throw new IllegalArgumentException("node '" + nodeName + "' doesn't exist in metadata repository. have you started the node?");
             }
-            ArrayList<String> list = new ArrayList<String>();
-            while (tokenizer.hasMoreTokens()) {
-                String path = tokenizer.nextToken().trim();
-                LOG.info("node " + nodeName + ": file=" + path);
-                list.add(path);
-            }
-            params.getNodeFilePathMap().put(node.getNodeId(), list.toArray(new String[0]));
+            params.addNodeFilePath(node.getNodeId(), path);
+            LOG.info("node " + nodeName + ": file=" + path);
         }
-        reader.close();
         return params;
     }
     public static void main (String[] args) throws Exception {
@@ -200,7 +216,7 @@ public class DataImportMultiNodeBenchmark {
         if (args.length < 3) {
             System.err.println("usage: java " + DataImportMultiNodeBenchmark.class.getName() + " <partitionCount> <metadata repository address> <name of the file that lists input files (*)>");
             System.err.println("ex: java " + DataImportMultiNodeBenchmark.class.getName() + " 2 poseidon:28710 inputs.txt");
-            System.err.println("(*) the file format is \"<data node name>TAB<input file path 1>TAB<input file path 2>...\". One line for one node. Should be UTF-8 encoded file.");
+            System.err.println("(*) the file format is \"<data node name>TAB<input file path>\". To have multiple files in one node, simply put multiple lines with the same data node name. Should be UTF-8 encoded file.");
             System.err.println("ex:\n"
                             + "poseidon    /home/hkimura/workspace/las-vegas/ssb-dbgen/lineorder_s2_p.tbl\n"
                             + "artemis  /home/hkimura/workspace/las-vegas/ssb-dbgen/lineorder_s2_p.tbl");

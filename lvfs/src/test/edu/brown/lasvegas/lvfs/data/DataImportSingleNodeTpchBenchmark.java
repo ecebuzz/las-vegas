@@ -193,7 +193,7 @@ public class DataImportSingleNodeTpchBenchmark {
     }
     private void loadTable (LVTable table, File inputFile) throws Exception {
         ImportFractureJobParameters params = new ImportFractureJobParameters(table.getTableId());
-        params.getNodeFilePathMap().put(node.getNodeId(), new String[]{inputFile.getAbsolutePath()});
+        params.addNodeFilePath(node.getNodeId(), inputFile.getAbsolutePath());
         ImportFractureJobController controller = new ImportFractureJobController(masterRepository, 1000L, 1000L, 100L);
         LOG.info("started the import job...");
         LVJob job = controller.startSync(params);

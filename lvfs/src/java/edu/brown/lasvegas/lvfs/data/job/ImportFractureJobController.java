@@ -162,7 +162,7 @@ public class ImportFractureJobController extends AbstractJobController<ImportFra
             taskParam.setDateFormat(param.getDateFormat());
             taskParam.setDelimiter(param.getDelimiter());
             taskParam.setEncoding(param.getEncoding());
-            taskParam.setFilePaths(param.getNodeFilePathMap().get(nodeId));
+            taskParam.setFilePaths(param.getNodeFilePathMap().get(nodeId).toArray(new String[0]));
             taskParam.setFractureId(fracture.getFractureId());
             taskParam.setTimeFormat(param.getTimeFormat());
             taskParam.setTimestampFormat(param.getTimestampFormat());

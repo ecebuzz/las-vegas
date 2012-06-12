@@ -153,7 +153,7 @@ public class ImportFractureJobControllerTest {
 
         // let's start!
         ImportFractureJobParameters params = new ImportFractureJobParameters(table.getTableId());
-        params.getNodeFilePathMap().put(node1.getNodeId(), new String[]{tmpDir1 + "/copied.tbl"});
+        params.addNodeFilePath(node1.getNodeId(), tmpDir1 + "/copied.tbl");
         ImportFractureJobController controller = new ImportFractureJobController(masterRepository, 100, 100, 100);
         LVJob job = controller.startSync(params);
         assertEquals (JobStatus.DONE, job.getStatus());
@@ -202,7 +202,7 @@ public class ImportFractureJobControllerTest {
 
         // let's start!
         ImportFractureJobParameters params = new ImportFractureJobParameters(table.getTableId());
-        params.getNodeFilePathMap().put(node1.getNodeId(), new String[]{tmpDir1 + "/copied.tbl"});
+        params.addNodeFilePath(node1.getNodeId(), tmpDir1 + "/copied.tbl");
         ImportFractureJobController controller = new ImportFractureJobController(masterRepository, 100, 100, 100);
         LVJob job = controller.startSync(params);
         assertEquals (JobStatus.DONE, job.getStatus());
@@ -263,7 +263,7 @@ public class ImportFractureJobControllerTest {
 
         // let's start!
         ImportFractureJobParameters params = new ImportFractureJobParameters(table.getTableId());
-        params.getNodeFilePathMap().put(node1.getNodeId(), new String[]{tmpDir1 + "/copied.tbl"});
+        params.addNodeFilePath(node1.getNodeId(), tmpDir1 + "/copied.tbl");
         ImportFractureJobController controller = new ImportFractureJobController(masterRepository, 100, 100, 100);
         LVJob job = controller.startSync(params);
         assertEquals (JobStatus.DONE, job.getStatus());
@@ -312,7 +312,7 @@ public class ImportFractureJobControllerTest {
 
         // let's start!
         ImportFractureJobParameters params = new ImportFractureJobParameters(table.getTableId());
-        params.getNodeFilePathMap().put(node1.getNodeId(), new String[]{tmpDir1 + "/copied.tbl"});
+        params.addNodeFilePath(node1.getNodeId(), tmpDir1 + "/copied.tbl");
         ImportFractureJobController controller = new ImportFractureJobController(masterRepository, 100, 100, 100);
         LVJob job = controller.startSync(params);
         assertEquals (JobStatus.DONE, job.getStatus());
@@ -370,7 +370,7 @@ public class ImportFractureJobControllerTest {
 
         // let's start!
         ImportFractureJobParameters params = new ImportFractureJobParameters(table.getTableId());
-        params.getNodeFilePathMap().put(node1.getNodeId(), new String[]{tmpDir1 + "/copied.tbl"});
+        params.addNodeFilePath(node1.getNodeId(), tmpDir1 + "/copied.tbl");
         ImportFractureJobController controller = new ImportFractureJobController(masterRepository, 100, 100, 100);
         LVJob job = controller.startSync(params);
         assertEquals (JobStatus.DONE, job.getStatus());
@@ -418,7 +418,7 @@ public class ImportFractureJobControllerTest {
 
         // let's start!
         ImportFractureJobParameters params = new ImportFractureJobParameters(table.getTableId());
-        params.getNodeFilePathMap().put(node1.getNodeId(), new String[]{tmpDir1 + "/copied.tbl"});
+        params.addNodeFilePath(node1.getNodeId(), tmpDir1 + "/copied.tbl");
         ImportFractureJobController controller = new ImportFractureJobController(masterRepository, 100, 100, 100);
         LVJob job = controller.startSync(params);
         assertEquals (JobStatus.DONE, job.getStatus());
@@ -466,7 +466,7 @@ public class ImportFractureJobControllerTest {
 
         // let's start!
         ImportFractureJobParameters params = new ImportFractureJobParameters(table.getTableId());
-        params.getNodeFilePathMap().put(node1.getNodeId(), new String[]{tmpDir1 + "/copied.tbl"});
+        params.addNodeFilePath(node1.getNodeId(), tmpDir1 + "/copied.tbl");
         ImportFractureJobController controller = new ImportFractureJobController(masterRepository, 100, 100, 100);
         LVJob job = controller.startSync(params);
         assertEquals (JobStatus.DONE, job.getStatus());

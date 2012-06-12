@@ -142,29 +142,36 @@ public class DataImportMultiNodeTpchBenchmark {
             client = null;
         }
     }
-    public void exec (String lineitemInputFileName, String partInputFileName, String customerInputFileName, String ordersInputFileName) throws Exception {
+    public void exec (String lineitemInputFileName, String partInputFileName, String customerInputFileName, String ordersInputFileName, int factTablesFractures) throws Exception {
         LVTable[] tables = new LVTable[]{partTable, customerTable, ordersTable, lineitemTablePart, lineitemTableOrders};
         String[] inputFileNames = new String[]{partInputFileName, customerInputFileName, ordersInputFileName, lineitemInputFileName, lineitemInputFileName};
         for (int i = 0; i < tables.length; ++i) {
-            ImportFractureJobParameters params = DataImportMultiNodeBenchmark.parseInputFile(metaRepo, tables[i], inputFileNames[i]);
-            ImportFractureJobController controller = new ImportFractureJobController(metaRepo, 1000L, 1000L, 100L);
-            LOG.info("started the import job...");
-            LVJob job = controller.startSync(params);
-            LOG.info("finished the import job...:" + job);
-            for (LVTask task : metaRepo.getAllTasksByJob(job.getJobId())) {
-                LOG.info("Sub-Task finished in " + (task.getFinishedTime().getTime() - task.getStartedTime().getTime()) + "ms:" + task);
+            int tableFractures = 1;
+            // only fact tables (orders/lineitem) could be fractured
+            if (tables[i] == ordersTable || tables[i] == lineitemTablePart ||tables[i] == lineitemTableOrders) {
+                tableFractures = factTablesFractures;
             }
-            if (job.getStatus() != JobStatus.DONE) {
-                LOG.error("the import was incomplete! cancelling all subsequent jobs");
-            	break;
+            for (int currentFracture = 0; currentFracture < tableFractures; ++currentFracture) {
+                ImportFractureJobParameters params = DataImportMultiNodeBenchmark.parseInputFile(metaRepo, tables[i], inputFileNames[i], tableFractures, currentFracture);
+                ImportFractureJobController controller = new ImportFractureJobController(metaRepo, 1000L, 1000L, 100L);
+                LOG.info("started the import job (" + tables[i].getName() + ": " + currentFracture + "/" + tableFractures + ")...");
+                LVJob job = controller.startSync(params);
+                LOG.info("finished the import job (" + tables[i].getName() + ": " + currentFracture + "/" + tableFractures + "):" + job);
+                for (LVTask task : metaRepo.getAllTasksByJob(job.getJobId())) {
+                    LOG.info("Sub-Task finished in " + (task.getFinishedTime().getTime() - task.getStartedTime().getTime()) + "ms:" + task);
+                }
+                if (job.getStatus() != JobStatus.DONE) {
+                    LOG.error("the import was incomplete! cancelling all subsequent jobs");
+                	break;
+                }
             }
         }
     }
     public static void main (String[] args) throws Exception {
         LOG.info("running a multi node experiment..");
         if (args.length < 6) {
-            System.err.println("usage: java " + DataImportMultiNodeTpchBenchmark.class.getName() + " <partitionCount> <metadata repository address> <name of the file that lists input files for lineitem table> <name of the file that lists input files for part table> <name of the file that lists input files for customer table> <name of the file that lists input files for orders table>");
-            System.err.println("ex: java " + DataImportMultiNodeTpchBenchmark.class.getName() + " 2 poseidon:28710 inputs_lineitem.txt inputs_part.txt inputs_customer.txt inputs_orders.txt");
+            System.err.println("usage: java " + DataImportMultiNodeTpchBenchmark.class.getName() + " <partitionCount> <metadata repository address> <name of the file that lists input files for lineitem table> <name of the file that lists input files for part table> <name of the file that lists input files for customer table> <name of the file that lists input files for orders table> (<#fractures of fact tables>:default is 1)");
+            System.err.println("ex: java " + DataImportMultiNodeTpchBenchmark.class.getName() + " 2 poseidon:28710 inputs_lineitem.txt inputs_part.txt inputs_customer.txt inputs_orders.txt 2");
             // It should be a partitioned tbl (see TPCH's dbgen manual. eg: ./dbgen -T L -s 4 -S 1 -C 2; ./dbgen -T P -s 4 -S 1 -C 2 ).
             return;
         }
@@ -179,13 +186,20 @@ public class DataImportMultiNodeTpchBenchmark {
         String partInputFileName = args[3];
         String customerInputFileName = args[4];
         String ordersInputFileName = args[5];
+        int factTablesFractures = 1;
+        if (args.length >= 7) {
+            factTablesFractures = Integer.parseInt(args[6]);
+            if (factTablesFractures < 1) {
+                throw new IllegalArgumentException ("invalid fractures count:" + args[6]);
+            }
+        }
         
         DataImportMultiNodeTpchBenchmark program = new DataImportMultiNodeTpchBenchmark();
         program.setUp(metaRepoAddress);
         try {
             LOG.info("started: " + partitionCount + " partitions)");
             long start = System.currentTimeMillis();
-            program.exec(lineitemInputFileName, partInputFileName, customerInputFileName, ordersInputFileName);
+            program.exec(lineitemInputFileName, partInputFileName, customerInputFileName, ordersInputFileName, factTablesFractures);
             long end = System.currentTimeMillis();
             LOG.info("ended: " + partitionCount + " partitions). elapsed time=" + (end - start) + "ms");
         } catch (Exception ex) {

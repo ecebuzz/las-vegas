@@ -5,6 +5,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -52,7 +53,7 @@ public final class ImportFractureJobParameters extends JobParameters {
     private CompressionType temporaryFileCompression = CompressionType.SNAPPY;
 
     /** the files to import in each data node. key = ID of node (LVNode), value = local paths. */
-    private Map<Integer, String[]> nodeFilePathMap = new HashMap<Integer, String[]>();
+    private Map<Integer, ArrayList<String>> nodeFilePathMap = new HashMap<Integer, ArrayList<String>>();
     
     /**
      * Instantiates a new data import parameters.
@@ -107,12 +108,12 @@ public final class ImportFractureJobParameters extends JobParameters {
         for (int i = 0; i < entries; ++i) {
             int nodeId = in.readInt();
             int stringCount = in.readInt();
-            String[] array = new String[stringCount];
-            for (int j = 0; j < array.length; ++j) {
-                array[j] = readNillableString(in);
+            ArrayList<String> list = new ArrayList<String>();
+            for (int j = 0; j < stringCount; ++j) {
+                list.add(readNillableString(in));
             }
             assert (!nodeFilePathMap.containsKey(nodeId));
-            nodeFilePathMap.put(nodeId, array);
+            nodeFilePathMap.put(nodeId, list);
         }
     }
     @Override
@@ -126,16 +127,29 @@ public final class ImportFractureJobParameters extends JobParameters {
         out.writeInt(temporaryFileCompression == null ? CompressionType.INVALID.ordinal() : temporaryFileCompression.ordinal());
 
         out.writeInt(nodeFilePathMap.size());
-        for (Map.Entry<Integer, String[]> entry : nodeFilePathMap.entrySet()) {
+        for (Map.Entry<Integer, ArrayList<String>> entry : nodeFilePathMap.entrySet()) {
             out.writeInt(entry.getKey());
-            String[] array = entry.getValue();
-            out.writeInt(array.length);
-            for (int i = 0; i < array.length; ++i) {
-                writeNillableString(out, array[i]);
+            ArrayList<String> list = entry.getValue();
+            out.writeInt(list.size());
+            for (int i = 0; i < list.size(); ++i) {
+                writeNillableString(out, list.get(i));
             }
         }
     }
     
+    public void addNodeFilePath (int nodeId, String path) {
+        ArrayList<String> list = nodeFilePathMap.get(nodeId);
+        if (list == null) {
+            list = new ArrayList<String>();
+            nodeFilePathMap.put(nodeId, list);
+        }
+        list.add(path);
+    }
+    public void addNodeFilePath (int nodeId, String[] paths) {
+        for (String path : paths) {
+            addNodeFilePath(nodeId, path);
+        }
+    }
 
     /**
      * Gets the ID of the table to which a new fracture is constructed during this import.
@@ -250,7 +264,7 @@ public final class ImportFractureJobParameters extends JobParameters {
      *
      * @return the files to import in each data node
      */
-    public Map<Integer, String[]> getNodeFilePathMap() {
+    public Map<Integer, ArrayList<String>> getNodeFilePathMap() {
         return nodeFilePathMap;
     }
 
@@ -259,7 +273,7 @@ public final class ImportFractureJobParameters extends JobParameters {
      *
      * @param nodeFilePathMap the new files to import in each data node
      */
-    public void setNodeFilePathMap(Map<Integer, String[]> nodeFilePathMap) {
+    public void setNodeFilePathMap(Map<Integer, ArrayList<String>> nodeFilePathMap) {
         this.nodeFilePathMap = nodeFilePathMap;
     }
 

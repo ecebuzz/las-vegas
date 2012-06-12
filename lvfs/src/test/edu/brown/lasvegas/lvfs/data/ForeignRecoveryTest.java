@@ -1,6 +1,8 @@
 package edu.brown.lasvegas.lvfs.data;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -120,7 +122,7 @@ public class ForeignRecoveryTest {
 
         // first, load the data
         ImportFractureJobParameters params = new ImportFractureJobParameters(table.getTableId());
-        params.getNodeFilePathMap().put(nodes[0].getNodeId(), new String[]{inputFile.getAbsolutePath()});
+        params.addNodeFilePath(nodes[0].getNodeId(), inputFile.getAbsolutePath());
         ImportFractureJobController controller = new ImportFractureJobController(masterRepository, 400L, 400L, 100L);
         LOG.info("started the import job...");
         LVJob job = controller.startSync(params);

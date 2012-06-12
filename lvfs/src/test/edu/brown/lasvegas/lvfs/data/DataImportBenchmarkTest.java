@@ -1,6 +1,7 @@
 package edu.brown.lasvegas.lvfs.data;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -143,7 +144,7 @@ public class DataImportBenchmarkTest {
         for (int i = 0; i < rackCount; ++i) {
             for (int j = 0; j < nodesPerRack; ++j) {
                 LVRackNode node = nodes[i][j];
-                params.getNodeFilePathMap().put(node.getNodeId(), new String[]{inputFile.getAbsolutePath()});
+                params.addNodeFilePath(node.getNodeId(), inputFile.getAbsolutePath());
             }
         }
         ImportFractureJobController controller = new ImportFractureJobController(masterRepository, 400L, 400L, 100L);
