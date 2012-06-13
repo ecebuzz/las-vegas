@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
+import edu.brown.lasvegas.LVReplicaPartition;
 import edu.brown.lasvegas.LVTask;
 import edu.brown.lasvegas.ReplicaPartitionStatus;
 import edu.brown.lasvegas.TaskStatus;
@@ -26,19 +27,24 @@ public class BenchmarkTpchQ18PlanAJobController extends BenchmarkTpchQ18JobContr
     }
 	@Override
 	protected void initDerivedTpchQ18() throws IOException {
-        if (lineitemPartitions.length != ordersPartitions.length) {
-            throw new IOException ("partition count doesn't match");
-        }
-        
-        for (int i = 0; i < lineitemPartitions.length; ++i) {
-            if (lineitemPartitions[i].getNodeId() == null) {
-                throw new IOException ("this lineitem partition doesn't have nodeId:" + lineitemPartitions[i]);
+	    assert (lineitemPartitionLists.length == ordersPartitionLists.length);
+	    for (int p = 0; p < lineitemPartitionLists.length; ++p) {
+	        LVReplicaPartition[] lineitemPartitions = lineitemPartitionLists[p];
+            LVReplicaPartition[] ordersPartitions = ordersPartitionLists[p];
+            if (lineitemPartitions.length != ordersPartitions.length) {
+                throw new IOException ("partition count doesn't match");
             }
-            if (ordersPartitions[i].getNodeId() == null) {
-                throw new IOException ("this part partition doesn't have nodeId:" + ordersPartitions[i]);
-            }
-            if (lineitemPartitions[i].getNodeId().intValue() != ordersPartitions[i].getNodeId().intValue()) {
-                throw new IOException ("this lineitem and orders partitions are not collocated. lineitem:" + lineitemPartitions[i] + ", orders:" + ordersPartitions[i]);
+            
+            for (int i = 0; i < lineitemPartitions.length; ++i) {
+                if (lineitemPartitions[i].getNodeId() == null) {
+                    throw new IOException ("this lineitem partition doesn't have nodeId:" + lineitemPartitions[i]);
+                }
+                if (ordersPartitions[i].getNodeId() == null) {
+                    throw new IOException ("this orders partition doesn't have nodeId:" + ordersPartitions[i]);
+                }
+                if (lineitemPartitions[i].getNodeId().intValue() != ordersPartitions[i].getNodeId().intValue()) {
+                    throw new IOException ("this lineitem and orders partitions are not collocated. lineitem:" + lineitemPartitions[i] + ", orders:" + ordersPartitions[i]);
+                }
             }
         }
 	}
@@ -47,27 +53,35 @@ public class BenchmarkTpchQ18PlanAJobController extends BenchmarkTpchQ18JobContr
         List<Integer> lineitemPartitionIds = new ArrayList<Integer>();
         List<Integer> ordersPartitionIds = new ArrayList<Integer>();
     }
+    private static NodeParam getNodeParam (SortedMap<Integer, NodeParam> nodeMap, int nodeId) {
+        NodeParam param = nodeMap.get(nodeId);
+        if (param == null) {
+            param = new NodeParam();
+            nodeMap.put (nodeId, param);
+        }
+        return param;
+    }
 	@Override
 	protected void runDerived() throws IOException {
         LOG.info("going to run TPCH Q18. QuantityThreshold=" + param.getQuantityThreshold());
         SortedMap<Integer, NodeParam> nodeMap = new TreeMap<Integer, NodeParam>(); // key=nodeId
-        for (int i = 0; i < lineitemPartitions.length; ++i) {
-            if (lineitemPartitions[i].getStatus() == ReplicaPartitionStatus.EMPTY || ordersPartitions[i].getStatus() == ReplicaPartitionStatus.EMPTY) {
-                LOG.info("this partition will produce no result. skipped:" + lineitemPartitions[i] + "," + ordersPartitions[i]);
-                continue;
+        for (int p = 0; p < lineitemPartitionLists.length; ++p) {
+            LVReplicaPartition[] lineitemPartitions = lineitemPartitionLists[p];
+            LVReplicaPartition[] ordersPartitions = ordersPartitionLists[p];
+            for (int i = 0; i < lineitemPartitions.length; ++i) {
+                if (lineitemPartitions[i].getStatus() == ReplicaPartitionStatus.EMPTY || ordersPartitions[i].getStatus() == ReplicaPartitionStatus.EMPTY) {
+                    LOG.info("this partition will produce no result. skipped:" + lineitemPartitions[i] + "," + ordersPartitions[i]);
+                    continue;
+                }
+                LOG.info("existing lineitem partition: " + lineitemPartitions[i]);
+                LOG.info("existing orders partition: " + ordersPartitions[i]);
+                if (lineitemPartitions[i].getNodeId().intValue() != ordersPartitions[i].getNodeId().intValue()) {
+                    throw new IOException ("not co-partitioned! lineitem partition:" + lineitemPartitions[i] + ". orders partition:" + ordersPartitions[i]);
+                }
+                NodeParam param = getNodeParam(nodeMap, lineitemPartitions[i].getNodeId());
+                param.lineitemPartitionIds.add(lineitemPartitions[i].getPartitionId());
+                param.ordersPartitionIds.add(ordersPartitions[i].getPartitionId());
             }
-            LOG.info("existing lineitem partition: " + lineitemPartitions[i]);
-            LOG.info("existing orders partition: " + ordersPartitions[i]);
-            if (lineitemPartitions[i].getNodeId().intValue() != ordersPartitions[i].getNodeId().intValue()) {
-                throw new IOException ("not co-partitioned! lineitem partition:" + lineitemPartitions[i] + ". orders partition:" + ordersPartitions[i]);
-            }
-            NodeParam param = nodeMap.get(lineitemPartitions[i].getNodeId());
-            if (param == null) {
-                param = new NodeParam();
-                nodeMap.put (lineitemPartitions[i].getNodeId(), param);
-            }
-            param.lineitemPartitionIds.add(lineitemPartitions[i].getPartitionId());
-            param.ordersPartitionIds.add(ordersPartitions[i].getPartitionId());
         }
 
         SortedMap<Integer, LVTask> taskMap = new TreeMap<Integer, LVTask>();

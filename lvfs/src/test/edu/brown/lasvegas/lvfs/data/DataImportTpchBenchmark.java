@@ -35,6 +35,7 @@ public abstract class DataImportTpchBenchmark {
         this.factTableFractures = factTableFractures;
     }
 
+    public static final String DB_NAME = "tpchdb"; 
     protected LVDatabase database;
 
     /**
@@ -62,13 +63,12 @@ public abstract class DataImportTpchBenchmark {
     }
     
     public void setUp () throws IOException {
-        final String dbname = "db1";
-        if (metaRepo.getDatabase(dbname) != null) {
-            metaRepo.dropDatabase(metaRepo.getDatabase(dbname).getDatabaseId());
+        if (metaRepo.getDatabase(DB_NAME) != null) {
+            metaRepo.dropDatabase(metaRepo.getDatabase(DB_NAME).getDatabaseId());
             LOG.info("dropped existing database");
         }
 
-        database = metaRepo.createNewDatabase(dbname);
+        database = metaRepo.createNewDatabase(DB_NAME);
 
         ValueRange[] customerRanges = new ValueRange[partitionCount];
         for (int i = 0; i < partitionCount; ++i) {

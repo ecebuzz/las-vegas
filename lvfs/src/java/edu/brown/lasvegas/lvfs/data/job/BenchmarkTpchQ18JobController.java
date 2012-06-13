@@ -47,6 +47,10 @@ import edu.brown.lasvegas.util.ValueRange;
 
 /**
  * Base class for TPC-H Q18 implementation.
+ * Customer table must have only one fracture. lineitem and orders table can have
+ * an arbitrary number of fractures, but the two tables must have the same number of
+ * fractures with the same ranges of orderkey. This is usually true as
+ * TPC-H data loading is naturally ordered by orderkey.
  * Plan A (fast query plan utilizing co-partitioning)
  * and Plan B (slow query plan using non-copartitioned files)
  * derive from this.
@@ -75,9 +79,10 @@ public abstract class BenchmarkTpchQ18JobController extends AbstractJobControlle
     protected LVTable lineitemTable, ordersTable, customerTable;
     private LVColumn c_custkey, c_name;
     protected LVReplicaScheme lineitemScheme, ordersScheme, customerScheme;
-    protected LVFracture lineitemFracture, ordersFracture, customerFracture;
-    protected LVReplica lineitemReplica, ordersReplica, customerReplica;
-    protected LVReplicaPartition lineitemPartitions[], ordersPartitions[], customerPartitions[];
+    protected LVFracture customerFracture;
+    protected LVFracture lineitemFractures[], ordersFractures[]; // lineitem/orders should have same number of fractures
+    protected LVReplicaPartition[] customerPartitions;
+    protected LVReplicaPartition lineitemPartitionLists[][], ordersPartitionLists[][];  // first array index shared with lineitemFractures/ordersFractures
     private ValueRange[] customerRanges;
     private int[] customerStartKeys;
 
@@ -105,20 +110,10 @@ public abstract class BenchmarkTpchQ18JobController extends AbstractJobControlle
         c_name = metaRepo.getColumnByName(customerTable.getTableId(), "c_name");
         assert (c_name != null);
         
-        {
-            LVFracture[] fractures = metaRepo.getAllFractures(lineitemTable.getTableId());
-            if (fractures.length != 1) {
-                throw new IOException ("the number of fractures of lineitem table was unexpected:" + fractures.length);
-            }
-            lineitemFracture = fractures[0];
-        }
-
-        {
-            LVFracture[] fractures = metaRepo.getAllFractures(ordersTable.getTableId());
-            if (fractures.length != 1) {
-                throw new IOException ("the number of fractures of orders table was unexpected:" + fractures.length);
-            }
-            ordersFracture = fractures[0];
+        lineitemFractures = metaRepo.getAllFractures(lineitemTable.getTableId());
+        ordersFractures = metaRepo.getAllFractures(ordersTable.getTableId());
+        if (lineitemFractures.length != ordersFractures.length) {
+            throw new IOException ("the numbers of fractures of lineitem (" + lineitemFractures.length + ") and orders (" + ordersFractures.length + ") don't match");
         }
 
         {
@@ -129,6 +124,9 @@ public abstract class BenchmarkTpchQ18JobController extends AbstractJobControlle
             customerFracture = fractures[0];
         }
         
+        // TODO: so far this job assumes only one replica group and scheme in the table.
+        // this should be a parameter of the job so that the caller can specify which replica scheme to use.
+        // trivial to implement and so far not needed, so just a todo...
         {
             LVReplicaGroup[] groups = metaRepo.getAllReplicaGroups(lineitemTable.getTableId());
             assert (groups.length == 1);
@@ -158,16 +156,26 @@ public abstract class BenchmarkTpchQ18JobController extends AbstractJobControlle
             customerStartKeys = (int[]) ValueRange.extractStartKeys(customerRanges);
         }
         
-        lineitemReplica = metaRepo.getReplicaFromSchemeAndFracture(lineitemScheme.getSchemeId(), lineitemFracture.getFractureId());
-        assert (lineitemReplica != null);
-        ordersReplica = metaRepo.getReplicaFromSchemeAndFracture(ordersScheme.getSchemeId(), ordersFracture.getFractureId());
-        assert (ordersReplica != null);
-        customerReplica = metaRepo.getReplicaFromSchemeAndFracture(customerScheme.getSchemeId(), customerFracture.getFractureId());
+        LVReplica customerReplica = metaRepo.getReplicaFromSchemeAndFracture(customerScheme.getSchemeId(), customerFracture.getFractureId());
         assert (customerReplica != null);
-        
-        lineitemPartitions = metaRepo.getAllReplicaPartitionsByReplicaId(lineitemReplica.getReplicaId());
-        ordersPartitions = metaRepo.getAllReplicaPartitionsByReplicaId(ordersReplica.getReplicaId());
         customerPartitions = metaRepo.getAllReplicaPartitionsByReplicaId(customerReplica.getReplicaId());
+
+
+        lineitemPartitionLists = new LVReplicaPartition[lineitemFractures.length][];
+        for (int i = 0; i < lineitemFractures.length; ++i) {
+            LVFracture fracture = lineitemFractures[i];
+            LVReplica replica = metaRepo.getReplicaFromSchemeAndFracture(lineitemScheme.getSchemeId(), fracture.getFractureId());
+            assert (replica != null);
+            lineitemPartitionLists[i] = metaRepo.getAllReplicaPartitionsByReplicaId(replica.getReplicaId());
+        }
+
+        ordersPartitionLists = new LVReplicaPartition[ordersFractures.length][];
+        for (int i = 0; i < ordersFractures.length; ++i) {
+            LVFracture fracture = ordersFractures[i];
+            LVReplica replica = metaRepo.getReplicaFromSchemeAndFracture(ordersScheme.getSchemeId(), fracture.getFractureId());
+            assert (replica != null);
+            ordersPartitionLists[i] = metaRepo.getAllReplicaPartitionsByReplicaId(replica.getReplicaId());
+        }
         
 		initDerivedTpchQ18 ();
         this.jobId = metaRepo.createNewJobIdOnlyReturn("Q18", JobType.BENCHMARK_TPCH_Q18, null);

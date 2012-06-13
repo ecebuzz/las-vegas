@@ -4,26 +4,18 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.Random;
 
-import org.apache.hadoop.conf.Configuration;
 import org.apache.log4j.Logger;
 
-import edu.brown.lasvegas.ClearAllTest;
 import edu.brown.lasvegas.ColumnType;
 import edu.brown.lasvegas.LVColumn;
 import edu.brown.lasvegas.LVDatabase;
 import edu.brown.lasvegas.LVJob;
-import edu.brown.lasvegas.LVRack;
-import edu.brown.lasvegas.LVRackNode;
 import edu.brown.lasvegas.LVReplicaGroup;
 import edu.brown.lasvegas.LVTable;
 import edu.brown.lasvegas.LVTask;
-import edu.brown.lasvegas.lvfs.LVFSFilePath;
 import edu.brown.lasvegas.lvfs.data.job.ImportFractureJobController;
 import edu.brown.lasvegas.lvfs.data.job.ImportFractureJobParameters;
-import edu.brown.lasvegas.lvfs.meta.MasterMetadataRepository;
-import edu.brown.lasvegas.server.LVDataNode;
 import edu.brown.lasvegas.util.ValueRange;
 
 /**
@@ -36,28 +28,18 @@ import edu.brown.lasvegas.util.ValueRange;
  * @see DataImportMultiNodeBenchmark
  */
 public class DataImportSingleNodeBenchmark {
-    private static final String TEST_BDB_HOME = "test/bdb_data";
-    private static final String DATANODE_ADDRESS = "localhost:12345";
-    private static final String DATANODE_NAME = "node";
+    public static final String DB_NAME = "ssbdb";
+    private SingleNodeBenchmarkResources resources;
     private static final Logger LOG = Logger.getLogger(DataImportSingleNodeBenchmark.class);
 
     // private static final String lvfsRoot = "/tmp/test";
     // private static final File inputFile = new File ("/tmp/lineorder_s1.tbl");
 
-    private static final String lvfsRoot = "test";
     private static final File inputFile = new File ("../ssb-dbgen/lineorder_s1.tbl");
     // private static final File inputFile = new File ("../ssb-dbgen/lineorder_s4.tbl");
     // private static final File inputFile = new File ("../ssb-dbgen/lineorder_s15.tbl");
     // private static final File inputFile = new File ("src/test/edu/brown/lasvegas/lvfs/data/mini_lineorder.tbl"); // just for testing
 
-    private MasterMetadataRepository masterRepository;
-    private String rootDir;
-    private String tmpDir;
-    private LVDataNode dataNode;
-    private Configuration conf;
-
-    private LVRack rack;
-    private LVRackNode node;
     private LVDatabase database;
     private LVTable table;
     private HashMap<String, LVColumn> columns;
@@ -66,8 +48,8 @@ public class DataImportSingleNodeBenchmark {
 
     private final MiniDataSource dataSource = new MiniSSBLineorder();
 
-    private void setUp () throws IOException {
-        ClearAllTest.deleteFileRecursive(new File("test"));
+    public DataImportSingleNodeBenchmark() throws IOException {
+        this.resources = new SingleNodeBenchmarkResources(1, 1, 0); // 0 databases because the benchmark creates one itself
         if (!inputFile.exists()) {
             throw new FileNotFoundException(inputFile.getAbsolutePath() + " doesn't exist. Have you generated the data?");
         }
@@ -80,19 +62,16 @@ public class DataImportSingleNodeBenchmark {
         }
         LOG.info("partitions the data into " + partitionCount + " partitions");
 
-        masterRepository = new MasterMetadataRepository(true, TEST_BDB_HOME); // nuke the folder
-        rack = masterRepository.createNewRack("rack");
-        node = masterRepository.createNewRackNode(rack, DATANODE_NAME, DATANODE_ADDRESS);
-        database = masterRepository.createNewDatabase("db1");
+        database = resources.metaRepo.createNewDatabase(DB_NAME);
         final String[] columnNames = dataSource.getColumnNames();
         columns = new HashMap<String, LVColumn>();
-        table = masterRepository.createNewTable(database.getDatabaseId(), "lineorder", columnNames, dataSource.getScheme());
-        for (LVColumn column : masterRepository.getAllColumnsExceptEpochColumn(table.getTableId())) {
+        table = resources.metaRepo.createNewTable(database.getDatabaseId(), "lineorder", columnNames, dataSource.getScheme());
+        for (LVColumn column : resources.metaRepo.getAllColumnsExceptEpochColumn(table.getTableId())) {
             columns.put(column.getName(), column);
         }
         columnIds = new int[columnNames.length];
         for (int i = 0; i < columnIds.length; ++i) {
-            columnIds[i] = masterRepository.getColumnByName(table.getTableId(), columnNames[i]).getColumnId();
+            columnIds[i] = resources.metaRepo.getColumnByName(table.getTableId(), columnNames[i]).getColumnId();
         }
         ValueRange[] ranges = new ValueRange[partitionCount];
         for (int i = 0; i < partitionCount; ++i) {
@@ -109,38 +88,24 @@ public class DataImportSingleNodeBenchmark {
                 ranges[i].setEndKey(6000000 * (i + 1) + 1);
             }
         }
-        group = masterRepository.createNewReplicaGroup(table, columns.get("lo_orderkey"), ranges);
-        masterRepository.createNewReplicaScheme(group, columns.get("lo_orderkey"), columnIds, dataSource.getDefaultCompressions());
-        masterRepository.createNewReplicaScheme(group, columns.get("lo_suppkey"), columnIds, dataSource.getDefaultCompressions());
-        masterRepository.createNewReplicaScheme(group, columns.get("lo_orderdate"), columnIds, dataSource.getDefaultCompressions());
-
-        conf = new Configuration();
-        rootDir = lvfsRoot + "/node_lvfs_" + Math.abs(new Random(System.nanoTime()).nextInt());
-        tmpDir = rootDir + "/tmp";
-        conf.set(DataEngine.LOCAL_LVFS_ROOTDIR_KEY, rootDir);
-        conf.set(DataEngine.LOCAL_LVFS_TMPDIR_KEY, tmpDir);
-        conf.set(LVFSFilePath.LVFS_CONF_ROOT_KEY, rootDir);
-        conf.setLong(DataTaskPollingThread.POLLING_INTERVAL_KEY, 1000L);
-        conf.set(LVDataNode.DATA_ADDRESS_KEY, DATANODE_ADDRESS);
-        conf.set(LVDataNode.DATA_NODE_NAME_KEY, DATANODE_NAME);
-        conf.set(LVDataNode.DATA_RACK_NAME_KEY, "rack");
-        dataNode = new LVDataNode(conf, masterRepository);
-        dataNode.start(null);
+        group = resources.metaRepo.createNewReplicaGroup(table, columns.get("lo_orderkey"), ranges);
+        resources.metaRepo.createNewReplicaScheme(group, columns.get("lo_orderkey"), columnIds, dataSource.getDefaultCompressions());
+        resources.metaRepo.createNewReplicaScheme(group, columns.get("lo_suppkey"), columnIds, dataSource.getDefaultCompressions());
+        resources.metaRepo.createNewReplicaScheme(group, columns.get("lo_orderdate"), columnIds, dataSource.getDefaultCompressions());
     }
     
-    private void tearDown () throws IOException {
-        dataNode.close();
-        masterRepository.shutdown();
+    protected void tearDown () throws IOException {
+        resources.tearDown();
     }
     
     public void exec () throws Exception {
         ImportFractureJobParameters params = new ImportFractureJobParameters(table.getTableId());
-        params.addNodeFilePath(node.getNodeId(), inputFile.getAbsolutePath());
-        ImportFractureJobController controller = new ImportFractureJobController(masterRepository, 1000L, 1000L, 100L);
+        params.addNodeFilePath(resources.nodes[0][0].getNodeId(), inputFile.getAbsolutePath());
+        ImportFractureJobController controller = new ImportFractureJobController(resources.metaRepo, 1000L, 1000L, 100L);
         LOG.info("started the import job...");
         LVJob job = controller.startSync(params);
         LOG.info("finished the import job...:" + job);
-        for (LVTask task : masterRepository.getAllTasksByJob(job.getJobId())) {
+        for (LVTask task : resources.metaRepo.getAllTasksByJob(job.getJobId())) {
             LOG.info("Sub-Task finished in " + (task.getFinishedTime().getTime() - task.getStartedTime().getTime()) + "ms:" + task);
         }
     }
@@ -148,7 +113,6 @@ public class DataImportSingleNodeBenchmark {
     public static void main (String[] args) throws Exception {
         LOG.info("running a single node experiment..");
         DataImportSingleNodeBenchmark program = new DataImportSingleNodeBenchmark();
-        program.setUp();
         try {
             LOG.info("started:" + inputFile.getName());
             long start = System.currentTimeMillis();

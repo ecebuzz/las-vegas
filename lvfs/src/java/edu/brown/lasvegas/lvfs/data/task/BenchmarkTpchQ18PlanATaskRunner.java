@@ -24,6 +24,8 @@ public final class BenchmarkTpchQ18PlanATaskRunner extends BenchmarkTpchQ18TaskR
     	long[] lordkeys = (long[]) readAtOnce(lineitemPartition, l_orderkey);
     	float[] quantities = (float[]) readAtOnce(lineitemPartition, l_quantity);
 
+        // unlike Q17 Plan A, we even don't have to merge partitions in multiple fractures.
+    	// this is because lineitem and orders are 'co-fractured', naturally partitioned by orderkeys.
     	LVReplicaPartition ordersPartition = ordersPartitions[partition];
     	processPartitionCore(ordersPartition, lordkeys, quantities);
     }

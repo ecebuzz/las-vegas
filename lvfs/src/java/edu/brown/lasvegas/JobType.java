@@ -1,5 +1,9 @@
 package edu.brown.lasvegas;
 
+import edu.brown.lasvegas.lvfs.data.job.BenchmarkTpchQ17JobController;
+import edu.brown.lasvegas.lvfs.data.job.BenchmarkTpchQ18JobController;
+import edu.brown.lasvegas.lvfs.data.job.BenchmarkTpchQ1JobController;
+import edu.brown.lasvegas.lvfs.data.job.DiskCacheFlushJobController;
 import edu.brown.lasvegas.lvfs.data.job.ImportFractureJobController;
 import edu.brown.lasvegas.lvfs.data.job.MergeFractureJobController;
 
@@ -47,7 +51,11 @@ public enum JobType {
      */
     BENCHMARK_TPCH_Q17,
     /**
-     * This job runs TPC-H's Q18, assuming a single fracture.
+     * This job runs TPC-H's Q18.
+     * Customer table must have only one fracture. lineitem and orders table can have
+     * an arbitrary number of fractures, but the two tables must have the same number of
+     * fractures with the same ranges of orderkey. This is usually true as
+     * TPC-H data loading is naturally ordered by orderkey.
      * This query also has two plans, plan A (fast one using a co-partitioned orders and lineitem table)
      * and plan B (slow one not using that).
      * @see BenchmarkTpchQ18JobController
@@ -57,6 +65,7 @@ public enum JobType {
     /**
      * Flush the OS's disk cache at each data node. Used while benchmarks.
      * This might internally use /proc/sys/vm/drop_caches (which requires root permission) or just read large files.
+     * @see DiskCacheFlushJobController
      */
     DISK_CACHE_FLUSH,
     

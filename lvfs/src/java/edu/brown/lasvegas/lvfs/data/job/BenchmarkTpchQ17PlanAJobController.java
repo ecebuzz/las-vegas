@@ -73,6 +73,9 @@ public class BenchmarkTpchQ17PlanAJobController extends BenchmarkTpchQ17JobContr
             NodeParam param = getNodeParam(nodeMap, partPartitions[i].getNodeId());
             param.partPartitionIds.add(partPartitions[i].getPartitionId());
         }
+        // TODO this assumes all fractures co-locate a lineitem partition to part partition.
+        // which makes all fractures share the same node coverage... not good for recoverability.
+        // when we should and should not co-locate? need discussion.
         for (LVReplicaPartition[] lineitemPartitions : lineitemPartitionLists) {
             for (int i = 0; i < lineitemPartitions.length; ++i) {
                 if (lineitemPartitions[i].getStatus() == ReplicaPartitionStatus.EMPTY || partPartitions[i].getStatus() == ReplicaPartitionStatus.EMPTY) {

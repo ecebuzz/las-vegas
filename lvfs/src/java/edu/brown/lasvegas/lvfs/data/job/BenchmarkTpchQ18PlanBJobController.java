@@ -49,9 +49,9 @@ public class BenchmarkTpchQ18PlanBJobController extends BenchmarkTpchQ18JobContr
     private SortedMap<Integer, ArrayList<Integer>> ordersNodeMap;
     @Override
     protected void initDerivedTpchQ18() throws IOException {
-        // lineitem and part are not co-partitioned, so create node map individually
-        lineitemNodeMap = createNodeMap (lineitemPartitions, "lineitem");
-        ordersNodeMap = createNodeMap (ordersPartitions, "part");
+        // lineitem and orders are not co-partitioned, so create node map individually
+        lineitemNodeMap = createNodeMap (lineitemPartitionLists, "lineitem");
+        ordersNodeMap = createNodeMap (ordersPartitionLists, "part");
         ordersGroup = metaRepo.getReplicaGroup(ordersScheme.getGroupId());
         assert (ordersGroup != null);
         l_orderkey = metaRepo.getColumnByName(lineitemTable.getTableId(), "l_orderkey");
@@ -61,20 +61,23 @@ public class BenchmarkTpchQ18PlanBJobController extends BenchmarkTpchQ18JobContr
     }
 
     //TODO this function should be shared
-    private SortedMap<Integer, ArrayList<Integer>> createNodeMap (LVReplicaPartition[] partitions, String label) {
+    private SortedMap<Integer, ArrayList<Integer>> createNodeMap (LVReplicaPartition[][] partitionLists, String label) {
         SortedMap<Integer, ArrayList<Integer>> nodeMap = new TreeMap<Integer, ArrayList<Integer>>(); // key=nodeId
-        for (LVReplicaPartition partition : partitions) {
-            if (partition.getStatus() == ReplicaPartitionStatus.EMPTY) {
-                LOG.info("this " + label + " partition will produce no result. skipped:" + partition);
-                continue;
+        // because we anyway do repartitioning, fractures are not an issue! just throw in everything.
+        for (LVReplicaPartition[] partitions : partitionLists) {
+            for (LVReplicaPartition partition : partitions) {
+                if (partition.getStatus() == ReplicaPartitionStatus.EMPTY) {
+                    LOG.info("this " + label + " partition will produce no result. skipped:" + partition);
+                    continue;
+                }
+                LOG.info("existing " + label + " partition: " + partition);
+                ArrayList<Integer> partitionIds = nodeMap.get(partition.getNodeId());
+                if (partitionIds == null) {
+                	partitionIds = new ArrayList<Integer>();
+                	nodeMap.put (partition.getNodeId(), partitionIds);
+                }
+                partitionIds.add(partition.getPartitionId());
             }
-            LOG.info("existing " + label + " partition: " + partition);
-            ArrayList<Integer> partitionIds = nodeMap.get(partition.getNodeId());
-            if (partitionIds == null) {
-            	partitionIds = new ArrayList<Integer>();
-            	nodeMap.put (partition.getNodeId(), partitionIds);
-            }
-            partitionIds.add(partition.getPartitionId());
         }
         return nodeMap;
     }

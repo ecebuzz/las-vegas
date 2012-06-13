@@ -43,8 +43,7 @@ public class TpchQ18MultinodeBenchmark {
         LOG.info("connected to metadata repository: " + metadataAddress);
         metaRepo = client.getChannel();
         
-        final String dbname = "db1";
-        database = metaRepo.getDatabase(dbname);
+        database = metaRepo.getDatabase(DataImportTpchBenchmark.DB_NAME);
         assert (database != null);
 
         customerTable = metaRepo.getTable(database.getDatabaseId(), "customer");
