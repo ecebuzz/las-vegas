@@ -26,7 +26,7 @@ public final class DataTaskPollingThread extends Thread {
 
     /** max concurrent threads to run tasks on this node. */
     public static final String TASK_WORKER_THREADS_KEY = "lasvegas.server.data.task.workers";
-    public static final int TASK_WORKER_THREADS_DEFAULT = 3;
+    public static final int TASK_WORKER_THREADS_DEFAULT = 2;
 
     private DataEngineContext context;
     private boolean stopRequested = false;

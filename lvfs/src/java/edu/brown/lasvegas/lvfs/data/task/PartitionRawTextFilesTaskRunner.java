@@ -41,7 +41,7 @@ public final class PartitionRawTextFilesTaskRunner extends DataTaskRunner<Partit
 
     /** _Total_ buffer size to write partitioned files. */
     public static final String WRITE_BUFFER_TOTAL_KEY = "lasvegas.server.data.task.partition_raw_text.write_buffer_size_total";
-    public static final long WRITE_BUFFER_TOTAL_DEFAULT = 1 << 29;
+    public static final long WRITE_BUFFER_TOTAL_DEFAULT = 1 << 27;
 
     /**
      * max fragments in each level. see RecursiveTextFilePartitioner

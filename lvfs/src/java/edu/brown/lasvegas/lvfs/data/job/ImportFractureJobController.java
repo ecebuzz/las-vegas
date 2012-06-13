@@ -54,10 +54,13 @@ public class ImportFractureJobController extends AbstractJobController<ImportFra
     private static Logger LOG = Logger.getLogger(ImportFractureJobController.class);
 
     private LVTable table;
-    private LVFracture fracture;
     private LVReplicaGroup[] groups;
+    /** key = replica group ID, value= default replica scheme in the group.*/
     private Map<Integer, LVReplicaScheme> defaultReplicaSchemes;
+    /** key = replica group ID, value= non-default replica schemes in the group.*/
     private Map<Integer, LVReplicaScheme[]> otherReplicaSchemes;
+
+    private LVFracture fracture;
     
     public ImportFractureJobController (LVMetadataProtocol metaRepo) throws IOException {
         super (metaRepo);

@@ -1,6 +1,9 @@
 package edu.brown.lasvegas.lvfs.data;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import org.apache.log4j.Logger;
 
@@ -150,20 +153,52 @@ public abstract class DataImportTpchBenchmark {
                 if (tables[i] == ordersTable || tables[i] == lineitemTablePart ||tables[i] == lineitemTableOrders) {
                     tableFractures = factTableFractures;
                 }
+                
+                // to save time, run all fracture import at the same time.
+                // if #fractures is large, partitioning the input files and loading them are much faster with parallel execution.
+                int[] jobIds = new int[tableFractures]; 
+                ImportFractureJobController[] controllers = new ImportFractureJobController[tableFractures]; 
+                SortedSet<Integer> remainings = new TreeSet<Integer> ();
                 for (int currentFracture = 0; currentFracture < tableFractures; ++currentFracture) {
                     ImportFractureJobParameters params = DataImportMultiNodeBenchmark.parseInputFile(metaRepo, tables[i], inputFileNames[i], tableFractures, currentFracture);
                     ImportFractureJobController controller = new ImportFractureJobController(metaRepo, 1000L, 1000L, 100L);
                     LOG.info("started the import job (" + tables[i].getName() + ": " + currentFracture + "/" + tableFractures + ")...");
-                    LVJob job = controller.startSync(params);
-                    LOG.info("finished the import job (" + tables[i].getName() + ": " + currentFracture + "/" + tableFractures + "):" + job);
-                    for (LVTask task : metaRepo.getAllTasksByJob(job.getJobId())) {
-                        LOG.info("Sub-Task finished in " + (task.getFinishedTime().getTime() - task.getStartedTime().getTime()) + "ms:" + task);
+                    // LVJob job = controller.startSync(params);
+                    LVJob job = controller.startAsync(params); // asynchronous return to all at once
+                    controllers[currentFracture] = controller;
+                    jobIds[currentFracture] = job.getJobId();
+                    remainings.add (currentFracture);
+                }
+                // then, wait until all of them ends
+                boolean hadError = false;
+                while (!remainings.isEmpty()) {
+                    Thread.sleep(1000L);
+                    ArrayList<Integer> doneFractures = new ArrayList<Integer>();
+                    for (Integer currentFracture : remainings) {
+                        LVJob job = metaRepo.getJob(jobIds[currentFracture]);
+                        assert (job != null);
+                        if (JobStatus.isFinished(job.getStatus())) {
+                            LOG.info("finished (status=" + job.getStatus() + ") the import job (" + tables[i].getName() + ": " + currentFracture + "/" + tableFractures + "):" + job);
+                            for (LVTask task : metaRepo.getAllTasksByJob(job.getJobId())) {
+                                LOG.info("Sub-Task finished in " + (task.getFinishedTime().getTime() - task.getStartedTime().getTime()) + "ms:" + task);
+                            }
+                            doneFractures.add(currentFracture); // remove later to avoid 'modification in iterator'
+                            if (job.getStatus() != JobStatus.DONE) {
+                                LOG.error("the import was incomplete! cancelling all subsequent jobs");
+                                hadError = true;
+                            }
+                        }
                     }
-                    if (job.getStatus() != JobStatus.DONE) {
-                        LOG.error("the import was incomplete! cancelling all subsequent jobs");
-                    	break;
+                    remainings.removeAll(doneFractures);
+                    if (hadError) {
+                        // cancel all running data import
+                        for (Integer currentFracture : remainings) {
+                            controllers[currentFracture].stop();
+                        }
+                        break;
                     }
                 }
+                LOG.error("at least one data import failed. cancelled all data import jobs.");
             }
             long end = System.currentTimeMillis();
             LOG.info("all import done in " + (end - start) + "ms");
