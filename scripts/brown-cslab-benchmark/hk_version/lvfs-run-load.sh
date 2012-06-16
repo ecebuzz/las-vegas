@@ -7,6 +7,7 @@ DATE_FORMAT="%Y-%m-%d-%H.%M.%S-%Z"
 SCALE_SIZE=$1
 NUM_PARTS=$2
 NUM_REPEATS=$3
+FRACTURES=$4
 
 LINEITEM_INPUT_FILE=lineitem-$NUM_PARTS.txt
 PART_INPUT_FILE=part-$NUM_PARTS.txt
@@ -19,6 +20,12 @@ if [ "$NUM_PARTS" == "" ]; then
         echo "SCALE_SIZE and NUM_PARTS argument required"
         exit
 fi
+
+if [ "$FRACTURES" == "" ]; then
+        echo "num of fractures not specified. using the default value."
+        FRACTURES=1
+fi
+echo "num of fractures = $FRACTURES"
 
 cd $RESOURCE_DIR
 
@@ -66,6 +73,6 @@ scp $CUSTOMER_INPUT_FILE $CENTRAL_NODE:$LVFS_DIR > /dev/null
 
 sleep 5
 
-./pusher --hosts=central.txt "cd $LVFS_DIR; ant -Dpartitions=$SCALE_SIZE -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dinputfile_lineitem=$LINEITEM_INPUT_FILE -Dinputfile_part=$PART_INPUT_FILE -Dinputfile_customer=$CUSTOMER_INPUT_FILE -Dinputfile_orders=$ORDERS_INPUT_FILE import-bench-tpch > /dev/null"
+./pusher --hosts=central.txt "cd $LVFS_DIR; ant -Dpartitions=$SCALE_SIZE -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dinputfile_lineitem=$LINEITEM_INPUT_FILE -Dinputfile_part=$PART_INPUT_FILE -Dinputfile_customer=$CUSTOMER_INPUT_FILE -Dinputfile_orders=$ORDERS_INPUT_FILE -Dfractures=$FRACTURES import-bench-tpch > /dev/null"
 
 

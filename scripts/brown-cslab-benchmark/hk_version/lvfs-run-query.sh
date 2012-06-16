@@ -67,11 +67,27 @@ function sleep_and_flush {
 # Finally time to start the benchmarks!
 #
 
+#Q1 plan A
+
+i=0; while [ $i -lt $NUM_REPEATS ]; do
+	sleep_and_flush
+	ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Ddelta=90 tpch-bench-q1-plana
+	i=$((i+1))
+done
+
+#Q1 plan B
+
+i=0; while [ $i -lt $NUM_REPEATS ]; do
+	sleep_and_flush
+	ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Ddelta=90 tpch-bench-q1-planb
+	i=$((i+1))
+done
+
 #Q17 plan A
 
 i=0; while [ $i -lt $NUM_REPEATS ]; do
-#	sleep_and_flush
-#	ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dbrand=Brand#34 -Dcontainer='MED DRUM' tpch-bench-q17-plana
+	sleep_and_flush
+	ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dbrand=Brand#34 -Dcontainer='MED DRUM' tpch-bench-q17-plana
 	i=$((i+1))
 done
 
@@ -86,8 +102,8 @@ done
 #Q18 plan A
 
 i=0; while [ $i -lt $NUM_REPEATS ]; do
-#	sleep_and_flush
-#	ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dquantity=312 tpch-bench-q18-plana
+	sleep_and_flush
+	ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dquantity=312 tpch-bench-q18-plana
 	i=$((i+1))
 done
 
@@ -96,6 +112,23 @@ done
 i=0; while [ $i -lt $NUM_REPEATS ]; do
 	sleep_and_flush
 	ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dquantity=312 tpch-bench-q18-planb
+	i=$((i+1))
+done
+
+
+#Recovery from Buddy
+
+i=0; while [ $i -lt $NUM_REPEATS ]; do
+	sleep_and_flush
+	ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dforeign=false tpch-recovery-bench
+	i=$((i+1))
+done
+
+#Recovery with repartitioning
+
+i=0; while [ $i -lt $NUM_REPEATS ]; do
+	sleep_and_flush
+	ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dforeign=true tpch-recovery-bench
 	i=$((i+1))
 done
 
