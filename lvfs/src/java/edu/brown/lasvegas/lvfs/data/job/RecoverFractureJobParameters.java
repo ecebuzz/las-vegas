@@ -10,7 +10,7 @@ import edu.brown.lasvegas.LVReplicaScheme;
 /**
  * Parameters for {@link RecoverFractureForeignJobController}.
  */
-public class RecoverFractureForeignJobParameters extends JobParameters {
+public class RecoverFractureJobParameters extends JobParameters {
     /** the fracture to restore. */
     private int fractureId;
     /** ID of {@link LVReplicaScheme} that is damaged and to be restored. */

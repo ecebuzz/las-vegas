@@ -39,7 +39,7 @@ import edu.brown.lasvegas.traits.ValueTraitsFactory;
  * <li>Merge and sort the repartitioned files to recover the damaged partitions. </li>
  * </ul>
  */ 
-public class RecoverFractureForeignJobController extends AbstractJobController<RecoverFractureForeignJobParameters> {
+public class RecoverFractureForeignJobController extends AbstractJobController<RecoverFractureJobParameters> {
     private static Logger LOG = Logger.getLogger(RecoverFractureForeignJobController.class);
 
     /** the concerned table. */

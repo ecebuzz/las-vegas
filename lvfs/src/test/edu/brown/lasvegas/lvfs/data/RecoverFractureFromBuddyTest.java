@@ -34,37 +34,36 @@ import edu.brown.lasvegas.lvfs.ColumnFileReaderBundle;
 import edu.brown.lasvegas.lvfs.TypedReader;
 import edu.brown.lasvegas.lvfs.data.job.ImportFractureJobController;
 import edu.brown.lasvegas.lvfs.data.job.ImportFractureJobParameters;
-import edu.brown.lasvegas.lvfs.data.job.RecoverFractureForeignJobController;
-import edu.brown.lasvegas.lvfs.data.job.RecoverFractureForeignJobParameters;
+import edu.brown.lasvegas.lvfs.data.job.RecoverFractureFromBuddyJobController;
+import edu.brown.lasvegas.lvfs.data.job.RecoverFractureJobParameters;
 import edu.brown.lasvegas.util.ValueRange;
 
 /**
- * Testcase for recovery from different replica group.
- * @see RecoverFractureForeignJobController
+ * Testcase for recovery from the same replica group.
+ * @see RecoverFractureFromBuddyJobController
  */
-public class ForeignRecoveryTest {
+public class RecoverFractureFromBuddyTest {
     private SingleNodeBenchmarkResources resources;
-    private static final Logger LOG = Logger.getLogger(ForeignRecoveryTest.class);
+    private static final Logger LOG = Logger.getLogger(RecoverFractureFromBuddyTest.class);
 
     private static final File inputFile = new File ("src/test/edu/brown/lasvegas/lvfs/data/mini_tpch_lineitem.tbl"); // just for testing
     
-    private static final int rackCount = 2; // 3;
-
+    private static final int nodesPerRack = 2;
+    
     private LVDatabase database;
     private LVTable table;
     private HashMap<String, LVColumn> columns;
     private int[] columnIds;
-    private LVReplicaGroup orderkeyGroup, partkeyGroup;
-    private LVReplicaScheme orderkeyScheme, partkeyScheme;
+    private LVReplicaGroup group;
+    private LVReplicaScheme orderkeyScheme, suppkeyScheme;
     private LVFracture fracture;
-    private final ValueRange[] orderkeyRanges = new ValueRange[]{new ValueRange(ColumnType.BIGINT, null, 33L), new ValueRange(ColumnType.BIGINT, 33L, null)};
-    private final ValueRange[] partkeyRanges = new ValueRange[]{new ValueRange(ColumnType.INTEGER, null, 50000), new ValueRange(ColumnType.INTEGER, 50000, 100000), new ValueRange(ColumnType.INTEGER, 100000, null)};
+    private final ValueRange[] ranges = new ValueRange[]{new ValueRange(ColumnType.BIGINT, null, 33L), new ValueRange(ColumnType.BIGINT, 33L, null)};
     
     private final MiniDataSource dataSource = new MiniTPCHLineitem();
 
     @Before
     public void setUp () throws IOException {
-        this.resources = new SingleNodeBenchmarkResources(rackCount, 1, 1);
+        this.resources = new SingleNodeBenchmarkResources(1, nodesPerRack, 1);
         if (!inputFile.exists()) {
             throw new FileNotFoundException(inputFile.getAbsolutePath() + " doesn't exist. Have you generated the data?");
         }
@@ -80,10 +79,9 @@ public class ForeignRecoveryTest {
         for (int i = 0; i < columnIds.length; ++i) {
             columnIds[i] = resources.metaRepo.getColumnByName(table.getTableId(), columnNames[i]).getColumnId();
         }
-        orderkeyGroup = resources.metaRepo.createNewReplicaGroup(table, columns.get("l_orderkey"), orderkeyRanges);
-        orderkeyScheme = resources.metaRepo.createNewReplicaScheme(orderkeyGroup, columns.get("l_orderkey"), columnIds, dataSource.getDefaultCompressions());
-        partkeyGroup = resources.metaRepo.createNewReplicaGroup(table, columns.get("l_partkey"), partkeyRanges);
-        partkeyScheme = resources.metaRepo.createNewReplicaScheme(partkeyGroup, columns.get("l_partkey"), columnIds, dataSource.getDefaultCompressions());
+        group = resources.metaRepo.createNewReplicaGroup(table, columns.get("l_orderkey"), ranges);
+        orderkeyScheme = resources.metaRepo.createNewReplicaScheme(group, columns.get("l_orderkey"), columnIds, dataSource.getDefaultCompressions());
+        suppkeyScheme = resources.metaRepo.createNewReplicaScheme(group, columns.get("l_suppkey"), columnIds, dataSource.getDefaultCompressions());
 
         // first, load the data
         ImportFractureJobParameters params = new ImportFractureJobParameters(table.getTableId());
@@ -106,18 +104,18 @@ public class ForeignRecoveryTest {
     }
     
     @Test
-    public void recoverOrderkeyGroupFromPartkeyGroup () throws Exception {
-        recoverInternal ("recoverOrderkeyGroupFromPartkeyGroup", orderkeyScheme, partkeyScheme, columns.get("l_orderkey"), orderkeyRanges);
+    public void recoverOrderkeySchemeFromSuppkeyScheme () throws Exception {
+        recoverInternal ("recoverOrderkeySchemeFromSuppkeyScheme", orderkeyScheme, suppkeyScheme, columns.get("l_orderkey"));
     }
     @Test
-    public void recoverPartkeyGroupFromOrderkeyGroup () throws Exception {
-        recoverInternal ("recoverPartkeyGroupFromOrderkeyGroup", partkeyScheme, orderkeyScheme, columns.get("l_partkey"), partkeyRanges);
+    public void recoverSuppkeySchemeFromOrderkeyScheme () throws Exception {
+        recoverInternal ("recoverSuppkeySchemeFromOrderkeyScheme", suppkeyScheme, orderkeyScheme, columns.get("l_orderkey"));
     }
-    private void recoverInternal (String testname, LVReplicaScheme damagedScheme, LVReplicaScheme sourceScheme, LVColumn partitioningColumn, ValueRange[] ranges) throws Exception {
+    private void recoverInternal (String testname, LVReplicaScheme damagedScheme, LVReplicaScheme sourceScheme, LVColumn partitioningColumn) throws Exception {
         LOG.info(testname + ":started:" + inputFile.getName());
         long start = System.currentTimeMillis();
         
-        // mark the group as damaged
+        // mark the scheme as damaged
         {
             LVReplica replica = resources.metaRepo.getReplicaFromSchemeAndFracture(damagedScheme.getSchemeId(), fracture.getFractureId());
             resources.metaRepo.updateReplicaStatus(replica, ReplicaStatus.NOT_READY);
@@ -128,11 +126,11 @@ public class ForeignRecoveryTest {
             }
         }
         
-        RecoverFractureForeignJobParameters params = new RecoverFractureForeignJobParameters();
+        RecoverFractureJobParameters params = new RecoverFractureJobParameters();
         params.setDamagedSchemeId(damagedScheme.getSchemeId());
         params.setFractureId(fracture.getFractureId());
         params.setSourceSchemeId(sourceScheme.getSchemeId());
-        RecoverFractureForeignJobController controller = new RecoverFractureForeignJobController(resources.metaRepo, 400L, 400L, 100L);
+        RecoverFractureFromBuddyJobController controller = new RecoverFractureFromBuddyJobController(resources.metaRepo, 400L, 400L, 100L);
         LOG.info(testname + ":started the recovery job...");
         LVJob job = controller.startSync(params);
         LOG.info(testname + ":finished the recovery job...:" + job);
@@ -146,6 +144,7 @@ public class ForeignRecoveryTest {
         assertEquals(JobStatus.DONE, job.getStatus());
 
         // check if it's recovered
+        // TODO the following should be shared with RecoverFractureForeignTest
         {
             LVReplica replica = resources.metaRepo.getReplicaFromSchemeAndFracture(damagedScheme.getSchemeId(), fracture.getFractureId());
             assertEquals(ReplicaStatus.OK, replica.getStatus());

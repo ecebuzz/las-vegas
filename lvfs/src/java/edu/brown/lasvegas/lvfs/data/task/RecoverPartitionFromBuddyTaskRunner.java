@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Random;
 
 import org.apache.hadoop.io.DoubleWritable;
+import org.apache.hadoop.io.IntWritable;
 import org.apache.log4j.Logger;
 
 import edu.brown.lasvegas.ColumnType;
@@ -119,6 +120,7 @@ public final class RecoverPartitionFromBuddyTaskRunner extends DataTaskRunner<Re
 
             PartitionRewriter rewriter = new PartitionRewriter(tmpOutputFolder, buddies, fileTemporaryNames, compressionTypes, sortColumn);
             newFiles = rewriter.execute();
+            context.metaRepo.updateReplicaPartitionNoReturn(partition.getPartitionId(), ReplicaPartitionStatus.OK, new IntWritable(partition.getNodeId()));
         } finally {
             for (LVDataClient client : dataClients.values()) {
                 client.release();

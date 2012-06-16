@@ -182,6 +182,18 @@
 		</java>
 	</target>
 
+	<target name="tpch-recovery-bench" depends="compile"
+		description="Emulate a recovery of one partition. Specify the address of metadata repository and whether it is foreign recovery. : ant -Daddress=poseidon.smn.cs.brown.edu:28710 -Dforeign=true tpch-recovery-bench">
+		<java fork="true" classname="edu.brown.lasvegas.lvfs.data.RecoverFractureMultinodeBenchmark">
+			<jvmarg value="-Xmx256m"/>
+			<jvmarg value="-server"/>
+			<jvmarg value="-da"/>
+			<arg value="${address}" />
+			<arg value="${foreign}" />
+        	<classpath refid="lvfs.classpath"/>
+		</java>
+	</target>
+
 	<target name="tpch-bench-q1-plana" depends="compile"
 		description="Run TPCH's Q1. Specify the address of metadata repository, DELTA days. : ant -Daddress=poseidon.smn.cs.brown.edu:28710 -Ddelta=90 tpch-bench-q1-plana">
 		<java fork="true" classname="edu.brown.lasvegas.lvfs.data.TpchQ1MultinodeBenchmark">
