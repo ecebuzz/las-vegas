@@ -62,6 +62,10 @@ echo "$CENTRAL_NODE" > central.txt
 
 sleep 15
 
+./pusher --hosts=central.txt "cd $LVFS_DIR; ant -Dconfxml=lvfs_conf.xml -Dlistfile=/home/hkimura/adflvfs/datanodes-60.txt preregister-datanodes > /dev/null &"
+
+sleep 15
+
 ./pusher --hosts=$HOSTS_FILE "cd $LVFS_DIR; ant -Dconfxml=lvfs_conf.xml -Dformat=true sa-data > /dev/null &"
 
 sleep 60
