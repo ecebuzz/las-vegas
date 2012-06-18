@@ -5,14 +5,19 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.net.URL;
+import java.nio.charset.Charset;
+import java.text.SimpleDateFormat;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import edu.brown.lasvegas.ColumnType;
+import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.lvfs.VirtualFile;
+import edu.brown.lasvegas.lvfs.local.LocalVirtualFile;
 import edu.brown.lasvegas.tuple.TextFileTupleReader;
+import edu.brown.lasvegas.tuple.TupleBuffer;
 import edu.brown.lasvegas.util.URLVirtualFile;
 
 /**
@@ -40,6 +45,30 @@ public class TextFileTupleReaderTest {
         };
         
         reader = new TextFileTupleReader(new VirtualFile[]{new URLVirtualFile(testFile)}, scheme, ',');
+    }
+
+    @Test
+    public void testtest() throws Exception {
+        // ColumnType[] scheme = new MiniTPCHOrders().getScheme();
+        ColumnType[] scheme = new ColumnType[]{ColumnType.BIGINT};
+        TextFileTupleReader r = new TextFileTupleReader(new VirtualFile[]{new LocalVirtualFile("/home/hkimura/orders.tbl.33")},
+        		CompressionType.NONE, scheme, '|', 4 << 20, Charset.forName("UTF-8"),
+                new SimpleDateFormat("yyyy-MM-dd"),
+                new SimpleDateFormat("HH:mm:ss"),
+                new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS")
+        		);
+        long i = 0;
+        while (r.next()) {
+            long l = r.getBigint(0);
+            if (l == 3317589217L) {
+            	System.out.println("yay");
+            }
+            ++i;
+            if (i % 100000 == 0) {
+            	System.out.println("..." + i);
+            }
+        }
+        r.close();
     }
 
     @After

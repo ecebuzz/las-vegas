@@ -30,8 +30,8 @@ cslab5a	/ltmp/hk-lasvegas/customer.tbl.29
 cslab5b	/ltmp/hk-lasvegas/customer.tbl.30
 cslab5c	/ltmp/hk-lasvegas/customer.tbl.31
 cslab5d	/ltmp/hk-lasvegas/customer.tbl.32
-cslab5e	/ltmp/hk-lasvegas/customer.tbl.33
-cslab5f	/ltmp/hk-lasvegas/customer.tbl.34
+cslab5f	/ltmp/hk-lasvegas/customer.tbl.33
+cslab5g	/ltmp/hk-lasvegas/customer.tbl.34
 cslab5h	/ltmp/hk-lasvegas/customer.tbl.35
 cslab6a	/ltmp/hk-lasvegas/customer.tbl.36
 cslab6d	/ltmp/hk-lasvegas/customer.tbl.37
