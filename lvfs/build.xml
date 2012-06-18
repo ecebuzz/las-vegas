@@ -183,13 +183,14 @@
 	</target>
 
 	<target name="tpch-recovery-bench" depends="compile"
-		description="Emulate a recovery of one partition. Specify the address of metadata repository and whether it is foreign recovery. : ant -Daddress=poseidon.smn.cs.brown.edu:28710 -Dforeign=true tpch-recovery-bench">
+		description="Emulate a recovery of one partition. Specify the address of metadata repository and whether it is foreign recovery. : ant -Daddress=poseidon.smn.cs.brown.edu:28710 -Dforeign=true -DlostPartitions=2 tpch-recovery-bench">
 		<java fork="true" classname="edu.brown.lasvegas.lvfs.data.RecoverFractureMultinodeBenchmark">
 			<jvmarg value="-Xmx256m"/>
 			<jvmarg value="-server"/>
 			<jvmarg value="-da"/>
 			<arg value="${address}" />
 			<arg value="${foreign}" />
+			<arg value="${lostPartitions}" />
         	<classpath refid="lvfs.classpath"/>
 		</java>
 	</target>

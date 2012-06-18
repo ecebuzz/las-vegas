@@ -13,7 +13,7 @@ public class RecoverFractureSingleNodeBenchmark extends RecoverFractureBenchmark
     private static final Logger LOG = Logger.getLogger(RecoverFractureSingleNodeBenchmark.class);
     
     public RecoverFractureSingleNodeBenchmark(SingleNodeBenchmarkResources resources, boolean foreignRecovery) throws IOException {
-        super (resources.metaRepo, foreignRecovery);
+        super (resources.metaRepo, foreignRecovery, lostPartitionCount);
         this.resources = resources;
     }
     
@@ -22,6 +22,7 @@ public class RecoverFractureSingleNodeBenchmark extends RecoverFractureBenchmark
     }
 
     private static final boolean foreign = true;
+    private static final int lostPartitionCount = 2;
     public static void main (String[] args) throws Exception {
         LOG.info("running a single node experiment..");
         SingleNodeBenchmarkResources resources = new SingleNodeBenchmarkResources();

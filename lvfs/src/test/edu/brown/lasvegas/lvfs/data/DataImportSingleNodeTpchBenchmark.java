@@ -17,12 +17,41 @@ public class DataImportSingleNodeTpchBenchmark extends DataImportTpchBenchmark {
     private SingleNodeBenchmarkResources resources;
     private static final Logger LOG = Logger.getLogger(DataImportSingleNodeTpchBenchmark.class);
 
+    private static File[] createFileArray (int count, String basename) {
+        File[] files = new File[count];
+        for (int i = 0; i < count; ++i) {
+            files[i] = new File (basename + "." + (i + 1));
+        }
+        return files;
+    }
+    /*
     private static final File[] lineitemFiles = new File[]{new File ("../tpch-dbgen/s2/lineitem.tbl.1"), new File ("../tpch-dbgen/s2/lineitem.tbl.2")};
     private static final File[] partFiles = new File[]{new File ("../tpch-dbgen/s2/part.tbl.1"), new File ("../tpch-dbgen/s2/part.tbl.2")};
     private static final File[] ordersFiles = new File[]{new File ("../tpch-dbgen/s2/orders.tbl.1"), new File ("../tpch-dbgen/s2/orders.tbl.2")};
     private static final File[] customerFiles = new File[]{new File ("../tpch-dbgen/s2/customer.tbl.1"), new File ("../tpch-dbgen/s2/customer.tbl.2")};
     private static final int partitionCount = 2;
     private static final int fractureCount = 2;
+    */
+
+    // for i in {1..10}; do ./dbgen -T o -s 1 -C 10 -S $i; done
+    // for i in {1..10}; do ./dbgen -T c -s 1 -C 10 -S $i; done
+    // for i in {1..10}; do ./dbgen -T P -s 1 -C 10 -S $i; done
+    private static final int partitionCount = 10;
+    private static final int fractureCount = 10;
+    private static final int fileCount = 10; // file count must be multiply of fractureCount
+    private static final String tblFolder = "../tpch-dbgen/s1_10";
+
+    private static final File[] lineitemFiles;
+    private static final File[] partFiles;
+    private static final File[] ordersFiles;
+    private static final File[] customerFiles;
+    static {
+        lineitemFiles = createFileArray(fileCount, tblFolder + "/lineitem.tbl");
+        partFiles = createFileArray(fileCount, tblFolder + "/part.tbl");
+        ordersFiles = createFileArray(fileCount, tblFolder + "/orders.tbl");
+        customerFiles = createFileArray(fileCount, tblFolder + "/customer.tbl");
+    }
+
     /*
     private static final File[] lineitemFiles = new File[]{new File ("../tpch-dbgen/lineitem.tbl")};
     private static final File[] partFiles = new File[]{new File ("../tpch-dbgen/part.tbl")};

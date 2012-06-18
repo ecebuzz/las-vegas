@@ -35,6 +35,7 @@ public abstract class RecoverFractureBenchmark {
 
     private final LVMetadataProtocol metaRepo;
     private final boolean foreignRecovery;
+    private final int lostPartitionCount;
     private final LVRackNode[] allNodes;
     private final LVDatabase database;
     private final LVTable table;
@@ -47,10 +48,12 @@ public abstract class RecoverFractureBenchmark {
     private final LVColumn damagedPartitioningColumn, damagedSortingColumn;
     private final LVReplicaGroup damagedPartitionTemplateGroup;
     
-    public RecoverFractureBenchmark(LVMetadataProtocol metaRepo, boolean foreignRecovery) throws IOException {
+    public RecoverFractureBenchmark(LVMetadataProtocol metaRepo, boolean foreignRecovery, int lostPartitionCount) throws IOException {
         this.metaRepo = metaRepo;
         this.foreignRecovery = foreignRecovery;
-        
+        this.lostPartitionCount = lostPartitionCount;
+        assert (lostPartitionCount > 0);
+
         ArrayList<LVRackNode> allNodeList = new ArrayList<LVRackNode>();
         for (LVRack rack : metaRepo.getAllRacks()) {
             for (LVRackNode node : metaRepo.getAllRackNodes(rack.getRackId())) {
@@ -119,7 +122,7 @@ public abstract class RecoverFractureBenchmark {
             damagedPartitions[range] = metaRepo.createNewReplicaPartition(damagedReplica, range);
             LVRackNode node = allNodes[(range + 1) % allNodes.length]; // the "+1" is to emulate buddy exclusion.
             metaRepo.updateReplicaPartitionNoReturn(damagedPartitions[range].getPartitionId(),
-                range == 0 ? ReplicaPartitionStatus.LOST : ReplicaPartitionStatus.OK, // only the first partition is lost
+                range < lostPartitionCount ? ReplicaPartitionStatus.LOST : ReplicaPartitionStatus.OK, // only the first lostPartitionCount partitions are lost
                 new IntWritable(node.getNodeId()));
         }
         
@@ -128,7 +131,7 @@ public abstract class RecoverFractureBenchmark {
         params.setFractureId(fracture.getFractureId());
         params.setSourceSchemeId(sourceScheme.getSchemeId());
 
-        LOG.info("started Recovery(foreignRecovery=" + foreignRecovery + ", #fractures=" + fractureCount + ")...");
+        LOG.info("started Recovery(foreignRecovery=" + foreignRecovery + ", #fractures=" + fractureCount + ",#lostPartitions=" + lostPartitionCount + ")...");
         LVJob job;
         if (foreignRecovery) {
             RecoverFractureForeignJobController controller = new RecoverFractureForeignJobController(metaRepo, 400L, 400L, 100L);
@@ -137,7 +140,7 @@ public abstract class RecoverFractureBenchmark {
             RecoverFractureFromBuddyJobController controller = new RecoverFractureFromBuddyJobController(metaRepo, 400L, 400L, 100L);
             job = controller.startSync(params);
         }
-        LOG.info("finished Recovery(foreignRecovery=" + foreignRecovery + ", #fractures=" + fractureCount + "):" + job);
+        LOG.info("finished Recovery(foreignRecovery=" + foreignRecovery + ", #fractures=" + fractureCount + ",#lostPartitions=" + lostPartitionCount + "):" + job);
         for (LVTask task : metaRepo.getAllTasksByJob(job.getJobId())) {
             LOG.info("Sub-Task finished in " + (task.getFinishedTime().getTime() - task.getStartedTime().getTime()) + "ms:" + task);
         }
@@ -153,6 +156,6 @@ public abstract class RecoverFractureBenchmark {
         }
 
         long end = System.currentTimeMillis();
-        LOG.info("ended(fractureCount=" + fractureCount + "): elapsed time=" + (end - start) + "ms");
+        LOG.info("ended(foreignRecovery=" + foreignRecovery + ", fractureCount=" + fractureCount + ",#lostPartitions=" + lostPartitionCount + "): elapsed time=" + (end - start) + "ms");
     }
 }

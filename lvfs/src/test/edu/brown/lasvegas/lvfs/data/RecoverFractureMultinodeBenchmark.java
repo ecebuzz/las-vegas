@@ -16,8 +16,8 @@ public class RecoverFractureMultinodeBenchmark extends RecoverFractureBenchmark 
     private static final Logger LOG = Logger.getLogger(RecoverFractureMultinodeBenchmark.class);
     private final LVMetadataClient client;
 
-    public RecoverFractureMultinodeBenchmark(LVMetadataClient client, boolean foreignRecovery) throws IOException {
-        super(client.getChannel(), foreignRecovery);
+    public RecoverFractureMultinodeBenchmark(LVMetadataClient client, boolean foreignRecovery, int lostPartitionCount) throws IOException {
+        super(client.getChannel(), foreignRecovery, lostPartitionCount);
         this.client = client;
     }
     public void tearDown () throws IOException {
@@ -26,22 +26,24 @@ public class RecoverFractureMultinodeBenchmark extends RecoverFractureBenchmark 
 
     public static void main (String[] args) throws Exception {
         LOG.info("running a multi node recovery experiment..");
-        if (args.length < 2) {
-            System.err.println("usage: java " + RecoverFractureMultinodeBenchmark.class.getName() + " <metadata repository address> <delta days> <whether it is foreign recovery with repartitioning>");
-            System.err.println("ex: java " + RecoverFractureMultinodeBenchmark.class.getName() + " poseidon:28710 true");
+        if (args.length < 3) {
+            System.err.println("usage: java " + RecoverFractureMultinodeBenchmark.class.getName() + " <metadata repository address> <whether it is foreign recovery with repartitioning> <count of lost partitions>");
+            System.err.println("ex: java " + RecoverFractureMultinodeBenchmark.class.getName() + " poseidon:28710 true 10");
             return;
         }
         String metaRepoAddress = args[0];
         LOG.info("metaRepoAddress=" + metaRepoAddress);
         boolean foreignRecovery = new Boolean(args[1]);
         LOG.info("foreignRecovery=" + foreignRecovery);
+        int lostPartitionCount = Integer.parseInt(args[2]);
+        LOG.info("lostPartitionCount=" + lostPartitionCount);
         
         Configuration conf = new Configuration();
         conf.set(LVCentralNode.METAREPO_ADDRESS_KEY, metaRepoAddress);
         LVMetadataClient client = new LVMetadataClient(conf);
         LOG.info("connected to metadata repository: " + metaRepoAddress);
 
-        RecoverFractureMultinodeBenchmark program = new RecoverFractureMultinodeBenchmark(client, foreignRecovery);
+        RecoverFractureMultinodeBenchmark program = new RecoverFractureMultinodeBenchmark(client, foreignRecovery, lostPartitionCount);
         try {
             program.exec();
         } catch (Exception ex) {

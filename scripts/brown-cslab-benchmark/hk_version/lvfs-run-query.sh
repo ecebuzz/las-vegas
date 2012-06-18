@@ -7,6 +7,7 @@ DATE_FORMAT="%Y-%m-%d-%H.%M.%S-%Z"
 SCALE_SIZE=$1
 NUM_PARTS=$2
 NUM_REPEATS=$3
+FRACTURES=$4
 
 LINEITEM_INPUT_FILE=lineitem-$NUM_PARTS.txt
 PART_INPUT_FILE=part-$NUM_PARTS.txt
@@ -19,6 +20,11 @@ if [ "$NUM_PARTS" == "" ]; then
         echo "SCALE_SIZE and NUM_PARTS argument required"
         exit
 fi
+if [ "$FRACTURES" == "" ]; then
+        echo "num of fractures not specified. using the default value."
+        FRACTURES=1
+fi
+echo "num of fractures = $FRACTURES"
 
 cd $RESOURCE_DIR
 
@@ -117,10 +123,11 @@ done
 
 
 #Recovery from Buddy
-
+# to have the same number of tuples recovered, #lostPartitions=$FRACTURES
+# because each partition in each fracture is smaller with more fractures.
 i=0; while [ $i -lt $NUM_REPEATS ]; do
 	sleep_and_flush
-	ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dforeign=false tpch-recovery-bench
+	ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dforeign=false -DlostPartitions=$FRACTURES tpch-recovery-bench
 	i=$((i+1))
 done
 
@@ -128,7 +135,7 @@ done
 
 i=0; while [ $i -lt $NUM_REPEATS ]; do
 	sleep_and_flush
-	ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dforeign=true tpch-recovery-bench
+	ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dforeign=true -DlostPartitions=$FRACTURES tpch-recovery-bench
 	i=$((i+1))
 done
 

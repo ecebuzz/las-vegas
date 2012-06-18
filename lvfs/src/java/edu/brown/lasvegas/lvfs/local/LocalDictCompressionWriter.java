@@ -77,7 +77,7 @@ public class LocalDictCompressionWriter<T extends Comparable<T>, AT> implements 
         tentativeIntWriter = LocalFixLenWriter.getInstanceInteger(tmpFile);
         
         if (LOG.isInfoEnabled()) {
-            LOG.info("Creating dict-comp string file. finalDataFile=" + finalDataFile.getAbsolutePath()
+            LOG.info("Creating dict-comp column file (type=" + traits.toString() + "). finalDataFile=" + finalDataFile.getAbsolutePath()
                             + ", finalDictFile=" + finalDictFile.getAbsolutePath()
                             + ", tmpFile=" + tmpFile.getAbsolutePath());
         }
