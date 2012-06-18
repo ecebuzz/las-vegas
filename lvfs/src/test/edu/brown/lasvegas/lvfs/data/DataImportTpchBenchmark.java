@@ -198,7 +198,9 @@ public abstract class DataImportTpchBenchmark {
                         break;
                     }
                 }
-                LOG.error("at least one data import failed. cancelled all data import jobs.");
+                if (hadError) {
+                    LOG.error("at least one data import failed. cancelled all data import jobs.");
+                }
             }
             long end = System.currentTimeMillis();
             LOG.info("all import done in " + (end - start) + "ms");
