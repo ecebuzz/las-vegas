@@ -16,6 +16,12 @@ CUSTOMER_INPUT_FILE=customer-$NUM_PARTS.txt
 HOSTS_FILE=hosts-$NUM_PARTS.txt
 LVFS_DIR=$INSTALL_DIR/las-vegas/lvfs/
 
+./inputs.sh $HOSTS_FILE part > $PART_INPUT_FILE
+./inputs.sh $HOSTS_FILE orders > $ORDERS_INPUT_FILE
+./inputs.sh $HOSTS_FILE customer > $CUSTOMER_INPUT_FILE
+./inputs.sh $HOSTS_FILE lineitem > $LINEITEM_INPUT_FILE
+
+
 if [ "$NUM_PARTS" == "" ]; then
         echo "SCALE_SIZE and NUM_PARTS argument required"
         exit
