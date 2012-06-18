@@ -47,29 +47,6 @@ public class TextFileTupleReaderTest {
         reader = new TextFileTupleReader(new VirtualFile[]{new URLVirtualFile(testFile)}, scheme, ',');
     }
 
-    @Test
-    public void testtest() throws Exception {
-        // ColumnType[] scheme = new MiniTPCHOrders().getScheme();
-        ColumnType[] scheme = new ColumnType[]{ColumnType.BIGINT};
-        TextFileTupleReader r = new TextFileTupleReader(new VirtualFile[]{new LocalVirtualFile("/home/hkimura/orders.tbl.33")},
-        		CompressionType.NONE, scheme, '|', 4 << 20, Charset.forName("UTF-8"),
-                new SimpleDateFormat("yyyy-MM-dd"),
-                new SimpleDateFormat("HH:mm:ss"),
-                new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS")
-        		);
-        long i = 0;
-        while (r.next()) {
-            long l = r.getBigint(0);
-            if (l == 3317589217L) {
-            	System.out.println("yay");
-            }
-            ++i;
-            if (i % 100000 == 0) {
-            	System.out.println("..." + i);
-            }
-        }
-        r.close();
-    }
 
     @After
     public void tearDown() throws Exception {
