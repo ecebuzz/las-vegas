@@ -68,6 +68,12 @@ public final class RecoverPartitionFromBuddyTaskRunner extends DataTaskRunner<Re
         prepareInputs();
         for (int i = 0; i < partitions.length; ++i) {
             checkTaskCanceled();
+
+            if (buddyPartitions[i].getStatus() == ReplicaPartitionStatus.EMPTY) {
+                LOG.info("empty partition: " + partitions[i]);
+                context.metaRepo.updateReplicaPartitionNoReturn(partitions[i].getPartitionId(), ReplicaPartitionStatus.EMPTY, null);
+                continue;
+            }
             // apply sorting/compression to recover the files
             ColumnFileBundle[] files = recoverPatition (partitions[i], buddyPartitions[i], ((double) i / partitions.length), ((i + 1.0d) / partitions.length));
             // move files to non-temporary place
@@ -188,8 +194,11 @@ public final class RecoverPartitionFromBuddyTaskRunner extends DataTaskRunner<Re
             partitions[i] = partition;
             
             LVReplicaPartition buddyPartition = context.metaRepo.getReplicaPartitionByReplicaAndRange(buddyReplica.getReplicaId(), partition.getRange());
-            if (buddyPartition == null || buddyPartition.getStatus() != ReplicaPartitionStatus.OK) {
-                throw new IOException ("the buddy partition doesn't exist or is not ready: " + buddyPartition);
+            if (buddyPartition == null) {
+                throw new IOException ("the buddy partition doesn't exist(" + buddyReplica.getReplicaId() + "," + partition.getRange() + ")");
+            }
+            if (buddyPartition.getStatus() != ReplicaPartitionStatus.OK && buddyPartition.getStatus() != ReplicaPartitionStatus.EMPTY) {
+                throw new IOException ("the buddy partition is not ready: " + buddyPartition);
             }
             if (buddyPartition.getNodeId() == null) {
                 throw new IOException ("the buddy partition isn't assigned to data node: " + buddyPartition);

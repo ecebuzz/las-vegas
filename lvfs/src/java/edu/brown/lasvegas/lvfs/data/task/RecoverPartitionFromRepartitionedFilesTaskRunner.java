@@ -133,6 +133,12 @@ public class RecoverPartitionFromRepartitionedFilesTaskRunner extends DataTaskRu
                 continue; // this is fine. it can happen
             }
             assert (columnFiles.length == columns.length);
+
+            LocalVirtualFile partitionTmpFolder = tmpOutputFolder.getChildFile("node" + nodeId + "_partition" + partition.getPartitionId());
+            partitionTmpFolder.mkdirs();
+            if (!partitionTmpFolder.exists()) {
+                throw new IOException ("couldn't create a temporary folder:" + partitionTmpFolder);
+            }
             ColumnFileBundle[] bundles = new ColumnFileBundle[columnFiles.length];
             if (nodeId == context.nodeId) {
                 // it's already in this node!
@@ -145,11 +151,6 @@ public class RecoverPartitionFromRepartitionedFilesTaskRunner extends DataTaskRu
                 assert (client != null);
                 for (int i = 0; i < columnFiles.length; ++i) {
                     ColumnFileBundle remoteFile = new ColumnFileBundle(columnFiles[i], client.getChannel());
-                    LocalVirtualFile partitionTmpFolder = tmpOutputFolder.getChildFile("partition_" + partition.getPartitionId());
-                    partitionTmpFolder.mkdirs();
-                    if (!partitionTmpFolder.exists()) {
-                        throw new IOException ("couldn't create a temporary folder:" + partitionTmpFolder);
-                    }
                     bundles[i] = remoteFile.copyFiles(partitionTmpFolder);
                 }
                 

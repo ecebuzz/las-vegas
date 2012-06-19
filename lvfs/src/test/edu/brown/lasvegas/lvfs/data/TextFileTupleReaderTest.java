@@ -5,19 +5,14 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.net.URL;
-import java.nio.charset.Charset;
-import java.text.SimpleDateFormat;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import edu.brown.lasvegas.ColumnType;
-import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.lvfs.VirtualFile;
-import edu.brown.lasvegas.lvfs.local.LocalVirtualFile;
 import edu.brown.lasvegas.tuple.TextFileTupleReader;
-import edu.brown.lasvegas.tuple.TupleBuffer;
 import edu.brown.lasvegas.util.URLVirtualFile;
 
 /**
