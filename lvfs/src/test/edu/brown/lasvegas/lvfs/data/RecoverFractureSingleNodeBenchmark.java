@@ -21,7 +21,7 @@ public class RecoverFractureSingleNodeBenchmark extends RecoverFractureBenchmark
         resources.tearDown();
     }
 
-    private static final boolean foreign = true;
+    private static final boolean foreign = false;
     private static final int lostPartitionCount = 2;
     public static void main (String[] args) throws Exception {
         LOG.info("running a single node experiment..");

@@ -13,13 +13,20 @@ LINEITEM_INPUT_FILE=lineitem-$NUM_PARTS.txt
 PART_INPUT_FILE=part-$NUM_PARTS.txt
 ORDERS_INPUT_FILE=orders-$NUM_PARTS.txt
 CUSTOMER_INPUT_FILE=customer-$NUM_PARTS.txt
+DATANODES_MAP_FILE=datanodes-$NUM_PARTS.txt
 HOSTS_FILE=hosts-$NUM_PARTS.txt
 LVFS_DIR=$INSTALL_DIR/las-vegas/lvfs/
 
+rm -f $PART_INPUT_FILE
 ./inputs.sh $HOSTS_FILE part > $PART_INPUT_FILE
+rm -f $ORDERS_INPUT_FILE
 ./inputs.sh $HOSTS_FILE orders > $ORDERS_INPUT_FILE
+rm -f $CUSTOMER_INPUT_FILE
 ./inputs.sh $HOSTS_FILE customer > $CUSTOMER_INPUT_FILE
+rm -f $LINEITEM_INPUT_FILE
 ./inputs.sh $HOSTS_FILE lineitem > $LINEITEM_INPUT_FILE
+rm -f $DATANODES_MAP_FILE
+./rack.sh < $HOSTS_FILE > $DATANODES_MAP_FILE
 
 
 if [ "$NUM_PARTS" == "" ]; then
@@ -68,7 +75,9 @@ echo "$CENTRAL_NODE" > central.txt
 
 sleep 15
 
-./pusher --hosts=central.txt "cd $LVFS_DIR; ant -Dconfxml=lvfs_conf.xml -Dlistfile=/home/hkimura/adflvfs/datanodes-60.txt preregister-datanodes > /dev/null &"
+scp $DATANODES_MAP_FILE $CENTRAL_NODE:$LVFS_DIR > /dev/null
+sleep 5
+./pusher --hosts=central.txt "cd $LVFS_DIR; ant -Dconfxml=lvfs_conf.xml -Dlistfile=$DATANODES_MAP_FILE preregister-datanodes > /dev/null &"
 
 sleep 15
 

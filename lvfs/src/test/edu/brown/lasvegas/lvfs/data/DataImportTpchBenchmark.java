@@ -145,9 +145,8 @@ public abstract class DataImportTpchBenchmark {
         try {
             long start = System.currentTimeMillis();
  
-            // TODO TODO this has to be restored ASAP. tentative comment out for an experiment
-            LVTable[] tables = new LVTable[]{/*partTable, customerTable,*/ ordersTable, /*lineitemTablePart,*/ lineitemTableOrders};
-            String[] inputFileNames = new String[]{/*partInputFileName, customerInputFileName,*/ ordersInputFileName, /*lineitemInputFileName,*/ lineitemInputFileName};
+            LVTable[] tables = new LVTable[]{partTable, customerTable, ordersTable, lineitemTablePart, lineitemTableOrders};
+            String[] inputFileNames = new String[]{partInputFileName, customerInputFileName, ordersInputFileName, lineitemInputFileName, lineitemInputFileName};
             for (int i = 0; i < tables.length; ++i) {
                 int tableFractures = 1;
                 // only fact tables (orders/lineitem) could be fractured
