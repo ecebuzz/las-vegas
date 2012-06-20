@@ -123,16 +123,19 @@ done
 
 
 #Recovery from Buddy
-# to have the same number of tuples recovered, #lostPartitions=$FRACTURES
-# because each partition in each fracture is smaller with more fractures.
+# Unlike the foreign recovery below, the lostPartitions is always 1.
+# As the fracturing is a partitioning on orderkey, and the recovered partition is also partitioned by orderkey,
+# Fracturing doesn't change the #tuples in each partition! So, we must not adjust lostPartitions to $FRACTURES.
+# Spent half a day to figure this out...
 i=0; while [ $i -lt $NUM_REPEATS ]; do
 	sleep_and_flush
-	ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dforeign=false -DlostPartitions=$FRACTURES tpch-recovery-bench
+	ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dforeign=false -DlostPartitions=1 tpch-recovery-bench
 	i=$((i+1))
 done
 
 #Recovery with repartitioning
-
+# to have the same number of tuples recovered, #lostPartitions=$FRACTURES
+# because each partition in each fracture is smaller with more fractures.
 i=0; while [ $i -lt $NUM_REPEATS ]; do
 	sleep_and_flush
 	ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dforeign=true -DlostPartitions=$FRACTURES tpch-recovery-bench
