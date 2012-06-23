@@ -39,7 +39,6 @@ import edu.brown.lasvegas.traits.ValueTraitsFactory;
  * 
  * (*) Of course a more query-specific tuning is possible. But, shuffle-then-run is the most versatile
  * and prevalent option which will be most likely used in the real setting. So, let's compare with it.
- * @see JobType#BENCHMARK_TPCH_Q17_PLANA
  */
 public class BenchmarkTpchQ17PlanBJobController extends BenchmarkTpchQ17JobController {
     public BenchmarkTpchQ17PlanBJobController (LVMetadataProtocol metaRepo) throws IOException {
@@ -76,7 +75,8 @@ public class BenchmarkTpchQ17PlanBJobController extends BenchmarkTpchQ17JobContr
         assert (l_quantity != null);
     }
 
-    private SortedMap<Integer, ArrayList<Integer>> createNodeMap (LVReplicaPartition[] partitions, String label) {
+    /** TODO this method should be somewhere else to share. */
+    public static SortedMap<Integer, ArrayList<Integer>> createNodeMap (LVReplicaPartition[] partitions, String label) {
         SortedMap<Integer, ArrayList<Integer>> nodeMap = new TreeMap<Integer, ArrayList<Integer>>(); // key=nodeId
         for (LVReplicaPartition partition : partitions) {
             if (partition.getStatus() == ReplicaPartitionStatus.EMPTY) {

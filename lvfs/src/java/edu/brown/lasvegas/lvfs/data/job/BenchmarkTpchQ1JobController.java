@@ -56,6 +56,7 @@ where l_shipdate <= date '1998-12-01' - interval ':1' day (3)
 group by l_returnflag, l_linestatus
 order by l_returnflag, l_linestatus
 </pre>
+ * @see JobType#BENCHMARK_TPCH_Q1
  */
 public class BenchmarkTpchQ1JobController extends AbstractJobController<BenchmarkTpchQ1JobParameters> {
     protected static Logger LOG = Logger.getLogger(BenchmarkTpchQ1JobController.class);
@@ -153,7 +154,7 @@ public class BenchmarkTpchQ1JobController extends AbstractJobController<Benchmar
         }
         this.partitions = partitionList.toArray(new LVReplicaPartition[partitionList.size()]);
         
-        this.jobId = metaRepo.createNewJobIdOnlyReturn("Q1", JobType.BENCHMARK_TPCH_Q1, null);
+        this.jobId = metaRepo.createNewJobIdOnlyReturn("Q1", JobType.BENCHMARK_TPCH_Q1, param.writeToBytes());
     }
     public static class Q1Result implements Writable {
         // these are the grouping keys of the query.

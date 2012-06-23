@@ -166,7 +166,7 @@
 	</target>
 
 	<target name="import-bench-tpch" depends="compile"
-		description="Start a distributed data import benchmark for TPCH. Specify the number of partitions, the address of metadata repository, and input file for lineitem, part, customer and orders table. : ant -Dpartitions=2 -Daddress=poseidon.smn.cs.brown.edu:28710 -Dinputfile_lineitem=inputs_lineitem.txt -Dinputfile_part=inputs_part.txt -Dinputfile_customer=inputs_customer.txt -Dinputfile_orders=inputs_orders.txt -Dfractures=2 import-bench-tpch">
+		description="Start a distributed data import benchmark for TPCH. Specify the number of partitions, the address of metadata repository, and input file for lineitem, part, supplier, customer and orders table. : ant -Dpartitions=2 -Daddress=poseidon.smn.cs.brown.edu:28710 -Dinputfile_lineitem=inputs_lineitem.txt -Dinputfile_part=inputs_part.txt -Dinputfile_supplier=inputs_supplier.txt -Dinputfile_customer=inputs_customer.txt -Dinputfile_orders=inputs_orders.txt -Dfractures=2 import-bench-tpch">
 		<java fork="true" classname="edu.brown.lasvegas.lvfs.data.DataImportMultiNodeTpchBenchmark">
 			<jvmarg value="-Xmx256m"/>
 			<jvmarg value="-server"/>
@@ -175,6 +175,7 @@
 			<arg value="${address}" />
 			<arg value="${inputfile_lineitem}" />
 			<arg value="${inputfile_part}" />
+            <arg value="${inputfile_supplier}" />
             <arg value="${inputfile_customer}" />
             <arg value="${inputfile_orders}" />
             <arg value="${fractures}" />
@@ -220,6 +221,31 @@
 		</java>
 	</target>
 	<!-- plan A/B will have no performance difference in Q1.-->
+
+    <target name="tpch-bench-q15-plana" depends="compile"
+        description="Run TPCH's Q15. Specify the address of metadata repository, and date in the form of 19950101. : ant -Daddress=poseidon.smn.cs.brown.edu:28710 -Ddate=19960101 tpch-bench-q15-plana">
+        <java fork="true" classname="edu.brown.lasvegas.lvfs.data.TpchQ15MultinodeBenchmark">
+            <jvmarg value="-Xmx256m"/>
+            <jvmarg value="-server"/>
+            <jvmarg value="-da"/>
+            <arg value="${address}" />
+            <arg value="${date}" />
+            <arg value="true" />
+            <classpath refid="lvfs.classpath"/>
+        </java>
+    </target>
+    <target name="tpch-bench-q15-planb" depends="compile"
+        description="Run TPCH's Q17 with Plan B (slower query plan using non-copartitioned file). Specify the address of metadata repository, and date. : ant -Daddress=poseidon.smn.cs.brown.edu:28710 -Ddate=19960101 tpch-bench-q15-planb">
+        <java fork="true" classname="edu.brown.lasvegas.lvfs.data.TpchQ15MultinodeBenchmark">
+            <jvmarg value="-Xmx256m"/>
+            <jvmarg value="-server"/>
+            <jvmarg value="-da"/>
+            <arg value="${address}" />
+            <arg value="${date}" />
+            <arg value="false" />
+            <classpath refid="lvfs.classpath"/>
+        </java>
+    </target>
 
 	<target name="tpch-bench-q17-plana" depends="compile"
 		description="Run TPCH's Q17. Specify the address of metadata repository, brand name, and container. : ant -Daddress=poseidon.smn.cs.brown.edu:28710 -Dbrand=Brand#34 -Dcontainer='MED DRUM' tpch-bench-q17-plana">

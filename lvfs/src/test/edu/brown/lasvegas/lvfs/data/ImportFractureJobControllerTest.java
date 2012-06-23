@@ -488,4 +488,51 @@ public class ImportFractureJobControllerTest {
         }
         readers.close();
     }
+
+    @Test
+    public void testNoPartitionTPCHSupplier() throws Exception {
+        MiniDataSource dataSource = new MiniTPCHSupplier();
+        createInputFile (dataSource, "copied.tbl");
+        final String[] columnNames = dataSource.getColumnNames();
+        LVTable table = masterRepository.createNewTable(database.getDatabaseId(), "tpchnopartsupplier", columnNames, dataSource.getScheme());
+        HashMap<String, LVColumn> columns = new HashMap<String, LVColumn>();
+        for (LVColumn column : masterRepository.getAllColumnsExceptEpochColumn(table.getTableId())) {
+            columns.put(column.getName(), column);
+        }
+
+        LVReplicaGroup group1 = masterRepository.createNewReplicaGroup(table, masterRepository.getColumnByName(table.getTableId(), "s_suppkey"), new ValueRange[]{new ValueRange(ColumnType.INTEGER, null, null)});
+        int[] columnIds = new int[columnNames.length];
+        for (int i = 0; i < columnIds.length; ++i) {
+            columnIds[i] = masterRepository.getColumnByName(table.getTableId(), columnNames[i]).getColumnId();
+        }
+        CompressionType[] compressionScheme1 = dataSource.getDefaultCompressions();
+        CompressionType[] compressionScheme2 = new CompressionType[compressionScheme1.length];
+        Arrays.fill(compressionScheme2, CompressionType.NONE);
+        LVReplicaScheme scheme11 = masterRepository.createNewReplicaScheme(group1, masterRepository.getColumnByName(table.getTableId(), "s_suppkey"), columnIds, compressionScheme1);
+        /*LVReplicaScheme scheme12 =*/ masterRepository.createNewReplicaScheme(group1, masterRepository.getColumnByName(table.getTableId(), "s_phone"), columnIds, compressionScheme2);
+
+        // let's start!
+        ImportFractureJobParameters params = new ImportFractureJobParameters(table.getTableId());
+        params.addNodeFilePath(node1.getNodeId(), tmpDir1 + "/copied.tbl");
+        ImportFractureJobController controller = new ImportFractureJobController(masterRepository, 100, 100, 100);
+        LVJob job = controller.startSync(params);
+        assertEquals (JobStatus.DONE, job.getStatus());
+
+        // check the contents of imported files
+        LVFracture fracture = controller.getFracture();
+        LVReplica replica = masterRepository.getReplicaFromSchemeAndFracture(scheme11.getSchemeId(), fracture.getFractureId());
+        LVReplicaPartition partition = masterRepository.getReplicaPartitionByReplicaAndRange(replica.getReplicaId(), 0);
+        LVColumnFile columnFile = masterRepository.getColumnFileByReplicaPartitionAndColumn(partition.getPartitionId(), columns.get("s_suppkey").getColumnId());
+        ColumnFileBundle bundle = new ColumnFileBundle(columnFile);
+        ColumnFileReaderBundle readers = new ColumnFileReaderBundle(bundle);
+        @SuppressWarnings("unchecked")
+        TypedReader<Integer, int[]> dataReader = (TypedReader<Integer, int[]>) readers.getDataReader();
+        assertEquals(dataSource.getCount(), dataReader.getTotalTuples());
+        int[] values = new int[dataReader.getTotalTuples()];
+        assertEquals(values.length, dataReader.readValues(values, 0, values.length));
+        for (int i = 0; i < values.length; ++i) {
+            assertEquals(i + 1, values[i]);
+        }
+        readers.close();
+    }
 }

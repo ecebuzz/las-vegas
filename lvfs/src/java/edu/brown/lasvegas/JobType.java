@@ -42,6 +42,15 @@ public enum JobType {
     BENCHMARK_TPCH_Q1,
 
     /**
+     * This job runs TPC-H's Q15.
+     * Supplier table must have only one fracture while lineitem table can have
+     * an arbitrary number of fractures.
+     * This query has two query plans, one using a co-partitioned supplier and lineitem table,
+     * another using non-copartitioned files.
+     * @see BenchmarkTpchQ15JobController
+     */
+    BENCHMARK_TPCH_Q15,
+    /**
      * This job runs TPC-H's Q17.
      * Part table must have only one fracture while lineitem table can have
      * an arbitrary number of fractures.

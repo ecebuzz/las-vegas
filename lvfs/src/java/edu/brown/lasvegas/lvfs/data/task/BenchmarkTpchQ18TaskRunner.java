@@ -48,6 +48,8 @@ public abstract class BenchmarkTpchQ18TaskRunner extends DataTaskRunner<Benchmar
         LOG.info("total processPartition() time: " + (endTime - startTime) + "ms");
         LOG.info("sub-ranking:" + result);
         
+        // TODO : use outputToLocalTmpFile.
+
         // serialize the sub-ranking to a file
         VirtualFile tmpFolder = new LocalVirtualFile(context.localLvfsTmpDir);
         if (!tmpFolder.exists()) {

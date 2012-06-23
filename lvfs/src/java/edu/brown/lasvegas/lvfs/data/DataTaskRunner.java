@@ -1,14 +1,19 @@
 package edu.brown.lasvegas.lvfs.data;
 
+import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.Random;
 
 import org.apache.hadoop.io.DoubleWritable;
+import org.apache.hadoop.io.Writable;
 import org.apache.log4j.Logger;
 
 import edu.brown.lasvegas.LVTask;
 import edu.brown.lasvegas.TaskParameters;
 import edu.brown.lasvegas.TaskRunner;
 import edu.brown.lasvegas.TaskStatus;
+import edu.brown.lasvegas.lvfs.VirtualFileOutputStream;
+import edu.brown.lasvegas.lvfs.local.LocalVirtualFile;
 
 /**
  * Base class for tasks that will run on an LVFS data node.
@@ -83,5 +88,22 @@ public abstract class DataTaskRunner<ParamType extends TaskParameters> implement
             LOG.error("failed to check task status", ex);
             return true;
         }
+    }
+    
+    /** saves the given result to a local temporary file. */
+    protected LocalVirtualFile outputToLocalTmpFile (Writable result) throws IOException {
+    	LocalVirtualFile tmpFolder = new LocalVirtualFile(context.localLvfsTmpDir);
+        if (!tmpFolder.exists()) {
+        	tmpFolder.mkdirs();
+        }
+        assert (tmpFolder.exists());
+        String filename = "tmp_output_" + Math.abs(new Random(System.nanoTime()).nextInt());
+        LocalVirtualFile resultFile = tmpFolder.getChildFile(filename);
+        VirtualFileOutputStream out = resultFile.getOutputStream();
+        DataOutputStream dataOut = new DataOutputStream(out);
+        result.write(dataOut);
+        dataOut.flush();
+        dataOut.close();
+        return resultFile;
     }
 }

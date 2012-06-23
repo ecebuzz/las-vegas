@@ -178,6 +178,25 @@ public final class LocalDictFile<T extends Comparable<T>, AT> implements Ordered
         return convertDictionaryIndexToCompressedValue(arrayIndex);
     }
     @Override
+    public Integer compressLower(T value) {
+        int arrayIndex = traits.binarySearch(dict, value);
+        if (arrayIndex < 0) {
+        	// if not found, return the smaller one.
+        	int insertionPoint = - arrayIndex - 1;
+        	assert (insertionPoint >= 0);
+        	if (insertionPoint == 0) {
+        		return null; // this means there is no entry smaller than value
+        	} else {
+        		// returns the smaller one
+            	assert (insertionPoint - 1 < dictEntryCount);
+                return convertDictionaryIndexToCompressedValue(insertionPoint - 1);
+        	}
+        } else {
+        	// if found, same as compress()
+        	return convertDictionaryIndexToCompressedValue(arrayIndex);
+        }
+    }
+    @Override
     public void compressBatch(AT src, int srcOff, byte[] dest, int destOff, int len) {
         assert (bytesPerEntry == 1);
         assert (dest.length >= destOff + len);

@@ -1,5 +1,8 @@
 package edu.brown.lasvegas;
 
+import edu.brown.lasvegas.lvfs.data.task.BenchmarkTpchQ15PlanATaskRunner;
+import edu.brown.lasvegas.lvfs.data.task.BenchmarkTpchQ15PlanBTaskRunner;
+import edu.brown.lasvegas.lvfs.data.task.BenchmarkTpchQ15TaskParameters;
 import edu.brown.lasvegas.lvfs.data.task.BenchmarkTpchQ17PlanBTaskRunner;
 import edu.brown.lasvegas.lvfs.data.task.BenchmarkTpchQ17TaskParameters;
 import edu.brown.lasvegas.lvfs.data.task.BenchmarkTpchQ17PlanATaskRunner;
@@ -134,6 +137,14 @@ public enum TaskType {
      */
     BENCHMARK_TPCH_Q1,
     /**
+     * @see JobType#BENCHMARK_TPCH_Q15
+     */
+    BENCHMARK_TPCH_Q15_PLANA,
+    /**
+     * @see JobType#BENCHMARK_TPCH_Q15
+     */
+    BENCHMARK_TPCH_Q15_PLANB,
+    /**
      * @see JobType#BENCHMARK_TPCH_Q17
      */
     BENCHMARK_TPCH_Q17_PLANA,
@@ -186,6 +197,9 @@ public enum TaskType {
         	return new RepartitionTaskParameters();
         case BENCHMARK_TPCH_Q1:
             return new BenchmarkTpchQ1TaskParameters();
+        case BENCHMARK_TPCH_Q15_PLANA:
+        case BENCHMARK_TPCH_Q15_PLANB:
+            return new BenchmarkTpchQ15TaskParameters();
         case BENCHMARK_TPCH_Q17_PLANA:
         case BENCHMARK_TPCH_Q17_PLANB:
             return new BenchmarkTpchQ17TaskParameters();
@@ -223,6 +237,10 @@ public enum TaskType {
         	return new RepartitionTaskRunner();
         case BENCHMARK_TPCH_Q1:
             return new BenchmarkTpchQ1TaskRunner();
+        case BENCHMARK_TPCH_Q15_PLANA:
+            return new BenchmarkTpchQ15PlanATaskRunner();
+        case BENCHMARK_TPCH_Q15_PLANB:
+            return new BenchmarkTpchQ15PlanBTaskRunner();
         case BENCHMARK_TPCH_Q17_PLANA:
             return new BenchmarkTpchQ17PlanATaskRunner();
         case BENCHMARK_TPCH_Q17_PLANB:

@@ -26,6 +26,7 @@ import edu.brown.lasvegas.protocol.LVMetadataProtocol;
    SELECT 0.2*AVG(L_QUANTITY) FROM LINEITEM WHERE L_PARTKEY=P_PARTKEY
  )
  </pre>
+ * @see JobType#BENCHMARK_TPCH_Q17
  */
 public abstract class BenchmarkTpchQ17JobController extends AbstractJobController<BenchmarkTpchQ17JobParameters> {
     protected static Logger LOG = Logger.getLogger(BenchmarkTpchQ17JobController.class);
@@ -101,7 +102,7 @@ public abstract class BenchmarkTpchQ17JobController extends AbstractJobControlle
         }
         
         initDerivedTpchQ17 ();
-        this.jobId = metaRepo.createNewJobIdOnlyReturn("Q17", JobType.BENCHMARK_TPCH_Q17, null);
+        this.jobId = metaRepo.createNewJobIdOnlyReturn("Q17", JobType.BENCHMARK_TPCH_Q17, param.writeToBytes());
     }
     protected abstract void initDerivedTpchQ17() throws IOException;
     

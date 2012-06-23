@@ -48,11 +48,12 @@ public abstract class DataImportTpchBenchmark {
      * number of nodes because replica groups in the same fracture must have non-overlapping dedicated racks.
      * If we have 2x more machines in our lab, we don't need this hack.
      */
-    protected LVTable lineitemTablePart, partTable, lineitemTableOrders, ordersTable, customerTable;
-    protected LVReplicaGroup lineitemGroupPart, partGroup, lineitemGroupOrders, ordersGroup, customerGroup;
+    protected LVTable lineitemTablePart, partTable, lineitemTableSupplier, supplierTable, lineitemTableOrders, ordersTable, customerTable;
+    protected LVReplicaGroup lineitemGroupPart, partGroup, lineitemGroupSupplier, supplierGroup, lineitemGroupOrders, ordersGroup, customerGroup;
 
     private final MiniDataSource lineitemSource = new MiniTPCHLineitem();
     private final MiniDataSource partSource = new MiniTPCHPart();
+    private final MiniDataSource supplierSource = new MiniTPCHSupplier();
     private final MiniDataSource ordersSource = new MiniTPCHOrders();
     private final MiniDataSource customerSource = new MiniTPCHCustomer();
     
@@ -103,6 +104,21 @@ public abstract class DataImportTpchBenchmark {
                 partRanges[i].setEndKey(200000 * (i + 1) + 1);
             }
         }
+        ValueRange[] supplierRanges = new ValueRange[partitionCount];
+        for (int i = 0; i < partitionCount; ++i) {
+        	supplierRanges[i] = new ValueRange ();
+        	supplierRanges[i].setType(ColumnType.INTEGER);
+            if (i == 0) {
+                partRanges[i].setStartKey(null);
+            } else {
+                partRanges[i].setStartKey(10000 * i + 1);
+            }
+            if (i == partitionCount - 1) {
+                partRanges[i].setEndKey(null);
+            } else {
+                partRanges[i].setEndKey(10000 * (i + 1) + 1);
+            }
+        }
         ValueRange[] ordersRanges = new ValueRange[partitionCount];
         for (int i = 0; i < partitionCount; ++i) {
         	ordersRanges[i] = new ValueRange ();
@@ -126,6 +142,10 @@ public abstract class DataImportTpchBenchmark {
         partTable = metaRepo.createNewTable(database.getDatabaseId(), "part", partSource.getColumnNames(), partSource.getScheme());
         partGroup = metaRepo.createNewReplicaGroup(partTable, metaRepo.getColumnByName(partTable.getTableId(), "p_partkey"), partRanges);
         metaRepo.createNewReplicaScheme(partGroup, metaRepo.getColumnByName(partTable.getTableId(), "p_partkey"), getColumnIds(partTable), partSource.getDefaultCompressions());
+
+        supplierTable = metaRepo.createNewTable(database.getDatabaseId(), "supplier", supplierSource.getColumnNames(), supplierSource.getScheme());
+        supplierGroup = metaRepo.createNewReplicaGroup(supplierTable, metaRepo.getColumnByName(supplierTable.getTableId(), "s_suppkey"), partRanges);
+        metaRepo.createNewReplicaScheme(supplierGroup, metaRepo.getColumnByName(supplierTable.getTableId(), "s_suppkey"), getColumnIds(supplierTable), supplierSource.getDefaultCompressions());
         
         ordersTable = metaRepo.createNewTable(database.getDatabaseId(), "orders", ordersSource.getColumnNames(), ordersSource.getScheme());
         ordersGroup = metaRepo.createNewReplicaGroup(ordersTable, metaRepo.getColumnByName(ordersTable.getTableId(), "o_orderkey"), ordersRanges);
@@ -135,22 +155,26 @@ public abstract class DataImportTpchBenchmark {
         lineitemGroupPart = metaRepo.createNewReplicaGroup(lineitemTablePart, metaRepo.getColumnByName(lineitemTablePart.getTableId(), "l_partkey"), partGroup); // link to partGroup
         metaRepo.createNewReplicaScheme(lineitemGroupPart, metaRepo.getColumnByName(lineitemTablePart.getTableId(), "l_partkey"), getColumnIds(lineitemTablePart), lineitemSource.getDefaultCompressions());
 
+        lineitemTableSupplier = metaRepo.createNewTable(database.getDatabaseId(), "lineitem_s", lineitemSource.getColumnNames(), lineitemSource.getScheme());
+        lineitemGroupSupplier = metaRepo.createNewReplicaGroup(lineitemTableSupplier, metaRepo.getColumnByName(lineitemTableSupplier.getTableId(), "l_suppkey"), supplierGroup); // link to supplierGroup
+        metaRepo.createNewReplicaScheme(lineitemGroupSupplier, metaRepo.getColumnByName(lineitemTableSupplier.getTableId(), "l_suppkey"), getColumnIds(lineitemTableSupplier), lineitemSource.getDefaultCompressions());
+
         lineitemTableOrders = metaRepo.createNewTable(database.getDatabaseId(), "lineitem_o", lineitemSource.getColumnNames(), lineitemSource.getScheme());
         lineitemGroupOrders = metaRepo.createNewReplicaGroup(lineitemTableOrders, metaRepo.getColumnByName(lineitemTableOrders.getTableId(), "l_orderkey"), ordersGroup); // link to ordersGroup
         metaRepo.createNewReplicaScheme(lineitemGroupOrders, metaRepo.getColumnByName(lineitemTableOrders.getTableId(), "l_orderkey"), getColumnIds(lineitemTableOrders), lineitemSource.getDefaultCompressions());
     }
     protected abstract void tearDown () throws IOException;
 
-    public final void exec (String lineitemInputFileName, String partInputFileName, String customerInputFileName, String ordersInputFileName) throws Exception {
+    public final void exec (String lineitemInputFileName, String partInputFileName, String supplierInputFileName, String customerInputFileName, String ordersInputFileName) throws Exception {
         try {
             long start = System.currentTimeMillis();
  
-            LVTable[] tables = new LVTable[]{partTable, customerTable, ordersTable, lineitemTablePart, lineitemTableOrders};
-            String[] inputFileNames = new String[]{partInputFileName, customerInputFileName, ordersInputFileName, lineitemInputFileName, lineitemInputFileName};
+            LVTable[] tables = new LVTable[]{partTable, supplierTable, customerTable, ordersTable, lineitemTablePart, lineitemTableOrders};
+            String[] inputFileNames = new String[]{partInputFileName, supplierInputFileName, customerInputFileName, ordersInputFileName, lineitemInputFileName, lineitemInputFileName};
             for (int i = 0; i < tables.length; ++i) {
                 int tableFractures = 1;
                 // only fact tables (orders/lineitem) could be fractured
-                if (tables[i] == ordersTable || tables[i] == lineitemTablePart ||tables[i] == lineitemTableOrders) {
+                if (tables[i] == ordersTable || tables[i] == lineitemTablePart || tables[i] == lineitemTableSupplier ||tables[i] == lineitemTableOrders) {
                     tableFractures = factTableFractures;
                 }
                 

@@ -1,7 +1,6 @@
 package edu.brown.lasvegas.lvfs.local;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.util.Random;
 
@@ -87,5 +86,43 @@ public abstract class LocalDictCompressionWriterTestBase1<T extends Comparable<T
         }
         assertEquals (COUNT, i);
         reader.close();
+    }
+
+    @Test
+    public void testDictCompress() throws Exception {
+        this.distinctValues = 256;
+        this.traits = getTraits();
+
+        int count = 16;
+        AT smallDict = traits.createArray(count);
+        for (int i = 0; i < count; ++i) {
+        	int value = i * 3 + 2;
+        	traits.set(smallDict, i, getOrderedValue(value));
+        }
+        LocalDictFile<T, AT> dict = new LocalDictFile<T, AT>(smallDict, traits);
+        assertEquals (1, dict.getBytesPerEntry());
+        assertEquals (count, dict.getDictionarySize());
+
+        for (int i = 0; i < count; ++i) {
+        	int value = i * 3 + 2;
+        	// test compress()
+        	assertEquals (dict.convertDictionaryIndexToCompressedValue(i), dict.compress(getOrderedValue(value)).intValue());
+        	assertNull (dict.compress(getOrderedValue(value - 1)));
+        	assertNull (dict.compress(getOrderedValue(value - 2)));
+        	assertNull (dict.compress(getOrderedValue(value + 1)));
+        	assertNull (dict.compress(getOrderedValue(value + 2)));
+
+        	// test compressLower()
+        	assertEquals (dict.convertDictionaryIndexToCompressedValue(i), dict.compressLower(getOrderedValue(value)).intValue());
+        	assertEquals (dict.convertDictionaryIndexToCompressedValue(i), dict.compressLower(getOrderedValue(value + 1)).intValue());
+        	assertEquals (dict.convertDictionaryIndexToCompressedValue(i), dict.compressLower(getOrderedValue(value + 2)).intValue());
+        	if (i == 0) {
+            	assertNull (dict.compressLower(getOrderedValue(value - 1)));
+            	assertNull (dict.compressLower(getOrderedValue(value - 2)));
+        	} else {
+            	assertEquals (dict.convertDictionaryIndexToCompressedValue(i - 1), dict.compressLower(getOrderedValue(value - 1)).intValue());
+            	assertEquals (dict.convertDictionaryIndexToCompressedValue(i - 1), dict.compressLower(getOrderedValue(value - 2)).intValue());
+        	}
+        }
     }
 }

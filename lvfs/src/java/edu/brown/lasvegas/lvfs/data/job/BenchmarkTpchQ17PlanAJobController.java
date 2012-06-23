@@ -19,7 +19,6 @@ import edu.brown.lasvegas.traits.ValueTraitsFactory;
  * This job runs TPC-H's Q17, assuming a co-partitioned part and lineitem table.
  * Part table must have only one fracture while lineitem table can have
  * an arbitrary number of fractures.
- * @see JobType#BENCHMARK_TPCH_Q17_PLANA
  */
 public class BenchmarkTpchQ17PlanAJobController extends BenchmarkTpchQ17JobController {
     public BenchmarkTpchQ17PlanAJobController (LVMetadataProtocol metaRepo) throws IOException {

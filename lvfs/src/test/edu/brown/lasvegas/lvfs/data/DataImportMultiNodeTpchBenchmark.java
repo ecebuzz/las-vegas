@@ -38,9 +38,9 @@ public class DataImportMultiNodeTpchBenchmark extends DataImportTpchBenchmark {
     }
     public static void main (String[] args) throws Exception {
         LOG.info("running a multi node experiment..");
-        if (args.length < 6) {
-            System.err.println("usage: java " + DataImportMultiNodeTpchBenchmark.class.getName() + " <partitionCount> <metadata repository address> <name of the file that lists input files for lineitem table> <name of the file that lists input files for part table> <name of the file that lists input files for customer table> <name of the file that lists input files for orders table> (<#fractures of fact tables>:default is 1)");
-            System.err.println("ex: java " + DataImportMultiNodeTpchBenchmark.class.getName() + " 2 poseidon:28710 inputs_lineitem.txt inputs_part.txt inputs_customer.txt inputs_orders.txt 2");
+        if (args.length < 7) {
+            System.err.println("usage: java " + DataImportMultiNodeTpchBenchmark.class.getName() + " <partitionCount> <metadata repository address> <name of the file that lists input files for lineitem table> <name of the file that lists input files for part table> <that of supplier table> <that of customer table> <that of orders table> (<#fractures of fact tables>:default is 1)");
+            System.err.println("ex: java " + DataImportMultiNodeTpchBenchmark.class.getName() + " 2 poseidon:28710 inputs_lineitem.txt inputs_part.txt inputs_supplier.txt inputs_customer.txt inputs_orders.txt 2");
             // It should be a partitioned tbl (see TPCH's dbgen manual. eg: ./dbgen -T L -s 4 -S 1 -C 2; ./dbgen -T P -s 4 -S 1 -C 2 ).
             return;
         }
@@ -53,11 +53,12 @@ public class DataImportMultiNodeTpchBenchmark extends DataImportTpchBenchmark {
         LOG.info("metaRepoAddress=" + metaRepoAddress);
         String lineitemInputFileName = args[2];
         String partInputFileName = args[3];
-        String customerInputFileName = args[4];
-        String ordersInputFileName = args[5];
+        String supplierInputFileName = args[4];
+        String customerInputFileName = args[5];
+        String ordersInputFileName = args[6];
         int factTableFractures = 1;
-        if (args.length >= 7) {
-            factTableFractures = Integer.parseInt(args[6]);
+        if (args.length >= 8) {
+            factTableFractures = Integer.parseInt(args[7]);
             if (factTableFractures < 1) {
                 throw new IllegalArgumentException ("invalid fractures count:" + args[6]);
             }
@@ -65,6 +66,6 @@ public class DataImportMultiNodeTpchBenchmark extends DataImportTpchBenchmark {
         
         DataImportMultiNodeTpchBenchmark program = DataImportMultiNodeTpchBenchmark.getInstance(metaRepoAddress, partitionCount, factTableFractures);
         program.setUp();
-        program.exec(lineitemInputFileName, partInputFileName, customerInputFileName, ordersInputFileName);
+        program.exec(lineitemInputFileName, partInputFileName, supplierInputFileName, customerInputFileName, ordersInputFileName);
     }
 }

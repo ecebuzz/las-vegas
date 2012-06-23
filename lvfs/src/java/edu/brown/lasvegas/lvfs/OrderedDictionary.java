@@ -41,6 +41,14 @@ public interface OrderedDictionary<T extends Comparable<T>, AT> {
     public Integer compress (T value);
     
     /**
+     * Returns a compressed value which represents the largest value in this dictionary
+     * that does not exceed the given value. In other words, the given value itself if it exists,
+     * but the next smaller value if it does not. Used for range search in the dictionary.
+     * @return compressed value. null if there is no value that does not exceed the given value in this dictionary
+     */
+    public Integer compressLower (T value);
+    
+    /**
      * Compresses the given array of values altogether (1-byte entry version). This is much more efficient than non-batched version.
      * @param src array of values to compress
      * @param srcOff index of src from which we compress values

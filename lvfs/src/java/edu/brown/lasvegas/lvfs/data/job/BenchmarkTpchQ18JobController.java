@@ -65,6 +65,7 @@ WHERE O_ORDERKEY IN (
 GROUP BY C_NAME,C_CUSTKEY,O_ORDERKEY,O_ORDERDATE,O_TOTALPRICE
 ORDER BY O_TOTALPRICE DESC, O_ORDERDATE ASC
 </pre>
+ * @see JobType#BENCHMARK_TPCH_Q18
  */
 public abstract class BenchmarkTpchQ18JobController extends AbstractJobController<BenchmarkTpchQ18JobParameters> {
     protected static Logger LOG = Logger.getLogger(BenchmarkTpchQ18JobController.class);
@@ -178,7 +179,7 @@ public abstract class BenchmarkTpchQ18JobController extends AbstractJobControlle
         }
         
 		initDerivedTpchQ18 ();
-        this.jobId = metaRepo.createNewJobIdOnlyReturn("Q18", JobType.BENCHMARK_TPCH_Q18, null);
+        this.jobId = metaRepo.createNewJobIdOnlyReturn("Q18", JobType.BENCHMARK_TPCH_Q18, param.writeToBytes());
     }
     public static class Q18Result implements Comparable<Q18Result>, Writable {
     	public String C_NAME;
