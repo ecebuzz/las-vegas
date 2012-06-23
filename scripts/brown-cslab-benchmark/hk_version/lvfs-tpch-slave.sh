@@ -36,12 +36,13 @@ ant compile >> $STDOUT_LOG
 
 cd ../tpch-dbgen/
 make >> $STDOUT_LOG 2>&1
-./dbgen -T L -s $SCALE_SIZE -S $HOST_INDEX -C $NUM_PARTS >> $STDOUT_LOG 2>&1  # $HOST_INDEX is 1-based
+./dbgen -T o -s $SCALE_SIZE -S $HOST_INDEX -C $NUM_PARTS >> $STDOUT_LOG 2>&1  # $HOST_INDEX is 1-based
 ./dbgen -T P -s $SCALE_SIZE -S $HOST_INDEX -C $NUM_PARTS >> $STDOUT_LOG 2>&1  # $HOST_INDEX is 1-based
-./dbgen -T O -s $SCALE_SIZE -S $HOST_INDEX -C $NUM_PARTS >> $STDOUT_LOG 2>&1  # $HOST_INDEX is 1-based
+./dbgen -T s -s $SCALE_SIZE -S $HOST_INDEX -C $NUM_PARTS >> $STDOUT_LOG 2>&1  # $HOST_INDEX is 1-based
 ./dbgen -T c -s $SCALE_SIZE -S $HOST_INDEX -C $NUM_PARTS >> $STDOUT_LOG 2>&1  # $HOST_INDEX is 1-based
 mv lineitem.tbl.$HOST_INDEX $INSTALL_DIR
 mv part.tbl.$HOST_INDEX $INSTALL_DIR
+mv supplier.tbl.$HOST_INDEX $INSTALL_DIR
 mv orders.tbl.$HOST_INDEX $INSTALL_DIR
 mv customer.tbl.$HOST_INDEX $INSTALL_DIR
 

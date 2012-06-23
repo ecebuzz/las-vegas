@@ -11,6 +11,7 @@ FRACTURES=$4
 
 LINEITEM_INPUT_FILE=lineitem-$NUM_PARTS.txt
 PART_INPUT_FILE=part-$NUM_PARTS.txt
+SUPPLIER_INPUT_FILE=supplier-$NUM_PARTS.txt
 ORDERS_INPUT_FILE=orders-$NUM_PARTS.txt
 CUSTOMER_INPUT_FILE=customer-$NUM_PARTS.txt
 HOSTS_FILE=hosts-$NUM_PARTS.txt
@@ -35,6 +36,11 @@ fi
 
 if [ ! -f "$PART_INPUT_FILE" ]; then
 	echo "$PART_INPUT_FILE does not exist!"
+	exit
+fi
+
+if [ ! -f "$SUPPLIER_INPUT_FILE" ]; then
+	echo "$SUPPLIER_INPUT_FILE does not exist!"
 	exit
 fi
 
@@ -86,6 +92,20 @@ done
 i=0; while [ $i -lt $NUM_REPEATS ]; do
 	sleep_and_flush
 	ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Ddelta=90 tpch-bench-q1-planb
+	i=$((i+1))
+done
+
+#Q15 plan A
+i=0; while [ $i -lt $NUM_REPEATS ]; do
+	sleep_and_flush
+	ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Ddate=19960101 tpch-bench-q15-plana
+	i=$((i+1))
+done
+
+#Q15 plan B
+i=0; while [ $i -lt $NUM_REPEATS ]; do
+	sleep_and_flush
+	ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Ddate=19960101 tpch-bench-q15-planb
 	i=$((i+1))
 done
 
