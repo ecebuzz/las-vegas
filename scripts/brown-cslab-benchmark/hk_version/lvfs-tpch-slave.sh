@@ -36,7 +36,10 @@ ant compile >> $STDOUT_LOG
 
 cd ../tpch-dbgen/
 make >> $STDOUT_LOG 2>&1
-./dbgen -T o -s $SCALE_SIZE -S $HOST_INDEX -C $NUM_PARTS >> $STDOUT_LOG 2>&1  # $HOST_INDEX is 1-based
+# rather than "o", "L" and "O" separately makes the large orders/lineitem tbl fully contiguous by themselves.
+# this speeds up data loading (esp. lineitem loading) at the possible cost of data creation
+./dbgen -T L -s $SCALE_SIZE -S $HOST_INDEX -C $NUM_PARTS >> $STDOUT_LOG 2>&1  # $HOST_INDEX is 1-based
+./dbgen -T O -s $SCALE_SIZE -S $HOST_INDEX -C $NUM_PARTS >> $STDOUT_LOG 2>&1  # $HOST_INDEX is 1-based
 ./dbgen -T P -s $SCALE_SIZE -S $HOST_INDEX -C $NUM_PARTS >> $STDOUT_LOG 2>&1  # $HOST_INDEX is 1-based
 ./dbgen -T s -s $SCALE_SIZE -S $HOST_INDEX -C $NUM_PARTS >> $STDOUT_LOG 2>&1  # $HOST_INDEX is 1-based
 ./dbgen -T c -s $SCALE_SIZE -S $HOST_INDEX -C $NUM_PARTS >> $STDOUT_LOG 2>&1  # $HOST_INDEX is 1-based
