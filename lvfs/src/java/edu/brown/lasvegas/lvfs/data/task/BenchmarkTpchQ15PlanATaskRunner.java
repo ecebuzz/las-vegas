@@ -84,8 +84,7 @@ public final class BenchmarkTpchQ15PlanATaskRunner extends BenchmarkTpchQ15TaskR
         	int minSuppKey = Integer.MAX_VALUE;
         	for (int fracture = 0; fracture < fractures; ++fracture) {
         		LineitemFracture lf = lineitemFractures[fracture];
-        		long shipdate = lf.shipdates[posArray[fracture]];
-        		while (posArray[fracture] < lf.lineitemTuples && (shipdate < lowerShipdateValue || shipdate > upperShipdateValue)) {
+        		while (posArray[fracture] < lf.lineitemTuples && (lf.shipdates[posArray[fracture]] < lowerShipdateValue || lf.shipdates[posArray[fracture]] > upperShipdateValue)) {
         			++posArray[fracture];
         		}
         		if (posArray[fracture] == lf.lineitemTuples) {
@@ -105,12 +104,11 @@ public final class BenchmarkTpchQ15PlanATaskRunner extends BenchmarkTpchQ15TaskR
         	for (int fracture = 0; fracture < fractures; ++fracture) {
         		LineitemFracture lf = lineitemFractures[fracture];
         		while (true) {
-            		long shipdate = lf.shipdates[posArray[fracture]];
-            		while (posArray[fracture] < lf.lineitemTuples && (shipdate < lowerShipdateValue || shipdate > upperShipdateValue)) {
+            		while (posArray[fracture] < lf.lineitemTuples && (lf.shipdates[posArray[fracture]] < lowerShipdateValue || lf.shipdates[posArray[fracture]] > upperShipdateValue)) {
 	        			++posArray[fracture];
 	        		}
             		if (posArray[fracture] == lf.lineitemTuples) {
-	        			continue;
+	        			break;
 	        		}
             		int pos = posArray[fracture];
             		int suppkey = lf.lsupps[posArray[fracture]];
@@ -133,6 +131,7 @@ public final class BenchmarkTpchQ15PlanATaskRunner extends BenchmarkTpchQ15TaskR
         		maxSuppkeysPartition.clear();
                 maxSuppkeys.add(minSuppKey);
                 maxSuppkeysPartition.add(partition);
+                currentMaxRevenue = totalRevenue;
         	} else {
         		// then, this suppkey has no chance to be in the final query result
         	}

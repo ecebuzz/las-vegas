@@ -65,7 +65,42 @@ public abstract class DataImportTpchBenchmark {
         }
         return columnIds;
     }
-    
+    private ValueRange[] createUniformRangesInteger (int interval) {
+        ValueRange[] ranges = new ValueRange[partitionCount];
+        for (int i = 0; i < partitionCount; ++i) {
+        	ranges[i] = new ValueRange ();
+        	ranges[i].setType(ColumnType.INTEGER);
+            if (i == 0) {
+            	ranges[i].setStartKey(null);
+            } else {
+            	ranges[i].setStartKey(interval * i + 1);
+            }
+            if (i == partitionCount - 1) {
+            	ranges[i].setEndKey(null);
+            } else {
+            	ranges[i].setEndKey(interval * (i + 1) + 1);
+            }
+        }
+        return ranges;
+    }
+    private ValueRange[] createUniformRangesBigint (long interval) {
+        ValueRange[] ranges = new ValueRange[partitionCount];
+        for (int i = 0; i < partitionCount; ++i) {
+        	ranges[i] = new ValueRange ();
+        	ranges[i].setType(ColumnType.BIGINT);
+            if (i == 0) {
+            	ranges[i].setStartKey(null);
+            } else {
+            	ranges[i].setStartKey(interval * i + 1L);
+            }
+            if (i == partitionCount - 1) {
+            	ranges[i].setEndKey(null);
+            } else {
+            	ranges[i].setEndKey(interval * (i + 1) + 1L);
+            }
+        }
+        return ranges;
+    }
     public void setUp () throws IOException {
         if (metaRepo.getDatabase(DB_NAME) != null) {
             metaRepo.dropDatabase(metaRepo.getDatabase(DB_NAME).getDatabaseId());
@@ -74,66 +109,10 @@ public abstract class DataImportTpchBenchmark {
 
         database = metaRepo.createNewDatabase(DB_NAME);
 
-        ValueRange[] customerRanges = new ValueRange[partitionCount];
-        for (int i = 0; i < partitionCount; ++i) {
-        	customerRanges[i] = new ValueRange ();
-        	customerRanges[i].setType(ColumnType.INTEGER);
-            if (i == 0) {
-            	customerRanges[i].setStartKey(null);
-            } else {
-            	customerRanges[i].setStartKey(150000 * i + 1);
-            }
-            if (i == partitionCount - 1) {
-            	customerRanges[i].setEndKey(null);
-            } else {
-            	customerRanges[i].setEndKey(150000 * (i + 1) + 1);
-            }
-        }
-        ValueRange[] partRanges = new ValueRange[partitionCount];
-        for (int i = 0; i < partitionCount; ++i) {
-            partRanges[i] = new ValueRange ();
-            partRanges[i].setType(ColumnType.INTEGER);
-            if (i == 0) {
-                partRanges[i].setStartKey(null);
-            } else {
-                partRanges[i].setStartKey(200000 * i + 1);
-            }
-            if (i == partitionCount - 1) {
-                partRanges[i].setEndKey(null);
-            } else {
-                partRanges[i].setEndKey(200000 * (i + 1) + 1);
-            }
-        }
-        ValueRange[] supplierRanges = new ValueRange[partitionCount];
-        for (int i = 0; i < partitionCount; ++i) {
-        	supplierRanges[i] = new ValueRange ();
-        	supplierRanges[i].setType(ColumnType.INTEGER);
-            if (i == 0) {
-                partRanges[i].setStartKey(null);
-            } else {
-                partRanges[i].setStartKey(10000 * i + 1);
-            }
-            if (i == partitionCount - 1) {
-                partRanges[i].setEndKey(null);
-            } else {
-                partRanges[i].setEndKey(10000 * (i + 1) + 1);
-            }
-        }
-        ValueRange[] ordersRanges = new ValueRange[partitionCount];
-        for (int i = 0; i < partitionCount; ++i) {
-        	ordersRanges[i] = new ValueRange ();
-        	ordersRanges[i].setType(ColumnType.BIGINT);
-            if (i == 0) {
-            	ordersRanges[i].setStartKey(null);
-            } else {
-            	ordersRanges[i].setStartKey(6000000L * i + 1L);
-            }
-            if (i == partitionCount - 1) {
-            	ordersRanges[i].setEndKey(null);
-            } else {
-            	ordersRanges[i].setEndKey(6000000L * (i + 1) + 1L);
-            }
-        }
+        ValueRange[] customerRanges = createUniformRangesInteger(150000);
+        ValueRange[] partRanges = createUniformRangesInteger(200000);
+        ValueRange[] supplierRanges = createUniformRangesInteger(10000);
+        ValueRange[] ordersRanges = createUniformRangesBigint(6000000L);
 
         customerTable = metaRepo.createNewTable(database.getDatabaseId(), "customer", customerSource.getColumnNames(), customerSource.getScheme());
         customerGroup = metaRepo.createNewReplicaGroup(customerTable, metaRepo.getColumnByName(customerTable.getTableId(), "c_custkey"), customerRanges);
@@ -144,7 +123,7 @@ public abstract class DataImportTpchBenchmark {
         metaRepo.createNewReplicaScheme(partGroup, metaRepo.getColumnByName(partTable.getTableId(), "p_partkey"), getColumnIds(partTable), partSource.getDefaultCompressions());
 
         supplierTable = metaRepo.createNewTable(database.getDatabaseId(), "supplier", supplierSource.getColumnNames(), supplierSource.getScheme());
-        supplierGroup = metaRepo.createNewReplicaGroup(supplierTable, metaRepo.getColumnByName(supplierTable.getTableId(), "s_suppkey"), partRanges);
+        supplierGroup = metaRepo.createNewReplicaGroup(supplierTable, metaRepo.getColumnByName(supplierTable.getTableId(), "s_suppkey"), supplierRanges);
         metaRepo.createNewReplicaScheme(supplierGroup, metaRepo.getColumnByName(supplierTable.getTableId(), "s_suppkey"), getColumnIds(supplierTable), supplierSource.getDefaultCompressions());
         
         ordersTable = metaRepo.createNewTable(database.getDatabaseId(), "orders", ordersSource.getColumnNames(), ordersSource.getScheme());
@@ -169,8 +148,8 @@ public abstract class DataImportTpchBenchmark {
         try {
             long start = System.currentTimeMillis();
  
-            LVTable[] tables = new LVTable[]{partTable, supplierTable, customerTable, ordersTable, lineitemTablePart, lineitemTableOrders};
-            String[] inputFileNames = new String[]{partInputFileName, supplierInputFileName, customerInputFileName, ordersInputFileName, lineitemInputFileName, lineitemInputFileName};
+            LVTable[] tables = new LVTable[]{partTable, supplierTable, customerTable, ordersTable, lineitemTablePart, lineitemTableOrders, lineitemTableSupplier};
+            String[] inputFileNames = new String[]{partInputFileName, supplierInputFileName, customerInputFileName, ordersInputFileName, lineitemInputFileName, lineitemInputFileName, lineitemInputFileName};
             for (int i = 0; i < tables.length; ++i) {
                 int tableFractures = 1;
                 // only fact tables (orders/lineitem) could be fractured
