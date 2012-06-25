@@ -34,6 +34,7 @@ cslab5f
 cslab5g
 cslab5h
 cslab6a
+cslab6c
 cslab6d
 cslab6e
 cslab6f
@@ -43,7 +44,6 @@ cslab7a
 cslab7b
 cslab7c
 cslab7d
-cslab7e
 cslab7f
 cslab7g
 cslab7h

@@ -235,7 +235,7 @@
         </java>
     </target>
     <target name="tpch-bench-q15-planb" depends="compile"
-        description="Run TPCH's Q17 with Plan B (slower query plan using non-copartitioned file). Specify the address of metadata repository, and date. : ant -Daddress=poseidon.smn.cs.brown.edu:28710 -Ddate=19960101 tpch-bench-q15-planb">
+        description="Run TPCH's Q15 with Plan B (slower query plan using non-copartitioned file). Specify the address of metadata repository, and date. : ant -Daddress=poseidon.smn.cs.brown.edu:28710 -Ddate=19960101 tpch-bench-q15-planb">
         <java fork="true" classname="edu.brown.lasvegas.lvfs.data.TpchQ15MultinodeBenchmark">
             <jvmarg value="-Xmx1200m"/> <!-- this query plan could consume huge amount of RAM! -->
             <jvmarg value="-server"/>
