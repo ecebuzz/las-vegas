@@ -105,7 +105,7 @@ public final class BenchmarkTpchQ15PlanCTaskRunner extends BenchmarkTpchQ15TaskR
     		
     		assert (suppkey > curSuppKey);
     		if (curGroupCount > 0) {
-    			addSubAggregate(suppkey, curTotalRevenue, partition);
+    			addSubAggregate(curSuppKey, curTotalRevenue, partition);
     		}
     		curSuppKey = suppkey;
 			curGroupCount = 1;

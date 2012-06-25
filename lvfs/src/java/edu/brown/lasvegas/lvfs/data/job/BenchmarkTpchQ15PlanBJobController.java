@@ -4,9 +4,8 @@ import java.io.DataInput;
 import java.io.DataInputStream;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -32,6 +31,7 @@ import edu.brown.lasvegas.lvfs.data.task.BenchmarkTpchQ15PlanBTaskRunner;
 import edu.brown.lasvegas.lvfs.data.task.BenchmarkTpchQ15TaskParameters;
 import edu.brown.lasvegas.protocol.LVMetadataProtocol;
 import edu.brown.lasvegas.traits.ValueTraitsFactory;
+import edu.brown.lasvegas.util.IntHashMap;
 import edu.brown.lasvegas.util.ValueRange;
 
 /**
@@ -76,31 +76,78 @@ public class BenchmarkTpchQ15PlanBJobController extends BenchmarkTpchQ15JobContr
         }
     }
 
+    public static class IntermediateResultSetDeserialized {
+		public final int count;
+		public final int[] suppkeys;
+		public final double[] totalRevenues;
+		public IntermediateResultSetDeserialized (int[] suppkeys, double[] totalRevenues) {
+			this.count = suppkeys.length;
+			assert (count == totalRevenues.length);
+			this.suppkeys = suppkeys;
+			this.totalRevenues = totalRevenues;
+		}
+    }
     public static class IntermediateResultSet implements Writable {
         /** key=suppkey, value=TOTAL_REVENUE .*/
-        public Map<Integer, Double> results = new HashMap<Integer, Double> (1 << 16);
-    	@Override
+        public IntHashMap<Double> results = new IntHashMap<Double> (1 << 16);
+
+        @Override
     	public void readFields(DataInput in) throws IOException {
     		results.clear();
-    		int count = in.readInt();
-    		for (int i = 0; i < count; ++i) {
-    			int suppkey = in.readInt();
-    			double totalRevenue = in.readDouble();
+    		IntermediateResultSetDeserialized deserialized = deserialize(in);
+    		for (int i = 0; i < deserialized.count; ++i) {
+    			int suppkey = deserialized.suppkeys[i];
+    			double totalRevenue = deserialized.totalRevenues[i];
+    			assert (suppkey != 0);
     			assert (!results.containsKey(suppkey));
+    			assert (totalRevenue != 0);
     			results.put(suppkey, totalRevenue);
     		}
     	}
-    	@Override
-    	public void write(DataOutput out) throws IOException {
-    		final int size = results.size();
-    		out.writeInt(size);
-    		int count = 0;
-    		for (Map.Entry<Integer, Double> entry : results.entrySet()) {
-    			++count;
-    			out.writeInt (entry.getKey());
-    			out.writeDouble (entry.getValue());
+		public static IntermediateResultSetDeserialized deserialize(DataInput in) throws IOException {
+    		int count = in.readInt();
+    		int[] suppkeys = new int[count];
+    		{
+    			byte[] buffer = new byte[count * 4];
+    			in.readFully(buffer);
+    			ByteBuffer.wrap(buffer).asIntBuffer().get(suppkeys);
     		}
-    		assert (size == count);
+    		double[] totalRevenues = new double[count];
+    		{
+    			byte[] buffer = new byte[count * 8];
+    			in.readFully(buffer);
+    			ByteBuffer.wrap(buffer).asDoubleBuffer().get(totalRevenues);
+    		}
+    		return new IntermediateResultSetDeserialized(suppkeys, totalRevenues);
+    	}
+
+		@Override
+    	public void write(DataOutput out) throws IOException {
+    		final int count = results.size();
+    		int[] suppkeys = new int[count];
+    		double[] totalRevenues = new double[count];
+
+    		int written = 0;
+    		for (IntHashMap.Entry<Double> e : results.getTable()) {
+        		for (IntHashMap.Entry<Double> entry  = e; entry != null; entry = entry.getNext()) {
+        			suppkeys[written] = entry.getKey();
+        			totalRevenues[written] = entry.getValue();
+	    			++written;
+        		}
+    		}
+    		assert (count == written);
+
+    		out.writeInt(count);
+    		{
+    			byte[] buffer = new byte[count * 4];
+    			ByteBuffer.wrap(buffer).asIntBuffer().put(suppkeys);
+    			out.write(buffer);
+    		}
+    		{
+    			byte[] buffer = new byte[count * 8];
+    			ByteBuffer.wrap(buffer).asDoubleBuffer().put(totalRevenues);
+    			out.write(buffer);
+    		}
     	}
     }
     private IntermediateResultSet intermediateQueryResult;
@@ -152,21 +199,23 @@ public class BenchmarkTpchQ15PlanBJobController extends BenchmarkTpchQ15JobContr
     /** find the suppliers with max total revenue from intermediateQueryResult. */
     private MaxSupp getMaxSupp () {
         MaxSupp ret = new MaxSupp();
-		for (Map.Entry<Integer, Double> entry : intermediateQueryResult.results.entrySet()) {
-			int suppkey = entry.getKey();
-			double revenue = entry.getValue();
-			if (revenue == ret.currentMaxRevenue) {
-				// same max revenue. add these tuples.
-				ret.maxSuppkeys.add(suppkey);
-			} else if (revenue > ret.currentMaxRevenue) {
-				// this result updates the global max revenue.
-				// so, other existing tuples are discarded.
-				ret.maxSuppkeys.clear();
-				ret.maxSuppkeys.add(suppkey);
-				ret.currentMaxRevenue = revenue;
-			} else {
-	    		// then, ignored
-			}
+		for (IntHashMap.Entry<Double> e : intermediateQueryResult.results.getTable()) {
+    		for (IntHashMap.Entry<Double> entry  = e; entry != null; entry = entry.getNext()) {
+				int suppkey = entry.getKey();
+				double revenue = entry.getValue();
+				if (revenue == ret.currentMaxRevenue) {
+					// same max revenue. add these tuples.
+					ret.maxSuppkeys.add(suppkey);
+				} else if (revenue > ret.currentMaxRevenue) {
+					// this result updates the global max revenue.
+					// so, other existing tuples are discarded.
+					ret.maxSuppkeys.clear();
+					ret.maxSuppkeys.add(suppkey);
+					ret.currentMaxRevenue = revenue;
+				} else {
+		    		// then, ignored
+				}
+    		}
 		}
         LOG.info("global max_revenue=" + ret.currentMaxRevenue + ". " + ret.maxSuppkeys.size() + " suppkeys with the total revenue");
         return ret; 
@@ -286,6 +335,7 @@ public class BenchmarkTpchQ15PlanBJobController extends BenchmarkTpchQ15JobContr
             if (node == null) {
                 throw new IOException ("the node ID (" + nodeId + ") doesn't exist");
             }
+        	IntermediateResultSetDeserialized subResult;
     		LVDataClient client = new LVDataClient(new Configuration(), node.getAddress());
     		try {
         		VirtualFile file = new DataNodeFile(client.getChannel(), resultFile);
@@ -294,27 +344,27 @@ public class BenchmarkTpchQ15PlanBJobController extends BenchmarkTpchQ15JobContr
 	        	}
 	        	VirtualFileInputStream in = file.getInputStream();
 	        	DataInputStream dataIn = new DataInputStream(in);
-	        	IntermediateResultSet subResult = new IntermediateResultSet();
-	        	subResult.readFields(dataIn);
+	        	subResult = IntermediateResultSet.deserialize(dataIn);
 	        	dataIn.close();
-	        	
-	        	// unlike Plan-A, each node outputs all suppkey sub-aggregates that satisfy SHIPDATE predicate.
-	        	// we have to merge all of the results anyway.
-	    		for (Map.Entry<Integer, Double> entry : subResult.results.entrySet()) {
-	        		Double revenue = intermediateQueryResult.results.get(entry.getKey());
-	        		if (revenue == null) {
-	        			// new suppkey!
-	        			revenue = entry.getValue();
-	        		} else {
-	        			// same suppkey exists. have to merge em.
-	        			revenue += entry.getValue();
-	        		}
-	        		// update or newly put the value
-        			intermediateQueryResult.results.put(entry.getKey(), entry.getValue());
-	        	}
     		} finally {
 				client.release();
     		}
+	        	
+        	// unlike Plan-A, each node outputs all suppkey sub-aggregates that satisfy SHIPDATE predicate.
+        	// we have to merge all of the results anyway.
+    		
+    		for (int i = 0; i < subResult.count; ++i) {
+        		Double revenue = intermediateQueryResult.results.get(subResult.suppkeys[i]);
+        		if (revenue == null) {
+        			// new suppkey!
+        			revenue = subResult.totalRevenues[i];
+        		} else {
+        			// same suppkey exists. have to merge em.
+        			revenue += subResult.totalRevenues[i];
+        		}
+        		// update or newly put the value
+    			intermediateQueryResult.results.put(subResult.suppkeys[i], revenue);
+        	}
     		LOG.info("merged one result");
     	}
     }

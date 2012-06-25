@@ -13,7 +13,7 @@ public final class MiniTPCHLineitem extends MiniDataSource {
             /*"1: l_partkey", */ColumnType.INTEGER,
             /*"2: l_suppkey",*/ ColumnType.INTEGER,
             /*"3: l_linenumber",*/ ColumnType.TINYINT,
-            /*"4: l_quantity",*/ ColumnType.FLOAT,
+            /*"4: l_quantity",*/ ColumnType.FLOAT, // all values are actually integers, but the TPCH spec requests floating points
             /*"5: l_extendedprice",*/ ColumnType.DOUBLE,
             /*"6: l_discount",*/ ColumnType.FLOAT,
             /*"7: l_tax",*/ ColumnType.FLOAT,
@@ -39,10 +39,10 @@ public final class MiniTPCHLineitem extends MiniDataSource {
             /*"1: l_partkey", */CompressionType.NONE,
             /*"2: l_suppkey",*/ CompressionType.NONE,
             /*"3: l_linenumber",*/ CompressionType.NONE,
-            /*"4: l_quantity",*/ CompressionType.NONE,
+            /*"4: l_quantity",*/ CompressionType.DICTIONARY,/*CompressionType.NONE*/ // it sounds a bit weird to compress
             /*"5: l_extendedprice",*/ CompressionType.NONE,
-            /*"6: l_discount",*/ CompressionType.NONE,
-            /*"7: l_tax",*/ CompressionType.NONE,
+            /*"6: l_discount",*/ CompressionType.DICTIONARY,/*CompressionType.NONE*/ // quantity/tax/discount as dictionary,
+            /*"7: l_tax",*/ CompressionType.DICTIONARY,/*CompressionType.NONE*/  // but actually they are very few-valued in TPCH data.
             /*"8: l_returnflag",*/ CompressionType.DICTIONARY,
             /*"9: l_linestatus",*/ CompressionType.DICTIONARY,
             /*"10: l_shipdate",*/ CompressionType.DICTIONARY, /*CompressionType.NONE*/
