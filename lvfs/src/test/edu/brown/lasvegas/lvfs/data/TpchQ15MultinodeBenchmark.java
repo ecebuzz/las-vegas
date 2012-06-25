@@ -15,6 +15,7 @@ import edu.brown.lasvegas.lvfs.data.job.BenchmarkTpchQ15PlanAJobController;
 import edu.brown.lasvegas.lvfs.data.job.BenchmarkTpchQ15JobController;
 import edu.brown.lasvegas.lvfs.data.job.BenchmarkTpchQ15JobParameters;
 import edu.brown.lasvegas.lvfs.data.job.BenchmarkTpchQ15PlanBJobController;
+import edu.brown.lasvegas.lvfs.data.job.BenchmarkTpchQ15PlanCJobController;
 import edu.brown.lasvegas.protocol.LVMetadataProtocol;
 import edu.brown.lasvegas.server.LVCentralNode;
 
@@ -25,7 +26,7 @@ import edu.brown.lasvegas.server.LVCentralNode;
 public class TpchQ15MultinodeBenchmark {
     private static final Logger LOG = Logger.getLogger(TpchQ15MultinodeBenchmark.class);
 
-    private final boolean fastQueryPlan;
+    private final char queryPlan;
     private Configuration conf;
     private LVMetadataClient client;
     private LVMetadataProtocol metaRepo;
@@ -33,8 +34,8 @@ public class TpchQ15MultinodeBenchmark {
     private LVDatabase database;
 
     private LVTable lineitemTable, supplierTable;
-    public TpchQ15MultinodeBenchmark(boolean fastQueryPlan) {
-    	this.fastQueryPlan = fastQueryPlan;
+    public TpchQ15MultinodeBenchmark(char queryPlan) {
+    	this.queryPlan = queryPlan;
     }
     private void setUp (String metadataAddress) throws IOException {
         conf = new Configuration();
@@ -48,7 +49,8 @@ public class TpchQ15MultinodeBenchmark {
 
         supplierTable = metaRepo.getTable(database.getDatabaseId(), "supplier");
         // see DataImportSingleNodeTpchBenchmark for why there are multiple lineitem tables
-        lineitemTable = metaRepo.getTable(database.getDatabaseId(), fastQueryPlan ? "lineitem_s" : "lineitem_o");
+        boolean copartitioned = queryPlan == 'A';
+        lineitemTable = metaRepo.getTable(database.getDatabaseId(), copartitioned ? "lineitem_s" : "lineitem_o");
     }
     private void tearDown () throws IOException {
         if (client != null) {
@@ -62,15 +64,16 @@ public class TpchQ15MultinodeBenchmark {
         params.setLineitemTableId(lineitemTable.getTableId());
         params.setSupplierTableId(supplierTable.getTableId());
         BenchmarkTpchQ15JobController controller;
-        if (fastQueryPlan) {
-        	controller = new BenchmarkTpchQ15PlanAJobController(metaRepo, 1000L, 100L, 100L);
-        } else {
-        	controller = new BenchmarkTpchQ15PlanBJobController(metaRepo, 1000L, 100L, 100L);
+        switch (queryPlan) {
+        case 'A': controller = new BenchmarkTpchQ15PlanAJobController(metaRepo, 1000L, 100L, 100L); break;
+        case 'B': controller = new BenchmarkTpchQ15PlanBJobController(metaRepo, 1000L, 100L, 100L); break;
+        case 'C': controller = new BenchmarkTpchQ15PlanCJobController(metaRepo, 1000L, 100L, 100L); break;
+        default: throw new Exception ("wtf??? : " + queryPlan);
         }
 
-        LOG.info("started Q15(" + (fastQueryPlan ? "assume co-partitioning" : "slower query plan") + ")...");
+        LOG.info("started Q15-" + queryPlan + "...");
         LVJob job = controller.startSync(params);
-        LOG.info("finished Q15(" + (fastQueryPlan ? "assume co-partitioning" : "slower query plan") + "):" + job);
+        LOG.info("finished Q15-" + queryPlan + ":" + job);
         for (LVTask task : metaRepo.getAllTasksByJob(job.getJobId())) {
             LOG.info("Sub-Task finished in " + (task.getFinishedTime().getTime() - task.getStartedTime().getTime()) + "ms:" + task);
         }
@@ -80,25 +83,25 @@ public class TpchQ15MultinodeBenchmark {
     public static void main (String[] args) throws Exception {
         LOG.info("running a multi node experiment..");
         if (args.length < 3) {
-            System.err.println("usage: java " + TpchQ15MultinodeBenchmark.class.getName() + " <metadata repository address> <date> <whether to use faster query plan>");
-            System.err.println("ex: java " + TpchQ15MultinodeBenchmark.class.getName() + " poseidon:28710 19960101 true");
+            System.err.println("usage: java " + TpchQ15MultinodeBenchmark.class.getName() + " <metadata repository address> <date> <query plan(A/B/C)>");
+            System.err.println("ex: java " + TpchQ15MultinodeBenchmark.class.getName() + " poseidon:28710 19960101 A");
             return;
         }
         String metaRepoAddress = args[0];
         LOG.info("metaRepoAddress=" + metaRepoAddress);
         int date = Integer.parseInt(args[1]);
         LOG.info("date=" + date);
-        boolean fastQueryPlan = new Boolean(args[2]);
-        LOG.info("fastQueryPlan=" + fastQueryPlan);
+        char queryPlan = args[2].charAt(0);
+        LOG.info("queryPlan=" + queryPlan);
         
-        TpchQ15MultinodeBenchmark program = new TpchQ15MultinodeBenchmark(fastQueryPlan);
+        TpchQ15MultinodeBenchmark program = new TpchQ15MultinodeBenchmark(queryPlan);
         program.setUp(metaRepoAddress);
         try {
             LOG.info("started");
             long start = System.currentTimeMillis();
             Q15ResultList result = program.exec(date);
             long end = System.currentTimeMillis();
-            LOG.info("ended(" + (fastQueryPlan ? "assume co-partitioning" : "slower query plan") + "). elapsed time=" + (end - start) + "ms. result=" + result);
+            LOG.info("ended(Q15-" + queryPlan + "): elapsed time=" + (end - start) + "ms. result=" + result);
         } catch (Exception ex) {
             LOG.error("unexpected exception:" + ex.getMessage(), ex);
         } finally {

@@ -3,10 +3,12 @@ package edu.brown.lasvegas.lvfs.data.task;
 import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.IOException;
+import java.util.SortedMap;
 
 import edu.brown.lasvegas.LVTask;
 import edu.brown.lasvegas.TaskType;
 import edu.brown.lasvegas.lvfs.data.DataTaskParameters;
+import edu.brown.lasvegas.util.DataInputOutputUtil;
 
 /**
  * The Class BenchmarkTpchQ15TaskParameters.
@@ -55,6 +57,11 @@ public final class BenchmarkTpchQ15TaskParameters extends DataTaskParameters {
     /** query parameter: [DATE] in the form of 19960101.*/
     private int date;
     
+    /**
+     * Used only for query plan with repartitioning (Plan-C). key=nodeId, value=path of summary file.
+     */
+    private SortedMap<Integer, String> repartitionSummaryFileMap;
+
     /* (non-Javadoc)
      * @see org.apache.hadoop.io.Writable#readFields(java.io.DataInput)
      */
@@ -65,6 +72,7 @@ public final class BenchmarkTpchQ15TaskParameters extends DataTaskParameters {
         supplierPartitionIds = readIntArray(in);
         lineitemPartitionIds = readIntArray(in);
         date = in.readInt();
+        repartitionSummaryFileMap = DataInputOutputUtil.readIntegerStringSortedMap(in);
     }
     
     /* (non-Javadoc)
@@ -77,6 +85,7 @@ public final class BenchmarkTpchQ15TaskParameters extends DataTaskParameters {
         writeIntArray(out, supplierPartitionIds);
         writeIntArray(out, lineitemPartitionIds);
         out.writeInt(date);
+        DataInputOutputUtil.writeIntegerStringSortedMap(out, repartitionSummaryFileMap);
     }
 
 	/**
@@ -167,5 +176,24 @@ public final class BenchmarkTpchQ15TaskParameters extends DataTaskParameters {
 	 */
 	public void setDate(int date) {
 		this.date = date;
+	}
+
+	/**
+	 * Gets the repartition summary file map.
+	 *
+	 * @return the repartition summary file map
+	 */
+	public SortedMap<Integer, String> getRepartitionSummaryFileMap() {
+		return repartitionSummaryFileMap;
+	}
+
+	/**
+	 * Sets the repartition summary file map.
+	 *
+	 * @param repartitionSummaryFileMap the repartition summary file map
+	 */
+	public void setRepartitionSummaryFileMap(
+			SortedMap<Integer, String> repartitionSummaryFileMap) {
+		this.repartitionSummaryFileMap = repartitionSummaryFileMap;
 	}
 }

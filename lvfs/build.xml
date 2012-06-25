@@ -230,7 +230,7 @@
             <jvmarg value="-da"/>
             <arg value="${address}" />
             <arg value="${date}" />
-            <arg value="true" />
+            <arg value="A" />
             <classpath refid="lvfs.classpath"/>
         </java>
     </target>
@@ -242,7 +242,19 @@
             <jvmarg value="-da"/>
             <arg value="${address}" />
             <arg value="${date}" />
-            <arg value="false" />
+            <arg value="B" />
+            <classpath refid="lvfs.classpath"/>
+        </java>
+    </target>
+    <target name="tpch-bench-q15-planc" depends="compile"
+        description="Run TPCH's Q15 with Plan C (another slower query plan. repartition first to save RAM, but might be slower due to more disk IO). Specify the address of metadata repository, and date. : ant -Daddress=poseidon.smn.cs.brown.edu:28710 -Ddate=19960101 tpch-bench-q15-planc">
+        <java fork="true" classname="edu.brown.lasvegas.lvfs.data.TpchQ15MultinodeBenchmark">
+            <jvmarg value="-Xmx256m"/>
+            <jvmarg value="-server"/>
+            <jvmarg value="-da"/>
+            <arg value="${address}" />
+            <arg value="${date}" />
+            <arg value="C" />
             <classpath refid="lvfs.classpath"/>
         </java>
     </target>

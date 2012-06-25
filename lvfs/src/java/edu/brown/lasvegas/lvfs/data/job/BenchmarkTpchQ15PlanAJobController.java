@@ -67,8 +67,6 @@ public class BenchmarkTpchQ15PlanAJobController extends BenchmarkTpchQ15JobContr
         }
     }
 
-    private double currentMaxRevenue;
-
     @Override
     protected void runDerived() throws IOException {
         LOG.info("going to run TPCH Q15. date=" + param.getDate());
@@ -123,20 +121,30 @@ public class BenchmarkTpchQ15PlanAJobController extends BenchmarkTpchQ15JobContr
         LOG.info("waiting for task completion...");
         // to speed-up "merging" the sub-aggregates, we start merging them
         // as soon as some node finishes. So, we use a callback here.
-        queryResult = new Q15ResultList();
-        currentMaxRevenue = Double.MIN_VALUE;
-        joinTasks(taskMap, 0.0d, 0.99d, new ResultMergeCallback());
+        Q15ResultMergeCallback callback = new Q15ResultMergeCallback(metaRepo);
+        joinTasks(taskMap, 0.0d, 0.99d, callback);
+        queryResult = callback.getQueryResult();
 
         deleteTemporaryFiles (taskMap, 0.99d, 1.0d);
         LOG.info("all tasks seem done!");
     }
 
     /**
-     * Called when the {@link BenchmarkTpchQ15PlanATaskRunner}
+     * Called when the {@link BenchmarkTpchQ15PlanATaskRunner} or {@link BenchmarkTpchQ15PlanCTaskRunner}
      * returns the result. Reads the ranking file from it.
      */
-    private class ResultMergeCallback implements JoinTasksCallback {
-    	@Override
+    public static class Q15ResultMergeCallback implements JoinTasksCallback {
+    	public Q15ResultMergeCallback (LVMetadataProtocol metaRepo) {
+    		this.metaRepo = metaRepo;
+        	this.queryResult = new Q15ResultList();
+            this.currentMaxRevenue = Double.MIN_VALUE;
+    	}
+    	private LVMetadataProtocol metaRepo;
+    	private Q15ResultList queryResult;
+    	public Q15ResultList getQueryResult () {return queryResult;}
+        private double currentMaxRevenue;
+
+        @Override
     	public void onTaskError(LVTask task) throws IOException {}
     	@Override
     	public void onTaskFinish(LVTask task) throws IOException {

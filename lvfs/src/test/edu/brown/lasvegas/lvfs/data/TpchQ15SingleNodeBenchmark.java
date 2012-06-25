@@ -13,6 +13,7 @@ import edu.brown.lasvegas.lvfs.data.job.BenchmarkTpchQ15JobController.Q15ResultL
 import edu.brown.lasvegas.lvfs.data.job.BenchmarkTpchQ15JobParameters;
 import edu.brown.lasvegas.lvfs.data.job.BenchmarkTpchQ15PlanAJobController;
 import edu.brown.lasvegas.lvfs.data.job.BenchmarkTpchQ15PlanBJobController;
+import edu.brown.lasvegas.lvfs.data.job.BenchmarkTpchQ15PlanCJobController;
 
 /**
  * Run this after {@link DataImportSingleNodeTpchBenchmark}.
@@ -25,13 +26,15 @@ public class TpchQ15SingleNodeBenchmark {
     private LVDatabase database;
     private LVTable lineitemTable, supplierTable;
 
+    @SuppressWarnings ("all") // to shut up "comparing identical expressions"
     public TpchQ15SingleNodeBenchmark () throws IOException {
         this.resources = new SingleNodeBenchmarkResources();
         this.database = resources.metaRepo.getDatabase(DataImportTpchBenchmark.DB_NAME);
         
-        supplierTable = resources.metaRepo.getTable(database.getDatabaseId(), "supplier");
+        this.supplierTable = resources.metaRepo.getTable(database.getDatabaseId(), "supplier");
         // see DataImportSingleNodeTpchBenchmark for why there are multiple lineitem tables
-    	lineitemTable = resources.metaRepo.getTable(database.getDatabaseId(), fastQueryPlan ? "lineitem_s" : "lineitem_o");
+        boolean copartitioned = queryPlan == 'A';
+        this.lineitemTable = resources.metaRepo.getTable(database.getDatabaseId(), copartitioned ? "lineitem_s" : "lineitem_o");
     }
     
     public void tearDown () throws IOException {
@@ -39,21 +42,22 @@ public class TpchQ15SingleNodeBenchmark {
     }
 
     private static final int date = 19960101;
-    private static final boolean fastQueryPlan = true;
+    private static final char queryPlan = 'A'; // A,B,C
     public Q15ResultList exec () throws Exception {
         BenchmarkTpchQ15JobParameters params = new BenchmarkTpchQ15JobParameters();
         params.setDate(date);
         params.setLineitemTableId(lineitemTable.getTableId());
         params.setSupplierTableId(supplierTable.getTableId());
         BenchmarkTpchQ15JobController controller;
-        if (fastQueryPlan) {
-        	controller = new BenchmarkTpchQ15PlanAJobController(resources.metaRepo, 1000L, 100L, 100L);
-        } else {
-        	controller = new BenchmarkTpchQ15PlanBJobController(resources.metaRepo, 1000L, 100L, 100L);
+        switch (queryPlan) {
+        case 'A': controller = new BenchmarkTpchQ15PlanAJobController(resources.metaRepo, 1000L, 100L, 100L); break;
+        case 'B': controller = new BenchmarkTpchQ15PlanBJobController(resources.metaRepo, 1000L, 100L, 100L); break;
+        case 'C': controller = new BenchmarkTpchQ15PlanCJobController(resources.metaRepo, 1000L, 100L, 100L); break;
+        default: throw new Exception ("wtf??? : " + queryPlan);
         }
-        LOG.info("started Q15(" + (fastQueryPlan ? "assume co-partitioning" : "slower query plan") + ")...");
+        LOG.info("started Q15-" + queryPlan + "...");
         LVJob job = controller.startSync(params);
-        LOG.info("finished Q15(" + (fastQueryPlan ? "assume co-partitioning" : "slower query plan") + "):" + job);
+        LOG.info("finished Q15-" + queryPlan + ":" + job);
         for (LVTask task : resources.metaRepo.getAllTasksByJob(job.getJobId())) {
             LOG.info("Sub-Task finished in " + (task.getFinishedTime().getTime() - task.getStartedTime().getTime()) + "ms:" + task);
         }
@@ -68,7 +72,7 @@ public class TpchQ15SingleNodeBenchmark {
             long start = System.currentTimeMillis();
             Q15ResultList result = program.exec();
             long end = System.currentTimeMillis();
-            LOG.info("ended(" + (fastQueryPlan ? "assume co-partitioning" : "slower query plan") + "): elapsed time=" + (end - start) + "ms. result=" + result);
+            LOG.info("ended(Q15-" + queryPlan + "): elapsed time=" + (end - start) + "ms. result=" + result);
         } catch (Exception ex) {
             LOG.error("unexpected exception:" + ex.getMessage(), ex);
         } finally {
