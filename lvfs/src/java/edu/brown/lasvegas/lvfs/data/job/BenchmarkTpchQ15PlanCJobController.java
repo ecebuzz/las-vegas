@@ -8,7 +8,6 @@ import java.util.TreeMap;
 import edu.brown.lasvegas.CompressionType;
 import edu.brown.lasvegas.LVColumn;
 import edu.brown.lasvegas.LVReplicaPartition;
-import edu.brown.lasvegas.LVTable;
 import edu.brown.lasvegas.LVTask;
 import edu.brown.lasvegas.TaskStatus;
 import edu.brown.lasvegas.TaskType;
@@ -25,7 +24,7 @@ import edu.brown.lasvegas.traits.ValueTraitsFactory;
  * an arbitrary number of fractures.
  * 
  * The difference from Plan-B is that this query plan first re-partitions
- * lineitem by suppkey then does the same as Plan-B.
+ * lineitem by suppkey then does the same as Plan-A.
  * Compared to Plan-B, this plan transmits most of data between each data node
  * while Plan-B receives all sub-aggregates at the central node.
  * This query plan consumes definitely smaller RAM than Plan-B which has to hold a huge
