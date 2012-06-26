@@ -9,6 +9,7 @@ NUM_PARTS=$2
 NUM_REPEATS=$3
 FRACTURES=$4
 
+LINEITEM_INPUT_FILE=lineitem-$NUM_PARTS.txt
 HOSTS_FILE=hosts-$NUM_PARTS.txt
 LVFS_DIR=$INSTALL_DIR/las-vegas/lvfs/
 
@@ -23,6 +24,11 @@ fi
 echo "num of fractures = $FRACTURES"
 
 cd $RESOURCE_DIR
+
+if [ ! -f "$LINEITEM_INPUT_FILE" ]; then
+	echo "$LINEITEM_INPUT_FILE does not exist!"
+	exit
+fi
 
 if [ ! -f "$HOSTS_FILE" ]; then
 	echo "$HOSTS_FILE does not exist!"
