@@ -65,39 +65,43 @@ public final class DiskCacheFlushTaskRunner extends DataTaskRunner<DiskCacheFlus
 			boolean errorHappened = false;
 			try {
 				// "sudo -n" to prevent sudo from asking password.
-				Process proc = Runtime.getRuntime().exec("sudo -n /bin/sync; sudo -n /sbin/sysctl vm.drop_caches=3"); // same as 'echo 3 > /proc/sys/vm/drop_caches'
-				PipeThread stderrThread = new PipeThread(proc.getErrorStream(), "stderr");
-				PipeThread stdoutThread = new PipeThread(proc.getInputStream(), "stdout");
-				stderrThread.start();
-				stdoutThread.start();
-				// Wait up to 10 seconds only. If it's working, drop_caches should be done within 10 sec
-				for (int i = 0; i < 100; ++i) {
-					Thread.sleep(100);
-					try {
-						int e = proc.exitValue();
-						LOG.info("drop_cache process has terminated. exit_value=" + e);
-						break;
-					} catch (IllegalThreadStateException ex) {
+				String[] commands = new String[] {"sudo -n /bin/sync", "sudo -n /sbin/sysctl vm.drop_caches=3"};// same as 'echo 3 > /proc/sys/vm/drop_caches'
+				for (String command : commands) {
+					LOG.info("running the command:" + command);
+					Process proc = Runtime.getRuntime().exec(command); 
+					PipeThread stderrThread = new PipeThread(proc.getErrorStream(), "stderr");
+					PipeThread stdoutThread = new PipeThread(proc.getInputStream(), "stdout");
+					stderrThread.start();
+					stdoutThread.start();
+					// Wait up to 10 seconds only. If it's working, drop_caches should be done within 10 sec
+					for (int i = 0; i < 100; ++i) {
+						Thread.sleep(100);
+						try {
+							int e = proc.exitValue();
+							LOG.info("drop_cache process has terminated. exit_value=" + e);
+							break;
+						} catch (IllegalThreadStateException ex) {
+						}
 					}
+					// is it done?
+					try {
+						proc.exitValue();
+					} catch (IllegalThreadStateException ex) {
+						LOG.warn("exitValue() threw an error, which means the process isn't done. probably asking sudoer password?" + ex);
+						errorHappened = true;
+					}
+					if (stderrThread.hadAnyOutput) {
+						LOG.warn("some lines are output to stderr, most likely it failed. eg) no tty present error if you are running it via ssh.");
+						errorHappened = true;
+					}
+					proc.destroy();
 				}
-				// is it done?
-				try {
-					proc.exitValue();
-				} catch (IllegalThreadStateException ex) {
-					LOG.warn("exitValue() threw an error, which means the process isn't done. probably asking sudoer password?" + ex);
-					errorHappened = true;
-				}
-				if (stderrThread.hadAnyOutput) {
-					LOG.warn("some lines are output to stderr, most likely it failed. eg) no tty present error if you are running it via ssh.");
-					errorHappened = true;
-				}
-				proc.destroy();
-				LOG.info("successfully flushed disk cache with drop_caches! you had sudoer permission!");
 			} catch (Throwable t) {
 				LOG.warn("sudo drop_caches failed with exception", t);
 				errorHappened = true;
 			}
 			if (!errorHappened) {
+				LOG.info("successfully flushed disk cache with drop_caches! you had sudoer permission!");
 				return new String[0];
 			}
 		}
