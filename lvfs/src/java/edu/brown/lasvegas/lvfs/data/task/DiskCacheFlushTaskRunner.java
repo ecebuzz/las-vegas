@@ -24,6 +24,7 @@ public final class DiskCacheFlushTaskRunner extends DataTaskRunner<DiskCacheFlus
     	PipeThread (InputStream in, String label) throws IOException {
     		this.reader = new BufferedReader(new InputStreamReader(in, "UTF-8"));
     		this.label = label;
+    		this.isStderr = label.equals("stderr");
     	}
     	@Override
     	public void run() {
@@ -34,7 +35,12 @@ public final class DiskCacheFlushTaskRunner extends DataTaskRunner<DiskCacheFlus
 	    				if (line == null) {
 	    					break;
 	    				}
-		    			LOG.info("drop_cache process:" + label + ":" + line);
+	    				if (isStderr) {
+			    			LOG.warn("drop_cache process:" + label + ":" + line);
+	    				} else {
+	    					LOG.info("drop_cache process:" + label + ":" + line);
+	    				}
+		    			hadAnyOutput = true;
 	    			}
 	    		} finally {
 	    			LOG.info("finished reading:" + label);
@@ -46,6 +52,8 @@ public final class DiskCacheFlushTaskRunner extends DataTaskRunner<DiskCacheFlus
     	}
     	private final BufferedReader reader;
     	private final String label;
+    	private final boolean isStderr;
+    	private boolean hadAnyOutput = false;
     }
     
 	@Override
@@ -56,7 +64,8 @@ public final class DiskCacheFlushTaskRunner extends DataTaskRunner<DiskCacheFlus
 			LOG.info("trying to sudo drop_caches...");
 			boolean errorHappened = false;
 			try {
-				Process proc = Runtime.getRuntime().exec("sudo /bin/sync; sudo /sbin/sysctl vm.drop_caches=3"); // same as 'echo 3 > /proc/sys/vm/drop_caches'
+				// "sudo -n" to prevent sudo from asking password.
+				Process proc = Runtime.getRuntime().exec("sudo -n /bin/sync; sudo -n /sbin/sysctl vm.drop_caches=3"); // same as 'echo 3 > /proc/sys/vm/drop_caches'
 				PipeThread stderrThread = new PipeThread(proc.getErrorStream(), "stderr");
 				PipeThread stdoutThread = new PipeThread(proc.getInputStream(), "stdout");
 				stderrThread.start();
@@ -76,6 +85,10 @@ public final class DiskCacheFlushTaskRunner extends DataTaskRunner<DiskCacheFlus
 					proc.exitValue();
 				} catch (IllegalThreadStateException ex) {
 					LOG.warn("exitValue() threw an error, which means the process isn't done. probably asking sudoer password?" + ex);
+					errorHappened = true;
+				}
+				if (stderrThread.hadAnyOutput) {
+					LOG.warn("some lines are output to stderr, most likely it failed. eg) no tty present error if you are running it via ssh.");
 					errorHappened = true;
 				}
 				proc.destroy();
