@@ -1,7 +1,5 @@
 #!/bin/sh
-        sudo sync
-        sudo sh -c 'echo 3 > /proc/sys/vm/drop_caches'
-        echo "Dropped cache"
-        sleep 3
+sudo /bin/sync
+sudo /sbin/sysctl vm.drop_caches=3
 
 

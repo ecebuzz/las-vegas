@@ -10,41 +10,25 @@ import edu.brown.lasvegas.lvfs.data.DataTaskParameters;
  * Parameters for {@link DiskCacheFlushTaskRunner}.
  */
 public class DiskCacheFlushTaskParameters extends DataTaskParameters {
-	/** true to use drop_caches (needs root permission). otherwise, simply reads large files to flood the disk cache. */
-	private boolean useDropCaches;
+// this is not a parameter anymore. we now automatically detect 
+// sync and sysctl vm.drop_caches can be sudo-ed at runtime, and we use them if they are.
+//		/** true to use drop_caches (needs root permission). otherwise, simply reads large files to flood the disk cache. */
+//		private boolean useDropCaches;
 	
     /** the path of the file to read in this data node. */
     private String path;
 
     @Override
     public void readFields(DataInput in) throws IOException {
-    	useDropCaches = in.readBoolean();
+    	// useDropCaches = in.readBoolean();
     	path = in.readUTF();
     }
     
     @Override
     public void write(DataOutput out) throws IOException {
-    	out.writeBoolean(useDropCaches);
+    	// out.writeBoolean(useDropCaches);
     	out.writeUTF(path);
     }
-	
-	/**
-	 * Checks if is use drop caches.
-	 *
-	 * @return true, if is use drop caches
-	 */
-	public boolean isUseDropCaches() {
-		return useDropCaches;
-	}
-	
-	/**
-	 * Sets the use drop caches.
-	 *
-	 * @param useDropCaches the new use drop caches
-	 */
-	public void setUseDropCaches(boolean useDropCaches) {
-		this.useDropCaches = useDropCaches;
-	}
 	
 	/**
 	 * Gets the path.

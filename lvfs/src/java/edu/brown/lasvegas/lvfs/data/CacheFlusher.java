@@ -46,7 +46,6 @@ public class CacheFlusher {
     }
     private DiskCacheFlushJobParameters parseInputFile (String inputFileName) throws Exception {
     	DiskCacheFlushJobParameters params = new DiskCacheFlushJobParameters();
-    	params.setUseDropCaches(false);
         BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(inputFileName), "UTF-8"));
         for (String line = reader.readLine(); line != null; line = reader.readLine()) {
             LOG.info("input line:" + line);

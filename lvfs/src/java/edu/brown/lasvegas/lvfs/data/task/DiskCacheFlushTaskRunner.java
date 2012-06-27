@@ -50,27 +50,46 @@ public final class DiskCacheFlushTaskRunner extends DataTaskRunner<DiskCacheFlus
     
 	@Override
 	protected String[] runDataTask() throws Exception {
-		if (parameters.isUseDropCaches()) {
-			LOG.info("flushing disk cache with drop_caches...");
-			Process proc = Runtime.getRuntime().exec("sudo /sbin/sysctl vm.drop_caches=3"); // same as 'echo 3 > /proc/sys/vm/drop_caches'
-			PipeThread stderrThread = new PipeThread(proc.getErrorStream(), "stderr");
-			PipeThread stdoutThread = new PipeThread(proc.getInputStream(), "stdout");
-			stderrThread.start();
-			stdoutThread.start();
-			for (int i = 0; i < 100; ++i) {
-				Thread.sleep(100);
-				try {
-					int e = proc.exitValue();
-					LOG.info("drop_cache process has terminated. exit_value=" + e);
-					break;
-				} catch (IllegalThreadStateException ex) {
+		// first, try sudo-ing drop_caches.
+		// if we can sudo it, we don't have to read large files.
+		{
+			LOG.info("trying to sudo drop_caches...");
+			boolean errorHappened = false;
+			try {
+				Process proc = Runtime.getRuntime().exec("sudo /bin/sync; sudo /sbin/sysctl vm.drop_caches=3"); // same as 'echo 3 > /proc/sys/vm/drop_caches'
+				PipeThread stderrThread = new PipeThread(proc.getErrorStream(), "stderr");
+				PipeThread stdoutThread = new PipeThread(proc.getInputStream(), "stdout");
+				stderrThread.start();
+				stdoutThread.start();
+				// Wait up to 10 seconds only. If it's working, drop_caches should be done within 10 sec
+				for (int i = 0; i < 100; ++i) {
+					Thread.sleep(100);
+					try {
+						int e = proc.exitValue();
+						LOG.info("drop_cache process has terminated. exit_value=" + e);
+						break;
+					} catch (IllegalThreadStateException ex) {
+					}
 				}
+				// is it done?
+				try {
+					proc.exitValue();
+				} catch (IllegalThreadStateException ex) {
+					LOG.warn("exitValue() threw an error, which means the process isn't done. probably asking sudoer password?" + ex);
+					errorHappened = true;
+				}
+				proc.destroy();
+				LOG.info("successfully flushed disk cache with drop_caches! you had sudoer permission!");
+			} catch (Throwable t) {
+				LOG.warn("sudo drop_caches failed with exception", t);
+				errorHappened = true;
 			}
-			proc.destroy();
-			LOG.info("flushed disk cache with drop_caches.");
-			return new String[0];
+			if (!errorHappened) {
+				return new String[0];
+			}
 		}
 
+		LOG.warn("sudo drop_caches didn't work (check your sudoer permission). reading a large file to flush caches instead...");
 		File file = new File(parameters.getPath());
 		if (!file.exists()) {
 			throw new FileNotFoundException(file.getAbsolutePath());

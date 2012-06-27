@@ -12,15 +12,17 @@ import edu.brown.lasvegas.JobParameters;
  * Set of parameters to flush disk cache in data nodes.
  */
 public final class DiskCacheFlushJobParameters extends JobParameters {
-	/** true to use drop_caches (needs root permission). otherwise, simply reads large files to flood the disk cache. */
-	private boolean useDropCaches;
+// this is not a parameter anymore. we now automatically detect 
+// sync and sysctl vm.drop_caches can be sudo-ed at runtime, and we use them if they are.
+//	/** true to use drop_caches (needs root permission). otherwise, simply reads large files to flood the disk cache. */
+//	private boolean useDropCaches;
 	
     /** the files to read in each data node. key = ID of node (LVNode), value = local path. */
     private Map<Integer, String> nodeFilePathMap = new HashMap<Integer, String>();
 
     @Override
     public void readFields(DataInput in) throws IOException {
-    	useDropCaches = in.readBoolean();
+    	// useDropCaches = in.readBoolean();
     	int len = in.readInt();
     	nodeFilePathMap.clear();
     	for (int i = 0; i < len; ++i) {
@@ -33,31 +35,13 @@ public final class DiskCacheFlushJobParameters extends JobParameters {
     
     @Override
     public void write(DataOutput out) throws IOException {
-    	out.writeBoolean(useDropCaches);
+    	// out.writeBoolean(useDropCaches);
         out.writeInt(nodeFilePathMap.size());
         for (Map.Entry<Integer, String> entry : nodeFilePathMap.entrySet()) {
             out.writeInt(entry.getKey());
             out.writeUTF(entry.getValue());
         }
     }
-	
-	/**
-	 * Checks if is use drop caches.
-	 *
-	 * @return true, if is use drop caches
-	 */
-	public boolean isUseDropCaches() {
-		return useDropCaches;
-	}
-	
-	/**
-	 * Sets the use drop caches.
-	 *
-	 * @param useDropCaches the new use drop caches
-	 */
-	public void setUseDropCaches(boolean useDropCaches) {
-		this.useDropCaches = useDropCaches;
-	}
 	
 	/**
 	 * Gets the node file path map.

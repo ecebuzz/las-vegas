@@ -39,11 +39,10 @@ public class DiskCacheFlushJobController extends AbstractJobController<DiskCache
             // create parameter for the task
         	DiskCacheFlushTaskParameters taskParam = new DiskCacheFlushTaskParameters();
             taskParam.setPath(param.getNodeFilePathMap().get(nodeId));
-            taskParam.setUseDropCaches(param.isUseDropCaches());
             
             int taskId = metaRepo.createNewTaskIdOnlyReturn(jobId, nodeId, TaskType.DISK_CACHE_FLUSH, taskParam.writeToBytes());
             LVTask task = metaRepo.updateTask(taskId, TaskStatus.START_REQUESTED, null, null, null);
-            LOG.info("launched new disk cache flushing task: " + task + ". file to read=" + taskParam.getPath() + ". useDropCaches=" + taskParam.isUseDropCaches());
+            LOG.info("launched new disk cache flushing task: " + task + ". file to read=" + taskParam.getPath() + ".");
             assert (!taskMap.containsKey(taskId));
             taskMap.put(taskId, task);
         }
