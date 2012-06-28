@@ -67,10 +67,10 @@ public class BenchmarkTpchQ18PlanBJobController extends BenchmarkTpchQ18JobContr
         for (LVReplicaPartition[] partitions : partitionLists) {
             for (LVReplicaPartition partition : partitions) {
                 if (partition.getStatus() == ReplicaPartitionStatus.EMPTY) {
-                    LOG.info("this " + label + " partition will produce no result. skipped:" + partition);
+                    LOG.debug("this " + label + " partition will produce no result. skipped:" + partition);
                     continue;
                 }
-                LOG.info("existing " + label + " partition: " + partition);
+                LOG.debug("existing " + label + " partition: " + partition);
                 ArrayList<Integer> partitionIds = nodeMap.get(partition.getNodeId());
                 if (partitionIds == null) {
                 	partitionIds = new ArrayList<Integer>();

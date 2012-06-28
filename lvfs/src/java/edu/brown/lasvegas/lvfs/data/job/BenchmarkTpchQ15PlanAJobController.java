@@ -84,11 +84,11 @@ public class BenchmarkTpchQ15PlanAJobController extends BenchmarkTpchQ15JobContr
         for (LVReplicaPartition[] lineitemPartitions : lineitemPartitionLists) {
             for (int i = 0; i < lineitemPartitions.length; ++i) {
                 if (lineitemPartitions[i].getStatus() == ReplicaPartitionStatus.EMPTY || supplierPartitions[i].getStatus() == ReplicaPartitionStatus.EMPTY) {
-                    LOG.info("this partition will produce no result. skipped:" + lineitemPartitions[i] + "," + supplierPartitions[i]);
+                    LOG.debug("this partition will produce no result. skipped:" + lineitemPartitions[i] + "," + supplierPartitions[i]);
                     continue;
                 }
-                LOG.info("existing lineitem partition: " + lineitemPartitions[i]);
-                LOG.info("existing supplier partition: " + supplierPartitions[i]);
+                LOG.debug("existing lineitem partition: " + lineitemPartitions[i]);
+                LOG.debug("existing supplier partition: " + supplierPartitions[i]);
                 if (lineitemPartitions[i].getNodeId().intValue() != supplierPartitions[i].getNodeId().intValue()) {
                     throw new IOException ("not co-partitioned! lineitem partition:" + lineitemPartitions[i] + ". supplier partition:" + supplierPartitions[i]);
                 }
