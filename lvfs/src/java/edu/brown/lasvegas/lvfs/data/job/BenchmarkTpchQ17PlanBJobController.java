@@ -80,10 +80,14 @@ public class BenchmarkTpchQ17PlanBJobController extends BenchmarkTpchQ17JobContr
         SortedMap<Integer, ArrayList<Integer>> nodeMap = new TreeMap<Integer, ArrayList<Integer>>(); // key=nodeId
         for (LVReplicaPartition partition : partitions) {
             if (partition.getStatus() == ReplicaPartitionStatus.EMPTY) {
-                LOG.debug("this " + label + " partition will produce no result. skipped:" + partition);
+            	if (LOG.isDebugEnabled()) {
+            		LOG.debug("this " + label + " partition will produce no result. skipped:" + partition);
+            	}
                 continue;
             }
-            LOG.debug("existing " + label + " partition: " + partition);
+        	if (LOG.isDebugEnabled()) {
+        		LOG.debug("existing " + label + " partition: " + partition);
+        	}
             ArrayList<Integer> partitionIds = nodeMap.get(partition.getNodeId());
             if (partitionIds == null) {
             	partitionIds = new ArrayList<Integer>();

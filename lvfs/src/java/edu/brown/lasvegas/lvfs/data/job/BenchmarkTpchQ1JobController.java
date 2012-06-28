@@ -83,10 +83,14 @@ public class BenchmarkTpchQ1JobController extends AbstractJobController<Benchmar
         SortedMap<Integer, ArrayList<Integer>> nodeMap = new TreeMap<Integer, ArrayList<Integer>>(); // key=nodeId. value=partition IDs
         for (LVReplicaPartition partition : partitions) {
             if (partition.getStatus() == ReplicaPartitionStatus.EMPTY) {
-                LOG.debug("this partition will produce no result. skipped:" + partition);
+            	if (LOG.isDebugEnabled()) {
+            		LOG.debug("this partition will produce no result. skipped:" + partition);
+            	}
                 continue;
             }
-            LOG.debug("existing lineitem partition: " + partition);
+        	if (LOG.isDebugEnabled()) {
+        		LOG.debug("existing lineitem partition: " + partition);
+        	}
             ArrayList<Integer> partitionIds = nodeMap.get(partition.getNodeId());
             if (partitionIds == null) {
                 partitionIds = new ArrayList<Integer>();
