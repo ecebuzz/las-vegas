@@ -135,6 +135,19 @@
 		</java>
 	</target>
 
+	<target name="compact-job-and-task" depends="compile"
+		description="Specify the address of metadata repository and parameters for CompactJobAndTask. For more details, see {@link LVMetadataProtocol#compactJobAndTask(boolean, boolean, boolean, long)}.
+		eg: ant -Daddress=poseidon.smn.cs.brown.edu:28710 -DcompactOnly=false -DtaskOnly=false -DfinishedOnly=false -DminimalAgeMilliseconds=0 compact-job-and-task">
+		<java fork="true" classname="edu.brown.lasvegas.server.CompactJobAndTask">
+			<arg value="${address}" />
+			<arg value="${compactOnly}" />
+			<arg value="${taskOnly}" />
+			<arg value="${finishedOnly}" />
+			<arg value="${minimalAgeMilliseconds}" />
+        	<classpath refid="lvfs.classpath"/>
+		</java>
+	</target>
+
 	<target name="sa-central-stop" depends="compile"
 		description="Stop central node. Specify the path of configuration xml (must be in classpath). eg: ant -Dconfxml=lvfs_conf_poseidon.xml sa-central-stop">
 		<java fork="true" classname="edu.brown.lasvegas.server.StopCentralNode">

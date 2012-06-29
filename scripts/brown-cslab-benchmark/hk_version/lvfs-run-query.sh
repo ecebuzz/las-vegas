@@ -47,6 +47,8 @@ cd $LVFS_DIR
 # First, a utility function:
 
 function sleep_and_flush {
+	ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -DcompactOnly=false -DtaskOnly=false -DfinishedOnly=false -DminimalAgeMilliseconds=0 compact-job-and-task
+	sleep 2
 	ant -Daddress=$CENTRAL_NODE.cs.brown.edu:28710 -Dinputfile=$LINEITEM_INPUT_FILE cache-flush
 	sleep 5
 }

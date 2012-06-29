@@ -1382,6 +1382,90 @@ public class MasterMetadataRepository implements LVMetadataProtocol {
             LOG.warn("Task-" + taskId + " doesn't exist (already deleted?)");
         }
     }
+    
+    @Override
+    public void compactJobAndTask(boolean compactOnly, boolean taskOnly,
+            boolean finishedOnly, long minimalAgeMilliseconds)
+            throws IOException {
+        LOG.info("Compacting Job and Task. compactOnly=" + compactOnly
+                + " taskOnly=" + taskOnly + ", finishedOnly=" + finishedOnly
+                + ", minimalAgeMilliseconds=" + minimalAgeMilliseconds);
+        long start = System.currentTimeMillis();
+        int bdbSizeBefore = getBDBFolderSizeInKB();
+
+        int jobsAffected = 0, tasksAffected = 0;
+        for (LVJob job : getAllJobs()) {
+            if (job.getStartedTime().getTime() + minimalAgeMilliseconds > start) {
+                continue; // the job is too recent. let's leave it
+            }
+            if (finishedOnly && !JobStatus.isFinished(job.getStatus())) {
+                continue; // the job hasn't finished. let's leave it.
+            }
+
+            ++jobsAffected;
+
+            if (!taskOnly && compactOnly) {
+                // also compact the LVJob record.
+                // if not compactOnly, we will anyway delete the record later.
+                job.setErrorMessages("");
+                job.setParameters(new byte[0]);
+                putNoReturnTransactional(bdbTableAccessors.jobAccessor.PKX, job);
+            }
+
+            for (LVTask task : fetchAll(
+                    bdbTableAccessors.taskAccessor.IX_JOB_ID, job.getJobId())
+                    .toArray(new LVTask[0])) {
+                ++tasksAffected;
+
+                if (compactOnly) {
+                    task.setErrorMessages("");
+                    task.setOutputFilePaths(new String[0]);
+                    task.setParameters(new byte[0]);
+                    putNoReturnTransactional(
+                            bdbTableAccessors.taskAccessor.PKX, task);
+                } else {
+                    dropTask(task.getTaskId());
+                }
+            }
+
+            if (!taskOnly && !compactOnly) {
+                // delete the LVJob record.
+                // notice that we do this after deleting LVTask for foreign
+                // consistency
+                dropJob(job.getJobId());
+            }
+        }
+
+        LOG.info("also compacting BDB...");
+        // bdbEnv.checkpoint(new CheckpointConfig()); // optional. in terms of recovery time, we should. but..
+        bdbEnv.compress();
+        bdbEnv.cleanLog();
+        bdbEnv.sync();
+
+        int bdbSizeAfter = getBDBFolderSizeInKB();
+        long end = System.currentTimeMillis();
+        LOG.info("compacted in " + (end - start) + "ms." + "affected "
+                + jobsAffected + " jobs and " + tasksAffected + " tasks."
+                + "BDB folder size before=" + bdbSizeBefore + "KB after="
+                + bdbSizeAfter + "KB. NOTE: probably this won't make the folder smaller because"
+                + " we 'sync' here and "
+                + " BDB-JE employs sequentially-written log-structured architecture. "
+                + " However, this should allow BDB to free up more cache and (active) log entries. ");
+    }
+
+    /** Returns the total file sizes in the BDB folder. */
+    private int getBDBFolderSizeInKB() throws IOException {
+        int totalSizeKB = 0;
+        for (File file : bdbEnvHome.listFiles()) {
+            if (file.isDirectory()) {
+                LOG.warn("sub folder in BDB environment home??? ignored:"
+                        + file.getAbsolutePath());
+                continue;
+            }
+            totalSizeKB += (file.length() / 1024);
+        }
+        return totalSizeKB;
+    }
 
     /**
      * helper class to do something in a transaction.

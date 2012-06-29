@@ -9,6 +9,7 @@ import static org.junit.Assert.fail;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Random;
 
 import org.apache.hadoop.io.DoubleWritable;
 import org.apache.hadoop.io.IntWritable;
@@ -1333,5 +1334,25 @@ public abstract class MetadataRepositoryTestBase {
         assertEquals (nodeId, task.getNodeId());
         assertEquals (type, task.getType());
         assertEquals (status, task.getStatus());
+    }
+    
+    @Test
+    public void testCompactJobAndTask() throws IOException {
+        for (int i = 0; i < 100; ++i) {
+            int jobId = repository.createNewJobIdOnlyReturn("job" + i, JobType.IMPORT_FRACTURE, createRandomByteArray(128, i));
+            for (int j = 0; j < 5; ++j) {
+                repository.createNewTaskIdOnlyReturn(jobId, DEFAULT_RACK_NODE.getNodeId(), TaskType.LOAD_PARTITIONED_TEXT_FILES, createRandomByteArray(1024, i * 1000 + j));
+            }
+        }
+        // just delete everything.
+        // TODO add more detailed testcases with various parameters.
+        // when I have more time...
+        repository.compactJobAndTask(false, false, false, 0);
+    }
+    private byte[] createRandomByteArray(int size, long seed) {
+        byte[] bytes = new byte[size];
+        Random rand = new Random(seed);
+        rand.nextBytes(bytes);
+        return bytes;
     }
 }

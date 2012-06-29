@@ -967,6 +967,29 @@ public interface LVMetadataProtocol extends VersionedProtocol {
      * @throws IOException
      */
     void dropTask (int taskId) throws IOException;
+
+    /**
+     * Deletes all {@link LVJob} and {@link LVTask}
+     * or clears some columns of them to compact BDB database.
+     * 
+     * This method should be occasionally called to remove
+     * the fastest growing table in our metadata repository; jobs and tasks.
+     * While they could be large (mainly due to a large number of historical tasks over time
+     * and their serialized task parameters), they are not needed to exist for long
+     * time (except some debugging).
+     * 
+     * @param compactOnly if true, we only clear space-hogging columns like serialized
+     * task parameters and error messages. if false, we delete records.
+     * @param taskOnly if true, we only delete or compact {@link LVTask}, leaving {@link LVJob}.
+     * As there are far more tasks than jobs, somtimes it's enough to delete tasks.
+     * @param finishedOnly if true, only deletes/clears jobs whose status are DONE/ERROR/CANCELED.
+     * In that case, tasks are deleted only when their parent jobs are to be deleted.
+     * otherwise, we delete/clear every task/job. This parameter is useful if you compact
+     * the database while there might be some active job running.
+     * @param minimalAgeMilliseconds how many milliseconds ago the jobs have to be started
+     * to be considered for cleaning/deletion. 0 if all jobs are the targets.
+     */
+    void compactJobAndTask (boolean compactOnly, boolean taskOnly, boolean finishedOnly, long minimalAgeMilliseconds) throws IOException;
     
     public static final long versionID = 1L;
 }
