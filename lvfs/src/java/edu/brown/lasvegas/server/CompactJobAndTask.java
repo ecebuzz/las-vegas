@@ -23,13 +23,13 @@ public class CompactJobAndTask {
     
     public static void main (String[] args) throws Exception {
         if (args.length < 5) {
-            System.err.println("usage: java " + CompactJobAndTask.class.getName() + " <conf xml path in classpath> <compactOnly:false/true> <taskOnly:false/true> <finishedOnly:false/true> <minimalAgeMilliseconds:0->");
-            System.err.println("ex: java " + CompactJobAndTask.class.getName() + " lvfs_conf.xml false false false 0");
+            System.err.println("usage: java " + CompactJobAndTask.class.getName() + " <metadata repository address> <compactOnly:false/true> <taskOnly:false/true> <finishedOnly:false/true> <minimalAgeMilliseconds:0->");
+            System.err.println("ex: java " + CompactJobAndTask.class.getName() + " poseidon:28710 false false false 0");
             return;
         }
-        ConfFileUtil.addConfFilePath(args[0]);
-        
+        String metaRepoAddress = args[0];
         Configuration conf = new Configuration();
+        conf.set(LVCentralNode.METAREPO_ADDRESS_KEY, metaRepoAddress);
         LVMetadataClient client = new LVMetadataClient(conf);
         try {
             LVMetadataProtocol metaRepo = client.getChannel();
