@@ -141,6 +141,31 @@ public final class VarbinValueTraits implements VarLenValueTraits<ByteArray> {
         return array;
     }
     @Override
+    public int deserializeArray(ByteBuffer buffer, ByteArray[] array)
+    		throws IOException, ArrayIndexOutOfBoundsException {
+        int entries = buffer.getInt();
+        assert (entries >= -1);
+        if (entries == -1) return 0;
+        if (entries > array.length) {
+        	throw new ArrayIndexOutOfBoundsException ("array capacity=" + array.length + ", but data length=" + entries);
+        }
+
+        IntBuffer lengthBuffer = buffer.asIntBuffer();
+        int[] lengthes = new int[entries];
+        lengthBuffer.get(lengthes);
+        buffer.position(buffer.position() + entries * 4); // advance original buffer position
+
+        // we use the original byte buffer below, so no need to re-position ourselves
+        for (int i = 0; i < entries; ++i) {
+            assert (lengthes[i] >= -1);
+            if (lengthes[i] == -1) continue; // null
+            byte[] data = new byte[lengthes[i]];
+            buffer.get(data);
+            array[i] = new ByteArray(data);
+        }
+        return entries;
+    }
+    @Override
     public int serializeArray(ByteArray[] array, ByteBuffer buffer) {
         // see the above function comment
         if (array == null) {

@@ -110,6 +110,14 @@ public final class VarcharValueTraits implements VarLenValueTraits<String> {
     public void set(String[] array, int index, String value) {
         array[index] = value;
     }
+    private int getMax (int[] values) {
+    	int ret = Integer.MIN_VALUE;
+    	for (int value : values) {
+    		ret = value > ret ? value : ret;
+    	}
+    	return ret;
+    }
+    
     @Override
     public String[] deserializeArray(ByteBuffer buffer) throws IOException {
         // Unlike the fixed-length data types, VARCHAR/VARBIN is a little bit tricky.
@@ -134,7 +142,8 @@ public final class VarcharValueTraits implements VarLenValueTraits<String> {
         int[] lengthes = new int[entries];
         lengthBuffer.get(lengthes);
         buffer.position(buffer.position() + entries * 4); // advance original buffer position
-
+        
+        char[] chars = new char[getMax(lengthes)];
         String[] array = createArray(entries);
         CharBuffer charBuffer = buffer.asCharBuffer();
         int readBytes = 0;
@@ -142,12 +151,39 @@ public final class VarcharValueTraits implements VarLenValueTraits<String> {
             assert (lengthes[i] >= -1);
             if (lengthes[i] == -1) continue; // null
             readBytes += lengthes[i] * 2; // always 2 bytes assuming (kind of) UTF-16
-            char[] chars = new char[lengthes[i]];
-            charBuffer.get(chars);
-            array[i] = String.valueOf(chars);
+            charBuffer.get(chars, 0, lengthes[i]);
+            array[i] = String.valueOf(chars, 0, lengthes[i]);
         }
         buffer.position(buffer.position() + readBytes); // advance original buffer position
         return array;
+    }
+    @Override
+    public int deserializeArray(ByteBuffer buffer, String[] array)
+    		throws IOException, ArrayIndexOutOfBoundsException {
+        int entries = buffer.getInt();
+        assert (entries >= -1);
+        if (entries == -1) return 0;
+        if (entries > array.length) {
+        	throw new ArrayIndexOutOfBoundsException ("array capacity=" + array.length + ", but data length=" + entries);
+        }
+
+        IntBuffer lengthBuffer = buffer.asIntBuffer();
+        int[] lengthes = new int[entries];
+        lengthBuffer.get(lengthes);
+        buffer.position(buffer.position() + entries * 4); // advance original buffer position
+
+        char[] chars = new char[getMax(lengthes)];
+        CharBuffer charBuffer = buffer.asCharBuffer();
+        int readBytes = 0;
+        for (int i = 0; i < entries; ++i) {
+            assert (lengthes[i] >= -1);
+            if (lengthes[i] == -1) continue; // null
+            readBytes += lengthes[i] * 2; // always 2 bytes assuming (kind of) UTF-16
+            charBuffer.get(chars, 0, lengthes[i]);
+            array[i] = String.valueOf(chars, 0, lengthes[i]);
+        }
+        buffer.position(buffer.position() + readBytes); // advance original buffer position
+        return entries;
     }
     @Override
     public int serializeArray(String[] array, ByteBuffer buffer) {

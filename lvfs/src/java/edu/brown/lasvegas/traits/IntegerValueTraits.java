@@ -137,6 +137,19 @@ public final class IntegerValueTraits implements FixLenValueTraits<Integer, int[
         return array;
     }
     @Override
+    public int deserializeArray(ByteBuffer buffer, int[] array)
+    		throws IOException, ArrayIndexOutOfBoundsException {
+        int length = buffer.getInt();
+        assert (length >= -1);
+        if (length > array.length) {
+        	throw new ArrayIndexOutOfBoundsException ("array capacity=" + array.length + ", but data length=" + length);
+        }
+        if (length == -1) return 0;
+        buffer.asIntBuffer().get(array, 0, length); // remember this doesn't advance the original byte buffer's position
+        buffer.position(buffer.position() + length * (getBitsPerValue() / 8)); // so, advance it here
+        return length;
+    }
+    @Override
     public int serializeArray(int[] array, ByteBuffer buffer) {
         if (array == null) {
             buffer.putInt(-1);

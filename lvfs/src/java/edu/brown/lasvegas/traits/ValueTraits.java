@@ -142,6 +142,15 @@ public interface ValueTraits<T extends Comparable<T>, AT> {
     AT deserializeArray (ByteBuffer buffer) throws IOException;
 
     /**
+     * Deserializes an array from byte buffer. This method is a batched read and supposed
+     * to be as low-overhead as possible.
+     * @param buffer byte buffer to read an array from
+     * @param array the array to receive the deserialized values. has to be enough large.
+     * @return number of read entries
+     */
+    int deserializeArray (ByteBuffer buffer, AT array) throws IOException, ArrayIndexOutOfBoundsException;
+
+    /**
      * Serializes an array and writes it out to byte buffer.
      * @param array the array to write out.
      * @param buffer byte buffer to write out the array. use {@link #getSerializedByteSize(Object)}

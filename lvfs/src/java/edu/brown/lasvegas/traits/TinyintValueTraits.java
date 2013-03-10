@@ -136,6 +136,18 @@ public final class TinyintValueTraits implements FixLenValueTraits<Byte, byte[]>
         return array;
     }
     @Override
+    public int deserializeArray(ByteBuffer buffer, byte[] array)
+    		throws IOException, ArrayIndexOutOfBoundsException {
+        int length = buffer.getInt();
+        assert (length >= -1);
+        if (length > array.length) {
+        	throw new ArrayIndexOutOfBoundsException ("array capacity=" + array.length + ", but data length=" + length);
+        }
+        if (length == -1) return 0;
+        buffer.get(array, 0, length);
+        return length;
+    }
+    @Override
     public int serializeArray(byte[] array, ByteBuffer buffer) {
         if (array == null) {
             buffer.putInt(-1);
